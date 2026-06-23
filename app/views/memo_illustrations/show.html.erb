@@ -1,0 +1,59 @@
+<% if @memo_illustration.in_progress? %>
+  <% content_for :head do %>
+    <meta http-equiv="refresh" content="3">
+  <% end %>
+<% end %>
+
+<h1>生成結果</h1>
+
+<p class="meta">
+  <span class="status status-<%= @memo_illustration.status %>"><%= @memo_illustration.status %></span>
+  · <%= @memo_illustration.sd_model %>
+  · スキル: <%= @memo_illustration.prompt_skill.name %>
+</p>
+
+<section class="card detail">
+  <h2>入力した文章</h2>
+  <p><%= simple_format(@memo_illustration.body) %></p>
+
+  <% if @memo_illustration.positive_prompt.present? %>
+    <h2>Positive Prompt</h2>
+    <p><%= simple_format(@memo_illustration.positive_prompt) %></p>
+  <% end %>
+
+  <% if @memo_illustration.negative_prompt.present? %>
+    <h2>Negative Prompt</h2>
+    <p><%= simple_format(@memo_illustration.negative_prompt) %></p>
+  <% end %>
+
+  <% if @memo_illustration.positive_prompt.present? %>
+    <h2>生成パラメータ</h2>
+    <p class="meta">
+      <%= @memo_illustration.width %>×<%= @memo_illustration.height %>
+      · steps <%= @memo_illustration.steps %>
+      · CFG <%= @memo_illustration.cfg_scale %>
+      · seed <%= @memo_illustration.seed || "random" %>
+    </p>
+  <% end %>
+
+  <% if @memo_illustration.error_message.present? %>
+    <div class="errors">
+      <p><%= @memo_illustration.error_message %></p>
+    </div>
+  <% end %>
+
+  <% if @memo_illustration.in_progress? %>
+    <p class="loading">生成中です… このページは自動更新されます。</p>
+  <% end %>
+
+  <% if @memo_illustration.image.attached? %>
+    <figure class="result-image">
+      <%= image_tag @memo_illustration.image, alt: @memo_illustration.body %>
+    </figure>
+  <% end %>
+</section>
+
+<p>
+  <%= link_to "新しいイラストを生成", new_memo_illustration_path, class: "button" %>
+  <%= link_to "一覧へ", root_path %>
+</p>

@@ -24,6 +24,15 @@
   </head>
 
   <body>
-    <%= yield %>
+    <main>
+      <%= render "shared/navigation" %>
+      <% if flash[:notice].present? %>
+        <p class="flash notice"><%= flash[:notice] %></p>
+      <% end %>
+      <% if flash[:alert].present? %>
+        <p class="flash alert"><%= flash[:alert] %></p>
+      <% end %>
+      <%= yield %>
+    </main>
   </body>
 </html>

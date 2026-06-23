@@ -102,6 +102,7 @@ h1, h2 {
 .status-pending,
 .status-preparing,
 .status-translating,
+.status-planning,
 .status-generating {
   color: var(--accent);
 }
@@ -158,4 +159,80 @@ h1, h2 {
 
 .loading {
   font-style: italic;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-nav a.active,
+.site-nav a:hover {
+  color: var(--accent);
+}
+
+.flash {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.flash.notice {
+  background: color-mix(in srgb, #1b7f4a 12%, transparent);
+  border: 1px solid #1b7f4a;
+}
+
+.flash.alert {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid var(--danger);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.skill-list h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.skill-list h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.skill-body,
+.form .monospace {
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox input {
+  width: auto;
+}
+
+button,
+input[type="submit"] {
+  font: inherit;
 }

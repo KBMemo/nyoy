@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_042018) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -55,6 +55,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_042018) do
     t.integer "width", default: 512, null: false
   end
 
+  create_table "memo_illustrations", force: :cascade do |t|
+    t.text "body", null: false
+    t.float "cfg_scale", default: 7.0, null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.integer "height", default: 512, null: false
+    t.text "llama_raw_response"
+    t.text "negative_prompt"
+    t.text "positive_prompt"
+    t.integer "prompt_skill_id", null: false
+    t.string "sd_model", null: false
+    t.integer "seed"
+    t.string "status", default: "pending", null: false
+    t.integer "steps", default: 20, null: false
+    t.datetime "updated_at", null: false
+    t.integer "width", default: 512, null: false
+    t.index ["prompt_skill_id"], name: "index_memo_illustrations_on_prompt_skill_id"
+  end
+
+  create_table "prompt_skills", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.boolean "default", default: false, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["default"], name: "index_prompt_skills_on_default"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "memo_illustrations", "prompt_skills"
 end

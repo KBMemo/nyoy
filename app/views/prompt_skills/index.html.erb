@@ -1,0 +1,25 @@
+<h1>プロンプトスキル</h1>
+<p class="lead">llama.cpp に渡す system prompt を管理します。</p>
+
+<p><%= link_to "新しいスキル", new_prompt_skill_path, class: "button" %></p>
+
+<% if @prompt_skills.any? %>
+  <section class="card-list skill-list">
+    <% @prompt_skills.each do |skill| %>
+      <article class="card">
+        <div class="card-header">
+          <h2><%= link_to skill.name, skill %></h2>
+          <% if skill.default? %>
+            <span class="badge">default</span>
+          <% end %>
+        </div>
+        <p class="prompt"><%= truncate(skill.body, length: 120) %></p>
+        <div class="actions">
+          <%= link_to "編集", edit_prompt_skill_path(skill) %>
+        </div>
+      </article>
+    <% end %>
+  </section>
+<% else %>
+  <p class="empty">スキルが未登録です。</p>
+<% end %>

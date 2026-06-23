@@ -1,0 +1,19 @@
+<h1><%= @prompt_skill.name %></h1>
+
+<p class="meta">
+  <% if @prompt_skill.default? %>
+    <span class="badge">default</span>
+  <% end %>
+  更新: <%= l(@prompt_skill.updated_at, format: :long) %>
+</p>
+
+<section class="card detail">
+  <h2>スキル本文</h2>
+  <pre class="skill-body"><%= @prompt_skill.body %></pre>
+</section>
+
+<div class="actions">
+  <%= link_to "編集", edit_prompt_skill_path(@prompt_skill), class: "button" %>
+  <%= link_to "一覧へ", prompt_skills_path %>
+  <%= button_to "削除", @prompt_skill, method: :delete, data: { turbo_confirm: "削除しますか？" } %>
+</div>

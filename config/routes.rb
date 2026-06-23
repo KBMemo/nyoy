@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
-  root "image_generations#index"
+  root "memo_illustrations#index"
 
+  resources :memo_illustrations, only: %i[index show new create]
+  resources :prompt_skills
   resources :image_generations, only: %i[index show new create]
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
