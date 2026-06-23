@@ -1,0 +1,56 @@
+<h1>画像を生成</h1>
+
+<%= form_with model: @image_generation, class: "form" do |form| %>
+  <% if @image_generation.errors.any? %>
+    <div class="errors">
+      <ul>
+        <% @image_generation.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :japanese_prompt, "日本語プロンプト" %>
+    <%= form.text_area :japanese_prompt, rows: 4, required: true, placeholder: "例: 青い髪の少女、桜の背景、春の午後" %>
+  </div>
+
+  <div class="field">
+    <%= form.label :negative_prompt, "ネガティブプロンプト (任意)" %>
+    <%= form.text_area :negative_prompt, rows: 2, placeholder: "low quality, blurry" %>
+  </div>
+
+  <div class="field">
+    <%= form.label :sd_model, "SD モデル" %>
+    <%= form.select :sd_model, @sd_models, {}, required: true %>
+  </div>
+
+  <div class="field-grid">
+    <div class="field">
+      <%= form.label :width, "幅" %>
+      <%= form.number_field :width, min: 64, max: 2048, step: 64 %>
+    </div>
+    <div class="field">
+      <%= form.label :height, "高さ" %>
+      <%= form.number_field :height, min: 64, max: 2048, step: 64 %>
+    </div>
+    <div class="field">
+      <%= form.label :steps, "Steps" %>
+      <%= form.number_field :steps, min: 1, max: 150 %>
+    </div>
+    <div class="field">
+      <%= form.label :cfg_scale, "CFG Scale" %>
+      <%= form.number_field :cfg_scale, min: 1, max: 30, step: 0.5 %>
+    </div>
+    <div class="field">
+      <%= form.label :seed, "Seed (空欄でランダム)" %>
+      <%= form.number_field :seed, min: -1 %>
+    </div>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "生成する", class: "button" %>
+    <%= link_to "戻る", root_path %>
+  </div>
+<% end %>

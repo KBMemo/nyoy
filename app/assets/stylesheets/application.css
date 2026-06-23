@@ -1,0 +1,161 @@
+/*
+ * Nyoy application styles
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea;
+  --surface: #fffdf8;
+  --text: #1f1f1f;
+  --muted: #666;
+  --accent: #2f6fed;
+  --border: #ddd4c4;
+  --danger: #b42318;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151515;
+    --surface: #1f1f1f;
+    --text: #f2f2f2;
+    --muted: #aaa;
+    --accent: #6ea8fe;
+    --border: #333;
+    --danger: #ff8a80;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+main,
+body > * {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+h1, h2 {
+  line-height: 1.2;
+}
+
+.lead,
+.meta,
+.empty {
+  color: var(--muted);
+}
+
+.button {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.card-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card,
+.detail {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card img,
+.result-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pending,
+.status-preparing,
+.status-translating,
+.status-generating {
+  color: var(--accent);
+}
+
+.status-completed {
+  color: #1b7f4a;
+}
+
+.status-failed {
+  color: var(--danger);
+}
+
+.form .field {
+  margin-bottom: 1rem;
+}
+
+.form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.form textarea,
+.form input,
+.form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.errors {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid var(--danger);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  font-style: italic;
+}
