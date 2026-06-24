@@ -1,8 +1,8 @@
-.mb-6.flex.flex-wrap.items-end.justify-between.gap-3
-  div
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
     h1 class=kb_page_title 生成プリセット
-    p.mt-1.text-sm.kb-text-secondary プロンプトスキルと SD 生成パラメータ (LoRA / sampler 等) をセットで管理します。
-  = link_to "新しいプリセット", new_generation_preset_path, class: kb_btn_primary_sm
+    = link_to "新しいプリセット", new_generation_preset_path, class: kb_btn_primary_sm
+  p.mt-1.text-sm.kb-text-secondary プロンプトスキルと SD 生成パラメータ (LoRA / sampler 等) をセットで管理します。
 
 - if @generation_presets.any?
   section.nyoy-card-list

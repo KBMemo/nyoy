@@ -26,7 +26,7 @@ html lang="ja"
           = link_to "メモイラスト", root_path, class: kb_chrome_link_class("memo_illustrations")
           = link_to "スキル", prompt_skills_path, class: kb_chrome_link_class("prompt_skills")
           = link_to "生成プリセット", generation_presets_path, class: kb_chrome_link_class("generation_presets")
-          = link_to "画像生成 (旧)", image_generations_path, class: kb_chrome_link_class("image_generations")
+          = link_to "画像生成", image_generations_path, class: kb_chrome_link_class("image_generations")
     main#main-content.mx-auto.w-full.px-4.py-8 tabindex="-1" class=content_max_width_class
       = yield
     = render "shared/flash_toasts"

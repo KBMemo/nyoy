@@ -159,7 +159,9 @@
 }
 
 .kb-chrome-btn-primary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: var(--kb-radius-sm);
   padding: 0.375rem 0.75rem;
@@ -169,6 +171,9 @@
   color: var(--kb-accent-fg);
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: fit-content;
 }
 
 .kb-chrome-btn-primary:hover {
@@ -182,7 +187,9 @@
 }
 
 .kb-chrome-btn-secondary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--kb-radius-sm);
   padding: 0.375rem 0.75rem;
   font-size: var(--kb-font-size-sm);
@@ -192,6 +199,9 @@
   border: 1px solid var(--kb-border-strong);
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: fit-content;
 }
 
 .kb-chrome-btn-secondary:hover {
