@@ -1,19 +1,21 @@
-h1 メモイラスト
-p.lead メモや文章から、キーワードを抽出してイラストを生成します。
+.mb-6.flex.flex-wrap.items-end.justify-between.gap-3
+  div
+    h1 class=kb_page_title メモイラスト
+    p.mt-1.text-sm.kb-text-secondary メモや文章から、キーワードを抽出してイラストを生成します。
+  = link_to "新しいイラスト", new_memo_illustration_path, class: kb_btn_primary_sm
 
 = render "shared/sd_catalog_status"
 
-p = link_to "新しいイラストを生成", new_memo_illustration_path, class: "button"
-
 - if @memo_illustrations.any?
-  section.card-list
+  section.nyoy-card-list
     - @memo_illustrations.each do |illustration|
-      = link_to memo_illustration_path(illustration), class: "card" do
-        .card-header
-          span class="status status-#{illustration.status}" = illustration.status
-          span.model = illustration.sd_model
-        p.prompt = truncate(illustration.body, length: 80)
-        - if illustration.image.attached?
-          = image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
+      = link_to memo_illustration_path(illustration), class: "nyoy-card-link" do
+        .kb-card.p-4
+          .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+            span class="nyoy-status nyoy-status-#{illustration.status}" = illustration.status
+            span.text-xs.kb-text-muted = illustration.sd_model
+          p.text-sm.kb-text-secondary = truncate(illustration.body, length: 80)
+          - if illustration.image.attached?
+            = image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
 - else
-  p.empty まだ生成履歴がありません。
+  p.text-sm.kb-text-muted まだ生成履歴がありません。

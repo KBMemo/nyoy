@@ -5,22 +5,21 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
   def perform(memo_illustration_id)
     illustration = MemoIllustration.find(memo_illustration_id)
+    illustration.update!(started_at: Time.current, status: "preparing")
 
     switch_model(illustration)
     plan_prompts(illustration)
     generate_image(illustration)
 
-    illustration.update!(status: "completed")
+    illustration.update!(status: "completed", finished_at: Time.current)
   rescue StandardError => e
-    illustration&.update!(status: "failed", error_message: e.message)
+    illustration&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
     raise
   end
 
   private
 
   def switch_model(illustration)
-    illustration.update!(status: "preparing")
-
     switch = SdModelSwitcher.new
     switch.switch(illustration.sd_model)
   end

@@ -27,18 +27,13 @@ class SdPromptPlanner
       max_tokens: MAX_TOKENS
     )
 
-    content = message_content(response)
+    content = LlamaCppClient.message_text(response)
     raise Error, "empty response from llama" if content.blank?
 
     parse_plan(content)
   end
 
   private
-
-  def message_content(response)
-    message = response.dig("choices", 0, "message") || {}
-    message["content"].presence || message["reasoning_content"].to_s
-  end
 
   def parse_plan(content)
     json = extract_json(content)

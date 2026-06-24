@@ -1,0 +1,30 @@
+.mb-6.flex.flex-wrap.items-end.justify-between.gap-3
+  div
+    h1 class=kb_page_title 生成プリセット
+    p.mt-1.text-sm.kb-text-secondary プロンプトスキルと SD 生成パラメータ (LoRA / sampler 等) をセットで管理します。
+  = link_to "新しいプリセット", new_generation_preset_path, class: kb_btn_primary_sm
+
+- if @generation_presets.any?
+  section.nyoy-card-list
+    - @generation_presets.each do |preset|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+          h2.text-base.font-semibold
+            = link_to preset.name, preset, class: "kb-text-primary no-underline"
+          - if preset.default?
+            span.kb-badge.kb-badge-muted default
+        p.text-sm.kb-text-secondary
+          = preset.sd_model
+          |  · #{preset.width}×#{preset.height}
+          |  · steps #{preset.steps}
+          |  · cfg #{preset.cfg_scale}
+          |  · #{preset.sampler_name}
+        - if preset.prompt_skill
+          p.text-sm.kb-text-muted スキル: #{preset.prompt_skill.name}
+        - if preset.loras_array.any?
+          p.text-sm.kb-text-muted LoRA: #{preset.loras_array.map { |entry| entry["name"] || entry["path"] }.join(", ")}
+        .flex.flex-wrap.items-center.gap-3.mt-3
+          = link_to "編集", edit_generation_preset_path(preset), class: "kb-chrome-link text-sm"
+          = link_to "この設定で生成", new_image_generation_path(generation_preset_id: preset.id), class: kb_btn_secondary_sm
+- else
+  p.text-sm.kb-text-muted プリセットが未登録です。

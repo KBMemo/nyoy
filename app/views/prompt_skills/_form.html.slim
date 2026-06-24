@@ -1,21 +1,22 @@
-= form_with model: prompt_skill, class: "form" do |form|
+= form_with model: prompt_skill, class: "space-y-4 max-w-xl" do |form|
   - if prompt_skill.errors.any?
-    .errors
-      ul
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
         - prompt_skill.errors.full_messages.each do |message|
           li = message
 
-  .field
-    = form.label :name, "名前"
-    = form.text_field :name, required: true
+  div
+    = form.label :name, "名前", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
 
-  .field
-    = form.label :body, "スキル本文 (system prompt)"
-    = form.text_area :body, rows: 24, required: true, class: "monospace"
+  div
+    = form.label :body, "スキル本文 (system prompt)", class: "#{kb_label} mb-1"
+    = form.text_area :body, rows: 24, required: true, class: "#{kb_field_input_classes} nyoy-monospace"
 
-  .field.checkbox
-    = form.check_box :default
-    = form.label :default, "デフォルトスキルにする"
+  label.flex.items-center.gap-2.text-sm
+    = form.check_box :default, class: "kb-control-accent"
+    span デフォルトスキルにする
 
-  .actions
-    = form.submit class: "button"
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit class: kb_btn_primary_sm
+    = link_to "キャンセル", prompt_skills_path, class: "kb-chrome-link text-sm"

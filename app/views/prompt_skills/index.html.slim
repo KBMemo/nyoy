@@ -1,18 +1,20 @@
-h1 プロンプトスキル
-p.lead llama.cpp に渡す system prompt を管理します。
-
-p = link_to "新しいスキル", new_prompt_skill_path, class: "button"
+.mb-6.flex.flex-wrap.items-end.justify-between.gap-3
+  div
+    h1 class=kb_page_title プロンプトスキル
+    p.mt-1.text-sm.kb-text-secondary llama.cpp に渡す system prompt を管理します。
+  = link_to "新しいスキル", new_prompt_skill_path, class: kb_btn_primary_sm
 
 - if @prompt_skills.any?
-  section.card-list.skill-list
+  section.nyoy-card-list
     - @prompt_skills.each do |skill|
-      article.card
-        .card-header
-          h2 = link_to skill.name, skill
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+          h2.text-base.font-semibold
+            = link_to skill.name, skill, class: "kb-text-primary no-underline"
           - if skill.default?
-            span.badge default
-        p.prompt = truncate(skill.body, length: 120)
-        .actions
-          = link_to "編集", edit_prompt_skill_path(skill)
+            span.kb-badge.kb-badge-muted default
+        p.text-sm.kb-text-secondary = truncate(skill.body, length: 120)
+        .flex.flex-wrap.items-center.gap-3.mt-3
+          = link_to "編集", edit_prompt_skill_path(skill), class: "kb-chrome-link text-sm"
 - else
-  p.empty スキルが未登録です。
+  p.text-sm.kb-text-muted スキルが未登録です。

@@ -2,6 +2,7 @@
 
 class PromptSkill < ApplicationRecord
   has_many :memo_illustrations, dependent: :restrict_with_error
+  has_many :generation_presets, dependent: :nullify
 
   validates :name, presence: true
   validates :body, presence: true

@@ -1,0 +1,29 @@
+.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
+  div
+    h1.text-xl.font-semibold.kb-text-primary = @generation_preset.name
+    - if @generation_preset.default?
+      span.kb-badge.kb-badge-muted.mt-2 default
+
+.kb-card.p-4
+  dl.nyoy-settings-list
+    dt SD モデル
+    dd = @generation_preset.sd_model
+    dt サイズ
+    dd = "#{@generation_preset.width}×#{@generation_preset.height}"
+    dt Steps / CFG
+    dd = "#{@generation_preset.steps} / #{@generation_preset.cfg_scale}"
+    dt Sampler
+    dd = @generation_preset.sampler_name
+    dt VAE Tiling
+    dd = @generation_preset.vae_tiling ? "ON" : "OFF"
+    - if @generation_preset.prompt_skill
+      dt プロンプトスキル
+      dd = link_to @generation_preset.prompt_skill.name, @generation_preset.prompt_skill, class: "kb-chrome-link"
+    - @generation_preset.loras_array.each do |entry|
+      dt LoRA
+      dd = "#{entry['name'] || entry['path']} (weight #{entry['multiplier']})"
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_generation_preset_path(@generation_preset), class: kb_btn_primary_sm
+  = link_to "この設定で生成", new_image_generation_path(generation_preset_id: @generation_preset.id), class: kb_btn_secondary_sm
+  = link_to "一覧へ", generation_presets_path, class: "kb-chrome-link text-sm"

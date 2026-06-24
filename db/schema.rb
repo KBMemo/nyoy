@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -39,20 +39,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "generation_presets", force: :cascade do |t|
+    t.float "cfg_scale", default: 6.0, null: false
+    t.datetime "created_at", null: false
+    t.boolean "default", default: false, null: false
+    t.integer "height", default: 768, null: false
+    t.text "loras", default: "[]", null: false
+    t.string "name", null: false
+    t.integer "prompt_skill_id"
+    t.string "sampler_name", default: "euler_a", null: false
+    t.string "sd_model", null: false
+    t.integer "steps", default: 22, null: false
+    t.datetime "updated_at", null: false
+    t.boolean "vae_tiling", default: true, null: false
+    t.integer "width", default: 768, null: false
+    t.index ["default"], name: "index_generation_presets_on_default"
+    t.index ["prompt_skill_id"], name: "index_generation_presets_on_prompt_skill_id"
+  end
+
   create_table "image_generations", force: :cascade do |t|
     t.float "cfg_scale", default: 7.0, null: false
     t.datetime "created_at", null: false
     t.text "error_message"
+    t.datetime "finished_at"
+    t.integer "generation_preset_id"
     t.integer "height", default: 512, null: false
     t.text "japanese_prompt", null: false
+    t.text "loras", default: "[]", null: false
     t.text "negative_prompt"
     t.text "prompt"
+    t.integer "prompt_skill_id"
+    t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model", null: false
     t.integer "seed"
+    t.datetime "started_at"
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
     t.datetime "updated_at", null: false
+    t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
+    t.index ["generation_preset_id"], name: "index_image_generations_on_generation_preset_id"
+    t.index ["prompt_skill_id"], name: "index_image_generations_on_prompt_skill_id"
   end
 
   create_table "memo_illustrations", force: :cascade do |t|
@@ -60,6 +87,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
     t.float "cfg_scale", default: 7.0, null: false
     t.datetime "created_at", null: false
     t.text "error_message"
+    t.datetime "finished_at"
     t.integer "height", default: 512, null: false
     t.text "llama_raw_response"
     t.text "negative_prompt"
@@ -67,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
     t.integer "prompt_skill_id", null: false
     t.string "sd_model", null: false
     t.integer "seed"
+    t.datetime "started_at"
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
     t.datetime "updated_at", null: false
@@ -85,5 +114,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_102244) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "generation_presets", "prompt_skills"
+  add_foreign_key "image_generations", "generation_presets"
+  add_foreign_key "image_generations", "prompt_skills"
   add_foreign_key "memo_illustrations", "prompt_skills"
 end

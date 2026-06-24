@@ -1,25 +1,33 @@
 doctype html
-html
+html lang="ja"
   head
     title = content_for(:title) || "Nyoy"
     meta name="viewport" content="width=device-width,initial-scale=1"
+    meta name="color-scheme" content="light dark"
     meta name="apple-mobile-web-app-capable" content="yes"
     meta name="application-name" content="Nyoy"
     meta name="mobile-web-app-capable" content="yes"
     = csrf_meta_tags
     = csp_meta_tag
+    = action_cable_meta_tag
     = yield :head
     link rel="icon" href="/icon.png" type="image/png"
     link rel="icon" href="/icon.svg" type="image/svg+xml"
     link rel="apple-touch-icon" href="/icon.png"
     = vite_client_tag
     = vite_javascript_tag "application"
-    = vite_stylesheet_tag "application"
-  body
-    main
-      = render "shared/navigation"
-      - if flash[:notice].present?
-        p.flash.notice = flash[:notice]
-      - if flash[:alert].present?
-        p.flash.alert = flash[:alert]
+  body.kb-chrome-body.min-h-screen data-controller="flash-notice"
+    a.kb-skip-link href="#main-content" 本文へスキップ
+    header.kb-chrome-header
+      nav.mx-auto.flex.w-full.flex-wrap.items-center.justify-between.gap-3.px-4.py-3 class=content_max_width_class
+        = link_to root_path, class: "kb-chrome-brand" do
+          img.kb-chrome-brand-icon src="/icon.svg" alt="" width="28" height="28"
+          span Nyoy
+        .flex.flex-wrap.items-center.gap-x-4.gap-y-2.text-sm
+          = link_to "メモイラスト", root_path, class: kb_chrome_link_class("memo_illustrations")
+          = link_to "スキル", prompt_skills_path, class: kb_chrome_link_class("prompt_skills")
+          = link_to "生成プリセット", generation_presets_path, class: kb_chrome_link_class("generation_presets")
+          = link_to "画像生成 (旧)", image_generations_path, class: kb_chrome_link_class("image_generations")
+    main#main-content.mx-auto.w-full.px-4.py-8 tabindex="-1" class=content_max_width_class
       = yield
+    = render "shared/flash_toasts"

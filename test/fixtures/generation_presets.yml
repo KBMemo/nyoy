@@ -1,0 +1,25 @@
+chojugiga:
+  name: 鳥獣戯画 (Illustrious + ChojuGiga)
+  sd_model: pony-v6
+  width: 768
+  height: 768
+  steps: 22
+  cfg_scale: 6.0
+  sampler_name: euler_a
+  vae_tiling: true
+  loras: '[{"name":"ChojuGiga_Illustrious","path":"chojugiga/ChojuGiga_Illustrious.safetensors","multiplier":0.8}]'
+  default: true
+  prompt_skill: default
+
+flat:
+  name: flat2d default
+  sd_model: flat2d
+  width: 512
+  height: 512
+  steps: 20
+  cfg_scale: 7.0
+  sampler_name: euler_a
+  vae_tiling: false
+  loras: "[]"
+  default: false
+  prompt_skill: default

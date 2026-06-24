@@ -1,15 +1,12 @@
-h1 = @prompt_skill.name
+.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
+  div
+    h1.text-xl.font-semibold.kb-text-primary = @prompt_skill.name
+    - if @prompt_skill.default?
+      span.kb-badge.kb-badge-muted.mt-2 default
 
-p.meta
-  - if @prompt_skill.default?
-    span.badge default
-  | 更新: #{l(@prompt_skill.updated_at, format: :long)}
+.kb-card.p-4
+  pre.nyoy-monospace = @prompt_skill.body
 
-section.card.detail
-  h2 スキル本文
-  pre.skill-body = @prompt_skill.body
-
-.actions
-  = link_to "編集", edit_prompt_skill_path(@prompt_skill), class: "button"
-  = link_to "一覧へ", prompt_skills_path
-  = button_to "削除", @prompt_skill, method: :delete, data: { turbo_confirm: "削除しますか？" }
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_prompt_skill_path(@prompt_skill), class: kb_btn_primary_sm
+  = link_to "一覧へ", prompt_skills_path, class: "kb-chrome-link text-sm"

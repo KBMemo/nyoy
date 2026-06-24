@@ -5,30 +5,32 @@ class GenerateImageJob < ApplicationJob
 
   def perform(image_generation_id)
     generation = ImageGeneration.find(image_generation_id)
+    generation.update!(started_at: Time.current, status: "preparing")
 
     switch_model(generation)
     translate_prompt(generation)
     generate_image(generation)
 
-    generation.update!(status: "completed")
+    generation.update!(status: "completed", finished_at: Time.current)
   rescue StandardError => e
-    generation&.update!(status: "failed", error_message: e.message)
+    generation&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
     raise
   end
 
   private
 
   def switch_model(generation)
-    generation.update!(status: "preparing")
-
     switch = SdModelSwitcher.new
-    switch.switch(generation.sd_model)
+    switch.switch(generation.sd_model, lora: generation.switch_lora_name)
   end
 
   def translate_prompt(generation)
     generation.update!(status: "translating")
 
-    prompt = SdPromptTranslator.new.translate(generation.japanese_prompt)
+    prompt = SdPromptTranslator.new.translate(
+      generation.japanese_prompt,
+      skill: generation.prompt_skill
+    )
     generation.update!(prompt: prompt)
   end
 
@@ -42,7 +44,10 @@ class GenerateImageJob < ApplicationJob
       height: generation.height,
       steps: generation.steps,
       cfg_scale: generation.cfg_scale,
-      seed: generation.seed || -1
+      seed: generation.seed || -1,
+      sampler_name: generation.sampler_name,
+      vae_tiling: generation.vae_tiling,
+      lora: generation.loras_for_api
     )
 
     generation.image.attach(

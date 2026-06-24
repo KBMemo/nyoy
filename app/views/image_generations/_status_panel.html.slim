@@ -1,0 +1,62 @@
+= turbo_frame_tag dom_id(image_generation, :status) do
+  div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
+    div
+      h1 class=kb_page_title 生成結果
+      p.mt-1.text-sm.kb-text-secondary
+        span class="nyoy-status nyoy-status-#{image_generation.status}" = image_generation.status_label
+        |  · #{image_generation.sd_model}
+        - if image_generation.generation_preset
+          |  · #{image_generation.generation_preset.name}
+        - if image_generation.started_at
+          |  ·
+          span data-controller="generation-timer" data-generation-timer-started-at-value=image_generation.started_at.iso8601 data-generation-timer-finished-at-value=(image_generation.finished_at&.iso8601) data-generation-timer-active-value=image_generation.in_progress?
+            - if image_generation.in_progress?
+              |  経過:
+            - else
+              |  生成時間:
+            span data-generation-timer-target="elapsed" = nyoy_format_duration(image_generation.generation_elapsed_seconds)
+
+  .kb-card.p-4
+    h2 class=kb_section_title 日本語プロンプト
+    p.mt-2.text-sm.kb-text-secondary = simple_format(image_generation.japanese_prompt)
+
+    - if image_generation.prompt.present?
+      h2.mt-6 class=kb_section_title SD プロンプト (英語)
+      p.mt-2.text-sm.nyoy-monospace = image_generation.prompt
+
+    - if image_generation.negative_prompt.present?
+      h2.mt-6 class=kb_section_title ネガティブプロンプト
+      p.mt-2.text-sm.nyoy-monospace = image_generation.negative_prompt
+
+    h2.mt-6 class=kb_section_title 生成設定
+    dl.mt-2.nyoy-settings-list
+      dt サイズ
+      dd = "#{image_generation.width}×#{image_generation.height}"
+      dt Steps / CFG
+      dd = "#{image_generation.steps} / #{image_generation.cfg_scale}"
+      dt Sampler
+      dd = image_generation.sampler_name
+      dt VAE Tiling
+      dd = image_generation.vae_tiling ? "ON" : "OFF"
+      - if image_generation.prompt_skill
+        dt プロンプトスキル
+        dd = image_generation.prompt_skill.name
+      - image_generation.loras_array.each do |entry|
+        dt LoRA
+        dd = "#{entry['name'] || entry['path']} (#{entry['multiplier']})"
+
+    - if image_generation.error_message.present?
+      .kb-alert.kb-alert-danger.mt-4
+        p = image_generation.error_message
+
+    - if image_generation.in_progress?
+      p.mt-4.text-sm.kb-text-muted 生成中です… 状態は自動更新されます。
+
+    - if image_generation.image.attached?
+      figure.nyoy-result-image.mt-4
+        = image_tag image_generation.image, alt: image_generation.japanese_prompt, loading: "lazy"
+
+  .flex.flex-wrap.items-center.gap-3.mt-6
+    = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm
+    = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm
+    = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm"

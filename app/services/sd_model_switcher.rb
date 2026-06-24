@@ -6,10 +6,10 @@ class SdModelSwitcher
     @client = client
   end
 
-  def switch(model)
+  def switch(model, lora: nil)
     return false unless @client.configured?
 
-    lora = @catalog.default_lora_for(model)
+    lora = lora.presence || @catalog.default_lora_for(model)
     @client.switch(model, lora: lora)
     true
   end

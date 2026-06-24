@@ -12,9 +12,40 @@ class SdCppClient
     @base_url = base_url.sub(%r{/\z}, "")
   end
 
-  def txt2img(prompt:, negative_prompt: "", width: 512, height: 512, steps: 20, cfg_scale: 7.0, seed: -1)
-    json = post_json(
-      "/sdapi/v1/txt2img",
+  def get_json(path)
+    uri = URI("#{@base_url}#{path}")
+    req = Net::HTTP::Get.new(uri)
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.open_timeout = 5
+    http.read_timeout = 30
+
+    res = http.request(req)
+    body = res.body.to_s
+    json = JSON.parse(body)
+
+    unless res.is_a?(Net::HTTPSuccess)
+      raise Error, json["error"] || body
+    end
+
+    json
+  rescue JSON::ParserError
+    raise Error, body.presence || "invalid response from sd-server"
+  end
+
+  def txt2img(
+    prompt:,
+    negative_prompt: "",
+    width: 512,
+    height: 512,
+    steps: 20,
+    cfg_scale: 7.0,
+    seed: -1,
+    sampler_name: nil,
+    vae_tiling: nil,
+    lora: []
+  )
+    payload = {
       prompt: prompt,
       negative_prompt: negative_prompt,
       width: width,
@@ -22,7 +53,12 @@ class SdCppClient
       steps: steps,
       cfg_scale: cfg_scale,
       seed: seed
-    )
+    }
+    payload[:sampler_name] = sampler_name if sampler_name.present?
+    payload[:vae_tiling] = vae_tiling unless vae_tiling.nil?
+    payload[:loras] = lora if lora.present?
+
+    json = post_json("/sdapi/v1/txt2img", payload)
 
     image_b64 = json.fetch("images", []).first
     raise Error, "no image returned" if image_b64.blank?

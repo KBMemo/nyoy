@@ -1,43 +1,38 @@
-h1 画像を生成
+- content_for :title, "画像を生成"
+
+.mb-6
+  h1 class=kb_page_title 画像を生成
 
 = render "shared/sd_catalog_status"
 
-= form_with model: @image_generation, class: "form" do |form|
+= form_with model: @image_generation, class: "space-y-4" do |form|
   - if @image_generation.errors.any?
-    .errors
-      ul
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
         - @image_generation.errors.full_messages.each do |message|
           li = message
 
-  .field
-    = form.label :japanese_prompt, "日本語プロンプト"
-    = form.text_area :japanese_prompt, rows: 4, required: true, placeholder: "例: 青い髪の少女、桜の背景、春の午後"
+  div
+    = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
+    = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている"
 
-  .field
-    = form.label :negative_prompt, "ネガティブプロンプト (任意)"
-    = form.text_area :negative_prompt, rows: 2, placeholder: "low quality, blurry"
+  div
+    = form.label :negative_prompt, "ネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
+    = form.text_area :negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry"
 
-  .field
-    = form.label :sd_model, "SD モデル"
-    = form.select :sd_model, @sd_models, {}, required: true, disabled: @sd_models.empty?
+  = render "shared/generation_settings_fields",
+    form_object: @image_generation,
+    form_builder: form,
+    generation_presets: @generation_presets,
+    prompt_skills: @prompt_skills,
+    sd_models: @sd_models,
+    sd_loras: @sd_loras,
+    sd_samplers: @sd_samplers,
+    lora_catalog_error: @lora_catalog_error,
+    show_preset_select: true,
+    show_seed: true
 
-  .field-grid
-    .field
-      = form.label :width, "幅"
-      = form.number_field :width, min: 64, max: 2048, step: 64
-    .field
-      = form.label :height, "高さ"
-      = form.number_field :height, min: 64, max: 2048, step: 64
-    .field
-      = form.label :steps, "Steps"
-      = form.number_field :steps, min: 1, max: 150
-    .field
-      = form.label :cfg_scale, "CFG Scale"
-      = form.number_field :cfg_scale, min: 1, max: 30, step: 0.5
-    .field
-      = form.label :seed, "Seed (空欄でランダム)"
-      = form.number_field :seed, min: -1
-
-  .actions
-    = form.submit "生成する", class: "button", disabled: @sd_models.empty?
-    = link_to "戻る", root_path
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @sd_models.empty?
+    = link_to "プリセット管理", generation_presets_path, class: "kb-chrome-link text-sm"
+    = link_to "戻る", image_generations_path, class: "kb-chrome-link text-sm"

@@ -1,30 +1,33 @@
-h1 イラストを生成
-p.lead メモや文章だけ入力してください。プロンプトと生成パラメータは自動で決定します。
+- content_for :title, "イラストを生成"
+
+.mb-6
+  h1 class=kb_page_title イラストを生成
+  p.mt-1.text-sm.kb-text-secondary メモや文章だけ入力してください。プロンプトと生成パラメータは自動で決定します。
 
 = render "shared/sd_catalog_status"
 
-= form_with model: @memo_illustration, class: "form" do |form|
+= form_with model: @memo_illustration, class: "space-y-4 max-w-xl" do |form|
   - if @memo_illustration.errors.any?
-    .errors
-      ul
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
         - @memo_illustration.errors.full_messages.each do |message|
           li = message
 
-  .field
-    = form.label :body, "文章"
-    = form.text_area :body, rows: 8, required: true, placeholder: "例: 今日の打ち合わせメモ。窓際のカフェでノートPCを開き、コーヒーを飲みながら考え込んでいる。落ち着いた雰囲気。"
+  div
+    = form.label :body, "文章", class: "#{kb_label} mb-1"
+    = form.text_area :body, rows: 8, required: true, class: kb_field_input_classes, placeholder: "例: 今日の打ち合わせメモ。窓際のカフェでノートPCを開き、コーヒーを飲みながら考え込んでいる。落ち着いた雰囲気。"
 
   - if @prompt_skills.any?
-    .field
-      = form.label :prompt_skill_id, "プロンプトスキル"
-      = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { selected: @prompt_skills.find(&:default?)&.id || @prompt_skills.first.id }, { required: true }
+    div
+      = form.label :prompt_skill_id, "プロンプトスキル", class: "#{kb_label} mb-1"
+      = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { selected: @prompt_skills.find(&:default?)&.id || @prompt_skills.first.id }, { required: true, class: kb_field_input_classes }
   - else
-    .errors
+    .kb-alert.kb-alert-warning
       p
         | プロンプトスキルが未登録です。
-        = link_to "スキルを作成", new_prompt_skill_path
+        = link_to "スキルを作成", new_prompt_skill_path, class: "kb-chrome-link"
         | してください。
 
-  .actions
-    = form.submit "生成する", class: "button", disabled: @prompt_skills.empty? || @catalog_error.present? || @sd_models.empty?
-    = link_to "戻る", root_path
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @prompt_skills.empty? || @catalog_error.present? || @sd_models.empty?
+    = link_to "戻る", root_path, class: "kb-chrome-link text-sm"

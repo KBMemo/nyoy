@@ -25,6 +25,33 @@ class LlamaCppClient
     )
   end
 
+  def message_text(response)
+    self.class.message_text(response)
+  end
+
+  def self.message_text(response)
+    message = response.dig("choices", 0, "message") || {}
+    content = message["content"].to_s.strip
+    return content if content.present?
+
+    reasoning = message["reasoning_content"].to_s.strip
+    return "" if reasoning.blank?
+
+    extract_text_from_reasoning(reasoning)
+  end
+
+  def self.extract_text_from_reasoning(reasoning)
+    if (match = reasoning.match(/["']([^"'\n]{3,})["']/))
+      return match[1].strip
+    end
+
+    reasoning.lines.map(&:strip).reject do |line|
+      line.empty? ||
+        line.start_with?("*", "-", "#") ||
+        line.match?(/\A(Input|Task|Translation|Constraint|Output|Standard|More descriptive):/i)
+    end.last.to_s
+  end
+
   private
 
   def post_json(path, payload)

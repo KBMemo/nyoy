@@ -1,0 +1,37 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= render "shared/sd_catalog_status"
+
+= form_with model: generation_preset, class: "space-y-4" do |form|
+  - if generation_preset.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - generation_preset.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :name, "名前", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
+
+  = render "shared/generation_settings_fields",
+    form_object: generation_preset,
+    form_builder: form,
+    generation_presets: [],
+    prompt_skills: @prompt_skills,
+    sd_models: @sd_models,
+    sd_loras: @sd_loras,
+    sd_samplers: @sd_samplers,
+    lora_catalog_error: @lora_catalog_error,
+    show_preset_select: false,
+    require_prompt_skill: false
+
+  label.flex.items-center.gap-2.text-sm
+    = form.check_box :default, class: "kb-control-accent"
+    span デフォルトプリセットにする
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit class: kb_btn_primary_sm, disabled: @sd_models.empty?
+    = link_to "キャンセル", generation_presets_path, class: "kb-chrome-link text-sm"
