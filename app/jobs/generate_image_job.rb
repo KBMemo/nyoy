@@ -21,9 +21,7 @@ class GenerateImageJob < ApplicationJob
   def switch_model(generation)
     generation.update!(status: "preparing")
 
-    switch = SdCppSwitchClient.new
-    return unless switch.configured?
-
+    switch = SdModelSwitcher.new
     switch.switch(generation.sd_model)
   end
 

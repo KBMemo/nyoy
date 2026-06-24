@@ -21,9 +21,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
   def switch_model(illustration)
     illustration.update!(status: "preparing")
 
-    switch = SdCppSwitchClient.new
-    return unless switch.configured?
-
+    switch = SdModelSwitcher.new
     switch.switch(illustration.sd_model)
   end
 

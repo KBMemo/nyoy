@@ -92,4 +92,59 @@ class SdPromptPlannerTest < ActiveSupport::TestCase
 
     assert_equal "1girl", plan[:positive]
   end
+
+  test "salvages truncated json when positive prompt is cut off" do
+    client = FakeClient.new(
+      response: {
+        "choices" => [
+          {
+            "finish_reason" => "length",
+            "message" => {
+              "content" => <<~CONTENT
+                ```json
+                {
+                  "positive": "masterpiece, best quality, 1girl, cafe interior",
+                  "negative": "worst quality, low quality",
+                  "width": 768,
+                  "height": 512,
+                  "steps": 24,
+                  "cfg_scale": 8.5,
+                  "seed": 42
+              CONTENT
+            }
+          }
+        ]
+      }
+    )
+
+    skill = PromptSkill.new(body: "system")
+    plan = SdPromptPlanner.new(client: client).plan(body: "カフェ", skill: skill)
+
+    assert_equal "masterpiece, best quality, 1girl, cafe interior", plan[:positive]
+    assert_equal "worst quality, low quality", plan[:negative]
+    assert_equal 768, plan[:width]
+    assert_equal 512, plan[:height]
+  end
+
+  test "requests max_tokens 4096" do
+    calls = []
+    client = Object.new
+    client.define_singleton_method(:chat) do |messages:, temperature:, max_tokens:|
+      calls << max_tokens
+      {
+        "choices" => [
+          {
+            "message" => {
+              "content" => "{\"positive\":\"prompt\",\"negative\":\"low quality\"}"
+            }
+          }
+        ]
+      }
+    end
+
+    skill = PromptSkill.new(body: "system")
+    SdPromptPlanner.new(client: client).plan(body: "test", skill: skill)
+
+    assert_equal [4096], calls
+  end
 end

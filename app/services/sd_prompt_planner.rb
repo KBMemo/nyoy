@@ -11,6 +11,8 @@ class SdPromptPlanner
     seed: -1
   }.freeze
 
+  MAX_TOKENS = 4096
+
   def initialize(client: LlamaCppClient.new)
     @client = client
   end
@@ -21,17 +23,22 @@ class SdPromptPlanner
         { role: "system", content: skill.body },
         { role: "user", content: body }
       ],
-      temperature: 0.3,
-      max_tokens: 1024
+      temperature: 0.2,
+      max_tokens: MAX_TOKENS
     )
 
-    content = response.dig("choices", 0, "message", "content").to_s
+    content = message_content(response)
     raise Error, "empty response from llama" if content.blank?
 
     parse_plan(content)
   end
 
   private
+
+  def message_content(response)
+    message = response.dig("choices", 0, "message") || {}
+    message["content"].presence || message["reasoning_content"].to_s
+  end
 
   def parse_plan(content)
     json = extract_json(content)
@@ -53,6 +60,18 @@ class SdPromptPlanner
   end
 
   def extract_json(content)
+    json_text = normalize_json_text(content)
+    raise Error, "no JSON object found in llama response" if json_text.blank?
+
+    JSON.parse(json_text)
+  rescue JSON::ParserError
+    salvaged = salvage_json(json_text)
+    raise Error, "invalid JSON from llama" if salvaged.blank? || salvaged["positive"].blank?
+
+    salvaged
+  end
+
+  def normalize_json_text(content)
     text = content.to_s.strip
 
     if text.include?("```")
@@ -61,13 +80,54 @@ class SdPromptPlanner
     end
 
     text = text.strip
-    json_text = text.start_with?("{") ? text : text[/(\{.*\})/ms]
+    text.start_with?("{") ? text : text[/(\{.*)/ms]
+  end
 
-    raise Error, "no JSON object found in llama response" if json_text.blank?
+  def salvage_json(text)
+    result = {}
 
-    JSON.parse(json_text)
-  rescue JSON::ParserError => e
-    raise Error, "invalid JSON from llama: #{e.message}"
+    %w[positive negative].each do |key|
+      value = extract_string_field(text, key)
+      result[key] = value if value.present?
+    end
+
+    {
+      "width" => "integer",
+      "height" => "integer",
+      "steps" => "integer",
+      "seed" => "integer"
+    }.each do |key, type|
+      next unless (match = text.match(/"#{key}"\s*:\s*(-?\d+(?:\.\d+)?)/))
+
+      result[key] = type == "integer" ? match[1].to_i : match[1]
+    end
+
+    if (match = text.match(/"cfg_scale"\s*:\s*(-?\d+(?:\.\d+)?)/))
+      result["cfg_scale"] = match[1].to_f
+    end
+
+    result.presence
+  end
+
+  def extract_string_field(text, key)
+    patterns = [
+      /"#{key}"\s*:\s*"((?:\\.|[^"\\])*)"/m,
+      /"#{key}"\s*:\s*"((?:\\.|[^"\\])*)/m
+    ]
+
+    patterns.each do |pattern|
+      next unless (match = text.match(pattern))
+
+      return unescape_json_string(match[1])
+    end
+
+    nil
+  end
+
+  def unescape_json_string(value)
+    JSON.parse(%("#{value}"))
+  rescue JSON::ParserError
+    value.gsub('\\"', '"').gsub("\\\\", "\\")
   end
 
   def integer_param(json, key, fallback)

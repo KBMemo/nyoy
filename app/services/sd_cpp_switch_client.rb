@@ -31,12 +31,16 @@ class SdCppSwitchClient
     get_json("/v1/status")
   end
 
-  def switch(model)
-    post_json("/v1/switch", model: model)
+  def switch(model, lora: nil)
+    payload = { model: model }
+    payload[:lora] = lora if lora.present?
+    post_json("/v1/switch", payload)
   end
 
-  def restart(model)
-    post_json("/v1/restart", model: model)
+  def restart(model, lora: nil)
+    payload = { model: model }
+    payload[:lora] = lora if lora.present?
+    post_json("/v1/restart", payload)
   end
 
   def stop
