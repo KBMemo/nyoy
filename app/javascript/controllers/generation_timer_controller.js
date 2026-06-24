@@ -9,14 +9,39 @@ export default class extends Controller {
   }
 
   connect() {
+    this.startTimer()
+  }
+
+  disconnect() {
+    this.stopTimer()
+  }
+
+  startedAtValueChanged() {
     this.render()
+  }
+
+  finishedAtValueChanged() {
+    this.render()
+  }
+
+  activeValueChanged() {
+    this.startTimer()
+  }
+
+  startTimer() {
+    this.render()
+    this.stopTimer()
+
     if (this.activeValue) {
       this.timer = window.setInterval(() => this.render(), 1000)
     }
   }
 
-  disconnect() {
-    if (this.timer) window.clearInterval(this.timer)
+  stopTimer() {
+    if (!this.timer) return
+
+    window.clearInterval(this.timer)
+    this.timer = null
   }
 
   render() {
@@ -25,10 +50,17 @@ export default class extends Controller {
     const started = Date.parse(this.startedAtValue)
     if (Number.isNaN(started)) return
 
-    const finished = this.activeValue ? Date.now() : Date.parse(this.finishedAtValue)
-    const end = Number.isNaN(finished) ? Date.now() : finished
-    const seconds = Math.max(0, (end - started) / 1000)
+    let end
+    if (this.activeValue) {
+      end = Date.now()
+    } else {
+      if (!this.finishedAtValue) return
 
+      end = Date.parse(this.finishedAtValue)
+      if (Number.isNaN(end)) return
+    }
+
+    const seconds = Math.max(0, (end - started) / 1000)
     this.elapsedTarget.textContent = this.formatDuration(seconds)
   }
 

@@ -44,7 +44,23 @@ class GenerationProgressBroadcastableTest < ActiveSupport::TestCase
       image_started_at: 10.seconds.ago
     )
 
+    assert_not generation.prompt_phase_active?
     assert generation.image_phase_active?
     assert_in_delta 10.0, generation.image_elapsed_seconds, 0.5
+    assert_in_delta 10.0, generation.prompt_elapsed_seconds, 0.5
+  end
+
+  test "prompt phase is inactive after prompt_finished_at is set" do
+    generation = ImageGeneration.new(
+      japanese_prompt: "test",
+      sd_model: "flat2d",
+      loras: "[]",
+      status: "translating",
+      prompt_started_at: 10.seconds.ago,
+      prompt_finished_at: 5.seconds.ago
+    )
+
+    assert_not generation.prompt_phase_active?
+    assert_in_delta 5.0, generation.prompt_elapsed_seconds, 0.5
   end
 end

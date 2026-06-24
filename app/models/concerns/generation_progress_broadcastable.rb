@@ -17,7 +17,7 @@ module GenerationProgressBroadcastable
   end
 
   def prompt_phase_active?
-    in_progress? && status.in?(%w[translating planning])
+    in_progress? && status.in?(%w[translating planning]) && prompt_finished_at.nil?
   end
 
   def image_phase_active?
