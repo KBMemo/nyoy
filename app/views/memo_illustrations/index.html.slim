@@ -1,0 +1,19 @@
+h1 メモイラスト
+p.lead メモや文章から、キーワードを抽出してイラストを生成します。
+
+= render "shared/sd_catalog_status"
+
+p = link_to "新しいイラストを生成", new_memo_illustration_path, class: "button"
+
+- if @memo_illustrations.any?
+  section.card-list
+    - @memo_illustrations.each do |illustration|
+      = link_to memo_illustration_path(illustration), class: "card" do
+        .card-header
+          span class="status status-#{illustration.status}" = illustration.status
+          span.model = illustration.sd_model
+        p.prompt = truncate(illustration.body, length: 80)
+        - if illustration.image.attached?
+          = image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
+- else
+  p.empty まだ生成履歴がありません。

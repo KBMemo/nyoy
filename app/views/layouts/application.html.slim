@@ -1,0 +1,25 @@
+doctype html
+html
+  head
+    title = content_for(:title) || "Nyoy"
+    meta name="viewport" content="width=device-width,initial-scale=1"
+    meta name="apple-mobile-web-app-capable" content="yes"
+    meta name="application-name" content="Nyoy"
+    meta name="mobile-web-app-capable" content="yes"
+    = csrf_meta_tags
+    = csp_meta_tag
+    = yield :head
+    link rel="icon" href="/icon.png" type="image/png"
+    link rel="icon" href="/icon.svg" type="image/svg+xml"
+    link rel="apple-touch-icon" href="/icon.png"
+    = vite_client_tag
+    = vite_javascript_tag "application"
+    = vite_stylesheet_tag "application"
+  body
+    main
+      = render "shared/navigation"
+      - if flash[:notice].present?
+        p.flash.notice = flash[:notice]
+      - if flash[:alert].present?
+        p.flash.alert = flash[:alert]
+      = yield

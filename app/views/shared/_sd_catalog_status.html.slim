@@ -1,0 +1,11 @@
+p.meta.sd-catalog-status
+  - if @catalog_error.present?
+    span.catalog-error SD モデル一覧を取得できません: #{@catalog_error}
+  - else
+    - if @current_sd_model.present?
+      | 現在の SD モデル: 
+      strong = @current_sd_model
+    - if @sd_models.present?
+      - if @current_sd_model.present?
+        |  · 
+      | 利用可能: #{@sd_models.join(", ")}

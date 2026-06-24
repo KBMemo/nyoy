@@ -1,0 +1,45 @@
+- if @memo_illustration.in_progress?
+  - content_for :head do
+    meta http-equiv="refresh" content="3"
+
+h1 生成結果
+
+p.meta
+  span class="status status-#{@memo_illustration.status}" = @memo_illustration.status
+  |  · #{@memo_illustration.sd_model}
+  |  · スキル: #{@memo_illustration.prompt_skill.name}
+
+section.card.detail
+  h2 入力した文章
+  p = simple_format(@memo_illustration.body)
+
+  - if @memo_illustration.positive_prompt.present?
+    h2 Positive Prompt
+    p = simple_format(@memo_illustration.positive_prompt)
+
+  - if @memo_illustration.negative_prompt.present?
+    h2 Negative Prompt
+    p = simple_format(@memo_illustration.negative_prompt)
+
+  - if @memo_illustration.positive_prompt.present?
+    h2 生成パラメータ
+    p.meta
+      | #{@memo_illustration.width}×#{@memo_illustration.height}
+      |  · steps #{@memo_illustration.steps}
+      |  · CFG #{@memo_illustration.cfg_scale}
+      |  · seed #{@memo_illustration.seed || "random"}
+
+  - if @memo_illustration.error_message.present?
+    .errors
+      p = @memo_illustration.error_message
+
+  - if @memo_illustration.in_progress?
+    p.loading 生成中です… このページは自動更新されます。
+
+  - if @memo_illustration.image.attached?
+    figure.result-image
+      = image_tag @memo_illustration.image, alt: @memo_illustration.body
+
+p
+  = link_to "新しいイラストを生成", new_memo_illustration_path, class: "button"
+  = link_to "一覧へ", root_path

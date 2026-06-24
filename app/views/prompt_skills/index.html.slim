@@ -1,0 +1,18 @@
+h1 プロンプトスキル
+p.lead llama.cpp に渡す system prompt を管理します。
+
+p = link_to "新しいスキル", new_prompt_skill_path, class: "button"
+
+- if @prompt_skills.any?
+  section.card-list.skill-list
+    - @prompt_skills.each do |skill|
+      article.card
+        .card-header
+          h2 = link_to skill.name, skill
+          - if skill.default?
+            span.badge default
+        p.prompt = truncate(skill.body, length: 120)
+        .actions
+          = link_to "編集", edit_prompt_skill_path(skill)
+- else
+  p.empty スキルが未登録です。

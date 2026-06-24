@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class MemoIllustrationsController < ApplicationController
+  include SdCatalogLoadable
+
   before_action :set_memo_illustration, only: :show
-  before_action :load_catalog, only: %i[index new create]
+  before_action :load_sd_catalog, only: %i[index new create]
   before_action :load_prompt_skills, only: %i[new create]
 
   def index
     @memo_illustrations = MemoIllustration.recent.limit(20)
-    @current_sd_model = @catalog.current_model
   end
 
   def show
@@ -18,6 +19,17 @@ class MemoIllustrationsController < ApplicationController
   end
 
   def create
+    if @catalog_error.present?
+      redirect_to new_memo_illustration_path, alert: "SD モデル一覧を取得できないため生成できません。"
+      return
+    end
+
+    sd_model = resolve_sd_model
+    if sd_model.blank?
+      redirect_to new_memo_illustration_path, alert: "利用可能な SD モデルがありません。"
+      return
+    end
+
     skill = PromptSkill.find_by(id: memo_illustration_params[:prompt_skill_id]) ||
             PromptSkill.default_for_generation
 
@@ -29,7 +41,7 @@ class MemoIllustrationsController < ApplicationController
     @memo_illustration = MemoIllustration.new(
       body: memo_illustration_params[:body],
       prompt_skill: skill,
-      sd_model: resolve_sd_model
+      sd_model: sd_model
     )
 
     if @memo_illustration.save
@@ -46,18 +58,8 @@ class MemoIllustrationsController < ApplicationController
     @memo_illustration = MemoIllustration.find(params[:id])
   end
 
-  def load_catalog
-    @catalog = SdModelCatalog.new
-  end
-
   def load_prompt_skills
     @prompt_skills = PromptSkill.ordered
-  end
-
-  def resolve_sd_model
-    @catalog.current_model.presence ||
-      Rails.application.config.x.nyoy.default_sd_models.first ||
-      "flat2d"
   end
 
   def memo_illustration_params

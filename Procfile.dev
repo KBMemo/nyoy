@@ -1,0 +1,3 @@
+
+vite: bin/vite dev
+web: env SOLID_QUEUE_IN_PUMA=1 bin/rails s

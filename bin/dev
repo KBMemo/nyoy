@@ -18,6 +18,4 @@ end
 
 load_env_file(File.join(APP_ROOT, "env.development"))
 
-ENV["SOLID_QUEUE_IN_PUMA"] = "1"
-
-exec("./bin/rails", "server", *ARGV, chdir: APP_ROOT)
+exec("bundle", "exec", "foreman", "start", "-f", "Procfile.dev", *ARGV, chdir: APP_ROOT)

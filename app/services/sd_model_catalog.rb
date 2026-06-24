@@ -1,24 +1,31 @@
 # frozen_string_literal: true
 
 class SdModelCatalog
+  class Error < StandardError; end
+  class Unavailable < Error; end
+
   def initialize(switch_client: SdCppSwitchClient.new)
     @switch_client = switch_client
   end
 
+  def configured?
+    @switch_client.configured?
+  end
+
   def model_names
-    if @switch_client.configured?
-      response = @switch_client.models
-      extract_models(response) || default_models
-    else
-      default_models
-    end
+    return fallback_models unless configured?
+
+    response = @switch_client.models
+    names = extract_models(response)
+    raise Unavailable, "switchd returned no models" if names.blank?
+
+    names
   rescue SdCppSwitchClient::Error => e
-    Rails.logger.warn("SdModelCatalog: #{e.message}")
-    default_models
+    raise Unavailable, e.message
   end
 
   def current_model
-    return unless @switch_client.configured?
+    return unless configured?
 
     response = @switch_client.current
     extract_current_model(response)
@@ -37,7 +44,7 @@ class SdModelCatalog
 
   private
 
-  def default_models
+  def fallback_models
     Rails.application.config.x.nyoy.default_sd_models
   end
 

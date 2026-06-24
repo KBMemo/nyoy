@@ -1,0 +1,19 @@
+h1 如意 (Nyoy)
+p.lead ローカル生成AI — 画像生成
+
+= render "shared/sd_catalog_status"
+
+p = link_to "新しい画像を生成", new_image_generation_path, class: "button"
+
+- if @image_generations.any?
+  section.card-list
+    - @image_generations.each do |generation|
+      = link_to image_generation_path(generation), class: "card" do
+        .card-header
+          span class="status status-#{generation.status}" = generation.status
+          span.model = generation.sd_model
+        p.prompt = truncate(generation.japanese_prompt, length: 80)
+        - if generation.image.attached?
+          = image_tag generation.image.variant(resize_to_limit: [256, 256]), alt: generation.japanese_prompt
+- else
+  p.empty まだ生成履歴がありません。

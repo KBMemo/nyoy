@@ -1,0 +1,21 @@
+= form_with model: prompt_skill, class: "form" do |form|
+  - if prompt_skill.errors.any?
+    .errors
+      ul
+        - prompt_skill.errors.full_messages.each do |message|
+          li = message
+
+  .field
+    = form.label :name, "名前"
+    = form.text_field :name, required: true
+
+  .field
+    = form.label :body, "スキル本文 (system prompt)"
+    = form.text_area :body, rows: 24, required: true, class: "monospace"
+
+  .field.checkbox
+    = form.check_box :default
+    = form.label :default, "デフォルトスキルにする"
+
+  .actions
+    = form.submit class: "button"

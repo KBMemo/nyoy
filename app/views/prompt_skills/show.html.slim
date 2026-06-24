@@ -1,0 +1,15 @@
+h1 = @prompt_skill.name
+
+p.meta
+  - if @prompt_skill.default?
+    span.badge default
+  | 更新: #{l(@prompt_skill.updated_at, format: :long)}
+
+section.card.detail
+  h2 スキル本文
+  pre.skill-body = @prompt_skill.body
+
+.actions
+  = link_to "編集", edit_prompt_skill_path(@prompt_skill), class: "button"
+  = link_to "一覧へ", prompt_skills_path
+  = button_to "削除", @prompt_skill, method: :delete, data: { turbo_confirm: "削除しますか？" }

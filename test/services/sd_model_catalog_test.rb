@@ -49,6 +49,29 @@ class SdModelCatalogTest < ActiveSupport::TestCase
     assert_equal "flat2d", catalog.current_model
   end
 
+  test "raises when switchd is configured but models are unavailable" do
+    client = FakeSwitchClient.new(
+      configured: true,
+      models_response: { "ok" => true, "models" => [] },
+      current_response: { "ok" => true, "model" => "flat2d" }
+    )
+
+    catalog = SdModelCatalog.new(switch_client: client)
+
+    assert_raises(SdModelCatalog::Unavailable) do
+      catalog.model_names
+    end
+  end
+
+  test "uses fallback models only when switchd is not configured" do
+    catalog = SdModelCatalog.new(
+      switch_client: FakeSwitchClient.new(configured: false)
+    )
+
+    assert_equal Rails.application.config.x.nyoy.default_sd_models, catalog.model_names
+    assert_not catalog.configured?
+  end
+
   test "returns pony-v6 default lora from config" do
     catalog = SdModelCatalog.new(
       switch_client: FakeSwitchClient.new(configured: false)

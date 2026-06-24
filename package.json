@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "vite": "^8.1.0",
+    "vite-plugin-ruby": "^5.2.2"
+  },
+  "dependencies": {
+    "@hotwired/stimulus": "^3.2.2",
+    "@hotwired/turbo-rails": "^8.0.23",
+    "open-props": "^1.7.23"
+  }
+}
