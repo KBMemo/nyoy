@@ -53,5 +53,7 @@
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    - if image_generation.generation_preset
+      = link_to "プリセットを更新", edit_generation_preset_path(image_generation.generation_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }

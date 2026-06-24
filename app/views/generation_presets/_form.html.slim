@@ -37,5 +37,5 @@
     span デフォルトプリセットにする
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit class: kb_btn_primary_sm, disabled: @sd_models.empty?
+    = form.submit(generation_preset.persisted? ? "更新" : "作成", class: kb_btn_primary_sm, disabled: @sd_models.empty?)
     = link_to "キャンセル", generation_presets_path, class: "kb-chrome-link text-sm"
