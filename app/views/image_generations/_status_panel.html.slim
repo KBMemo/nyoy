@@ -27,6 +27,8 @@
       dd = "#{image_generation.width}×#{image_generation.height}"
       dt Steps / CFG
       dd = "#{image_generation.steps} / #{image_generation.cfg_scale}"
+      dt Seed
+      dd = nyoy_format_seed(image_generation.seed)
       dt Sampler
       dd = image_generation.sampler_name
       dt VAE Tiling

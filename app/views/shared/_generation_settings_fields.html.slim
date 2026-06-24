@@ -7,7 +7,7 @@
 - show_preset_select = local_assigns.fetch(:show_preset_select, false)
 - lora_catalog_error = local_assigns[:lora_catalog_error]
 
-section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=generation_presets_stimulus_data(generation_presets).to_json data-preset-form-loras-value=sd_loras_stimulus_data(sd_loras).to_json
+section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=generation_presets_stimulus_data(generation_presets).to_json data-preset-form-loras-value=sd_loras_stimulus_data(sd_loras).to_json data-preset-form-initial-loras-value=form_object.loras_array.to_json
   - if local_assigns.fetch(:show_negative_prompt, false)
     div
       = form_builder.label :negative_prompt, "ネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
@@ -86,5 +86,5 @@ section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=g
     - else
       p.text-sm.kb-text-muted LoRA が見つかりません。
 
+    = form_builder.hidden_field :loras, data: { preset_form_target: "lorasField" }
     .nyoy-lora-rows data-preset-form-target="loraRows"
-    = hidden_field_tag "#{form_builder.object_name}[loras]", form_object.loras, data: { preset_form_target: "lorasField" }

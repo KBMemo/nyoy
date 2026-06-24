@@ -28,7 +28,7 @@
         dt Steps / CFG
         dd = "#{memo_illustration.steps} / #{memo_illustration.cfg_scale}"
         dt Seed
-        dd = memo_illustration.seed || "random"
+        dd = nyoy_format_seed(memo_illustration.seed)
 
     - if memo_illustration.error_message.present?
       .kb-alert.kb-alert-danger.mt-4

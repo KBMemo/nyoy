@@ -51,6 +51,12 @@ module ApplicationHelper
     end
   end
 
+  def nyoy_format_seed(seed)
+    return "ランダム" if seed.nil? || seed.to_i < 0
+
+    seed.to_s
+  end
+
   def nyoy_blob_image_tag(source, **options)
     path = nyoy_blob_image_path(source)
     return unless path

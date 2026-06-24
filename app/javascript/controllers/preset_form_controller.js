@@ -20,13 +20,27 @@ export default class extends Controller {
 
   static values = {
     presets: Object,
-    loras: Array
+    loras: Array,
+    initialLoras: Array
   }
 
   connect() {
-    const initial = this.parseLorasField()
-    if (initial.length) {
-      this.renderLoras(initial)
+    this.initializeLoras()
+  }
+
+  initializeLoras() {
+    let loras = this.parseLorasField()
+
+    if (!loras.length && this.initialLorasValue.length) {
+      loras = this.initialLorasValue
+    }
+
+    if (!loras.length && this.hasPresetSelectTarget && this.presetSelectTarget.value) {
+      loras = this.presetLoras(this.presetSelectTarget.value)
+    }
+
+    if (loras.length) {
+      this.renderLoras(loras)
     }
   }
 
@@ -37,7 +51,10 @@ export default class extends Controller {
       this.generationPresetIdTarget.value = presetId
     }
 
-    if (!presetId) return
+    if (!presetId) {
+      this.renderLoras([])
+      return
+    }
 
     const preset = this.presetsValue[presetId]
     if (!preset) return
@@ -77,6 +94,7 @@ export default class extends Controller {
     })
 
     this.renderLoras(loras)
+    this.loraCatalogTarget.value = ""
   }
 
   removeLora(event) {
@@ -123,7 +141,13 @@ export default class extends Controller {
     }))
   }
 
+  presetLoras(presetId) {
+    return this.presetsValue[presetId]?.loras || []
+  }
+
   parseLorasField() {
+    if (!this.hasLorasFieldTarget) return []
+
     try {
       return JSON.parse(this.lorasFieldTarget.value || "[]")
     } catch {

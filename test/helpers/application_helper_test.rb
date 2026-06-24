@@ -20,4 +20,10 @@ class ApplicationHelperTest < ActionView::TestCase
     assert path.start_with?("/rails/active_storage/")
     assert_not path.include?("example.org")
   end
+
+  test "nyoy_format_seed shows random label for blank or negative values" do
+    assert_equal "ランダム", nyoy_format_seed(nil)
+    assert_equal "ランダム", nyoy_format_seed(-1)
+    assert_equal "42", nyoy_format_seed(42)
+  end
 end
