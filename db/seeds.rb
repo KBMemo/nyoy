@@ -3,10 +3,14 @@
 require_relative "../lib/prompt_skill_seeds"
 require_relative "../lib/generation_preset_seeds"
 
-PromptSkill.find_or_create_by!(name: "Stable Diffusion Prompt Engineer") do |record|
+default_skill = PromptSkill.find_or_create_by!(name: "Stable Diffusion Prompt Engineer") do |record|
   record.body = PromptSkillSeeds::DEFAULT_BODY
   record.default = true
 end
+default_skill.update!(
+  body: PromptSkillSeeds::DEFAULT_BODY,
+  default_negative_prompt: PromptSkillSeeds::DEFAULT_NEGATIVE
+)
 
 chojugiga_json_skill = PromptSkill.find_or_create_by!(name: "鳥獣戯画プロンプト (JSON)") do |record|
   record.body = PromptSkillSeeds::CHOJUGIGA_JSON_BODY
@@ -32,7 +36,16 @@ GenerationPreset.find_or_create_by!(name: "鳥獣戯画 (Illustrious + ChojuGiga
 end
 
 preset = GenerationPreset.find_by(name: "鳥獣戯画 (Illustrious + ChojuGiga)")
-preset&.update!(prompt_skill: chojugiga_translator_skill)
+preset&.update!(
+  prompt_skill: chojugiga_translator_skill,
+  default_negative_prompt: GenerationPresetSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
+)
 
-chojugiga_json_skill.update!(body: PromptSkillSeeds::CHOJUGIGA_JSON_BODY)
-chojugiga_translator_skill.update!(body: PromptSkillSeeds::CHOJUGIGA_TRANSLATOR_BODY)
+chojugiga_json_skill.update!(
+  body: PromptSkillSeeds::CHOJUGIGA_JSON_BODY,
+  default_negative_prompt: PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
+)
+chojugiga_translator_skill.update!(
+  body: PromptSkillSeeds::CHOJUGIGA_TRANSLATOR_BODY,
+  default_negative_prompt: PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
+)

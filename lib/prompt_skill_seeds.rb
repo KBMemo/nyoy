@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 module PromptSkillSeeds
+  DEFAULT_NEGATIVE = "worst quality, low quality, normal quality, lowres, bad anatomy, bad hands, error, missing fingers, extra digits, cropped, text, watermark".freeze
+
+  CHOJUGIGA_STYLE_NEGATIVE = "worst quality, low quality, blurry, photorealistic, photo, 3d, modern, colorful, vibrant colors, detailed background, anime cel shading, human focus".freeze
+
+  CHOJUGIGA_TEXT_NEGATIVE = "text, letters, words, writing, calligraphy, kanji, hiragana, katakana, alphabet, caption, subtitle, watermark, signature, artist signature, seal, red seal, stamp, hanko, inkan, monogram, logo, inscription, speech bubble, manga text, scroll text, poem text".freeze
+
+  CHOJUGIGA_DEFAULT_NEGATIVE = [CHOJUGIGA_STYLE_NEGATIVE, CHOJUGIGA_TEXT_NEGATIVE].join(", ").freeze
+
   DEFAULT_BODY = <<~SKILL.freeze
     # Role
     You are an expert prompt engineer specializing in Stable Diffusion. Your task is to translate and expand Japanese descriptive text into high-quality English prompts optimized for `sd.cpp` (Stable Diffusion C++.cpp inference engine).
@@ -11,7 +19,7 @@ module PromptSkillSeeds
     ```json
     {
       "positive": "masterpiece, best quality, [Detailed English prompts describing the scene, subjects, clothing, hair, lighting, camera angle, and artistic style, separated by commas]",
-      "negative": "worst quality, low quality, normal quality, lowres, monochrome, grayscale, bad anatomy, bad hands, error, missing fingers, extra digits, fewer digits, cropped, worst quality, low quality, blue background",
+      "negative": "#{DEFAULT_NEGATIVE}",
       "width": 512,
       "height": 512,
       "steps": 20,
@@ -26,7 +34,7 @@ module PromptSkillSeeds
     3. **Tag Style**: Use comma-separated tags or short descriptive phrases rather than long, grammatically complex sentences.
     4. **Quality Boosters**: Automatically prepend basic quality tokens like `masterpiece, best quality` to the positive prompt unless specified otherwise.
     5. **sd.cpp Compatibility**: Keep the prompt concise and effective. Avoid extremely long weights (like `(word:1.5)`) that might parse inconsistently across different versions of sd.cpp backends; use standard syntax or raw tags.
-    6. **Negative Prompt**: Generate a standard negative prompt block that matches the requested style (e.g., anime vs. realistic) to prevent common AI artifacts.
+    6. **Negative Prompt**: Generate a standard negative prompt block that matches the requested style (e.g., anime vs. realistic) to prevent common AI artifacts. Always include text and watermark suppression.
     7. **Parameters**: Choose width, height, steps, cfg_scale, and seed suitable for the described scene. Use 512x512 unless a wider composition is clearly needed. Use seed -1 for random.
 
     # Example
@@ -35,7 +43,7 @@ module PromptSkillSeeds
     ```json
     {
       "positive": "masterpiece, best quality, 1girl, solo, smiling, wearing white one-piece dress, straw hat, standing on the sandy beach, ocean background, sunny day, vibrant colors, anime style",
-      "negative": "worst quality, low quality, bad anatomy, bad hands, text, watermark, realistic, photo, 3d",
+      "negative": "#{DEFAULT_NEGATIVE}, realistic, photo, 3d",
       "width": 512,
       "height": 512,
       "steps": 20,
@@ -55,7 +63,7 @@ module PromptSkillSeeds
 
     {
       "positive": "chojugiga, emaki, scroll painting, ink wash painting, sumi-e, japanese medieval art, yamato-e, monochrome, minimal background, dynamic pose, humorous, [subject, action, composition tags]",
-      "negative": "worst quality, low quality, blurry, photorealistic, photo, 3d, modern, colorful, vibrant colors, detailed background, cityscape, text, watermark, anime cel shading, human focus",
+      "negative": "#{CHOJUGIGA_DEFAULT_NEGATIVE}",
       "width": 768,
       "height": 768,
       "steps": 22,
@@ -69,11 +77,13 @@ module PromptSkillSeeds
     3. Keep backgrounds empty or extremely simple (blank scroll, faint ground line).
     4. Use comma-separated tags, not long sentences.
     5. Do NOT add modern anime, photorealistic, 3d, or busy background tags.
-    6. If animals are unspecified, infer fitting chojugiga subjects.
+    6. Do NOT add tags for text, calligraphy, captions, poems, signatures, seals, stamps, or inscriptions.
+    7. If animals are unspecified, infer fitting chojugiga subjects.
 
     # Negative Rules
     1. Block photorealistic, 3d, modern, and overly colorful output.
-    2. Block busy backgrounds and readable text.
+    2. Always block readable text, calligraphy, captions, poems, signatures, seals (hanko/inkan), stamps, watermarks, and logos.
+    3. Block scroll inscriptions and margin text unless the user explicitly asks for written text.
 
     # Parameters
     - Default to width 768, height 768, steps 22, cfg_scale 6.0, seed -1.
@@ -85,7 +95,7 @@ module PromptSkillSeeds
     Output:
     {
       "positive": "chojugiga, emaki, scroll painting, ink wash painting, sumi-e, japanese medieval art, yamato-e, monochrome, minimal background, dynamic pose, humorous, rabbit and frog, sumo wrestling, wrestling, spectators, animals watching, ink brush strokes, bold ink lines",
-      "negative": "worst quality, low quality, blurry, photorealistic, photo, 3d, modern, colorful, vibrant colors, detailed background, text, watermark, anime cel shading",
+      "negative": "#{CHOJUGIGA_DEFAULT_NEGATIVE}",
       "width": 768,
       "height": 768,
       "steps": 22,
@@ -112,6 +122,9 @@ module PromptSkillSeeds
     5. Do NOT add modern anime, photorealistic, 3d, or busy background tags.
     6. Do NOT output negative prompts or generation parameters.
     7. If the user omits animals, infer fitting animals for a chojugiga scene (rabbit, frog, monkey, etc.).
+    8. Do NOT add tags for text, calligraphy, captions, poems, signatures, seals, stamps, or inscriptions.
+    9. Prefer blank scroll margins and empty paper; never describe written characters on the scroll.
+    10. Avoid tags like signed, signature, hanko, inkan, seal, watermark, logo.
 
     # Example
     Input: ウサギとカエルが相撲をとっている。周りを見物する動物がいる。

@@ -97,7 +97,8 @@ class GenerationPresetsController < ApplicationController
       :sampler_name,
       :vae_tiling,
       :default,
-      :prompt_skill_id
+      :prompt_skill_id,
+      :default_negative_prompt
     )
   end
 end

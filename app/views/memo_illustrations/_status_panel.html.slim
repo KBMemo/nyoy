@@ -6,14 +6,7 @@
         span class="nyoy-status nyoy-status-#{memo_illustration.status}" = memo_illustration.status_label
         |  · #{memo_illustration.sd_model}
         |  · スキル: #{memo_illustration.prompt_skill.name}
-        - if memo_illustration.started_at
-          |  ·
-          span data-controller="generation-timer" data-generation-timer-started-at-value=memo_illustration.started_at.iso8601 data-generation-timer-finished-at-value=(memo_illustration.finished_at&.iso8601) data-generation-timer-active-value=memo_illustration.in_progress?
-            - if memo_illustration.in_progress?
-              |  経過:
-            - else
-              |  生成時間:
-            span data-generation-timer-target="elapsed" = nyoy_format_duration(memo_illustration.generation_elapsed_seconds)
+        = render "shared/generation_phase_timing", record: memo_illustration
 
   .kb-card.p-4
     h2 class=kb_section_title 入力した文章
@@ -46,8 +39,8 @@
 
     - if memo_illustration.image.attached?
       figure.nyoy-result-image.mt-4
-        = image_tag memo_illustration.image, alt: memo_illustration.body, loading: "lazy"
+        = nyoy_blob_image_tag memo_illustration.image, alt: memo_illustration.body
 
   .flex.flex-wrap.items-center.gap-3.mt-6
-    = link_to "新しいイラスト", new_memo_illustration_path, class: kb_btn_primary_sm
-    = link_to "一覧へ", root_path, class: "kb-chrome-link text-sm"
+    = link_to "新しいイラスト", new_memo_illustration_path, class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    = link_to "一覧へ", root_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }

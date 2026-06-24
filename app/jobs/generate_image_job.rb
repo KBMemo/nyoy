@@ -13,6 +13,7 @@ class GenerateImageJob < ApplicationJob
 
     generation.update!(status: "completed", finished_at: Time.current)
   rescue StandardError => e
+    stamp_open_phases!(generation)
     generation&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
     raise
   end
@@ -25,21 +26,21 @@ class GenerateImageJob < ApplicationJob
   end
 
   def translate_prompt(generation)
-    generation.update!(status: "translating")
+    generation.update!(status: "translating", prompt_started_at: Time.current)
 
     prompt = SdPromptTranslator.new.translate(
       generation.japanese_prompt,
       skill: generation.prompt_skill
     )
-    generation.update!(prompt: prompt)
+    generation.update!(prompt: prompt, prompt_finished_at: Time.current)
   end
 
   def generate_image(generation)
-    generation.update!(status: "generating")
+    generation.update!(status: "generating", image_started_at: Time.current)
 
     png_data = SdCppClient.new.txt2img(
       prompt: generation.prompt,
-      negative_prompt: generation.negative_prompt.to_s,
+      negative_prompt: NegativePromptResolver.for_generation(generation),
       width: generation.width,
       height: generation.height,
       steps: generation.steps,
@@ -55,5 +56,16 @@ class GenerateImageJob < ApplicationJob
       filename: "generation-#{generation.id}.png",
       content_type: "image/png"
     )
+    generation.update!(image_finished_at: Time.current)
+  end
+
+  def stamp_open_phases!(generation)
+    return unless generation
+
+    now = Time.current
+    attrs = {}
+    attrs[:prompt_finished_at] = now if generation.prompt_started_at && !generation.prompt_finished_at
+    attrs[:image_finished_at] = now if generation.image_started_at && !generation.image_finished_at
+    generation.update!(attrs) if attrs.any?
   end
 end

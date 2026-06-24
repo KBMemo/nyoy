@@ -16,7 +16,40 @@ module GenerationProgressBroadcastable
     finish - started_at
   end
 
+  def prompt_phase_active?
+    in_progress? && status.in?(%w[translating planning])
+  end
+
+  def image_phase_active?
+    in_progress? && status == "generating"
+  end
+
+  def prompt_elapsed_seconds
+    phase_elapsed_seconds(
+      started_at: prompt_started_at,
+      finished_at: prompt_finished_at,
+      active: prompt_phase_active?
+    )
+  end
+
+  def image_elapsed_seconds
+    phase_elapsed_seconds(
+      started_at: image_started_at,
+      finished_at: image_finished_at,
+      active: image_phase_active?
+    )
+  end
+
   private
+
+  def phase_elapsed_seconds(started_at:, finished_at:, active:)
+    return unless started_at
+
+    finish = finished_at || (active ? Time.current : nil)
+    return unless finish
+
+    finish - started_at
+  end
 
   def broadcast_progress_panel
     broadcast_replace_to(

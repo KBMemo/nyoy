@@ -8,6 +8,7 @@ chojugiga:
   sampler_name: euler_a
   vae_tiling: true
   loras: '[{"name":"ChojuGiga_Illustrious","path":"chojugiga/ChojuGiga_Illustrious.safetensors","multiplier":0.8}]'
+  default_negative_prompt: text, watermark, seal, stamp
   default: true
   prompt_skill: default
 

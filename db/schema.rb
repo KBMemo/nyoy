@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_155857) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -43,6 +43,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
     t.float "cfg_scale", default: 6.0, null: false
     t.datetime "created_at", null: false
     t.boolean "default", default: false, null: false
+    t.text "default_negative_prompt"
     t.integer "height", default: 768, null: false
     t.text "loras", default: "[]", null: false
     t.string "name", null: false
@@ -64,11 +65,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
     t.datetime "finished_at"
     t.integer "generation_preset_id"
     t.integer "height", default: 512, null: false
+    t.datetime "image_finished_at"
+    t.datetime "image_started_at"
     t.text "japanese_prompt", null: false
     t.text "loras", default: "[]", null: false
     t.text "negative_prompt"
     t.text "prompt"
+    t.datetime "prompt_finished_at"
     t.integer "prompt_skill_id"
+    t.datetime "prompt_started_at"
     t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model", null: false
     t.integer "seed"
@@ -89,10 +94,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
     t.text "error_message"
     t.datetime "finished_at"
     t.integer "height", default: 512, null: false
+    t.datetime "image_finished_at"
+    t.datetime "image_started_at"
     t.text "llama_raw_response"
     t.text "negative_prompt"
     t.text "positive_prompt"
+    t.datetime "prompt_finished_at"
     t.integer "prompt_skill_id", null: false
+    t.datetime "prompt_started_at"
     t.string "sd_model", null: false
     t.integer "seed"
     t.datetime "started_at"
@@ -107,6 +116,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_124222) do
     t.text "body", null: false
     t.datetime "created_at", null: false
     t.boolean "default", default: false, null: false
+    t.text "default_negative_prompt"
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["default"], name: "index_prompt_skills_on_default"

@@ -11,9 +11,8 @@ html lang="ja"
     = csp_meta_tag
     = action_cable_meta_tag
     = yield :head
-    link rel="icon" href="/icon.png" type="image/png"
-    link rel="icon" href="/icon.svg" type="image/svg+xml"
-    link rel="apple-touch-icon" href="/icon.png"
+    link rel="icon" href=image_path("nyoy.svg") type="image/svg+xml"
+    link rel="apple-touch-icon" href=image_path("nyoy.svg")
     = vite_client_tag
     = vite_javascript_tag "application"
   body.kb-chrome-body.min-h-screen data-controller="flash-notice"
@@ -21,7 +20,7 @@ html lang="ja"
     header.kb-chrome-header
       nav.mx-auto.flex.w-full.flex-wrap.items-center.justify-between.gap-3.px-4.py-3 class=content_max_width_class
         = link_to root_path, class: "kb-chrome-brand" do
-          img.kb-chrome-brand-icon src="/icon.svg" alt="" width="28" height="28"
+          = image_tag "nyoy.svg", alt: "Nyoy", class: "kb-chrome-brand-icon", width: 28, height: 28
           span Nyoy
         .flex.flex-wrap.items-center.gap-x-4.gap-y-2.text-sm
           = link_to "メモイラスト", root_path, class: kb_chrome_link_class("memo_illustrations")

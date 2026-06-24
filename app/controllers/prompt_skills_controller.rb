@@ -52,6 +52,6 @@ class PromptSkillsController < ApplicationController
   end
 
   def prompt_skill_params
-    params.require(:prompt_skill).permit(:name, :body, :default)
+    params.require(:prompt_skill).permit(:name, :body, :default, :default_negative_prompt)
   end
 end

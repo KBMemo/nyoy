@@ -50,4 +50,25 @@ module ApplicationHelper
       format("%d分%.0f秒", minutes, remainder)
     end
   end
+
+  def nyoy_blob_image_tag(source, **options)
+    path = nyoy_blob_image_path(source)
+    return unless path
+
+    image_tag path, **options
+  end
+
+  def nyoy_blob_image_path(source)
+    if source.is_a?(ActiveStorage::Blob)
+      rails_blob_path(source, only_path: true)
+    elsif source.is_a?(ActiveStorage::VariantWithRecord)
+      rails_representation_path(source, only_path: true)
+    elsif source.respond_to?(:attached?)
+      return unless source.attached?
+
+      rails_blob_path(source, only_path: true)
+    elsif source.respond_to?(:blob)
+      rails_representation_path(source, only_path: true)
+    end
+  end
 end

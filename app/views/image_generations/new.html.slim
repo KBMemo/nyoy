@@ -16,10 +16,6 @@
     = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
     = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている"
 
-  div
-    = form.label :negative_prompt, "ネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
-    = form.text_area :negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry"
-
   = render "shared/generation_settings_fields",
     form_object: @image_generation,
     form_builder: form,
@@ -30,7 +26,8 @@
     sd_samplers: @sd_samplers,
     lora_catalog_error: @lora_catalog_error,
     show_preset_select: true,
-    show_seed: true
+    show_seed: true,
+    show_negative_prompt: true
 
   .flex.flex-wrap.items-center.gap-3
     = form.submit "生成する", class: kb_btn_primary_sm, disabled: @sd_models.empty?

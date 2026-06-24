@@ -12,6 +12,7 @@ export default class extends Controller {
     "samplerName",
     "vaeTiling",
     "promptSkillId",
+    "negativePrompt",
     "lorasField",
     "loraRows",
     "loraCatalog"
@@ -51,6 +52,10 @@ export default class extends Controller {
 
     if (this.hasPromptSkillIdTarget) {
       this.promptSkillIdTarget.value = preset.prompt_skill_id || ""
+    }
+
+    if (this.hasNegativePromptTarget) {
+      this.negativePromptTarget.value = preset.default_negative_prompt || ""
     }
 
     this.renderLoras(preset.loras || [])

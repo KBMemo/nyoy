@@ -8,4 +8,6 @@ module GenerationPresetSeeds
       "multiplier" => 0.8
     }
   ].freeze
+
+  CHOJUGIGA_DEFAULT_NEGATIVE = PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
 end

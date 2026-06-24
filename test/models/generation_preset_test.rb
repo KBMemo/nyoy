@@ -20,6 +20,7 @@ class GenerationPresetTest < ActiveSupport::TestCase
 
   test "applies settings to image generation" do
     preset = generation_presets(:chojugiga)
+    preset.update!(default_negative_prompt: "text, watermark")
     generation = ImageGeneration.new(japanese_prompt: "test")
 
     preset.apply_to(generation)
@@ -29,6 +30,8 @@ class GenerationPresetTest < ActiveSupport::TestCase
     assert_equal 768, generation.width
     assert_equal "euler_a", generation.sampler_name
     assert generation.vae_tiling
+    assert_includes generation.negative_prompt, "text"
+    assert_includes generation.negative_prompt, "watermark"
   end
 
   test "only one default preset" do

@@ -19,6 +19,10 @@
     - if @generation_preset.prompt_skill
       dt プロンプトスキル
       dd = link_to @generation_preset.prompt_skill.name, @generation_preset.prompt_skill, class: "kb-chrome-link"
+    - if @generation_preset.resolved_default_negative_prompt.present?
+      dt デフォルトネガティブ
+      dd
+        pre.nyoy-monospace = @generation_preset.resolved_default_negative_prompt
     - @generation_preset.loras_array.each do |entry|
       dt LoRA
       dd = "#{entry['name'] || entry['path']} (weight #{entry['multiplier']})"

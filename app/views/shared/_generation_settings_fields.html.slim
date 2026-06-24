@@ -8,6 +8,10 @@
 - lora_catalog_error = local_assigns[:lora_catalog_error]
 
 section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=generation_presets_stimulus_data(generation_presets).to_json data-preset-form-loras-value=sd_loras_stimulus_data(sd_loras).to_json
+  - if local_assigns.fetch(:show_negative_prompt, false)
+    div
+      = form_builder.label :negative_prompt, "ネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
+      = form_builder.text_area :negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry", data: { preset_form_target: "negativePrompt" }
   - if show_preset_select && generation_presets.any?
     div
       label.kb-label.mb-1 for="generation_preset_select" 生成プリセット

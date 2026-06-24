@@ -19,6 +19,6 @@
             span.text-xs.kb-text-muted = generation.sd_model
           p.text-sm.kb-text-secondary = truncate(generation.japanese_prompt, length: 80)
           - if generation.image.attached?
-            = image_tag generation.image.variant(resize_to_limit: [256, 256]), alt: generation.japanese_prompt
+            = nyoy_blob_image_tag generation.image.variant(resize_to_limit: [256, 256]), alt: generation.japanese_prompt
 - else
   p.text-sm.kb-text-muted まだ生成履歴がありません。

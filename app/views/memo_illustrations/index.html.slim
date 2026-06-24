@@ -16,6 +16,6 @@
             span.text-xs.kb-text-muted = illustration.sd_model
           p.text-sm.kb-text-secondary = truncate(illustration.body, length: 80)
           - if illustration.image.attached?
-            = image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
+            = nyoy_blob_image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
 - else
   p.text-sm.kb-text-muted まだ生成履歴がありません。

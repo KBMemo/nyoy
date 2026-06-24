@@ -13,6 +13,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
     illustration.update!(status: "completed", finished_at: Time.current)
   rescue StandardError => e
+    stamp_open_phases!(illustration)
     illustration&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
     raise
   end
@@ -25,7 +26,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
   end
 
   def plan_prompts(illustration)
-    illustration.update!(status: "planning")
+    illustration.update!(status: "planning", prompt_started_at: Time.current)
 
     plan = SdPromptPlanner.new.plan(
       body: illustration.body,
@@ -34,22 +35,27 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
     illustration.update!(
       positive_prompt: plan[:positive],
-      negative_prompt: plan[:negative],
+      negative_prompt: plan[:negative].presence ||
+        NegativePromptResolver.resolve(skill: illustration.prompt_skill),
       width: plan[:width],
       height: plan[:height],
       steps: plan[:steps],
       cfg_scale: plan[:cfg_scale],
       seed: plan[:seed],
-      llama_raw_response: plan[:raw_response]
+      llama_raw_response: plan[:raw_response],
+      prompt_finished_at: Time.current
     )
   end
 
   def generate_image(illustration)
-    illustration.update!(status: "generating")
+    illustration.update!(status: "generating", image_started_at: Time.current)
 
     png_data = SdCppClient.new.txt2img(
       prompt: illustration.positive_prompt,
-      negative_prompt: illustration.negative_prompt.to_s,
+      negative_prompt: NegativePromptResolver.resolve(
+        user: illustration.negative_prompt,
+        skill: illustration.prompt_skill
+      ),
       width: illustration.width,
       height: illustration.height,
       steps: illustration.steps,
@@ -62,5 +68,16 @@ class GenerateMemoIllustrationJob < ApplicationJob
       filename: "memo-illustration-#{illustration.id}.png",
       content_type: "image/png"
     )
+    illustration.update!(image_finished_at: Time.current)
+  end
+
+  def stamp_open_phases!(illustration)
+    return unless illustration
+
+    now = Time.current
+    attrs = {}
+    attrs[:prompt_finished_at] = now if illustration.prompt_started_at && !illustration.prompt_finished_at
+    attrs[:image_finished_at] = now if illustration.image_started_at && !illustration.image_finished_at
+    illustration.update!(attrs) if attrs.any?
   end
 end

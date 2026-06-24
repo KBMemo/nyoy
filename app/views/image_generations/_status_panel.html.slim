@@ -7,14 +7,7 @@
         |  · #{image_generation.sd_model}
         - if image_generation.generation_preset
           |  · #{image_generation.generation_preset.name}
-        - if image_generation.started_at
-          |  ·
-          span data-controller="generation-timer" data-generation-timer-started-at-value=image_generation.started_at.iso8601 data-generation-timer-finished-at-value=(image_generation.finished_at&.iso8601) data-generation-timer-active-value=image_generation.in_progress?
-            - if image_generation.in_progress?
-              |  経過:
-            - else
-              |  生成時間:
-            span data-generation-timer-target="elapsed" = nyoy_format_duration(image_generation.generation_elapsed_seconds)
+        = render "shared/generation_phase_timing", record: image_generation
 
   .kb-card.p-4
     h2 class=kb_section_title 日本語プロンプト
@@ -54,9 +47,9 @@
 
     - if image_generation.image.attached?
       figure.nyoy-result-image.mt-4
-        = image_tag image_generation.image, alt: image_generation.japanese_prompt, loading: "lazy"
+        = nyoy_blob_image_tag image_generation.image, alt: image_generation.japanese_prompt
 
   .flex.flex-wrap.items-center.gap-3.mt-6
-    = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm
-    = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm
-    = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm"
+    = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+    = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }

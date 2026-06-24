@@ -1,0 +1,19 @@
+- if record.prompt_started_at || record.image_started_at
+  |  ·
+  |  プロンプト:
+  - if record.prompt_started_at
+    span data-controller="generation-timer" data-generation-timer-started-at-value=record.prompt_started_at.iso8601 data-generation-timer-finished-at-value=(record.prompt_finished_at&.iso8601) data-generation-timer-active-value=record.prompt_phase_active?
+      span data-generation-timer-target="elapsed" = nyoy_format_duration(record.prompt_elapsed_seconds)
+  - else
+    | —
+  |  · 画像:
+  - if record.image_started_at
+    span data-controller="generation-timer" data-generation-timer-started-at-value=record.image_started_at.iso8601 data-generation-timer-finished-at-value=(record.image_finished_at&.iso8601) data-generation-timer-active-value=record.image_phase_active?
+      span data-generation-timer-target="elapsed" = nyoy_format_duration(record.image_elapsed_seconds)
+  - else
+    | —
+- elsif record.started_at
+  |  ·
+  span data-controller="generation-timer" data-generation-timer-started-at-value=record.started_at.iso8601 data-generation-timer-finished-at-value=(record.finished_at&.iso8601) data-generation-timer-active-value=record.in_progress?
+    |  生成時間:
+    span data-generation-timer-target="elapsed" = nyoy_format_duration(record.generation_elapsed_seconds)

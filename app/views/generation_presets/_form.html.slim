@@ -16,6 +16,10 @@
     = form.label :name, "名前", class: "#{kb_label} mb-1"
     = form.text_field :name, required: true, class: kb_field_input_classes
 
+  div
+    = form.label :default_negative_prompt, "デフォルトネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
+    = form.text_area :default_negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry, text, watermark"
+
   = render "shared/generation_settings_fields",
     form_object: generation_preset,
     form_builder: form,
