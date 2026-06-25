@@ -1,4 +1,5 @@
 = turbo_frame_tag dom_id(image_generation, :status), data: { controller: "image-preview" } do
+  - refine_presets = local_assigns.fetch(:refine_presets) { @refine_presets || GenerationPreset.refine.ordered }
   div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
     div
       h1 class=kb_page_title 生成結果
@@ -7,6 +8,8 @@
         |  · #{image_generation.sd_model}
         - if image_generation.generation_preset
           |  · #{image_generation.generation_preset.name}
+        - if image_generation.refine_preset
+          |  · 本番: #{image_generation.refine_preset.name}
         = render "shared/generation_phase_timing", record: image_generation, show_prompt_timing: false
 
   .kb-card.p-4
@@ -74,7 +77,7 @@
             | サムネイルをクリックすると実寸表示します。別の案で仕上げ直す場合は設定を変えて「仕上げ生成」を押してください。
 
         = form_with url: refine_image_generation_path(image_generation), method: :post, class: "mt-4 space-y-4" do |form|
-          = render "image_generations/refine_settings_fields", image_generation: image_generation
+          = render "image_generations/refine_settings_fields", image_generation: image_generation, refine_presets: refine_presets
 
           .nyoy-draft-grid.mt-2
             - image_generation.drafts.each_with_index do |draft, index|
@@ -108,7 +111,9 @@
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
     - if image_generation.generation_preset
-      = link_to "プリセットを更新", edit_generation_preset_path(image_generation.generation_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+      = link_to "案出しプリセットを更新", edit_generation_preset_path(image_generation.generation_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+    - if image_generation.refine_preset
+      = link_to "本番プリセットを更新", edit_generation_preset_path(image_generation.refine_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
 

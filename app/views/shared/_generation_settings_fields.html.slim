@@ -14,7 +14,7 @@ section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=g
       = form_builder.text_area :negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry", data: { preset_form_target: "negativePrompt" }
   - if show_preset_select && generation_presets.any?
     div
-      label.kb-label.mb-1 for="generation_preset_select" 生成プリセット
+      label.kb-label.mb-1 for="generation_preset_select" 案出しプリセット
       select#generation_preset_select class=kb_field_input_classes data-preset-form-target="presetSelect" data-action="change->preset-form#applyPreset"
         option value="" カスタム
         - generation_presets.each do |preset|

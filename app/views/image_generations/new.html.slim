@@ -62,6 +62,12 @@
         = form.number_field :draft_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{[@image_generation.steps || 20, 18].min} まで"
     p.mt-2.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。
 
+  .kb-card.p-4
+    h2 class=kb_section_title 本番仕上げ
+    p.mt-2.text-sm.kb-text-muted 仕上げ生成時に使う img2img / Hires 設定です。本番プリセットで一括反映できます。
+    .mt-4
+      = render "refine_settings_fields", image_generation: @image_generation, refine_presets: @refine_presets, form_builder: form
+
   .flex.flex-wrap.items-center.gap-3
     = form.submit "ラフを生成", class: kb_btn_primary_sm, disabled: @sd_models.empty?
     = link_to "プリセット管理", generation_presets_path, class: "kb-chrome-link text-sm"

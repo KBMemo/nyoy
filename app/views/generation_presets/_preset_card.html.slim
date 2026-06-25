@@ -1,0 +1,28 @@
+article.kb-card.p-4
+  .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+    h2.text-base.font-semibold
+      = link_to preset.name, preset, class: "kb-text-primary no-underline"
+    .flex.flex-wrap.items-center.gap-2
+      span.kb-badge.kb-badge-muted = preset.preset_kind_label
+      - if preset.default?
+        span.kb-badge.kb-badge-muted default
+  - if preset.draft?
+    p.text-sm.kb-text-secondary
+      = preset.sd_model
+      |  · #{preset.width}×#{preset.height}
+      |  · steps #{preset.steps}
+      |  · ラフ #{preset.draft_batch_size} 枚
+    - if preset.prompt_skill
+      p.text-sm.kb-text-muted スキル: #{preset.prompt_skill.name}
+    - if preset.loras_array.any?
+      p.text-sm.kb-text-muted LoRA: #{preset.loras_array.map { |entry| entry["name"] || entry["path"] }.join(", ")}
+  - else
+    p.text-sm.kb-text-secondary
+      | 仕上げ #{preset.refine_denoising_strength}
+      |  · Hires #{preset.enable_hires? ? "ON" : "OFF"}
+      - if preset.enable_hires?
+        |  · #{preset.hires_upscaler} #{preset.hires_scale}x
+  .flex.flex-wrap.items-center.gap-3.mt-3
+    = link_to "編集", edit_generation_preset_path(preset), class: "kb-chrome-link text-sm"
+    - if show_generate_link
+      = link_to "この設定で生成", new_image_generation_path(generation_preset_id: preset.id), class: kb_btn_secondary_sm

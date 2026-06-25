@@ -1,30 +1,71 @@
-.grid.gap-4.sm:grid-cols-2
-  div
-    = label_tag :refine_denoising_strength, "仕上げ強度 (denoising)", class: "#{kb_label} mb-1"
-    = number_field_tag :refine_denoising_strength, image_generation.refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
-    p.mt-1.text-xs.kb-text-muted 低いほどラフの構図を保ちます（0.3〜0.5 推奨）
-  div
-    = label_tag :refine_steps, "仕上げ Steps (任意)", class: "#{kb_label} mb-1"
-    = number_field_tag :refine_steps, image_generation.refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}"
+- refine_presets = local_assigns.fetch(:refine_presets, [])
+- form_builder = local_assigns[:form_builder]
+- image_generation = local_assigns.fetch(:image_generation)
 
-.kb-card.p-4
-  h3 class=kb_section_title Hires / 拡大
-  .mt-4.space-y-4
-    label.flex.items-center.gap-2
-      = hidden_field_tag :enable_hires, "0"
-      = check_box_tag :enable_hires, "1", image_generation.enable_hires?, class: "kb-control-accent"
-      span.text-sm 仕上げ後に Hires で拡大する
-    .grid.gap-4.sm:grid-cols-2
-      div
-        = label_tag :hires_upscaler, "Upscaler", class: "#{kb_label} mb-1"
-        = select_tag :hires_upscaler, options_for_select(ImageGeneration::HIRES_UPSCALERS, image_generation.hires_upscaler), class: kb_field_input_classes
-      div
-        = label_tag :hires_scale, "拡大率", class: "#{kb_label} mb-1"
-        = number_field_tag :hires_scale, image_generation.hires_scale, min: 1.1, max: 4.0, step: 0.1, class: kb_field_input_classes
-      div
-        = label_tag :hires_denoising_strength, "Hires 強度", class: "#{kb_label} mb-1"
-        = number_field_tag :hires_denoising_strength, image_generation.hires_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
-      div
-        = label_tag :hires_steps, "Hires Steps (任意)", class: "#{kb_label} mb-1"
-        = number_field_tag :hires_steps, image_generation.hires_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら仕上げ Steps"
-    p.text-xs.kb-text-muted = "出力サイズ: #{image_generation.hires_target_width}×#{image_generation.hires_target_height}px（#{image_generation.width}×#{image_generation.height} の #{image_generation.hires_scale}x）"
+section.space-y-4 data-controller="refine-preset-form" data-refine-preset-form-presets-value=refine_presets_stimulus_data(refine_presets).to_json
+  - if refine_presets.any?
+    div
+      label.kb-label.mb-1 for="refine_preset_select" 本番プリセット
+      select#refine_preset_select class=kb_field_input_classes data-refine-preset-form-target="presetSelect" data-action="change->refine-preset-form#applyPreset"
+        option value="" カスタム
+        - refine_presets.each do |preset|
+          option value=preset.id selected=(image_generation.refine_preset_id == preset.id)
+            = preset.name
+            - if preset.default?
+              |  (default)
+      - if form_builder
+        = form_builder.hidden_field :refine_preset_id, data: { refine_preset_form_target: "refinePresetId" }
+      - else
+        = hidden_field_tag :refine_preset_id, image_generation.refine_preset_id, data: { refine_preset_form_target: "refinePresetId" }
+
+  .grid.gap-4.sm:grid-cols-2
+    div
+      = label_tag :refine_denoising_strength, "仕上げ強度 (denoising)", class: "#{kb_label} mb-1"
+      - if form_builder
+        = form_builder.number_field :refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes, data: { refine_preset_form_target: "refineDenoisingStrength" }
+      - else
+        = number_field_tag :refine_denoising_strength, image_generation.refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes, data: { refine_preset_form_target: "refineDenoisingStrength" }
+      p.mt-1.text-xs.kb-text-muted 低いほどラフの構図を保ちます（0.3〜0.5 推奨）
+    div
+      = label_tag :refine_steps, "仕上げ Steps (任意)", class: "#{kb_label} mb-1"
+      - if form_builder
+        = form_builder.number_field :refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}", data: { refine_preset_form_target: "refineSteps" }
+      - else
+        = number_field_tag :refine_steps, image_generation.refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}", data: { refine_preset_form_target: "refineSteps" }
+
+  .kb-card.p-4
+    h3 class=kb_section_title Hires / 拡大
+    .mt-4.space-y-4
+      label.flex.items-center.gap-2
+        - if form_builder
+          = form_builder.check_box :enable_hires, class: "kb-control-accent", data: { refine_preset_form_target: "enableHires" }
+        - else
+          = hidden_field_tag :enable_hires, "0"
+          = check_box_tag :enable_hires, "1", image_generation.enable_hires?, class: "kb-control-accent", data: { refine_preset_form_target: "enableHires" }
+        span.text-sm 仕上げ後に Hires で拡大する
+      .grid.gap-4.sm:grid-cols-2
+        div
+          = label_tag :hires_upscaler, "Upscaler", class: "#{kb_label} mb-1"
+          - if form_builder
+            = form_builder.select :hires_upscaler, options_for_select(ImageGeneration::HIRES_UPSCALERS, image_generation.hires_upscaler), {}, class: kb_field_input_classes, data: { refine_preset_form_target: "hiresUpscaler" }
+          - else
+            = select_tag :hires_upscaler, options_for_select(ImageGeneration::HIRES_UPSCALERS, image_generation.hires_upscaler), class: kb_field_input_classes, data: { refine_preset_form_target: "hiresUpscaler" }
+        div
+          = label_tag :hires_scale, "拡大率", class: "#{kb_label} mb-1"
+          - if form_builder
+            = form_builder.number_field :hires_scale, min: 1.1, max: 4.0, step: 0.1, class: kb_field_input_classes, data: { refine_preset_form_target: "hiresScale" }
+          - else
+            = number_field_tag :hires_scale, image_generation.hires_scale, min: 1.1, max: 4.0, step: 0.1, class: kb_field_input_classes, data: { refine_preset_form_target: "hiresScale" }
+        div
+          = label_tag :hires_denoising_strength, "Hires 強度", class: "#{kb_label} mb-1"
+          - if form_builder
+            = form_builder.number_field :hires_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes, data: { refine_preset_form_target: "hiresDenoisingStrength" }
+          - else
+            = number_field_tag :hires_denoising_strength, image_generation.hires_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes, data: { refine_preset_form_target: "hiresDenoisingStrength" }
+        div
+          = label_tag :hires_steps, "Hires Steps (任意)", class: "#{kb_label} mb-1"
+          - if form_builder
+            = form_builder.number_field :hires_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら仕上げ Steps", data: { refine_preset_form_target: "hiresSteps" }
+          - else
+            = number_field_tag :hires_steps, image_generation.hires_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら仕上げ Steps", data: { refine_preset_form_target: "hiresSteps" }
+      p.text-xs.kb-text-muted = "出力サイズ: #{image_generation.hires_target_width}×#{image_generation.hires_target_height}px（#{image_generation.width}×#{image_generation.height} の #{image_generation.hires_scale}x）"

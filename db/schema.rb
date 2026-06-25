@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_115444) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -44,10 +44,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
     t.datetime "created_at", null: false
     t.boolean "default", default: false, null: false
     t.text "default_negative_prompt"
+    t.integer "draft_batch_size", default: 4, null: false
+    t.integer "draft_steps"
+    t.boolean "enable_hires", default: true, null: false
     t.integer "height", default: 768, null: false
+    t.float "hires_denoising_strength", default: 0.35, null: false
+    t.float "hires_scale", default: 1.5, null: false
+    t.integer "hires_steps"
+    t.string "hires_upscaler", default: "Latent", null: false
     t.text "loras", default: "[]", null: false
     t.string "name", null: false
+    t.string "preset_kind", default: "draft", null: false
     t.integer "prompt_skill_id"
+    t.float "refine_denoising_strength", default: 0.4, null: false
+    t.integer "refine_steps"
     t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model", null: false
     t.integer "steps", default: 22, null: false
@@ -55,6 +65,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
     t.boolean "vae_tiling", default: true, null: false
     t.integer "width", default: 768, null: false
     t.index ["default"], name: "index_generation_presets_on_default"
+    t.index ["preset_kind"], name: "index_generation_presets_on_preset_kind"
     t.index ["prompt_skill_id"], name: "index_generation_presets_on_prompt_skill_id"
   end
 
@@ -82,6 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
     t.integer "prompt_skill_id"
     t.datetime "prompt_started_at"
     t.float "refine_denoising_strength", default: 0.4, null: false
+    t.integer "refine_preset_id"
     t.integer "refine_steps"
     t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model", null: false
@@ -95,6 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
     t.integer "width", default: 512, null: false
     t.index ["generation_preset_id"], name: "index_image_generations_on_generation_preset_id"
     t.index ["prompt_skill_id"], name: "index_image_generations_on_prompt_skill_id"
+    t.index ["refine_preset_id"], name: "index_image_generations_on_refine_preset_id"
   end
 
   create_table "memo_illustrations", force: :cascade do |t|
@@ -136,6 +149,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "generation_presets", "prompt_skills"
   add_foreign_key "image_generations", "generation_presets"
+  add_foreign_key "image_generations", "generation_presets", column: "refine_preset_id"
   add_foreign_key "image_generations", "prompt_skills"
   add_foreign_key "memo_illustrations", "prompt_skills"
 end

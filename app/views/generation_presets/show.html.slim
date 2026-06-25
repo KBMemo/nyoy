@@ -1,17 +1,21 @@
-.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
-  div
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
     h1.text-xl.font-semibold.kb-text-primary = @generation_preset.name
-    - if @generation_preset.default?
-      span.kb-badge.kb-badge-muted.mt-2 default
+    .flex.flex-wrap.items-center.gap-2
+      span.kb-badge.kb-badge-muted = @generation_preset.preset_kind_label
+      - if @generation_preset.default?
+        span.kb-badge.kb-badge-muted default
 
-.kb-card.p-4
-  dl.nyoy-settings-list
+.dl.nyoy-settings-list
+  - if @generation_preset.draft?
     dt SD モデル
     dd = @generation_preset.sd_model
     dt サイズ
     dd = "#{@generation_preset.width}×#{@generation_preset.height}"
     dt Steps / CFG
     dd = "#{@generation_preset.steps} / #{@generation_preset.cfg_scale}"
+    dt ラフ枚数
+    dd = @generation_preset.draft_batch_size
     dt Sampler
     dd = @generation_preset.sampler_name
     dt VAE Tiling
@@ -20,14 +24,26 @@
       dt プロンプトスキル
       dd = link_to @generation_preset.prompt_skill.name, @generation_preset.prompt_skill, class: "kb-chrome-link"
     - if @generation_preset.resolved_default_negative_prompt.present?
-      dt デフォルトネガティブ
+      dt ネガティブ
       dd
         pre.nyoy-monospace = @generation_preset.resolved_default_negative_prompt
     - @generation_preset.loras_array.each do |entry|
       dt LoRA
-      dd = "#{entry['name'] || entry['path']} (weight #{entry['multiplier']})"
+      dd = "#{entry['name'] || entry['path']} (#{entry['multiplier']})"
+  - else
+    dt 仕上げ Steps
+    dd = @generation_preset.refine_steps.presence || "steps に追随"
+    dt 仕上げ強度
+    dd = @generation_preset.refine_denoising_strength
+    dt Hires
+    dd
+      - if @generation_preset.enable_hires?
+        | ON · #{@generation_preset.hires_upscaler} · #{@generation_preset.hires_scale}x
+      - else
+        | OFF
 
 .flex.flex-wrap.items-center.gap-3.mt-6
   = link_to "編集", edit_generation_preset_path(@generation_preset), class: kb_btn_primary_sm
-  = link_to "この設定で生成", new_image_generation_path(generation_preset_id: @generation_preset.id), class: kb_btn_secondary_sm
+  - if @generation_preset.draft?
+    = link_to "この設定で生成", new_image_generation_path(generation_preset_id: @generation_preset.id), class: kb_btn_secondary_sm
   = link_to "一覧へ", generation_presets_path, class: "kb-chrome-link text-sm"

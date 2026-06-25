@@ -6,7 +6,7 @@ class ImageGenerationsController < ApplicationController
 
   before_action :set_image_generation, only: %i[show refine]
   before_action :load_sd_catalog, only: %i[index new create translate_prompt]
-  before_action :load_generation_options, only: %i[new create translate_prompt]
+  before_action :load_generation_options, only: %i[new create translate_prompt show refine]
 
   def index
     @image_generations = ImageGeneration.recent.limit(20)
@@ -41,8 +41,9 @@ class ImageGenerationsController < ApplicationController
     attrs[:enable_hires] = refine_params[:enable_hires] == "1" if refine_params.key?(:enable_hires)
     attrs[:hires_upscaler] = refine_params[:hires_upscaler] if refine_params[:hires_upscaler].present?
     attrs[:hires_scale] = refine_params[:hires_scale] if refine_params[:hires_scale].present?
-    attrs[:hires_denoising_strength] = refine_params[:hires_denoising_strength] if refine_params[:hires_denoising_strength].present?
     attrs[:hires_steps] = refine_params[:hires_steps].presence if refine_params.key?(:hires_steps)
+    attrs[:hires_denoising_strength] = refine_params[:hires_denoising_strength] if refine_params.key?(:hires_denoising_strength)
+    attrs[:refine_preset_id] = refine_params[:refine_preset_id].presence if refine_params.key?(:refine_preset_id)
 
     @image_generation.update!(attrs)
     RefineImageJob.perform_later(@image_generation.id)
@@ -89,7 +90,9 @@ class ImageGenerationsController < ApplicationController
   end
 
   def load_generation_options
-    @generation_presets = GenerationPreset.includes(:prompt_skill).ordered
+    @draft_presets = GenerationPreset.draft.includes(:prompt_skill).ordered
+    @refine_presets = GenerationPreset.refine.ordered
+    @generation_presets = @draft_presets
     @prompt_skills = PromptSkill.ordered
     load_sd_loras_and_samplers
   end
@@ -105,15 +108,26 @@ class ImageGenerationsController < ApplicationController
 
   def apply_selected_preset(generation)
     preset = if params[:generation_preset_id].present?
-      GenerationPreset.find_by(id: params[:generation_preset_id])
+      GenerationPreset.draft.find_by(id: params[:generation_preset_id])
     else
       GenerationPreset.default_for_generation
     end
 
     return unless preset
 
-    preset.apply_to(generation)
+    preset.apply_draft_to(generation)
+    apply_selected_refine_preset(generation)
     generation.sd_model = resolve_sd_model unless sd_model_available?(generation.sd_model)
+  end
+
+  def apply_selected_refine_preset(generation)
+    preset = if params[:refine_preset_id].present?
+      GenerationPreset.refine.find_by(id: params[:refine_preset_id])
+    else
+      GenerationPreset.default_for_kind("refine")
+    end
+
+    preset&.apply_refine_to(generation)
   end
 
   def build_new_image_generation
@@ -153,16 +167,23 @@ class ImageGenerationsController < ApplicationController
       :sampler_name,
       :vae_tiling,
       :generation_preset_id,
+      :refine_preset_id,
       :prompt_skill_id,
       :draft_batch_size,
       :draft_steps,
       :refine_steps,
-      :refine_denoising_strength
+      :refine_denoising_strength,
+      :enable_hires,
+      :hires_upscaler,
+      :hires_scale,
+      :hires_steps,
+      :hires_denoising_strength
     )
   end
 
   def refine_image_generation_params
     params.permit(
+      :refine_preset_id,
       :refine_denoising_strength,
       :refine_steps,
       :enable_hires,

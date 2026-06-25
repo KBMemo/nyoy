@@ -9,30 +9,23 @@ class GenerationPresetsController < ApplicationController
   before_action :load_generation_options, only: %i[new create edit update]
 
   def index
-    @generation_presets = GenerationPreset.includes(:prompt_skill).ordered
+    @draft_presets = GenerationPreset.draft.includes(:prompt_skill).ordered
+    @refine_presets = GenerationPreset.refine.ordered
   end
 
   def show
   end
 
   def new
-    @generation_preset = GenerationPreset.new(
-      sd_model: resolve_sd_model,
-      width: 768,
-      height: 768,
-      steps: 22,
-      cfg_scale: 6.0,
-      sampler_name: "euler_a",
-      vae_tiling: true,
-      loras: "[]"
-    )
+    kind = params[:preset_kind].presence_in(GenerationPreset::PRESET_KINDS) || "draft"
+    @generation_preset = build_new_preset(kind)
   end
 
   def create
     @generation_preset = GenerationPreset.new(generation_preset_params)
     assign_loras_from_param(@generation_preset, params.dig(:generation_preset, :loras))
 
-    unless sd_model_available?(@generation_preset.sd_model)
+    if !@generation_preset.refine? && !sd_model_available?(@generation_preset.sd_model)
       @generation_preset.errors.add(:sd_model, "は利用できません")
     end
 
@@ -50,7 +43,7 @@ class GenerationPresetsController < ApplicationController
     @generation_preset.assign_attributes(generation_preset_params)
     assign_loras_from_param(@generation_preset, params.dig(:generation_preset, :loras))
 
-    unless sd_model_available?(@generation_preset.sd_model)
+    if !@generation_preset.refine? && !sd_model_available?(@generation_preset.sd_model)
       @generation_preset.errors.add(:sd_model, "は利用できません")
     end
 
@@ -86,9 +79,38 @@ class GenerationPresetsController < ApplicationController
     @sd_samplers = %w[euler_a]
   end
 
+  def build_new_preset(kind)
+    base = {
+      preset_kind: kind,
+      sd_model: resolve_sd_model,
+      width: 768,
+      height: 768,
+      steps: 22,
+      cfg_scale: 6.0,
+      sampler_name: "euler_a",
+      vae_tiling: true,
+      loras: "[]"
+    }
+
+    if kind == "refine"
+      GenerationPreset.new(
+        base.merge(
+          refine_denoising_strength: 0.4,
+          enable_hires: true,
+          hires_upscaler: "Latent",
+          hires_scale: 1.5,
+          hires_denoising_strength: 0.35
+        )
+      )
+    else
+      GenerationPreset.new(base.merge(draft_batch_size: 4))
+    end
+  end
+
   def generation_preset_params
     params.require(:generation_preset).permit(
       :name,
+      :preset_kind,
       :sd_model,
       :width,
       :height,
@@ -98,7 +120,16 @@ class GenerationPresetsController < ApplicationController
       :vae_tiling,
       :default,
       :prompt_skill_id,
-      :default_negative_prompt
+      :default_negative_prompt,
+      :draft_batch_size,
+      :draft_steps,
+      :refine_steps,
+      :refine_denoising_strength,
+      :enable_hires,
+      :hires_upscaler,
+      :hires_scale,
+      :hires_steps,
+      :hires_denoising_strength
     )
   end
 end
