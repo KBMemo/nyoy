@@ -338,12 +338,54 @@
 .nyoy-status-preparing,
 .nyoy-status-translating,
 .nyoy-status-planning,
-.nyoy-status-generating {
+.nyoy-status-generating,
+.nyoy-status-drafting,
+.nyoy-status-refining {
   color: var(--kb-link);
+}
+
+.nyoy-status-awaiting_selection {
+  color: var(--kb-status-warning-strong, var(--kb-link));
 }
 
 .nyoy-status-completed { color: var(--kb-status-success-strong); }
 .nyoy-status-failed { color: var(--kb-status-danger-strong); }
+
+.nyoy-draft-grid {
+  display: grid;
+  gap: var(--kb-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.nyoy-draft-grid-readonly {
+  pointer-events: none;
+}
+
+.nyoy-draft-option {
+  cursor: pointer;
+  display: block;
+}
+
+.nyoy-draft-option input {
+  margin-bottom: var(--kb-space-2);
+}
+
+.nyoy-draft-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--kb-radius-md);
+  overflow: hidden;
+}
+
+.nyoy-draft-option:has(input:checked) .nyoy-draft-thumb,
+.nyoy-draft-thumb-selected {
+  border-color: var(--kb-accent);
+}
+
+.nyoy-draft-thumb img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
 
 .nyoy-card-list {
   display: grid;

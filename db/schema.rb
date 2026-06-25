@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_155857) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_010609) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -61,22 +61,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_155857) do
   create_table "image_generations", force: :cascade do |t|
     t.float "cfg_scale", default: 7.0, null: false
     t.datetime "created_at", null: false
+    t.integer "draft_batch_size", default: 4, null: false
+    t.integer "draft_steps"
     t.text "error_message"
     t.datetime "finished_at"
     t.integer "generation_preset_id"
     t.integer "height", default: 512, null: false
     t.datetime "image_finished_at"
     t.datetime "image_started_at"
-    t.text "japanese_prompt", null: false
+    t.text "japanese_prompt"
     t.text "loras", default: "[]", null: false
     t.text "negative_prompt"
     t.text "prompt"
     t.datetime "prompt_finished_at"
     t.integer "prompt_skill_id"
     t.datetime "prompt_started_at"
+    t.float "refine_denoising_strength", default: 0.4, null: false
+    t.integer "refine_steps"
     t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model", null: false
     t.integer "seed"
+    t.integer "selected_draft_index"
     t.datetime "started_at"
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false

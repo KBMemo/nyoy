@@ -5,7 +5,7 @@
 
 = render "shared/sd_catalog_status"
 
-= form_with model: @image_generation, class: "space-y-4" do |form|
+= form_with model: @image_generation, class: "space-y-4", data: { controller: "image-generation-form", image_generation_form_translate_url_value: translate_prompt_image_generations_path } do |form|
   - if @image_generation.errors.any?
     .kb-alert.kb-alert-danger
       ul.list-disc.pl-5
@@ -13,8 +13,29 @@
           li = message
 
   div
-    = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
-    = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている"
+    = form.label :japanese_prompt, "日本語プロンプト (任意)", class: "#{kb_label} mb-1"
+    = form.text_area :japanese_prompt, rows: 4, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている", data: { image_generation_form_target: "japanesePrompt" }
+
+  div
+    = form.label :prompt_skill_id, "SD プロンプト生成スキル", class: "#{kb_label} mb-1"
+    - if @prompt_skills.any?
+      .flex.flex-wrap.items-center.gap-2
+        = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { include_blank: "（なし）" }, class: kb_field_input_classes, data: { image_generation_form_target: "promptSkillId" }
+        span.text-sm.kb-text-secondary SD プロンプト生成:
+        button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 挿入
+        button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 置き換え
+    - else
+      .kb-alert.kb-alert-warning
+        p
+          | プロンプトスキルが未登録です。
+          = link_to "スキルを作成", new_prompt_skill_path, class: "kb-chrome-link"
+          | してください。
+    p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
+
+  div
+    = form.label :prompt, "SD プロンプト", class: "#{kb_label} mb-1"
+    = form.text_area :prompt, rows: 4, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "chojugiga, emaki, ... または SD プロンプト生成で挿入 / 置き換え", data: { image_generation_form_target: "sdPrompt", action: "input->image-generation-form#sdPromptInput" }
+    p.mt-1.text-sm.kb-text-secondary 日本語プロンプトから生成するか、SD プロンプトを直接入力してください。
 
   = render "shared/generation_settings_fields",
     form_object: @image_generation,
@@ -27,9 +48,21 @@
     lora_catalog_error: @lora_catalog_error,
     show_preset_select: true,
     show_seed: true,
-    show_negative_prompt: true
+    show_negative_prompt: true,
+    show_prompt_skill: false
+
+  .kb-card.p-4
+    h2 class=kb_section_title ラフ生成
+    .mt-4.grid.gap-4.sm:grid-cols-2
+      div
+        = form.label :draft_batch_size, "ラフ枚数", class: "#{kb_label} mb-1"
+        = form.select :draft_batch_size, options_for_select([[2, 2], [3, 3], [4, 4]], @image_generation.draft_batch_size || 4), {}, class: kb_field_input_classes
+      div
+        = form.label :draft_steps, "ラフ Steps (任意)", class: "#{kb_label} mb-1"
+        = form.number_field :draft_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{[@image_generation.steps || 20, 18].min} まで"
+    p.mt-2.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @sd_models.empty?
+    = form.submit "ラフを生成", class: kb_btn_primary_sm, disabled: @sd_models.empty?
     = link_to "プリセット管理", generation_presets_path, class: "kb-chrome-link text-sm"
     = link_to "戻る", image_generations_path, class: "kb-chrome-link text-sm"

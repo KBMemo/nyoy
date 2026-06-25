@@ -38,7 +38,7 @@ class GenerationProgressBroadcastableTest < ActiveSupport::TestCase
       japanese_prompt: "test",
       sd_model: "flat2d",
       loras: "[]",
-      status: "generating",
+      status: "drafting",
       prompt_started_at: 30.seconds.ago,
       prompt_finished_at: 20.seconds.ago,
       image_started_at: 10.seconds.ago

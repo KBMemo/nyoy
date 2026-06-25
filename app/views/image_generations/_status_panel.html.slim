@@ -10,11 +10,12 @@
         = render "shared/generation_phase_timing", record: image_generation
 
   .kb-card.p-4
-    h2 class=kb_section_title 日本語プロンプト
-    p.mt-2.text-sm.kb-text-secondary = simple_format(image_generation.japanese_prompt)
+    - if image_generation.japanese_prompt.present?
+      h2 class=kb_section_title 日本語プロンプト
+      p.mt-2.text-sm.kb-text-secondary = simple_format(image_generation.japanese_prompt)
 
     - if image_generation.prompt.present?
-      h2.mt-6 class=kb_section_title SD プロンプト (英語)
+      h2 class=(image_generation.japanese_prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") SD プロンプト
       p.mt-2.text-sm.nyoy-monospace = image_generation.prompt
 
     - if image_generation.negative_prompt.present?
@@ -25,8 +26,12 @@
     dl.mt-2.nyoy-settings-list
       dt サイズ
       dd = "#{image_generation.width}×#{image_generation.height}"
-      dt Steps / CFG
-      dd = "#{image_generation.steps} / #{image_generation.cfg_scale}"
+      dt ラフ枚数 / Steps
+      dd = "#{image_generation.draft_batch_size} 枚 / #{image_generation.draft_steps_for_api}"
+      dt 仕上げ Steps / 強度
+      dd = "#{image_generation.refine_steps_for_api} / #{image_generation.refine_denoising_strength}"
+      dt CFG
+      dd = image_generation.cfg_scale
       dt Seed
       dd = nyoy_format_seed(image_generation.seed)
       dt Sampler
@@ -45,11 +50,48 @@
         p = image_generation.error_message
 
     - if image_generation.in_progress?
-      p.mt-4.text-sm.kb-text-muted 生成中です… 状態は自動更新されます。
+      p.mt-4.text-sm.kb-text-muted
+        - if image_generation.status == "drafting"
+          | ラフ案を生成中です… 状態は自動更新されます。
+        - elsif image_generation.status == "refining"
+          | 選択した案を仕上げています… 状態は自動更新されます。
+        - else
+          | 生成中です… 状態は自動更新されます。
+
+    - if image_generation.awaiting_selection? && image_generation.drafts.attached?
+      h2.mt-6 class=kb_section_title ラフ案を選択
+      p.mt-2.text-sm.kb-text-secondary 気に入った案を選んで「仕上げる」を押してください。
+
+      = form_with url: refine_image_generation_path(image_generation), method: :post, class: "mt-4 space-y-4" do |form|
+        .nyoy-draft-grid
+          - image_generation.drafts.each_with_index do |draft, index|
+            label.nyoy-draft-option
+              = radio_button_tag :draft_index, index, index.zero?, class: "kb-control-accent"
+              figure.nyoy-draft-thumb
+                = nyoy_blob_image_tag draft.variant(resize_to_limit: [320, 320]), alt: "ラフ案 #{index + 1}"
+
+        .grid.gap-4.sm:grid-cols-2
+          div
+            = label_tag :refine_denoising_strength, "仕上げ強度 (denoising)", class: "#{kb_label} mb-1"
+            = number_field_tag :refine_denoising_strength, image_generation.refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
+            p.mt-1.text-xs.kb-text-muted 低いほどラフの構図を保ちます（0.3〜0.5 推奨）
+          div
+            = label_tag :refine_steps, "仕上げ Steps (任意)", class: "#{kb_label} mb-1"
+            = number_field_tag :refine_steps, image_generation.refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}"
+
+        = form.submit "選択した案を仕上げる", class: kb_btn_primary_sm
+
+    - elsif image_generation.drafts.attached?
+      h2.mt-6 class=kb_section_title ラフ案
+      .nyoy-draft-grid.nyoy-draft-grid-readonly.mt-2
+        - image_generation.drafts.each_with_index do |draft, index|
+          figure.nyoy-draft-thumb class=(index == image_generation.selected_draft_index ? "nyoy-draft-thumb-selected" : nil)
+            = nyoy_blob_image_tag draft.variant(resize_to_limit: [320, 320]), alt: "ラフ案 #{index + 1}"
 
     - if image_generation.image.attached?
-      figure.nyoy-result-image.mt-4
-        = nyoy_blob_image_tag image_generation.image, alt: image_generation.japanese_prompt
+      h2.mt-6 class=kb_section_title 仕上がり
+      figure.nyoy-result-image.mt-2
+        = nyoy_blob_image_tag image_generation.image, alt: image_generation.display_summary
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }

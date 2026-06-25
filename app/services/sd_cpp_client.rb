@@ -43,7 +43,101 @@ class SdCppClient
     seed: -1,
     sampler_name: nil,
     vae_tiling: nil,
+    lora: [],
+    batch_size: 1
+  )
+    images = txt2img_all(
+      prompt: prompt,
+      negative_prompt: negative_prompt,
+      width: width,
+      height: height,
+      steps: steps,
+      cfg_scale: cfg_scale,
+      seed: seed,
+      sampler_name: sampler_name,
+      vae_tiling: vae_tiling,
+      lora: lora,
+      batch_size: batch_size
+    )
+
+    batch_size > 1 ? images : images.first
+  end
+
+  def txt2img_all(
+    prompt:,
+    negative_prompt: "",
+    width: 512,
+    height: 512,
+    steps: 20,
+    cfg_scale: 7.0,
+    seed: -1,
+    sampler_name: nil,
+    vae_tiling: nil,
+    lora: [],
+    batch_size: 1
+  )
+    payload = build_generation_payload(
+      prompt: prompt,
+      negative_prompt: negative_prompt,
+      width: width,
+      height: height,
+      steps: steps,
+      cfg_scale: cfg_scale,
+      seed: seed,
+      sampler_name: sampler_name,
+      vae_tiling: vae_tiling,
+      lora: lora
+    )
+    payload[:batch_size] = batch_size if batch_size > 1
+
+    decode_images(post_json("/sdapi/v1/txt2img", payload))
+  end
+
+  def img2img(
+    prompt:,
+    init_image:,
+    negative_prompt: "",
+    width: 512,
+    height: 512,
+    steps: 20,
+    cfg_scale: 7.0,
+    seed: -1,
+    sampler_name: nil,
+    vae_tiling: nil,
+    denoising_strength: 0.4,
     lora: []
+  )
+    payload = build_generation_payload(
+      prompt: prompt,
+      negative_prompt: negative_prompt,
+      width: width,
+      height: height,
+      steps: steps,
+      cfg_scale: cfg_scale,
+      seed: seed,
+      sampler_name: sampler_name,
+      vae_tiling: vae_tiling,
+      lora: lora
+    )
+    payload[:init_images] = [Base64.strict_encode64(init_image)]
+    payload[:denoising_strength] = denoising_strength
+
+    decode_images(post_json("/sdapi/v1/img2img", payload)).first
+  end
+
+  private
+
+  def build_generation_payload(
+    prompt:,
+    negative_prompt:,
+    width:,
+    height:,
+    steps:,
+    cfg_scale:,
+    seed:,
+    sampler_name:,
+    vae_tiling:,
+    lora:
   )
     payload = {
       prompt: prompt,
@@ -57,16 +151,15 @@ class SdCppClient
     payload[:sampler_name] = sampler_name if sampler_name.present?
     payload[:vae_tiling] = vae_tiling unless vae_tiling.nil?
     payload[:loras] = lora if lora.present?
-
-    json = post_json("/sdapi/v1/txt2img", payload)
-
-    image_b64 = json.fetch("images", []).first
-    raise Error, "no image returned" if image_b64.blank?
-
-    Base64.decode64(image_b64)
+    payload
   end
 
-  private
+  def decode_images(json)
+    images = json.fetch("images", []).map { |image_b64| Base64.decode64(image_b64) }
+    raise Error, "no image returned" if images.empty?
+
+    images
+  end
 
   def post_json(path, payload)
     uri = URI("#{@base_url}#{path}")

@@ -69,6 +69,9 @@ export default class extends Controller {
 
     if (this.hasPromptSkillIdTarget) {
       this.promptSkillIdTarget.value = preset.prompt_skill_id || ""
+    } else {
+      const field = this.promptSkillField()
+      if (field) field.value = preset.prompt_skill_id || ""
     }
 
     if (this.hasNegativePromptTarget) {
@@ -153,6 +156,10 @@ export default class extends Controller {
     } catch {
       return []
     }
+  }
+
+  promptSkillField() {
+    return this.element.closest("form")?.querySelector('[name$="[prompt_skill_id]"]')
   }
 
   syncLorasField() {

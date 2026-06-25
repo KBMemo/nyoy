@@ -4,15 +4,39 @@ class ImageGenerationsController < ApplicationController
   include SdCatalogLoadable
   include LoraParamsParseable
 
-  before_action :set_image_generation, only: :show
-  before_action :load_sd_catalog, only: %i[index new create]
-  before_action :load_generation_options, only: %i[new create]
+  before_action :set_image_generation, only: %i[show refine]
+  before_action :load_sd_catalog, only: %i[index new create translate_prompt]
+  before_action :load_generation_options, only: %i[new create translate_prompt]
 
   def index
     @image_generations = ImageGeneration.recent.limit(20)
   end
 
   def show
+  end
+
+  def refine
+    unless @image_generation.awaiting_selection?
+      redirect_to @image_generation, alert: "ラフ案の選択はまだできません"
+      return
+    end
+
+    draft_index = params[:draft_index].to_i
+    unless draft_index.in?(0...@image_generation.drafts.count)
+      redirect_to @image_generation, alert: "ラフ案を選択してください"
+      return
+    end
+
+    refine_params = refine_image_generation_params
+    @image_generation.update!(
+      selected_draft_index: draft_index,
+      refine_denoising_strength: refine_params[:refine_denoising_strength],
+      refine_steps: refine_params[:refine_steps].presence,
+      image_started_at: nil,
+      image_finished_at: nil
+    )
+    RefineImageJob.perform_later(@image_generation.id)
+    redirect_to @image_generation
   end
 
   def new
@@ -33,6 +57,19 @@ class ImageGenerationsController < ApplicationController
     else
       render :new, status: :unprocessable_entity
     end
+  end
+
+  def translate_prompt
+    japanese_prompt = params[:japanese_prompt].to_s.strip
+    if japanese_prompt.blank?
+      return render json: { error: "日本語プロンプトを入力してください" }, status: :unprocessable_entity
+    end
+
+    skill = PromptSkill.find_by(id: params[:prompt_skill_id])
+    prompt = SdPromptTranslator.new.translate(japanese_prompt, skill: skill)
+    render json: { prompt: prompt }
+  rescue SdPromptTranslator::Error => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   private
@@ -95,6 +132,7 @@ class ImageGenerationsController < ApplicationController
   def image_generation_params
     params.require(:image_generation).permit(
       :japanese_prompt,
+      :prompt,
       :negative_prompt,
       :sd_model,
       :width,
@@ -105,7 +143,15 @@ class ImageGenerationsController < ApplicationController
       :sampler_name,
       :vae_tiling,
       :generation_preset_id,
-      :prompt_skill_id
+      :prompt_skill_id,
+      :draft_batch_size,
+      :draft_steps,
+      :refine_steps,
+      :refine_denoising_strength
     )
+  end
+
+  def refine_image_generation_params
+    params.permit(:refine_denoising_strength, :refine_steps)
   end
 end

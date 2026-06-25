@@ -8,10 +8,10 @@ class GenerateImageJob < ApplicationJob
     generation.update!(started_at: Time.current, status: "preparing")
 
     switch_model(generation)
-    translate_prompt(generation)
-    generate_image(generation)
+    prepare_prompt(generation)
+    generate_drafts(generation)
 
-    generation.update!(status: "completed", finished_at: Time.current)
+    generation.update!(status: "awaiting_selection")
   rescue StandardError => e
     stamp_open_phases!(generation)
     generation&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
@@ -25,6 +25,12 @@ class GenerateImageJob < ApplicationJob
     switch.switch(generation.sd_model, lora: generation.switch_lora_name)
   end
 
+  def prepare_prompt(generation)
+    return if generation.prompt.to_s.strip.present?
+
+    translate_prompt(generation)
+  end
+
   def translate_prompt(generation)
     generation.update!(status: "translating", prompt_started_at: Time.current)
 
@@ -35,27 +41,31 @@ class GenerateImageJob < ApplicationJob
     generation.update!(prompt: prompt, prompt_finished_at: Time.current)
   end
 
-  def generate_image(generation)
-    generation.update!(status: "generating", image_started_at: Time.current)
+  def generate_drafts(generation)
+    generation.update!(status: "drafting", image_started_at: Time.current)
 
-    png_data = SdCppClient.new.txt2img(
+    png_list = SdCppClient.new.txt2img(
       prompt: generation.prompt,
       negative_prompt: NegativePromptResolver.for_generation(generation),
       width: generation.width,
       height: generation.height,
-      steps: generation.steps,
+      steps: generation.draft_steps_for_api,
       cfg_scale: generation.cfg_scale,
       seed: generation.seed || -1,
       sampler_name: generation.sampler_name,
       vae_tiling: generation.vae_tiling,
-      lora: generation.loras_for_api
+      lora: generation.loras_for_api,
+      batch_size: generation.draft_batch_size
     )
 
-    generation.image.attach(
-      io: StringIO.new(png_data),
-      filename: "generation-#{generation.id}.png",
-      content_type: "image/png"
-    )
+    generation.drafts.purge
+    Array(png_list).each_with_index do |png_data, index|
+      generation.drafts.attach(
+        io: StringIO.new(png_data),
+        filename: "draft-#{generation.id}-#{index}.png",
+        content_type: "image/png"
+      )
+    end
     generation.update!(image_finished_at: Time.current)
   end
 

@@ -32,7 +32,7 @@ section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=g
     = form_builder.label :sd_model, "SD モデル", class: "#{kb_label} mb-1"
     = form_builder.select :sd_model, sd_models, {}, required: true, disabled: sd_models.empty?, class: kb_field_input_classes, data: { preset_form_target: "sdModel" }
 
-  - if prompt_skills.any?
+  - if local_assigns.fetch(:show_prompt_skill, true) && prompt_skills.any?
     div
       = form_builder.label :prompt_skill_id, "プロンプトスキル", class: "#{kb_label} mb-1"
       = form_builder.collection_select :prompt_skill_id, prompt_skills, :id, :name, { include_blank: "デフォルト翻訳" }, class: kb_field_input_classes, data: { preset_form_target: "promptSkillId" }
