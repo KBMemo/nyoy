@@ -44,7 +44,12 @@ class SdCppClient
     sampler_name: nil,
     vae_tiling: nil,
     lora: [],
-    batch_size: 1
+    batch_size: 1,
+    enable_hr: nil,
+    hr_upscaler: nil,
+    hr_scale: nil,
+    hr_steps: nil,
+    hr_denoising_strength: nil
   )
     images = txt2img_all(
       prompt: prompt,
@@ -57,7 +62,12 @@ class SdCppClient
       sampler_name: sampler_name,
       vae_tiling: vae_tiling,
       lora: lora,
-      batch_size: batch_size
+      batch_size: batch_size,
+      enable_hr: enable_hr,
+      hr_upscaler: hr_upscaler,
+      hr_scale: hr_scale,
+      hr_steps: hr_steps,
+      hr_denoising_strength: hr_denoising_strength
     )
 
     batch_size > 1 ? images : images.first
@@ -74,7 +84,12 @@ class SdCppClient
     sampler_name: nil,
     vae_tiling: nil,
     lora: [],
-    batch_size: 1
+    batch_size: 1,
+    enable_hr: nil,
+    hr_upscaler: nil,
+    hr_scale: nil,
+    hr_steps: nil,
+    hr_denoising_strength: nil
   )
     payload = build_generation_payload(
       prompt: prompt,
@@ -89,6 +104,14 @@ class SdCppClient
       lora: lora
     )
     payload[:batch_size] = batch_size if batch_size > 1
+    merge_hires_payload!(
+      payload,
+      enable_hr: enable_hr,
+      hr_upscaler: hr_upscaler,
+      hr_scale: hr_scale,
+      hr_steps: hr_steps,
+      hr_denoising_strength: hr_denoising_strength
+    )
 
     decode_images(post_json("/sdapi/v1/txt2img", payload))
   end
@@ -105,7 +128,14 @@ class SdCppClient
     sampler_name: nil,
     vae_tiling: nil,
     denoising_strength: 0.4,
-    lora: []
+    lora: [],
+    enable_hr: nil,
+    hr_upscaler: nil,
+    hr_scale: nil,
+    hr_steps: nil,
+    hr_denoising_strength: nil,
+    hr_resize_x: nil,
+    hr_resize_y: nil
   )
     payload = build_generation_payload(
       prompt: prompt,
@@ -121,6 +151,16 @@ class SdCppClient
     )
     payload[:init_images] = [Base64.strict_encode64(init_image)]
     payload[:denoising_strength] = denoising_strength
+    merge_hires_payload!(
+      payload,
+      enable_hr: enable_hr,
+      hr_upscaler: hr_upscaler,
+      hr_scale: hr_scale,
+      hr_steps: hr_steps,
+      hr_denoising_strength: hr_denoising_strength,
+      hr_resize_x: hr_resize_x,
+      hr_resize_y: hr_resize_y
+    )
 
     decode_images(post_json("/sdapi/v1/img2img", payload)).first
   end
@@ -152,6 +192,18 @@ class SdCppClient
     payload[:vae_tiling] = vae_tiling unless vae_tiling.nil?
     payload[:loras] = lora if lora.present?
     payload
+  end
+
+  def merge_hires_payload!(payload, enable_hr:, hr_upscaler:, hr_scale:, hr_steps:, hr_denoising_strength:, hr_resize_x: nil, hr_resize_y: nil)
+    return unless enable_hr
+
+    payload[:enable_hr] = true
+    payload[:hr_upscaler] = hr_upscaler if hr_upscaler.present?
+    payload[:hr_scale] = hr_scale if hr_scale
+    payload[:hr_steps] = hr_steps if hr_steps
+    payload[:hr_resize_x] = hr_resize_x if hr_resize_x
+    payload[:hr_resize_y] = hr_resize_y if hr_resize_y
+    payload[:denoising_strength] = hr_denoising_strength if hr_denoising_strength && !payload.key?(:denoising_strength)
   end
 
   def decode_images(json)

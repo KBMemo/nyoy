@@ -1,0 +1,24 @@
+- label_text = "ラフ案 #{index + 1}"
+- full_url = nyoy_blob_image_path(draft)
+- download_url = nyoy_blob_download_path(draft, filename: "draft-#{image_generation.id}-#{index + 1}.png")
+
+.nyoy-draft-card class=(selected ? "nyoy-draft-thumb-selected" : nil)
+  p.text-xs.kb-text-secondary
+    - if selected
+      | 選択済み · #{label_text}
+    - else
+      = label_text
+
+  figure.nyoy-draft-thumb
+    button.nyoy-draft-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=full_url data-image-preview-label=label_text data-image-preview-download-url=download_url
+      = nyoy_blob_image_tag draft.variant(resize_to_limit: [320, 320]), alt: label_text
+
+  - if local_assigns.fetch(:refining, false)
+    .nyoy-draft-actions
+      span.text-xs.kb-text-secondary
+        | 仕上げ中 
+        span data-controller="generation-timer" data-generation-timer-started-at-value=image_generation.image_started_at.iso8601 data-generation-timer-finished-at-value=(image_generation.image_finished_at&.iso8601) data-generation-timer-active-value=image_generation.image_phase_active?
+          span data-generation-timer-target="elapsed" = nyoy_format_duration(image_generation.image_elapsed_seconds)
+  - elsif local_assigns.fetch(:refineable, false)
+    .nyoy-draft-actions
+      = button_tag "仕上げ生成", type: "submit", name: "draft_index", value: index, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"

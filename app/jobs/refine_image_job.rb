@@ -11,7 +11,9 @@ class RefineImageJob < ApplicationJob
     generation.update!(status: "refining", image_started_at: Time.current, image_finished_at: nil)
 
     switch_model(generation)
-    refine_image(generation, draft)
+    refined_png = refine_image(generation, draft)
+    final_png = generation.enable_hires? ? upscale_image(generation, refined_png) : refined_png
+    attach_final_image(generation, final_png)
 
     generation.update!(status: "completed", image_finished_at: Time.current, finished_at: Time.current)
   rescue StandardError => e
@@ -28,7 +30,7 @@ class RefineImageJob < ApplicationJob
   end
 
   def refine_image(generation, draft)
-    png_data = SdCppClient.new.img2img(
+    SdCppClient.new.img2img(
       prompt: generation.prompt,
       negative_prompt: NegativePromptResolver.for_generation(generation),
       init_image: draft.download,
@@ -42,12 +44,41 @@ class RefineImageJob < ApplicationJob
       denoising_strength: generation.refine_denoising_strength,
       lora: generation.loras_for_api
     )
+  end
 
-    generation.image.purge if generation.image.attached?
-    generation.image.attach(
+  def upscale_image(generation, init_image)
+    SdCppClient.new.img2img(
+      prompt: generation.prompt,
+      negative_prompt: NegativePromptResolver.for_generation(generation),
+      init_image: init_image,
+      width: generation.width,
+      height: generation.height,
+      steps: generation.hires_steps_for_api,
+      cfg_scale: generation.cfg_scale,
+      seed: generation.seed || -1,
+      sampler_name: generation.sampler_name,
+      vae_tiling: generation.vae_tiling,
+      denoising_strength: generation.hires_denoising_strength,
+      lora: generation.loras_for_api,
+      enable_hr: true,
+      hr_upscaler: generation.hires_upscaler,
+      hr_scale: generation.hires_scale,
+      hr_steps: generation.hires_steps_for_api,
+      hr_denoising_strength: generation.hires_denoising_strength,
+      hr_resize_x: generation.hires_target_width,
+      hr_resize_y: generation.hires_target_height
+    )
+  end
+
+  def attach_final_image(generation, png_data)
+    sequence = generation.refined_images.attachments.count + 1
+    draft_index = generation.selected_draft_index
+
+    generation.refined_images.attach(
       io: StringIO.new(png_data),
-      filename: "generation-#{generation.id}.png",
-      content_type: "image/png"
+      filename: "refined-#{generation.id}-#{sequence}.png",
+      content_type: "image/png",
+      metadata: { draft_index: draft_index, sequence: sequence }
     )
   end
 

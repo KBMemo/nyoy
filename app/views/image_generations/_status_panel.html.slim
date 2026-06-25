@@ -1,4 +1,4 @@
-= turbo_frame_tag dom_id(image_generation, :status) do
+= turbo_frame_tag dom_id(image_generation, :status), data: { controller: "image-preview" } do
   div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
     div
       h1 class=kb_page_title 生成結果
@@ -7,7 +7,7 @@
         |  · #{image_generation.sd_model}
         - if image_generation.generation_preset
           |  · #{image_generation.generation_preset.name}
-        = render "shared/generation_phase_timing", record: image_generation
+        = render "shared/generation_phase_timing", record: image_generation, show_prompt_timing: false
 
   .kb-card.p-4
     - if image_generation.japanese_prompt.present?
@@ -30,6 +30,12 @@
       dd = "#{image_generation.draft_batch_size} 枚 / #{image_generation.draft_steps_for_api}"
       dt 仕上げ Steps / 強度
       dd = "#{image_generation.refine_steps_for_api} / #{image_generation.refine_denoising_strength}"
+      dt Hires
+      dd
+        - if image_generation.enable_hires?
+          | ON · #{image_generation.hires_upscaler} · #{image_generation.hires_scale}x → #{image_generation.hires_target_width}×#{image_generation.hires_target_height}
+        - else
+          | OFF
       dt CFG
       dd = image_generation.cfg_scale
       dt Seed
@@ -54,44 +60,50 @@
         - if image_generation.status == "drafting"
           | ラフ案を生成中です… 状態は自動更新されます。
         - elsif image_generation.status == "refining"
-          | 選択した案を仕上げています… 状態は自動更新されます。
+          | 選択した案を img2img で仕上げ、続けて Hires で拡大しています… 状態は自動更新されます。
         - else
           | 生成中です… 状態は自動更新されます。
 
-    - if image_generation.awaiting_selection? && image_generation.drafts.attached?
-      h2.mt-6 class=kb_section_title ラフ案を選択
-      p.mt-2.text-sm.kb-text-secondary 気に入った案を選んで「仕上げる」を押してください。
+    - if image_generation.drafts.attached?
+      - if image_generation.refineable?
+        h2.mt-6 class=kb_section_title ラフ案
+        p.mt-2.text-sm.kb-text-secondary
+          - if image_generation.awaiting_selection?
+            | サムネイルをクリックすると実寸表示します。仕上げ設定を確認して、案ごとの「仕上げ生成」を押してください。
+          - else
+            | サムネイルをクリックすると実寸表示します。別の案で仕上げ直す場合は設定を変えて「仕上げ生成」を押してください。
 
-      = form_with url: refine_image_generation_path(image_generation), method: :post, class: "mt-4 space-y-4" do |form|
-        .nyoy-draft-grid
+        = form_with url: refine_image_generation_path(image_generation), method: :post, class: "mt-4 space-y-4" do |form|
+          = render "image_generations/refine_settings_fields", image_generation: image_generation
+
+          .nyoy-draft-grid.mt-2
+            - image_generation.drafts.each_with_index do |draft, index|
+              = render "image_generations/draft_card", image_generation: image_generation, draft: draft, index: index, refineable: true, selected: index == image_generation.selected_draft_index
+
+      - else
+        h2.mt-6 class=kb_section_title ラフ案
+        p.mt-2.text-sm.kb-text-secondary
+          - if image_generation.status == "refining"
+            | 選択した案を仕上げています。経過時間は案の下に表示されます。
+          - else
+            | クリックで実寸表示できます（ダイアログ内から保存も可能）。
+        .nyoy-draft-grid class=(image_generation.status == "refining" ? "mt-2" : "nyoy-draft-grid-readonly mt-2")
           - image_generation.drafts.each_with_index do |draft, index|
-            label.nyoy-draft-option
-              = radio_button_tag :draft_index, index, index.zero?, class: "kb-control-accent"
-              figure.nyoy-draft-thumb
-                = nyoy_blob_image_tag draft.variant(resize_to_limit: [320, 320]), alt: "ラフ案 #{index + 1}"
+            = render "image_generations/draft_card", image_generation: image_generation, draft: draft, index: index, refineable: false, refining: image_generation.status == "refining" && index == image_generation.selected_draft_index, selected: index == image_generation.selected_draft_index
 
-        .grid.gap-4.sm:grid-cols-2
-          div
-            = label_tag :refine_denoising_strength, "仕上げ強度 (denoising)", class: "#{kb_label} mb-1"
-            = number_field_tag :refine_denoising_strength, image_generation.refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
-            p.mt-1.text-xs.kb-text-muted 低いほどラフの構図を保ちます（0.3〜0.5 推奨）
-          div
-            = label_tag :refine_steps, "仕上げ Steps (任意)", class: "#{kb_label} mb-1"
-            = number_field_tag :refine_steps, image_generation.refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}"
-
-        = form.submit "選択した案を仕上げる", class: kb_btn_primary_sm
-
-    - elsif image_generation.drafts.attached?
-      h2.mt-6 class=kb_section_title ラフ案
-      .nyoy-draft-grid.nyoy-draft-grid-readonly.mt-2
-        - image_generation.drafts.each_with_index do |draft, index|
-          figure.nyoy-draft-thumb class=(index == image_generation.selected_draft_index ? "nyoy-draft-thumb-selected" : nil)
-            = nyoy_blob_image_tag draft.variant(resize_to_limit: [320, 320]), alt: "ラフ案 #{index + 1}"
-
-    - if image_generation.image.attached?
+    - if image_generation.refined_images.attached?
+      h2.mt-6 class=kb_section_title 仕上がり
+      p.mt-2.text-sm.kb-text-secondary 新しい順に表示します。クリックで実寸表示、保存もできます。
+      .nyoy-refined-grid.mt-2
+        - image_generation.refined_image_attachments.each do |attachment|
+          = render "image_generations/refined_image_card", image_generation: image_generation, attachment: attachment
+    - elsif image_generation.image.attached?
       h2.mt-6 class=kb_section_title 仕上がり
       figure.nyoy-result-image.mt-2
-        = nyoy_blob_image_tag image_generation.image, alt: image_generation.display_summary
+        button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(image_generation.image) data-image-preview-label="仕上がり" data-image-preview-download-url=nyoy_blob_download_path(image_generation.image, filename: "generation-#{image_generation.id}.png")
+          = nyoy_blob_image_tag image_generation.image, alt: image_generation.display_summary
+      .mt-2
+        = link_to "画像を保存", nyoy_blob_download_path(image_generation.image, filename: "generation-#{image_generation.id}.png"), class: "kb-chrome-link text-sm", download: ""
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
@@ -99,3 +111,5 @@
       = link_to "プリセットを更新", edit_generation_preset_path(image_generation.generation_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
+
+  = render "shared/image_preview_dialog"

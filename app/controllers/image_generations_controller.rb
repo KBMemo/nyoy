@@ -16,8 +16,8 @@ class ImageGenerationsController < ApplicationController
   end
 
   def refine
-    unless @image_generation.awaiting_selection?
-      redirect_to @image_generation, alert: "ラフ案の選択はまだできません"
+    unless @image_generation.refineable?
+      redirect_to @image_generation, alert: "このラフ案では仕上げ生成できません"
       return
     end
 
@@ -28,13 +28,23 @@ class ImageGenerationsController < ApplicationController
     end
 
     refine_params = refine_image_generation_params
-    @image_generation.update!(
+    attrs = {
       selected_draft_index: draft_index,
-      refine_denoising_strength: refine_params[:refine_denoising_strength],
-      refine_steps: refine_params[:refine_steps].presence,
-      image_started_at: nil,
-      image_finished_at: nil
-    )
+      status: "refining",
+      image_started_at: Time.current,
+      image_finished_at: nil,
+      finished_at: nil,
+      error_message: nil
+    }
+    attrs[:refine_denoising_strength] = refine_params[:refine_denoising_strength] if refine_params.key?(:refine_denoising_strength)
+    attrs[:refine_steps] = refine_params[:refine_steps].presence if refine_params.key?(:refine_steps)
+    attrs[:enable_hires] = refine_params[:enable_hires] == "1" if refine_params.key?(:enable_hires)
+    attrs[:hires_upscaler] = refine_params[:hires_upscaler] if refine_params[:hires_upscaler].present?
+    attrs[:hires_scale] = refine_params[:hires_scale] if refine_params[:hires_scale].present?
+    attrs[:hires_denoising_strength] = refine_params[:hires_denoising_strength] if refine_params[:hires_denoising_strength].present?
+    attrs[:hires_steps] = refine_params[:hires_steps].presence if refine_params.key?(:hires_steps)
+
+    @image_generation.update!(attrs)
     RefineImageJob.perform_later(@image_generation.id)
     redirect_to @image_generation
   end
@@ -152,6 +162,14 @@ class ImageGenerationsController < ApplicationController
   end
 
   def refine_image_generation_params
-    params.permit(:refine_denoising_strength, :refine_steps)
+    params.permit(
+      :refine_denoising_strength,
+      :refine_steps,
+      :enable_hires,
+      :hires_upscaler,
+      :hires_scale,
+      :hires_steps,
+      :hires_denoising_strength
+    )
   end
 end

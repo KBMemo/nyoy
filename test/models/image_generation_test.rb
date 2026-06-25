@@ -91,4 +91,47 @@ class ImageGenerationTest < ActiveSupport::TestCase
     assert_not generation.in_progress?
     assert_not generation.finished?
   end
+
+  test "refineable when awaiting selection or after completion" do
+    generation = ImageGeneration.create!(
+      prompt: "test",
+      sd_model: "flat2d",
+      loras: "[]",
+      status: "awaiting_selection"
+    )
+    generation.drafts.attach(
+      io: StringIO.new("x"),
+      filename: "d.png",
+      content_type: "image/png"
+    )
+    assert generation.refineable?
+
+    generation.update!(status: "completed")
+    assert generation.refineable?
+
+    generation.update!(status: "refining")
+    assert_not generation.refineable?
+  end
+
+  test "refined_image_label includes draft index" do
+    generation = ImageGeneration.create!(
+      prompt: "test",
+      sd_model: "flat2d",
+      loras: "[]"
+    )
+    generation.refined_images.attach(
+      io: StringIO.new("x"),
+      filename: "refined.png",
+      content_type: "image/png",
+      metadata: { draft_index: 2, sequence: 3 }
+    )
+
+    assert_equal "仕上がり 3 · ラフ案 3", generation.refined_image_label(generation.refined_images.attachments.first)
+  end
+
+  test "hires target dimensions scale from base size" do
+    generation = ImageGeneration.new(width: 512, height: 768, hires_scale: 1.5, loras: "[]")
+    assert_equal 768, generation.hires_target_width
+    assert_equal 1152, generation.hires_target_height
+  end
 end

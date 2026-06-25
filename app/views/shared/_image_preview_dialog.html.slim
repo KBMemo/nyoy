@@ -1,0 +1,11 @@
+dialog.nyoy-image-preview data-image-preview-target="dialog" data-action="click->image-preview#backdropClose"
+  .nyoy-image-preview-panel role="document"
+    header.nyoy-image-preview-header
+      div
+        p.nyoy-image-preview-caption data-image-preview-target="caption"
+        p.nyoy-image-preview-meta data-image-preview-target="meta"
+      .flex.flex-wrap.items-center.gap-2
+        a.kb-chrome-btn-secondary.kb-btn-sm data-image-preview-target="download" download="" 保存
+        button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="image-preview#close" 閉じる
+    .nyoy-image-preview-body
+      img.nyoy-image-preview-image data-image-preview-target="image" alt=""

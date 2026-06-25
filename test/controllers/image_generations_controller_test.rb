@@ -39,8 +39,10 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to image_generation_path(generation)
     generation.reload
+    assert_equal "refining", generation.status
     assert_equal 1, generation.selected_draft_index
     assert_in_delta 0.45, generation.refine_denoising_strength
+    assert generation.image_started_at
   end
 
   test "refine rejects invalid draft index" do
@@ -48,6 +50,31 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_enqueued_jobs only: RefineImageJob do
       post refine_image_generation_path(generation), params: { draft_index: 99 }
+    end
+
+    assert_redirected_to image_generation_path(generation)
+  end
+
+  test "refine from completed generation re-runs selected draft" do
+    generation = create_generation_awaiting_selection(draft_count: 2)
+    generation.update!(status: "completed", finished_at: Time.current, selected_draft_index: 0)
+
+    assert_enqueued_with(job: RefineImageJob, args: [generation.id]) do
+      post refine_image_generation_path(generation), params: { draft_index: 1 }
+    end
+
+    generation.reload
+    assert_equal "refining", generation.status
+    assert_equal 1, generation.selected_draft_index
+    assert_nil generation.finished_at
+  end
+
+  test "refine rejects while generation is in progress" do
+    generation = create_generation_awaiting_selection(draft_count: 2)
+    generation.update!(status: "refining")
+
+    assert_no_enqueued_jobs only: RefineImageJob do
+      post refine_image_generation_path(generation), params: { draft_index: 0 }
     end
 
     assert_redirected_to image_generation_path(generation)

@@ -61,4 +61,32 @@ class SdCppClientTest < ActiveSupport::TestCase
     assert_in_delta 0.35, captured[:payload][:denoising_strength]
     assert_equal "refined", result
   end
+
+  test "img2img can request hires upscale fields" do
+    client = SdCppClient.new(base_url: "http://example.test")
+    captured = {}
+
+    client.define_singleton_method(:post_json) do |path, payload|
+      captured[:path] = path
+      captured[:payload] = payload
+      { "images" => [Base64.strict_encode64("upscaled")] }
+    end
+
+    client.img2img(
+      prompt: "test",
+      init_image: "refined-bytes",
+      enable_hr: true,
+      hr_upscaler: "Latent",
+      hr_scale: 1.5,
+      hr_steps: 18,
+      hr_denoising_strength: 0.35,
+      hr_resize_x: 768,
+      hr_resize_y: 768
+    )
+
+    assert_equal "/sdapi/v1/img2img", captured[:path]
+    assert captured[:payload][:enable_hr]
+    assert_equal "Latent", captured[:payload][:hr_upscaler]
+    assert_equal 768, captured[:payload][:hr_resize_x]
+  end
 end

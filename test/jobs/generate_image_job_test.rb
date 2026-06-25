@@ -53,14 +53,18 @@ end
 class RefineImageJobTest < ActiveJob::TestCase
   include ImageGenerationJobTestHelper
 
-  test "refines selected draft into final image" do
+  test "refines selected draft and upscales with hires" do
     generation = ImageGeneration.create!(
       prompt: "chojugiga, rabbit",
       sd_model: "flat2d",
       loras: "[]",
+      width: 512,
+      height: 512,
       status: "awaiting_selection",
       selected_draft_index: 0,
-      refine_denoising_strength: 0.4
+      refine_denoising_strength: 0.4,
+      enable_hires: true,
+      hires_scale: 1.5
     )
     generation.drafts.attach(
       io: StringIO.new("draft-bytes"),
@@ -72,12 +76,11 @@ class RefineImageJobTest < ActiveJob::TestCase
       def switch(*); true; end
     end
 
+    calls = []
     client = Class.new do
-      def img2img(**kwargs)
-        raise "unexpected init image" unless kwargs[:init_image] == "draft-bytes"
-        raise "unexpected denoising strength" unless (kwargs[:denoising_strength] - 0.4).abs < 0.001
-
-        "final-bytes"
+      define_method(:img2img) do |**kwargs|
+        calls << kwargs
+        calls.size == 1 ? "refined-bytes" : "final-bytes"
       end
     end
 
@@ -86,8 +89,91 @@ class RefineImageJobTest < ActiveJob::TestCase
     end
 
     generation.reload
+    assert_equal 2, calls.size
+    assert_equal "draft-bytes", calls.first[:init_image]
+    assert_in_delta 0.4, calls.first[:denoising_strength]
+    assert_equal "refined-bytes", calls.second[:init_image]
+    assert calls.second[:enable_hr]
+    assert_equal 768, calls.second[:hr_resize_x]
+    assert_equal 768, calls.second[:hr_resize_y]
     assert_equal "completed", generation.status
-    assert generation.image.attached?
-    assert_equal "final-bytes", generation.image.download
+    assert_equal 1, generation.refined_images.count
+    assert_equal "final-bytes", generation.refined_images.last.download
+    assert_equal 0, generation.refined_images.last.metadata["draft_index"]
+  end
+
+  test "refines without hires when disabled" do
+    generation = ImageGeneration.create!(
+      prompt: "chojugiga, rabbit",
+      sd_model: "flat2d",
+      loras: "[]",
+      status: "awaiting_selection",
+      selected_draft_index: 0,
+      refine_denoising_strength: 0.4,
+      enable_hires: false
+    )
+    generation.drafts.attach(
+      io: StringIO.new("draft-bytes"),
+      filename: "draft-0.png",
+      content_type: "image/png"
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    calls = []
+    client = Class.new do
+      define_method(:img2img) do |**kwargs|
+        calls << kwargs
+        "refined-bytes"
+      end
+    end
+
+    with_generation_stubs(switcher:, client:) do
+      RefineImageJob.perform_now(generation.id)
+    end
+
+    assert_equal 1, calls.size
+    assert_equal 1, generation.reload.refined_images.count
+    assert_equal "refined-bytes", generation.refined_images.last.download
+  end
+
+  test "keeps previous refined images when refining again" do
+    generation = ImageGeneration.create!(
+      prompt: "chojugiga, rabbit",
+      sd_model: "flat2d",
+      loras: "[]",
+      status: "completed",
+      selected_draft_index: 0,
+      refine_denoising_strength: 0.4,
+      enable_hires: false
+    )
+    generation.drafts.attach(io: StringIO.new("draft-0"), filename: "draft-0.png", content_type: "image/png")
+    generation.drafts.attach(io: StringIO.new("draft-1"), filename: "draft-1.png", content_type: "image/png")
+    generation.refined_images.attach(
+      io: StringIO.new("first-result"),
+      filename: "refined-1.png",
+      content_type: "image/png",
+      metadata: { draft_index: 0, sequence: 1 }
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    client = Class.new do
+      define_method(:img2img) { |**_| "second-result" }
+    end
+
+    generation.update!(selected_draft_index: 1)
+    with_generation_stubs(switcher:, client:) do
+      RefineImageJob.perform_now(generation.id)
+    end
+
+    generation.reload
+    assert_equal 2, generation.refined_images.count
+    assert_equal "first-result", generation.refined_images.attachments.order(:created_at).first.download
+    assert_equal "second-result", generation.refined_images.attachments.order(:created_at).last.download
   end
 end

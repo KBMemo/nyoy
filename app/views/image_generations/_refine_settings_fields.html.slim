@@ -1,0 +1,30 @@
+.grid.gap-4.sm:grid-cols-2
+  div
+    = label_tag :refine_denoising_strength, "仕上げ強度 (denoising)", class: "#{kb_label} mb-1"
+    = number_field_tag :refine_denoising_strength, image_generation.refine_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
+    p.mt-1.text-xs.kb-text-muted 低いほどラフの構図を保ちます（0.3〜0.5 推奨）
+  div
+    = label_tag :refine_steps, "仕上げ Steps (任意)", class: "#{kb_label} mb-1"
+    = number_field_tag :refine_steps, image_generation.refine_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{image_generation.steps}"
+
+.kb-card.p-4
+  h3 class=kb_section_title Hires / 拡大
+  .mt-4.space-y-4
+    label.flex.items-center.gap-2
+      = hidden_field_tag :enable_hires, "0"
+      = check_box_tag :enable_hires, "1", image_generation.enable_hires?, class: "kb-control-accent"
+      span.text-sm 仕上げ後に Hires で拡大する
+    .grid.gap-4.sm:grid-cols-2
+      div
+        = label_tag :hires_upscaler, "Upscaler", class: "#{kb_label} mb-1"
+        = select_tag :hires_upscaler, options_for_select(ImageGeneration::HIRES_UPSCALERS, image_generation.hires_upscaler), class: kb_field_input_classes
+      div
+        = label_tag :hires_scale, "拡大率", class: "#{kb_label} mb-1"
+        = number_field_tag :hires_scale, image_generation.hires_scale, min: 1.1, max: 4.0, step: 0.1, class: kb_field_input_classes
+      div
+        = label_tag :hires_denoising_strength, "Hires 強度", class: "#{kb_label} mb-1"
+        = number_field_tag :hires_denoising_strength, image_generation.hires_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
+      div
+        = label_tag :hires_steps, "Hires Steps (任意)", class: "#{kb_label} mb-1"
+        = number_field_tag :hires_steps, image_generation.hires_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら仕上げ Steps"
+    p.text-xs.kb-text-muted = "出力サイズ: #{image_generation.hires_target_width}×#{image_generation.hires_target_height}px（#{image_generation.width}×#{image_generation.height} の #{image_generation.hires_scale}x）"

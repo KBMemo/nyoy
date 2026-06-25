@@ -8,6 +8,7 @@ class ImageGeneration < ApplicationRecord
 
   has_one_attached :image
   has_many_attached :drafts
+  has_many_attached :refined_images
 
   STATUSES = %w[
     pending preparing translating drafting awaiting_selection refining completed failed
@@ -22,6 +23,7 @@ class ImageGeneration < ApplicationRecord
     "completed" => "完了",
     "failed" => "失敗"
   }.freeze
+  HIRES_UPSCALERS = %w[Latent Latent\ (nearest-exact) Lanczos Nearest].freeze
 
   validates :sd_model, presence: true
   validate :prompt_source_present
@@ -35,6 +37,10 @@ class ImageGeneration < ApplicationRecord
   validates :refine_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
   validates :draft_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :refine_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
+  validates :hires_scale, numericality: { greater_than: 1.0, less_than_or_equal_to: 4.0 }
+  validates :hires_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
+  validates :hires_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
+  validates :hires_upscaler, inclusion: { in: HIRES_UPSCALERS }
 
   scope :recent, -> { order(created_at: :desc) }
 
@@ -50,6 +56,13 @@ class ImageGeneration < ApplicationRecord
     status == "awaiting_selection"
   end
 
+  def refineable?
+    return false if in_progress?
+    return false unless drafts.attached?
+
+    awaiting_selection? || status.in?(%w[completed failed])
+  end
+
   def image_phase_active?
     in_progress? && status.in?(%w[drafting refining])
   end
@@ -60,6 +73,38 @@ class ImageGeneration < ApplicationRecord
 
   def refine_steps_for_api
     refine_steps.presence || steps
+  end
+
+  def refined_image_attachments
+    refined_images.attachments.sort_by(&:created_at).reverse
+  end
+
+  def latest_refined_attachment
+    attachment = refined_image_attachments.first
+    return attachment if attachment
+    return image if image.attached?
+
+    nil
+  end
+
+  def refined_image_label(attachment)
+    sequence = attachment.metadata["sequence"] || refined_image_attachments.size
+    draft_index = attachment.metadata["draft_index"]
+    label = "仕上がり #{sequence}"
+    label += " · ラフ案 #{draft_index.to_i + 1}" unless draft_index.nil?
+    label
+  end
+
+  def hires_steps_for_api
+    hires_steps.presence || refine_steps_for_api
+  end
+
+  def hires_target_width
+    (width * hires_scale).round
+  end
+
+  def hires_target_height
+    (height * hires_scale).round
   end
 
   def loras_array
@@ -107,7 +152,12 @@ class ImageGeneration < ApplicationRecord
       draft_batch_size: draft_batch_size,
       draft_steps: draft_steps,
       refine_steps: refine_steps,
-      refine_denoising_strength: refine_denoising_strength
+      refine_denoising_strength: refine_denoising_strength,
+      enable_hires: enable_hires,
+      hires_upscaler: hires_upscaler,
+      hires_scale: hires_scale,
+      hires_steps: hires_steps,
+      hires_denoising_strength: hires_denoising_strength
     )
   end
 

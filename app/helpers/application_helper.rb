@@ -67,6 +67,8 @@ module ApplicationHelper
   def nyoy_blob_image_path(source)
     if source.is_a?(ActiveStorage::Blob)
       rails_blob_path(source, only_path: true)
+    elsif source.is_a?(ActiveStorage::Attachment)
+      rails_blob_path(source, only_path: true)
     elsif source.is_a?(ActiveStorage::VariantWithRecord)
       rails_representation_path(source, only_path: true)
     elsif source.respond_to?(:attached?)
@@ -74,7 +76,23 @@ module ApplicationHelper
 
       rails_blob_path(source, only_path: true)
     elsif source.respond_to?(:blob)
-      rails_representation_path(source, only_path: true)
+      rails_blob_path(source, only_path: true)
     end
+  end
+
+  def nyoy_blob_download_path(source, filename: nil)
+    return unless source
+
+    blob = if source.is_a?(ActiveStorage::Attachment)
+      source.blob
+    elsif source.is_a?(ActiveStorage::Attached::One) || source.is_a?(ActiveStorage::Attached::Many)
+      source.blob
+    elsif source.respond_to?(:blob)
+      source.blob
+    else
+      source
+    end
+
+    rails_blob_path(blob, disposition: "attachment", filename: filename || blob.filename, only_path: true)
   end
 end

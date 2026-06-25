@@ -351,14 +351,112 @@
 .nyoy-status-completed { color: var(--kb-status-success-strong); }
 .nyoy-status-failed { color: var(--kb-status-danger-strong); }
 
+.nyoy-draft-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kb-space-2);
+}
+
+.nyoy-draft-preview-btn {
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+  display: block;
+  padding: 0;
+  width: 100%;
+}
+
+.nyoy-draft-actions {
+  display: flex;
+  justify-content: center;
+  min-height: 1.875rem;
+}
+
+.nyoy-result-preview-btn {
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+  display: block;
+  padding: 0;
+  width: 100%;
+}
+
+.nyoy-image-preview {
+  background: rgb(0 0 0 / 55%);
+  border: 0;
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  width: min(96vw, 72rem);
+}
+
+.nyoy-image-preview::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.nyoy-image-preview-panel {
+  background: var(--kb-bg-elevated, var(--kb-bg));
+  border-radius: var(--kb-radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  overflow: hidden;
+}
+
+.nyoy-image-preview-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--kb-border);
+  display: flex;
+  gap: var(--kb-space-3);
+  justify-content: space-between;
+  padding: var(--kb-space-3) var(--kb-space-4);
+}
+
+.nyoy-image-preview-caption {
+  font-size: var(--kb-font-size-sm);
+  font-weight: 600;
+  margin: 0;
+}
+
+.nyoy-image-preview-meta {
+  color: var(--kb-text-secondary);
+  font-size: var(--kb-font-size-xs);
+  margin: var(--kb-space-1) 0 0;
+}
+
+.nyoy-image-preview-body {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  padding: var(--kb-space-4);
+}
+
+.nyoy-image-preview-image {
+  display: block;
+  height: auto;
+  max-height: calc(92vh - 6rem);
+  max-width: 100%;
+  width: auto;
+}
+
+.nyoy-refined-grid,
 .nyoy-draft-grid {
   display: grid;
   gap: var(--kb-space-3);
   grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 }
 
-.nyoy-draft-grid-readonly {
+.nyoy-draft-grid-readonly .nyoy-draft-select {
   pointer-events: none;
+}
+
+.nyoy-draft-select {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--kb-space-2);
+  margin-bottom: var(--kb-space-1);
 }
 
 .nyoy-draft-option {
@@ -366,8 +464,8 @@
   display: block;
 }
 
-.nyoy-draft-option input {
-  margin-bottom: var(--kb-space-2);
+.nyoy-draft-select input {
+  margin: 0;
 }
 
 .nyoy-draft-thumb {
@@ -377,7 +475,8 @@
 }
 
 .nyoy-draft-option:has(input:checked) .nyoy-draft-thumb,
-.nyoy-draft-thumb-selected {
+.nyoy-draft-thumb-selected,
+.nyoy-draft-card.nyoy-draft-thumb-selected .nyoy-draft-thumb {
   border-color: var(--kb-accent);
 }
 

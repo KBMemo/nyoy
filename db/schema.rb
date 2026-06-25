@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_010609) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_105124) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -63,10 +63,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_010609) do
     t.datetime "created_at", null: false
     t.integer "draft_batch_size", default: 4, null: false
     t.integer "draft_steps"
+    t.boolean "enable_hires", default: true, null: false
     t.text "error_message"
     t.datetime "finished_at"
     t.integer "generation_preset_id"
     t.integer "height", default: 512, null: false
+    t.float "hires_denoising_strength", default: 0.35, null: false
+    t.float "hires_scale", default: 1.5, null: false
+    t.integer "hires_steps"
+    t.string "hires_upscaler", default: "Latent", null: false
     t.datetime "image_finished_at"
     t.datetime "image_started_at"
     t.text "japanese_prompt"
