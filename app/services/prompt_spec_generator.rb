@@ -128,13 +128,7 @@ class PromptSpecGenerator
   end
 
   def normalize_json_text(content)
-    text = content.to_s.strip
-    if text.include?("```")
-      text = text.sub(/\A.*?```(?:json)?\s*/im, "")
-      text = text.sub(/\s*```.*\z/m, "")
-    end
-    text = text.strip
-    text.start_with?("{") ? text : text[/(\{.*)/ms]
+    LlamaJsonParser.normalize(content)
   end
 
   def enrich_lora_paths!(spec, lora_entries)

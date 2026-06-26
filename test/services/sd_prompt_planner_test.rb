@@ -4,7 +4,7 @@ require "test_helper"
 
 class SdPromptPlannerTest < ActiveSupport::TestCase
   FakeClient = Struct.new(:response, keyword_init: true) do
-    def chat(messages:, temperature:, max_tokens:)
+    def chat(messages:, temperature:, max_tokens:, response_format: nil)
       response
     end
   end
@@ -126,10 +126,43 @@ class SdPromptPlannerTest < ActiveSupport::TestCase
     assert_equal 512, plan[:height]
   end
 
+  test "parses json from reasoning content when content is empty" do
+    client = FakeClient.new(
+      response: {
+        "choices" => [
+          {
+            "message" => {
+              "content" => "",
+              "reasoning_content" => <<~REASONING
+                ```json
+                {
+                  "positive": "masterpiece, best quality, cafe",
+                  "negative": "realistic",
+                  "width": 512,
+                  "height": 512,
+                  "steps": 20,
+                  "cfg_scale": 7.0,
+                  "seed": -1
+                }
+                ```
+              REASONING
+            }
+          }
+        ]
+      }
+    )
+
+    skill = PromptSkill.new(body: "system")
+    plan = SdPromptPlanner.new(client: client).plan(body: "カフェ", skill: skill)
+
+    assert_equal "masterpiece, best quality, cafe", plan[:positive]
+    assert_equal "realistic", plan[:negative]
+  end
+
   test "requests max_tokens 4096" do
     calls = []
     client = Object.new
-    client.define_singleton_method(:chat) do |messages:, temperature:, max_tokens:|
+    client.define_singleton_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil|
       calls << max_tokens
       {
         "choices" => [

@@ -17,4 +17,23 @@ class LlamaCppClientTest < ActiveSupport::TestCase
 
     assert_equal "1girl, blue hair, sakura", LlamaCppClient.message_text(response)
   end
+
+  test "prefers json object from reasoning content" do
+    response = {
+      "choices" => [
+        {
+          "message" => {
+            "content" => "",
+            "reasoning_content" => <<~REASONING
+              ```json
+              {"positive":"1girl","negative":"blurry"}
+              ```
+            REASONING
+          }
+        }
+      ]
+    }
+
+    assert_equal '{"positive":"1girl","negative":"blurry"}', LlamaCppClient.message_text(response)
+  end
 end

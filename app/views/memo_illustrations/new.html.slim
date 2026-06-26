@@ -20,7 +20,8 @@
   - if @prompt_skills.any?
     div
       = form.label :prompt_skill_id, "プロンプトスキル", class: "#{kb_label} mb-1"
-      = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { selected: @prompt_skills.find(&:default?)&.id || @prompt_skills.first.id }, { required: true, class: kb_field_input_classes }
+      = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { selected: @prompt_skills.find(&:default?)&.id || @prompt_skills.first&.id }, { required: true, class: kb_field_input_classes }
+      p.mt-1.text-sm.kb-text-muted JSON 出力スキルのみ表示しています（翻訳専用スキルは画像生成画面向けです）。
   - else
     .kb-alert.kb-alert-warning
       p

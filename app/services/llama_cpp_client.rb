@@ -39,7 +39,18 @@ class LlamaCppClient
     reasoning = message["reasoning_content"].to_s.strip
     return "" if reasoning.blank?
 
+    json_text = LlamaJsonParser.normalize(reasoning)
+    return json_text if json_text.present?
+
     extract_text_from_reasoning(reasoning)
+  end
+
+  def self.message_sources(response)
+    message = response.dig("choices", 0, "message") || {}
+    [message["content"], message["reasoning_content"]]
+      .map { |part| part.to_s.strip }
+      .reject(&:blank?)
+      .uniq
   end
 
   def self.extract_text_from_reasoning(reasoning)

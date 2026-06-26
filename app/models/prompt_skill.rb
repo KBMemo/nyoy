@@ -10,9 +10,14 @@ class PromptSkill < ApplicationRecord
   before_save :clear_other_defaults, if: :default?
 
   scope :ordered, -> { order(default: :desc, name: :asc) }
+  scope :json_plan, -> { where("body LIKE ?", '%"positive"%') }
 
   def self.default_for_generation
     find_by(default: true) || ordered.first
+  end
+
+  def json_plan?
+    body.match?(/"positive"\s*:/)
   end
 
   private

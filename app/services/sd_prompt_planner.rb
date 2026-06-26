@@ -24,16 +24,30 @@ class SdPromptPlanner
         { role: "user", content: body }
       ],
       temperature: 0.2,
-      max_tokens: MAX_TOKENS
+      max_tokens: MAX_TOKENS,
+      response_format: response_format
     )
 
-    content = LlamaCppClient.message_text(response)
+    content = response_text(response)
     raise Error, "empty response from llama" if content.blank?
 
     parse_plan(content)
   end
 
   private
+
+  def response_format
+    return unless Rails.application.config.x.nyoy.llama_json_schema
+
+    MemoPromptPlanJsonSchema.build
+  end
+
+  def response_text(response)
+    sources = LlamaCppClient.message_sources(response)
+    sources.find { |text| text.include?("{") } ||
+      sources.first ||
+      LlamaCppClient.message_text(response)
+  end
 
   def parse_plan(content)
     json = extract_json(content)
@@ -55,7 +69,7 @@ class SdPromptPlanner
   end
 
   def extract_json(content)
-    json_text = normalize_json_text(content)
+    json_text = LlamaJsonParser.normalize(content)
     raise Error, "no JSON object found in llama response" if json_text.blank?
 
     JSON.parse(json_text)
@@ -64,18 +78,6 @@ class SdPromptPlanner
     raise Error, "invalid JSON from llama" if salvaged.blank? || salvaged["positive"].blank?
 
     salvaged
-  end
-
-  def normalize_json_text(content)
-    text = content.to_s.strip
-
-    if text.include?("```")
-      text = text.sub(/\A.*?```(?:json)?\s*/im, "")
-      text = text.sub(/\s*```.*\z/m, "")
-    end
-
-    text = text.strip
-    text.start_with?("{") ? text : text[/(\{.*)/ms]
   end
 
   def salvage_json(text)

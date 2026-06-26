@@ -38,6 +38,13 @@ class MemoIllustrationsController < ApplicationController
       return
     end
 
+    unless skill.json_plan?
+      @memo_illustration = MemoIllustration.new(memo_illustration_params)
+      @memo_illustration.errors.add(:prompt_skill_id, "メモイラストには JSON 出力スキルを選んでください")
+      render :new, status: :unprocessable_entity
+      return
+    end
+
     @memo_illustration = MemoIllustration.new(
       body: memo_illustration_params[:body],
       prompt_skill: skill,
@@ -59,7 +66,7 @@ class MemoIllustrationsController < ApplicationController
   end
 
   def load_prompt_skills
-    @prompt_skills = PromptSkill.ordered
+    @prompt_skills = PromptSkill.json_plan.ordered
   end
 
   def memo_illustration_params
