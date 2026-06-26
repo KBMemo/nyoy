@@ -8,7 +8,8 @@
   pre.nyoy-monospace = @prompt_skill.body
 
   - if @prompt_skill.default_negative_prompt.present?
-    h2.mt-6 class=kb_section_title デフォルトネガティブ
+    h2.mt-6 class=kb_section_title 実行時固定ネガティブ
+    p.mt-1.text-sm.kb-text-muted sd.cpp 呼び出し時に常に適用されます。
     pre.mt-2.nyoy-monospace = @prompt_skill.default_negative_prompt
 
 .flex.flex-wrap.items-center.gap-3.mt-6

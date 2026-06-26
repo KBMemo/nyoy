@@ -1,0 +1,18 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title プロンプトテンプレート
+  = link_to "新規登録", new_prompt_preset_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary モデル系ごとの positive / negative テンプレートと default params を RAG 生成に渡します。
+
+- if @prompt_presets.any?
+  section.nyoy-card-list.mt-4
+    - @prompt_presets.each do |preset|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.gap-2
+          h2.text-base.font-semibold
+            = link_to preset.name, preset, class: "kb-text-primary no-underline"
+          span.kb-badge.kb-badge-muted = preset.model_family_label
+        - if preset.positive_template.present?
+          p.mt-2.text-sm.kb-text-muted = truncate(preset.positive_template, length: 120)
+- else
+  p.mt-4.text-sm.kb-text-muted 未登録です。

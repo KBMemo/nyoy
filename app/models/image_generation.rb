@@ -171,6 +171,10 @@ class ImageGeneration < ApplicationRecord
     japanese_prompt.presence || prompt.presence || "—"
   end
 
+  def resolved_negative_prompt
+    NegativePromptResolver.for_generation(self)
+  end
+
   private
 
   def prompt_source_present

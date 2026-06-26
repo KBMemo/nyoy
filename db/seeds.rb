@@ -2,6 +2,7 @@
 
 require_relative "../lib/prompt_skill_seeds"
 require_relative "../lib/generation_preset_seeds"
+require_relative "../lib/rag_knowledge_seeds"
 
 default_skill = PromptSkill.find_or_create_by!(name: "Stable Diffusion Prompt Engineer") do |record|
   record.body = PromptSkillSeeds::DEFAULT_BODY
@@ -76,9 +77,57 @@ refine_preset&.update!(
 
 chojugiga_json_skill.update!(
   body: PromptSkillSeeds::CHOJUGIGA_JSON_BODY,
-  default_negative_prompt: PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
+  default_negative_prompt: PromptSkillSeeds::DEFAULT_NEGATIVE
 )
 chojugiga_translator_skill.update!(
   body: PromptSkillSeeds::CHOJUGIGA_TRANSLATOR_BODY,
-  default_negative_prompt: PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE
+  default_negative_prompt: PromptSkillSeeds::DEFAULT_NEGATIVE
 )
+
+[
+  {
+    title: "鳥獣戯画の線画と余白",
+    kind: "style",
+    body: <<~BODY.strip
+      chojugiga, emaki, ink outline, minimal background, playful animals.
+      線画を優先し、背景は余白多め。現代的な彩色や3D表現は避ける。
+    BODY
+  },
+  {
+    title: "ChojuGiga LoRA",
+    kind: "lora",
+    body: <<~BODY.strip
+      LoRA名: ChojuGiga_Illustrious
+      trigger: chojugiga
+      推奨 weight: 0.7〜0.9
+      pony-v6 / Illustrious 系で使用。
+    BODY
+  },
+  {
+    title: "鳥獣戯画向けネガティブ",
+    kind: "negative",
+    body: RagKnowledgeSeeds::CHOJUGIGA_NEGATIVE_GUIDANCE
+  }
+].each do |attrs|
+  chunk = PromptKnowledgeChunk.find_or_create_by!(title: attrs[:title]) do |record|
+    record.kind = attrs[:kind]
+    record.body = attrs[:body]
+  end
+  chunk.update!(kind: attrs[:kind], body: attrs[:body])
+end
+
+PromptLora.find_or_create_by!(name: "ChojuGiga_Illustrious") do |record|
+  record.path = "chojugiga/ChojuGiga_Illustrious.safetensors"
+  record.trigger_words = "chojugiga, emaki"
+  record.compatible_models_list = ["pony-v6"]
+  record.weight_min = 0.7
+  record.weight_max = 0.9
+  record.notes = "鳥獣戯画 LoRA。Illustrious / pony 系向け。"
+end
+
+PromptPreset.find_or_create_by!(name: "鳥獣戯画テンプレ") do |record|
+  record.model_family = "pony"
+  record.positive_template = "masterpiece, best quality, chojugiga, emaki, ink outline, minimal background"
+  record.negative_template = RagKnowledgeSeeds::CHOJUGIGA_NEGATIVE_TEMPLATE
+  record.default_params = { "steps" => 22, "cfg_scale" => 6.0 }
+end

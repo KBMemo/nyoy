@@ -12,7 +12,6 @@ module GenerationPresetsHelper
         sampler_name: preset.sampler_name,
         vae_tiling: preset.vae_tiling,
         prompt_skill_id: preset.prompt_skill_id,
-        default_negative_prompt: preset.resolved_default_negative_prompt,
         loras: preset.loras_array,
         draft_batch_size: preset.draft_batch_size,
         draft_steps: preset.draft_steps

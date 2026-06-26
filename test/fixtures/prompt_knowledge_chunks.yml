@@ -1,0 +1,22 @@
+chojugiga_style:
+  title: 鳥獣戯画の線画と余白
+  body: |
+    chojugiga, emaki, ink outline, minimal background, playful animals.
+    線画を優先し、背景は余白多め。現代的な彩色や3D表現は避ける。
+  kind: style
+
+chojugiga_lora:
+  title: ChojuGiga LoRA
+  body: |
+    LoRA名: ChojuGiga_Illustrious
+    trigger: chojugiga
+    推奨 weight: 0.7〜0.9
+    pony-v6 / Illustrious 系で使用。
+  kind: lora
+
+default_negative:
+  title: 共通ネガティブ
+  body: |
+    シーンに応じた追加ネガティブを negative_prompt に出力する。
+    固定 tag（text, watermark, low quality 等）は実行時にスキル/プリセットから自動適用されるため重複させない。
+  kind: negative

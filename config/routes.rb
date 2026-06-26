@@ -3,6 +3,9 @@ Rails.application.routes.draw do
 
   resources :memo_illustrations, only: %i[index show new create]
   resources :prompt_skills
+  resources :prompt_knowledge_chunks
+  resources :prompt_loras
+  resources :prompt_presets
   resources :generation_presets
   resources :image_generations, only: %i[index show new create] do
     member do

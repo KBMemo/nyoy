@@ -15,14 +15,16 @@ class LlamaCppClient
     @model = model
   end
 
-  def chat(messages:, temperature: 0.3, max_tokens: 512)
-    post_json(
-      "/v1/chat/completions",
+  def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil)
+    payload = {
       model: @model,
       messages: messages,
       temperature: temperature,
       max_tokens: max_tokens
-    )
+    }
+    payload[:response_format] = response_format if response_format.present?
+
+    post_json("/v1/chat/completions", payload)
   end
 
   def message_text(response)

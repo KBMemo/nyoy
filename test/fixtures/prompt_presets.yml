@@ -1,0 +1,8 @@
+chojugiga:
+  name: 鳥獣戯画テンプレ
+  model_family: pony
+  positive_template: masterpiece, best quality, chojugiga, emaki, ink outline
+  negative_template: text, watermark, blurry, low quality
+  default_params:
+    steps: 22
+    cfg_scale: 6.0

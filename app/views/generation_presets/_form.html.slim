@@ -28,8 +28,9 @@
     = render "refine_fields", form: form, generation_preset: generation_preset
   - else
     div
-      = form.label :default_negative_prompt, "デフォルトネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
-      = form.text_area :default_negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "low quality, blurry, text, watermark"
+      = form.label :default_negative_prompt, "実行時固定ネガティブ (任意)", class: "#{kb_label} mb-1"
+      = form.text_area :default_negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "text, watermark, seal, stamp"
+      p.mt-1.text-sm.kb-text-muted このプリセット用の追加 tag。スキルの固定ネガティブと合わせて sd.cpp 呼び出し時に適用されます。
 
     = render "shared/generation_settings_fields",
       form_object: generation_preset,

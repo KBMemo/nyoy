@@ -1,0 +1,22 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title プロンプトナレッジ
+  = link_to "新規登録", new_prompt_knowledge_chunk_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary 画風・LoRA・追加ネガティブの方針などを chunk 化し、pgvector + neighbor で RAG 検索します（実行時固定 tag のコピー源ではありません）。
+
+- if @prompt_knowledge_chunks.any?
+  section.nyoy-card-list.mt-4
+    - @prompt_knowledge_chunks.each do |chunk|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to chunk.title, chunk, class: "kb-text-primary no-underline"
+          span.kb-badge.kb-badge-muted = chunk.kind_label
+        p.mt-2.text-sm.kb-text-secondary = truncate(chunk.body, length: 160)
+        p.mt-2.text-xs.kb-text-muted
+          - if chunk.embedding.present?
+            | embedding 済
+          - else
+            | embedding 未生成
+- else
+  p.mt-4.text-sm.kb-text-muted ナレッジが未登録です。

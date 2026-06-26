@@ -1,0 +1,22 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title LoRA 辞書
+  = link_to "新規登録", new_prompt_lora_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary RAG / PromptSpec 生成で参照する LoRA 名・trigger・weight 範囲を管理します。
+
+- if @prompt_loras.any?
+  section.nyoy-card-list.mt-4
+    - @prompt_loras.each do |lora|
+      article.kb-card.p-4
+        h2.text-base.font-semibold
+          = link_to lora.name, lora, class: "kb-text-primary no-underline"
+        p.mt-2.text-sm.kb-text-secondary
+          - if lora.compatible_models_list.any?
+            | models: #{lora.compatible_models_list.join(", ")}
+            |  · weight #{lora.weight_min}..#{lora.weight_max}
+          - else
+            | weight #{lora.weight_min}..#{lora.weight_max}
+        - if lora.trigger_words.present?
+          p.mt-1.text-sm.kb-text-muted trigger: #{lora.trigger_words}
+- else
+  p.mt-4.text-sm.kb-text-muted 未登録です。

@@ -1,0 +1,16 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title = @prompt_knowledge_chunk.title
+    span.kb-badge.kb-badge-muted = @prompt_knowledge_chunk.kind_label
+
+.kb-card.p-4
+  pre.text-sm.whitespace-pre-wrap = @prompt_knowledge_chunk.body
+  p.mt-4.text-xs.kb-text-muted
+    - if @prompt_knowledge_chunk.embedding.present?
+      | embedding 済 · 更新 #{l(@prompt_knowledge_chunk.updated_at, format: :long)}
+    - else
+      | embedding 未生成
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_prompt_knowledge_chunk_path(@prompt_knowledge_chunk), class: kb_btn_primary_sm
+  = link_to "一覧へ", prompt_knowledge_chunks_path, class: "kb-chrome-link text-sm"

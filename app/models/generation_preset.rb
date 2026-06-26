@@ -74,7 +74,6 @@ class GenerationPreset < ApplicationRecord
     generation.assign_attributes(
       generation_preset: self,
       prompt_skill: prompt_skill,
-      negative_prompt: NegativePromptResolver.resolve(skill: prompt_skill, preset: self),
       sd_model: sd_model,
       width: width,
       height: height,
@@ -118,7 +117,7 @@ class GenerationPreset < ApplicationRecord
   end
 
   def resolved_default_negative_prompt
-    NegativePromptResolver.resolve(skill: prompt_skill, preset: self)
+    NegativePromptResolver.base(skill: prompt_skill, preset: self)
   end
 
   private

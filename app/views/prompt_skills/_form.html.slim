@@ -10,17 +10,19 @@
     = form.text_field :name, required: true, class: kb_field_input_classes
 
   div
-    = form.label :body, "スキル本文 (system prompt)", class: "#{kb_label} mb-1"
+    = form.label :body, "スキル本文 (LLM 作法)", class: "#{kb_label} mb-1"
     = form.text_area :body, rows: 24, required: true, class: "#{kb_field_input_classes} nyoy-monospace"
+    p.mt-1.text-sm.kb-text-muted llama.cpp への system prompt。出力形式・翻訳ルールなど LLM の振る舞いのみを書きます。
 
   div
-    = form.label :default_negative_prompt, "デフォルトネガティブプロンプト (任意)", class: "#{kb_label} mb-1"
+    = form.label :default_negative_prompt, "実行時固定ネガティブ (任意)", class: "#{kb_label} mb-1"
     = form.text_area :default_negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "text, watermark, low quality"
+    p.mt-1.text-sm.kb-text-muted sd.cpp 呼び出し時に常に適用される tag。RAG やフォームの追加ネガティブとは別です。
 
   label.flex.items-center.gap-2.text-sm
     = form.check_box :default, class: "kb-control-accent"
     span デフォルトスキルにする
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit class: kb_btn_primary_sm
+    = form.submit(prompt_skill.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
     = link_to "キャンセル", prompt_skills_path, class: "kb-chrome-link text-sm"

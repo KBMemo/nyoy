@@ -34,7 +34,7 @@ module PromptSkillSeeds
     3. **Tag Style**: Use comma-separated tags or short descriptive phrases rather than long, grammatically complex sentences.
     4. **Quality Boosters**: Automatically prepend basic quality tokens like `masterpiece, best quality` to the positive prompt unless specified otherwise.
     5. **sd.cpp Compatibility**: Keep the prompt concise and effective. Avoid extremely long weights (like `(word:1.5)`) that might parse inconsistently across different versions of sd.cpp backends; use standard syntax or raw tags.
-    6. **Negative Prompt**: Generate a standard negative prompt block that matches the requested style (e.g., anime vs. realistic) to prevent common AI artifacts. Always include text and watermark suppression.
+    6. **Negative Prompt**: Output supplemental negative tags only (style-specific artifacts to avoid). Do NOT repeat generic quality, text, or watermark tags — those are applied automatically at image generation from skill settings.
     7. **Parameters**: Choose width, height, steps, cfg_scale, and seed suitable for the described scene. Use 512x512 unless a wider composition is clearly needed. Use seed -1 for random.
 
     # Example
@@ -43,7 +43,7 @@ module PromptSkillSeeds
     ```json
     {
       "positive": "masterpiece, best quality, 1girl, solo, smiling, wearing white one-piece dress, straw hat, standing on the sandy beach, ocean background, sunny day, vibrant colors, anime style",
-      "negative": "#{DEFAULT_NEGATIVE}, realistic, photo, 3d",
+      "negative": "realistic, photo, 3d",
       "width": 512,
       "height": 512,
       "steps": 20,
@@ -63,7 +63,7 @@ module PromptSkillSeeds
 
     {
       "positive": "chojugiga, emaki, scroll painting, ink wash painting, sumi-e, japanese medieval art, yamato-e, monochrome, minimal background, dynamic pose, humorous, [subject, action, composition tags]",
-      "negative": "#{CHOJUGIGA_DEFAULT_NEGATIVE}",
+      "negative": "photorealistic, 3d, colorful, detailed background",
       "width": 768,
       "height": 768,
       "steps": 22,
@@ -80,10 +80,11 @@ module PromptSkillSeeds
     6. Do NOT add tags for text, calligraphy, captions, poems, signatures, seals, stamps, or inscriptions.
     7. If animals are unspecified, infer fitting chojugiga subjects.
 
-    # Negative Rules
-    1. Block photorealistic, 3d, modern, and overly colorful output.
-    2. Always block readable text, calligraphy, captions, poems, signatures, seals (hanko/inkan), stamps, watermarks, and logos.
-    3. Block scroll inscriptions and margin text unless the user explicitly asks for written text.
+    # Negative Rules (supplemental only — fixed tags are applied at runtime)
+    1. Output only situational tags beyond the fixed runtime negatives.
+    2. Block photorealistic, 3d, modern, and overly colorful output when relevant.
+    3. Add scene-specific tags (e.g. detailed background) when the user request suggests them.
+    4. Do NOT repeat text, watermark, seal, stamp, or generic low-quality tags.
 
     # Parameters
     - Default to width 768, height 768, steps 22, cfg_scale 6.0, seed -1.
@@ -95,7 +96,7 @@ module PromptSkillSeeds
     Output:
     {
       "positive": "chojugiga, emaki, scroll painting, ink wash painting, sumi-e, japanese medieval art, yamato-e, monochrome, minimal background, dynamic pose, humorous, rabbit and frog, sumo wrestling, wrestling, spectators, animals watching, ink brush strokes, bold ink lines",
-      "negative": "#{CHOJUGIGA_DEFAULT_NEGATIVE}",
+      "negative": "photorealistic, 3d, colorful, detailed background",
       "width": 768,
       "height": 768,
       "steps": 22,

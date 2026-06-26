@@ -35,8 +35,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
     illustration.update!(
       positive_prompt: plan[:positive],
-      negative_prompt: plan[:negative].presence ||
-        NegativePromptResolver.resolve(skill: illustration.prompt_skill),
+      negative_prompt: plan[:negative],
       width: plan[:width],
       height: plan[:height],
       steps: plan[:steps],

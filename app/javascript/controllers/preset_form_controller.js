@@ -74,10 +74,6 @@ export default class extends Controller {
       if (field) field.value = preset.prompt_skill_id || ""
     }
 
-    if (this.hasNegativePromptTarget) {
-      this.negativePromptTarget.value = preset.default_negative_prompt || ""
-    }
-
     this.renderLoras(preset.loras || [])
   }
 

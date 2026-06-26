@@ -31,8 +31,9 @@ class GenerationPresetTest < ActiveSupport::TestCase
     assert_equal "euler_a", generation.sampler_name
     assert generation.vae_tiling
     assert_equal 4, generation.draft_batch_size
-    assert_includes generation.negative_prompt, "text"
-    assert_includes generation.negative_prompt, "watermark"
+    assert_equal "", generation.negative_prompt.to_s
+    assert_includes preset.resolved_default_negative_prompt, "text"
+    assert_includes preset.resolved_default_negative_prompt, "watermark"
   end
 
   test "apply_refine_to copies refine settings to image generation" do

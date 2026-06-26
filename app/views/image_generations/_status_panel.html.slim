@@ -21,9 +21,13 @@
       h2 class=(image_generation.japanese_prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") SD プロンプト
       p.mt-2.text-sm.nyoy-monospace = image_generation.prompt
 
-    - if image_generation.negative_prompt.present?
-      h2.mt-6 class=kb_section_title ネガティブプロンプト
-      p.mt-2.text-sm.nyoy-monospace = image_generation.negative_prompt
+    - if image_generation.resolved_negative_prompt.present?
+      h2.mt-6 class=kb_section_title 実行時ネガティブ
+      p.mt-2.text-sm.nyoy-monospace = image_generation.resolved_negative_prompt
+      - if image_generation.negative_prompt.present?
+        p.mt-2.text-sm.kb-text-secondary
+          | 追加:
+          span.nyoy-monospace.ml-1 = image_generation.negative_prompt
 
     h2.mt-6 class=kb_section_title 生成設定
     dl.mt-2.nyoy-settings-list

@@ -7,6 +7,10 @@ Rails.application.config.x.nyoy.tap do |config|
   config.sd_cpp_switchd_url = ENV.fetch("SDCPP_SWITCHD_URL", "http://balvenie:11334")
   config.sd_cpp_switchd_token = ENV["SDCPP_SWITCHD_TOKEN"]
   config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-12b-it-vision-mtp")
+  config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://balvenie:10020")
+  config.embeddings_model = ENV.fetch("EMBEDDINGS_MODEL", "groonga/bge-m3-Q4_K_M-GGUF")
+  config.embedding_dimensions = ENV.fetch("EMBEDDING_DIMENSIONS", 1024).to_i
+  config.llama_json_schema = ENV.fetch("LLAMA_JSON_SCHEMA", "true") == "true"
   config.default_sd_models = ENV.fetch(
     "SDCPP_DEFAULT_MODELS",
     "flat2d,anythingv5,dreamshaper8,pony-v6"

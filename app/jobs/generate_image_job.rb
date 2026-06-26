@@ -28,6 +28,16 @@ class GenerateImageJob < ApplicationJob
   def prepare_prompt(generation)
     return if generation.prompt.to_s.strip.present?
 
+    generate_prompt_with_rag(generation)
+  end
+
+  def generate_prompt_with_rag(generation)
+    generation.update!(status: "translating", prompt_started_at: Time.current)
+
+    spec = PromptSpecGenerator.new(generation: generation).call
+    spec.apply_to_generation!(generation)
+    generation.update!(prompt_finished_at: Time.current)
+  rescue PromptSpecGenerator::Error
     translate_prompt(generation)
   end
 

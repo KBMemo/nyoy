@@ -1,0 +1,45 @@
+- sd_models = Rails.application.config.x.nyoy.default_sd_models
+
+= form_with model: prompt_lora, class: "space-y-4 max-w-3xl" do |form|
+  - if prompt_lora.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - prompt_lora.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :name, "名前", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
+
+  div
+    = form.label :path, "パス (safetensors)", class: "#{kb_label} mb-1"
+    = form.text_field :path, class: kb_field_input_classes, placeholder: "chojugiga/ChojuGiga_Illustrious.safetensors"
+
+  div
+    = form.label :trigger_words, "トリガーワード", class: "#{kb_label} mb-1"
+    = form.text_area :trigger_words, rows: 2, class: kb_field_input_classes, placeholder: "chojugiga, emaki"
+
+  div
+    = form.label :compatible_models_list, "対応モデル", class: "#{kb_label} mb-1"
+    .space-y-2
+      - sd_models.each do |model|
+        label.flex.items-center.gap-2.text-sm
+          = check_box_tag "prompt_lora[compatible_models_list][]", model, prompt_lora.compatible_models_list.include?(model), id: "prompt_lora_compatible_models_#{model}", class: "kb-control-accent"
+          span = model
+      = hidden_field_tag "prompt_lora[compatible_models_list][]", ""
+
+  .grid.gap-4.sm:grid-cols-2
+    div
+      = form.label :weight_min, "最小 weight", class: "#{kb_label} mb-1"
+      = form.number_field :weight_min, min: 0, max: 2, step: 0.05, class: kb_field_input_classes
+    div
+      = form.label :weight_max, "最大 weight", class: "#{kb_label} mb-1"
+      = form.number_field :weight_max, min: 0, max: 2, step: 0.05, class: kb_field_input_classes
+
+  div
+    = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+    = form.text_area :notes, rows: 4, class: kb_field_input_classes
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(prompt_lora.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", prompt_loras_path, class: "kb-chrome-link text-sm"

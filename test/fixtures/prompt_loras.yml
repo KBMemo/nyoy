@@ -1,0 +1,9 @@
+chojugiga:
+  name: ChojuGiga_Illustrious
+  path: chojugiga/ChojuGiga_Illustrious.safetensors
+  trigger_words: chojugiga, emaki
+  compatible_models:
+    - pony-v6
+  weight_min: 0.7
+  weight_max: 0.9
+  notes: 鳥獣戯画 LoRA

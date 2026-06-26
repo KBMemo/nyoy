@@ -10,7 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_115444) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_26_103621) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+  enable_extension "vector"
+
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -91,7 +95,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_115444) do
     t.text "prompt"
     t.datetime "prompt_finished_at"
     t.integer "prompt_skill_id"
+    t.jsonb "prompt_spec"
     t.datetime "prompt_started_at"
+    t.jsonb "rag_source_chunk_ids", default: [], null: false
     t.float "refine_denoising_strength", default: 0.4, null: false
     t.integer "refine_preset_id"
     t.integer "refine_steps"
@@ -133,6 +139,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_115444) do
     t.datetime "updated_at", null: false
     t.integer "width", default: 512, null: false
     t.index ["prompt_skill_id"], name: "index_memo_illustrations_on_prompt_skill_id"
+  end
+
+  create_table "prompt_knowledge_chunks", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.vector "embedding", limit: 1024
+    t.string "kind", default: "style", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["embedding"], name: "index_prompt_knowledge_chunks_on_embedding_hnsw", opclass: :vector_cosine_ops, using: :hnsw
+    t.index ["kind"], name: "index_prompt_knowledge_chunks_on_kind"
+  end
+
+  create_table "prompt_loras", force: :cascade do |t|
+    t.string "compatible_models", default: [], null: false, array: true
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.string "path"
+    t.text "trigger_words"
+    t.datetime "updated_at", null: false
+    t.float "weight_max", default: 1.0, null: false
+    t.float "weight_min", default: 0.0, null: false
+    t.index ["name"], name: "index_prompt_loras_on_name", unique: true
+  end
+
+  create_table "prompt_presets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.jsonb "default_params", default: {}, null: false
+    t.string "model_family", null: false
+    t.string "name", null: false
+    t.text "negative_template"
+    t.text "positive_template"
+    t.datetime "updated_at", null: false
+    t.index ["model_family"], name: "index_prompt_presets_on_model_family"
+    t.index ["name"], name: "index_prompt_presets_on_name", unique: true
   end
 
   create_table "prompt_skills", force: :cascade do |t|

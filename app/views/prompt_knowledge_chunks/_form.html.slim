@@ -1,0 +1,28 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: prompt_knowledge_chunk, class: "space-y-4 max-w-3xl" do |form|
+  - if prompt_knowledge_chunk.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - prompt_knowledge_chunk.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :title, "タイトル", class: "#{kb_label} mb-1"
+    = form.text_field :title, required: true, class: kb_field_input_classes
+
+  div
+    = form.label :kind, "種別", class: "#{kb_label} mb-1"
+    = form.select :kind, PromptKnowledgeChunk::KIND_LABELS.map { |key, label| [label, key] }, {}, class: kb_field_input_classes
+
+  div
+    = form.label :body, "本文", class: "#{kb_label} mb-1"
+    = form.text_area :body, rows: 12, required: true, class: kb_field_input_classes, placeholder: "画風・LoRA trigger・追加ネガティブの方針など"
+    p.mt-1.text-sm.kb-text-muted RAG 用の可変知識。実行時固定ネガティブの tag リストをそのままコピーしないでください。保存時に bge-m3 で embedding を生成します。
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(prompt_knowledge_chunk.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", prompt_knowledge_chunks_path, class: "kb-chrome-link text-sm"

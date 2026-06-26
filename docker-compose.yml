@@ -1,0 +1,19 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-nyoy}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nyoy}
+      POSTGRES_DB: ${DB_NAME:-nyoy_development}
+    volumes:
+      - nyoy_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-nyoy} -d ${DB_NAME:-nyoy_development}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  nyoy_postgres_data:
