@@ -60,23 +60,25 @@ section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=g
     div
       = form_builder.label :sampler_name, "Sampler", class: "#{kb_label} mb-1"
       = form_builder.select :sampler_name, sd_samplers, {}, class: kb_field_input_classes, data: { preset_form_target: "samplerName" }
+    - if local_assigns.fetch(:show_seed, false)
+      div
+        = form_builder.label :seed, "Seed (空欄でランダム)", class: "#{kb_label} mb-1"
+        = form_builder.number_field :seed, min: -1, class: kb_field_input_classes
     div
       label.flex.items-center.gap-2.text-sm.mt-6
         = form_builder.check_box :vae_tiling, class: "kb-control-accent", data: { preset_form_target: "vaeTiling" }
         span VAE Tiling
 
-  - if local_assigns.fetch(:show_seed, false)
-    div
-      = form_builder.label :seed, "Seed (空欄でランダム)", class: "#{kb_label} mb-1"
-      = form_builder.number_field :seed, min: -1, class: kb_field_input_classes
+  .kb-card.p-4
+    .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1
+      h2 class=kb_section_title LoRA
+      p.text-sm.kb-text-secondary sd-server にインストール済みの LoRA から選択します。
 
-  section.nyoy-lora-panel
-    h2 class=kb_section_title LoRA
-    p.mt-1.text-sm.kb-text-secondary sd-server にインストール済みの LoRA から選択します。
+    = form_builder.hidden_field :loras, data: { preset_form_target: "lorasField" }
+    .nyoy-lora-rows data-preset-form-target="loraRows"
 
     - if sd_loras.any?
       div.mt-3
-        label.kb-label.mb-1 for="lora_catalog_select" LoRA を追加
         .nyoy-lora-add-row
           select#lora_catalog_select class=kb_field_input_classes data-preset-form-target="loraCatalog"
             option value="" 選択してください
@@ -86,6 +88,3 @@ section.space-y-4 data-controller="preset-form" data-preset-form-presets-value=g
           button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="preset-form#addLora" 追加
     - else
       p.text-sm.kb-text-muted LoRA が見つかりません。
-
-    = form_builder.hidden_field :loras, data: { preset_form_target: "lorasField" }
-    .nyoy-lora-rows data-preset-form-target="loraRows"

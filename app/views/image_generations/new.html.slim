@@ -52,15 +52,16 @@
     show_prompt_skill: false
 
   .kb-card.p-4
-    h2 class=kb_section_title ラフ生成
-    .mt-4.grid.gap-4.sm:grid-cols-2
+    .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1
+      h2 class=kb_section_title ラフ生成
+      p.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。
+    .nyoy-field-grid.mt-4
       div
         = form.label :draft_batch_size, "ラフ枚数", class: "#{kb_label} mb-1"
         = form.select :draft_batch_size, options_for_select([[2, 2], [3, 3], [4, 4]], @image_generation.draft_batch_size || 4), {}, class: kb_field_input_classes
       div
         = form.label :draft_steps, "ラフ Steps (任意)", class: "#{kb_label} mb-1"
         = form.number_field :draft_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{[@image_generation.steps || 20, 18].min} まで"
-    p.mt-2.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。
 
   .kb-card.p-4
     h2 class=kb_section_title 本番仕上げ

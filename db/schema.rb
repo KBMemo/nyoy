@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_103621) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_26_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -131,6 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_103621) do
     t.datetime "prompt_finished_at"
     t.integer "prompt_skill_id", null: false
     t.datetime "prompt_started_at"
+    t.jsonb "rag_source_chunk_ids", default: [], null: false
     t.string "sd_model", null: false
     t.integer "seed"
     t.datetime "started_at"

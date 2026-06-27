@@ -16,9 +16,19 @@
       h2.mt-6 class=kb_section_title Positive Prompt
       p.mt-2.text-sm.nyoy-monospace = memo_illustration.positive_prompt
 
-    - if memo_illustration.negative_prompt.present?
-      h2.mt-6 class=kb_section_title Negative Prompt
-      p.mt-2.text-sm.nyoy-monospace = memo_illustration.negative_prompt
+    - if memo_illustration.resolved_negative_prompt.present?
+      h2.mt-6 class=kb_section_title 実行時ネガティブ
+      p.mt-2.text-sm.nyoy-monospace = memo_illustration.resolved_negative_prompt
+      - if memo_illustration.negative_prompt.present?
+        p.mt-2.text-sm.kb-text-secondary
+          | 追加:
+          span.nyoy-monospace.ml-1 = memo_illustration.negative_prompt
+
+    - if memo_illustration.rag_source_chunks.any?
+      h2.mt-6 class=kb_section_title 参照ナレッジ
+      ul.mt-2.list-disc.pl-5.text-sm.kb-text-secondary
+        - memo_illustration.rag_source_chunks.each do |chunk|
+          li = link_to chunk.title, chunk, class: "kb-chrome-link"
 
     - if memo_illustration.positive_prompt.present?
       h2.mt-6 class=kb_section_title 生成パラメータ

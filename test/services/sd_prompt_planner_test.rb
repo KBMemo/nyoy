@@ -126,6 +126,54 @@ class SdPromptPlannerTest < ActiveSupport::TestCase
     assert_equal 512, plan[:height]
   end
 
+  test "includes retrieved knowledge in user prompt when record is given" do
+    chunk = PromptKnowledgeChunk.create!(
+      title: "ChojuGiga style",
+      body: "chojugiga, emaki, ink outline",
+      kind: "style"
+    )
+    illustration = MemoIllustration.new(body: "鳥獣戯画風のウサギ", sd_model: "pony-v6")
+    captured_messages = nil
+
+    client = Class.new do
+      define_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil|
+        captured_messages = messages
+        {
+          "choices" => [{
+            "message" => {
+              "content" => {
+                positive: "masterpiece, chojugiga, rabbit",
+                negative: "photorealistic",
+                width: 768,
+                height: 768,
+                steps: 22,
+                cfg_scale: 6.0,
+                seed: -1
+              }.to_json
+            }
+          }]
+        }
+      end
+    end.new
+
+    retriever = Class.new do
+      define_method(:retrieve) { |query| PromptKnowledgeChunk.where(id: chunk.id) }
+    end.new
+
+    skill = PromptSkill.new(body: "system")
+    plan = SdPromptPlanner.new(client: client, retriever: retriever).plan(
+      body: illustration.body,
+      skill: skill,
+      record: illustration
+    )
+
+    user_prompt = captured_messages.last[:content]
+    assert_includes user_prompt, "Retrieved knowledge chunks:"
+    assert_includes user_prompt, "chojugiga, emaki, ink outline"
+    assert_includes plan[:source_chunk_ids], chunk.id
+    assert_equal "masterpiece, chojugiga, rabbit", plan[:positive]
+  end
+
   test "parses json from reasoning content when content is empty" do
     client = FakeClient.new(
       response: {

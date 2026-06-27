@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 class PromptAllowedLists
-  def initialize(generation:, lora_catalog: SdLoraCatalog.new, sampler_catalog: SdSamplerCatalog.new)
-    @generation = generation
+  def initialize(record: nil, generation: nil, lora_catalog: SdLoraCatalog.new, sampler_catalog: SdSamplerCatalog.new)
+    @record = record || generation
+    raise ArgumentError, "record required" if @record.nil?
+
     @lora_catalog = lora_catalog
     @sampler_catalog = sampler_catalog
   end
@@ -31,7 +33,7 @@ class PromptAllowedLists
   end
 
   def load_dictionary_loras
-    PromptLora.for_model(@generation.sd_model).ordered.to_a
+    PromptLora.for_model(@record.sd_model).ordered.to_a
   end
 
   def merge_lora_entries(catalog_loras, dictionary_loras)
@@ -51,12 +53,12 @@ class PromptAllowedLists
   end
 
   def load_models
-    (Rails.application.config.x.nyoy.default_sd_models + [@generation.sd_model]).compact.uniq
+    (Rails.application.config.x.nyoy.default_sd_models + [@record.sd_model]).compact.uniq
   end
 
   def load_prompt_presets
-    family = PromptPreset.model_family_for(@generation.sd_model)
-    scope = family ? PromptPreset.for_model(@generation.sd_model) : PromptPreset.ordered
+    family = PromptPreset.model_family_for(@record.sd_model)
+    scope = family ? PromptPreset.for_model(@record.sd_model) : PromptPreset.ordered
     scope.ordered.to_a
   end
 end

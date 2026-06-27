@@ -80,10 +80,11 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 ### メモ挿絵
 
 1. トップページ（`/memo_illustrations`）で文章とプロンプトスキルを入力
-2. 生成完了までステータスが自動更新される
-3. 結果ページで positive / negative プロンプトと画像を確認
+2. 入力文章からプロンプトナレッジ (RAG) を検索し、llama.cpp が JSON 生成計画を作成
+3. 生成完了までステータスが自動更新される
+4. 結果ページで positive / negative プロンプト、参照ナレッジ、画像を確認
 
-JSON 出力スキル（例: 鳥獣戯画プロンプト (JSON)）向けの機能です。
+JSON 出力スキル（例: 鳥獣戯画プロンプト (JSON)）向けの機能です。`/prompt_knowledge_chunks` でナレッジを管理できます。
 
 ### 画像生成
 

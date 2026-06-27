@@ -25,23 +25,22 @@ class PromptSpecGenerator
     @generation = generation
     @retriever = retriever
     @client = client
-    @allowed_lists = allowed_lists || PromptAllowedLists.new(generation: generation)
+    @allowed_lists = allowed_lists || PromptAllowedLists.new(record: generation)
   end
 
   def call
     query = @generation.japanese_prompt.to_s.strip
     raise Error, "japanese prompt required" if query.blank?
 
-    chunks = @retriever.retrieve(query).to_a
-    allowed = @allowed_lists.call
+    rag = PromptRagContext.new(record: @generation, retriever: @retriever, allowed_lists: @allowed_lists).call(query)
     response = @client.chat(
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: build_user_prompt(query, chunks, allowed) }
+        { role: "user", content: build_user_prompt(query, rag) }
       ],
       temperature: 0.2,
       max_tokens: MAX_TOKENS,
-      response_format: response_format_for(allowed)
+      response_format: response_format_for(rag[:allowed])
     )
 
     content = LlamaCppClient.message_text(response)
@@ -49,14 +48,14 @@ class PromptSpecGenerator
 
     spec = PromptSpec.from_json(
       parse_json(content),
-      source_chunk_ids: chunks.map(&:id),
+      source_chunk_ids: rag[:chunk_ids],
       raw_response: content
     )
-    enrich_lora_paths!(spec, allowed[:lora_entries])
+    enrich_lora_paths!(spec, rag[:allowed][:lora_entries])
     spec.validate!(
-      allowed_loras: allowed[:lora_names],
-      allowed_samplers: allowed[:samplers],
-      allowed_models: allowed[:models]
+      allowed_loras: rag[:allowed][:lora_names],
+      allowed_samplers: rag[:allowed][:samplers],
+      allowed_models: rag[:allowed][:models]
     )
     spec
   rescue PromptSpec::ValidationError, JSON::ParserError => e
@@ -75,37 +74,21 @@ class PromptSpecGenerator
     )
   end
 
-  def build_user_prompt(query, chunks, allowed)
-    chunk_section = if chunks.any?
-      chunks.map(&:to_rag_context).join("\n\n---\n\n")
-    else
-      "(no knowledge chunks matched)"
-    end
-
-    preset_section = if allowed[:prompt_presets].any?
-      allowed[:prompt_presets].map(&:to_rag_context).join("\n\n---\n\n")
-    else
-      "(no prompt presets registered)"
-    end
-
-    lora_section = if allowed[:lora_dictionary].any?
-      allowed[:lora_dictionary].map(&:to_rag_context).join("\n\n")
-    else
-      "(no LoRA dictionary entries)"
-    end
+  def build_user_prompt(query, rag)
+    allowed = rag[:allowed]
 
     <<~PROMPT
       Japanese request:
       #{query}
 
       Retrieved knowledge chunks:
-      #{chunk_section}
+      #{rag[:chunk_section]}
 
       Prompt presets:
-      #{preset_section}
+      #{rag[:preset_section]}
 
       LoRA dictionary:
-      #{lora_section}
+      #{rag[:lora_section]}
 
       Allowed models: #{allowed[:models].join(", ")}
       Allowed samplers: #{allowed[:samplers].join(", ")}

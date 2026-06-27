@@ -38,6 +38,14 @@ class MemoIllustration < ApplicationRecord
     STATUS_LABELS.fetch(status, status)
   end
 
+  def resolved_negative_prompt
+    NegativePromptResolver.resolve(supplemental: negative_prompt, skill: prompt_skill)
+  end
+
+  def rag_source_chunks
+    PromptKnowledgeChunk.where(id: Array(rag_source_chunk_ids))
+  end
+
   private
 
   def progress_panel_partial

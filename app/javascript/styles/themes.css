@@ -543,8 +543,6 @@
 
 .nyoy-settings-list dd { margin: 0; }
 
-.nyoy-lora-panel { margin-top: var(--kb-space-4); }
-
 .nyoy-lora-add-row {
   display: flex;
   gap: var(--kb-space-3);

@@ -13,15 +13,20 @@ class SdPromptPlanner
 
   MAX_TOKENS = 4096
 
-  def initialize(client: LlamaCppClient.new)
+  def initialize(client: LlamaCppClient.new, retriever: PromptKnowledgeRetriever.new, allowed_lists: nil)
     @client = client
+    @retriever = retriever
+    @allowed_lists = allowed_lists
   end
 
-  def plan(body:, skill:)
+  def plan(body:, skill:, record: nil)
+    rag = build_rag(body, record)
+    user_content = build_user_prompt(body, skill, record, rag)
+
     response = @client.chat(
       messages: [
         { role: "system", content: skill.body },
-        { role: "user", content: body }
+        { role: "user", content: user_content }
       ],
       temperature: 0.2,
       max_tokens: MAX_TOKENS,
@@ -31,10 +36,44 @@ class SdPromptPlanner
     content = response_text(response)
     raise Error, "empty response from llama" if content.blank?
 
-    parse_plan(content)
+    parse_plan(content).merge(source_chunk_ids: rag&.dig(:chunk_ids) || [])
   end
 
   private
+
+  def build_rag(body, record)
+    return nil if record.blank?
+
+    PromptRagContext.new(
+      record: record,
+      retriever: @retriever,
+      allowed_lists: @allowed_lists || PromptAllowedLists.new(record: record)
+    ).call(body)
+  end
+
+  def build_user_prompt(body, skill, record, rag)
+    return body if rag.blank?
+
+    <<~PROMPT
+      Japanese memo:
+      #{body}
+
+      Retrieved knowledge chunks:
+      #{rag[:chunk_section]}
+
+      Prompt presets:
+      #{rag[:preset_section]}
+
+      LoRA dictionary:
+      #{rag[:lora_section]}
+
+      SD model: #{record.sd_model}
+
+      Fixed negative tags are applied automatically at image generation from skill settings.
+      Return JSON with keys:
+      positive, negative (supplemental tags only), width, height, steps, cfg_scale, seed
+    PROMPT
+  end
 
   def response_format
     return unless Rails.application.config.x.nyoy.llama_json_schema

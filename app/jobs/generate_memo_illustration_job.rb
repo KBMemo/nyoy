@@ -30,7 +30,8 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
     plan = SdPromptPlanner.new.plan(
       body: illustration.body,
-      skill: illustration.prompt_skill
+      skill: illustration.prompt_skill,
+      record: illustration
     )
 
     illustration.update!(
@@ -42,6 +43,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
       cfg_scale: plan[:cfg_scale],
       seed: plan[:seed],
       llama_raw_response: plan[:raw_response],
+      rag_source_chunk_ids: plan[:source_chunk_ids],
       prompt_finished_at: Time.current
     )
   end
