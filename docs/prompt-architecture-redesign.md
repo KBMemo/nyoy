@@ -135,12 +135,12 @@ add_index :lora_profiles, :path, unique: true
 ### 4.3 `prompt_styles`（見た目の中心）
 
 `PromptPreset`（テンプレ）と `GenerationPreset` の見た目部分、`PromptSkill.default_negative_prompt` を統合。
+**1 style が複数モデルを選べる**ようにするため、モデルは join (`prompt_style_models`) で持つ（`§4.4`）。
 
 ```ruby
 create_table :prompt_styles do |t|
   t.string     :style_id, null: false        # LLM が選ぶキー
   t.string     :name, null: false
-  t.references :sd_model_profile, null: false, foreign_key: true
   t.text       :description
   t.text       :prompt_prefix, null: false    # 画風 positive の固定部
   t.text       :prompt_suffix
@@ -156,7 +156,25 @@ end
 add_index :prompt_styles, :style_id, unique: true
 ```
 
-### 4.4 `prompt_style_loras`（join）
+### 4.4 `prompt_style_models`（style ↔ model join）
+
+1 style に複数のモデルを紐付け、うち 1 つを既定にする。**モデルの最終選択は LLM に任せず**、既定 or UI/override で決める（`§7`）。
+
+```ruby
+create_table :prompt_style_models do |t|
+  t.references :prompt_style, null: false, foreign_key: true
+  t.references :sd_model_profile, null: false, foreign_key: true
+  t.boolean    :default, null: false, default: false   # style 内の既定モデル
+  t.jsonb      :param_overrides, null: false, default: {}  # モデル別の上書き（任意）
+  t.integer    :sort_order, null: false, default: 0
+  t.timestamps
+end
+add_index :prompt_style_models, [:prompt_style_id, :sd_model_profile_id], unique: true
+```
+
+> 既定モデルは style ごとに 1 つ。`prompt_styles` 保存時に「default が 1 件」を担保する。
+
+### 4.5 `prompt_style_loras`（join）
 
 ```ruby
 create_table :prompt_style_loras do |t|
@@ -171,17 +189,18 @@ end
 add_index :prompt_style_loras, [:prompt_style_id, :lora_profile_id], unique: true
 ```
 
-### 4.5 `render_presets`（描画パイプライン）
+### 4.6 `render_presets`（描画パイプライン）
 
 `GenerationPreset` の draft/refine/hires 部分を style から分離。**style に依存しない**ので、どの style にも組み合わせられる。
+`kind` で 1 テーブルに集約する（別テーブルには分けない）。**メモ挿絵用に `single`（単発描画）を追加**する。
 
 ```ruby
 create_table :render_presets do |t|
   t.string  :name, null: false
-  t.string  :kind, null: false          # draft / refine
+  t.string  :kind, null: false          # single / draft / refine
   t.boolean :default, null: false, default: false
-  # draft
-  t.integer :draft_batch_size
+  # single / draft 共通
+  t.integer :draft_batch_size           # single は 1 固定運用
   t.integer :draft_steps
   # refine
   t.integer :refine_steps
@@ -195,7 +214,23 @@ create_table :render_presets do |t|
 end
 ```
 
-### 4.6 生成レコードのスナップショット列
+- `single`: メモ挿絵の単発生成（batch=1、案選択・refine なし）。
+- `draft`: 画像生成の案出し（複数 batch）。
+- `refine`: 案選択後の仕上げ（+hires）。
+
+### 4.7 `prompt_knowledge_chunks` の `style_ref`
+
+`kind = "style"` の chunk を `style_id` への明示参照にする（自由テキストの指針だけに頼らない）。
+これにより「この画風メモ → この style_id」を RAG が確実に橋渡しできる。
+
+```ruby
+add_column :prompt_knowledge_chunks, :style_ref, :string  # prompt_styles.style_id を指す（kind=style 時）
+add_index  :prompt_knowledge_chunks, :style_ref
+```
+
+> `kind=style` の chunk は `style_ref` 必須。それ以外の kind（lora/negative/composition…）は従来どおり指針テキスト。
+
+### 4.8 生成レコードのスナップショット列
 
 `image_generation` / `memo_illustration` に追加（再現性のため、設定変更後も過去画像の生成条件を保持）。
 
@@ -263,8 +298,8 @@ sequenceDiagram
   SD-->>U: 画像
 ```
 
-- **メモ挿絵**: `render_preset = draft 単発`（または専用の single-phase preset）。
-- **画像生成**: `render_preset = draft` → 案選択 → `render_preset = refine (+hires)`。
+- **メモ挿絵**: `render_preset.kind = single`（単発描画、案選択・refine なし）。
+- **画像生成**: `render_preset.kind = draft` → 案選択 → `render_preset.kind = refine (+hires)`。
 
 width/height/steps/cfg/sampler は **style.generation_defaults** から来る。LLM の `aspect_ratio` は `style.aspect_presets` で w,h に変換。LLM は数値を直接決めない。
 
@@ -276,16 +311,20 @@ width/height/steps/cfg/sampler は **style.generation_defaults** から来る。
 class SdPromptStyleResolver
   class Error < StandardError; end
 
-  def initialize(style_id:, subject_prompt:, negative_extra: nil, aspect_ratio: nil, overrides: {})
-    # ...
+  def initialize(style_id:, subject_prompt:, negative_extra: nil, aspect_ratio: nil,
+                 model_key: nil, overrides: {})
+    # model_key は UI/override 用。未指定なら style の既定モデルを使う。
   end
 
   def call
-    style = PromptStyle.includes(:sd_model_profile, prompt_style_loras: :lora_profile)
+    style = PromptStyle.includes(prompt_style_models: :sd_model_profile,
+                                 prompt_style_loras: :lora_profile)
                        .find_by!(style_id: @style_id, enabled: true)
-    model = style.sd_model_profile
+    style_model = pick_style_model(style, @model_key)   # 既定 or 許可された override のみ
+    model = style_model.sd_model_profile
 
     params = model.default_params
+                  .deep_merge(style_model.param_overrides)
                   .deep_merge(style.generation_defaults)
                   .deep_merge(aspect_params(style, @aspect_ratio))
                   .deep_merge(safe_overrides(style, @overrides))
@@ -310,6 +349,7 @@ class SdPromptStyleResolver
 end
 ```
 
+- `pick_style_model` は `model_key` 未指定なら style の既定モデルを返す。指定時は **その style に紐づくモデルのみ**許可（未許可なら既定にフォールバック or エラー）。**LLM には model を選ばせない**（UI/明示 override のみ）。
 - `safe_overrides` は `allowed_overrides`（配列 = 許可値 / `{min,max}` = clamp）でガード。
 - `NegativePromptResolver` は **style.negative_prompt + negative_extra のマージのみ**に縮小（skill/preset の二重管理を解消）。
 
@@ -352,22 +392,22 @@ end
 ```text
 PromptStyle:        name / description / enabled / prompt_prefix / prompt_suffix /
                     negative_prompt / generation_defaults / allowed_overrides /
-                    aspect_presets / aliases / LoRA(ON/OFF, multiplier)
+                    aspect_presets / aliases / モデル(複数選択・既定指定) / LoRA(ON/OFF, multiplier)
 SdModelProfile:     name / switch_key / family / base_url / default_params / enabled
 LoraProfile:        name / path / trigger_words / multiplier 範囲 / enabled
-RenderPreset:       name / kind / draft・refine・hires パラメータ / default
-KnowledgeChunk:     title / kind / body（指針のみ） … 既存どおり
+RenderPreset:       name / kind(single/draft/refine) / 各パラメータ / default
+KnowledgeChunk:     title / kind / body（指針）/ style_ref（kind=style 時は style_id 参照）
 ```
 
 LoRA `path` を編集可能にする場合、保存前に `/sdapi/v1/loras` の結果と照合できると安全。
 
 ---
 
-## 11. 確定が必要な決定事項
+## 11. 決定事項（確定済み）
 
-1. **メモ挿絵の描画**: 専用 single-phase の `render_preset` を作るか、`draft` を batch=1 で流用するか。
-2. **style と model の結合度**: 1 style = 1 model 固定（現案）か、style から複数 model を選べるようにするか。
-3. **`render_presets` をさらに分けるか**: draft と refine を別テーブルにせず kind で分ける現案でよいか。
-4. **既存データの移行範囲**: 旧 `GenerationPreset` / `PromptPreset` を seed で作り直すだけにするか、本番 DB から自動移行スクリプトを書くか。
-5. **knowledge の kind**: `style` kind を style_id への明示参照（`style_ref`）にするか、現行どおり自由テキストの指針に留めるか。
-6. **aspect_ratio の語彙**: `square/portrait/landscape` の 3 値で足りるか、`tall/wide` など追加するか。
+1. **メモ挿絵の描画**: 専用の single-phase `render_preset`（`kind = single`）を作る。`draft` の流用はしない。
+2. **style と model の結合度**: style から**複数 model を選べる**。`prompt_style_models` join で持ち、style ごとに既定モデルを 1 つ指定。最終選択は既定 or UI/override（LLM には選ばせない）。
+3. **`render_presets` の分割**: 別テーブルには分けず、`kind`（single/draft/refine）で 1 テーブルに集約する現案を採用。
+4. **既存データの移行範囲**: 旧 `GenerationPreset` / `PromptPreset` は **seed で作り直すだけ**。本番 DB からの自動移行スクリプトは書かない。
+5. **knowledge の kind**: `kind = style` の chunk は `style_ref`（`prompt_styles.style_id` への明示参照）を必須にする。他 kind は従来どおり指針テキスト。
+6. **aspect_ratio の語彙**: `square` / `portrait` / `landscape` の 3 値で確定。
