@@ -1,0 +1,21 @@
+single:
+  name: 単発（メモ挿絵）
+  kind: single
+  default: true
+  draft_batch_size: 1
+
+draft:
+  name: 案出し（4枚）
+  kind: draft
+  default: true
+  draft_batch_size: 4
+
+refine:
+  name: 本番（hires）
+  kind: refine
+  default: true
+  refine_denoising_strength: 0.4
+  enable_hires: true
+  hires_upscaler: Latent
+  hires_scale: 1.5
+  hires_denoising_strength: 0.35

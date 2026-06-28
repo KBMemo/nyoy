@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000005) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000006) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -249,6 +249,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000005) do
     t.string "style_id", null: false
     t.datetime "updated_at", null: false
     t.index ["style_id"], name: "index_prompt_styles_on_style_id", unique: true
+  end
+
+  create_table "render_presets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "default", default: false, null: false
+    t.integer "draft_batch_size"
+    t.integer "draft_steps"
+    t.boolean "enable_hires", default: false, null: false
+    t.decimal "hires_denoising_strength", precision: 4, scale: 3
+    t.decimal "hires_scale", precision: 4, scale: 2
+    t.integer "hires_steps"
+    t.string "hires_upscaler"
+    t.string "kind", null: false
+    t.string "name", null: false
+    t.decimal "refine_denoising_strength", precision: 4, scale: 3
+    t.integer "refine_steps"
+    t.datetime "updated_at", null: false
+    t.index ["kind", "default"], name: "index_render_presets_on_kind_and_default"
+    t.index ["kind"], name: "index_render_presets_on_kind"
   end
 
   create_table "sd_model_profiles", force: :cascade do |t|
