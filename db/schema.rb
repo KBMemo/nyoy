@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -206,6 +206,51 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000002) do
     t.index ["default"], name: "index_prompt_skills_on_default"
   end
 
+  create_table "prompt_style_loras", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "inject_trigger_words", default: true, null: false
+    t.bigint "lora_profile_id", null: false
+    t.decimal "multiplier", precision: 4, scale: 2, default: "0.7", null: false
+    t.bigint "prompt_style_id", null: false
+    t.boolean "required", default: false, null: false
+    t.integer "sort_order", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["lora_profile_id"], name: "index_prompt_style_loras_on_lora_profile_id"
+    t.index ["prompt_style_id", "lora_profile_id"], name: "index_prompt_style_loras_on_style_and_lora", unique: true
+    t.index ["prompt_style_id"], name: "index_prompt_style_loras_on_prompt_style_id"
+  end
+
+  create_table "prompt_style_models", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "default", default: false, null: false
+    t.jsonb "param_overrides", default: {}, null: false
+    t.bigint "prompt_style_id", null: false
+    t.bigint "sd_model_profile_id", null: false
+    t.integer "sort_order", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["prompt_style_id", "sd_model_profile_id"], name: "index_prompt_style_models_on_style_and_model", unique: true
+    t.index ["prompt_style_id"], name: "index_prompt_style_models_on_prompt_style_id"
+    t.index ["sd_model_profile_id"], name: "index_prompt_style_models_on_sd_model_profile_id"
+  end
+
+  create_table "prompt_styles", force: :cascade do |t|
+    t.jsonb "aliases", default: [], null: false
+    t.jsonb "allowed_overrides", default: {}, null: false
+    t.jsonb "aspect_presets", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.boolean "enabled", default: true, null: false
+    t.jsonb "generation_defaults", default: {}, null: false
+    t.string "name", null: false
+    t.text "negative_prompt", default: "", null: false
+    t.text "prompt_prefix", null: false
+    t.text "prompt_suffix"
+    t.integer "sort_order", default: 0, null: false
+    t.string "style_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["style_id"], name: "index_prompt_styles_on_style_id", unique: true
+  end
+
   create_table "sd_model_profiles", force: :cascade do |t|
     t.string "base_url"
     t.datetime "created_at", null: false
@@ -229,4 +274,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000002) do
   add_foreign_key "image_generations", "generation_presets", column: "refine_preset_id"
   add_foreign_key "image_generations", "prompt_skills"
   add_foreign_key "memo_illustrations", "prompt_skills"
+  add_foreign_key "prompt_style_loras", "lora_profiles"
+  add_foreign_key "prompt_style_loras", "prompt_styles"
+  add_foreign_key "prompt_style_models", "prompt_styles"
+  add_foreign_key "prompt_style_models", "sd_model_profiles"
 end

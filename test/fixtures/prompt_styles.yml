@@ -1,0 +1,12 @@
+chojugiga:
+  style_id: chojugiga_emaki
+  name: 鳥獣戯画
+  prompt_prefix: chojugiga, emaki, sumi-e, monochrome, minimal background
+  prompt_suffix: ink brush strokes
+  negative_prompt: photorealistic, 3d, colorful
+  generation_defaults: { "width": 768, "height": 768, "steps": 22, "cfg_scale": 6.0, "sampler_name": "euler_a" }
+  aspect_presets: { "square": { "width": 768, "height": 768 }, "landscape": { "width": 1024, "height": 768 } }
+  allowed_overrides: { "steps": { "min": 16, "max": 32 } }
+  aliases: ["鳥獣戯画", "chojugiga"]
+  enabled: true
+  sort_order: 0

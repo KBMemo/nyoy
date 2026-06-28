@@ -1,0 +1,7 @@
+chojugiga_lora:
+  prompt_style: chojugiga
+  lora_profile: chojugiga
+  multiplier: 0.8
+  required: false
+  inject_trigger_words: true
+  sort_order: 0

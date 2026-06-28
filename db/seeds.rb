@@ -4,9 +4,12 @@ require_relative "../lib/prompt_skill_seeds"
 require_relative "../lib/generation_preset_seeds"
 require_relative "../lib/rag_knowledge_seeds"
 require_relative "../lib/capability_seeds"
+require_relative "../lib/prompt_style_seeds"
 
 # Phase 1: capability layer (sd_model_profiles / lora_profiles).
 CapabilitySeeds.seed!
+# Phase 2: style layer (prompt_styles / prompt_style_models / prompt_style_loras).
+PromptStyleSeeds.seed!
 
 default_skill = PromptSkill.find_or_create_by!(name: "Stable Diffusion Prompt Engineer") do |record|
   record.body = PromptSkillSeeds::DEFAULT_BODY
