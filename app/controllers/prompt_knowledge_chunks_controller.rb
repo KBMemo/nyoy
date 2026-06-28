@@ -40,6 +40,23 @@ class PromptKnowledgeChunksController < ApplicationController
     redirect_to prompt_knowledge_chunks_path, notice: "ナレッジを削除しました。"
   end
 
+  def generate_skill
+    chunks = PromptKnowledgeChunk.where(id: Array(params[:chunk_ids]).map(&:presence).compact)
+    if chunks.empty?
+      redirect_to prompt_knowledge_chunks_path, alert: "ナレッジを1件以上選んでください。"
+      return
+    end
+
+    draft = PromptSkillDraftGenerator.new.call(
+      chunks: chunks,
+      output_kind: params[:output_kind].presence || "json_plan"
+    )
+    session[:prompt_skill_draft_token] = PromptSkillDraftStore.write(draft)
+    redirect_to new_prompt_skill_path, notice: "スキル草案を生成しました。内容を確認して保存してください。"
+  rescue PromptSkillDraftGenerator::Error => e
+    redirect_to prompt_knowledge_chunks_path, alert: e.message
+  end
+
   private
 
   def set_prompt_knowledge_chunk

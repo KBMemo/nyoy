@@ -40,7 +40,8 @@ class PromptSpecGenerator
       ],
       temperature: 0.2,
       max_tokens: MAX_TOKENS,
-      response_format: response_format_for(rag[:allowed])
+      response_format: response_format_for(rag[:allowed]),
+      read_timeout: Rails.application.config.x.nyoy.llama_read_timeout
     )
 
     content = LlamaCppClient.message_text(response)

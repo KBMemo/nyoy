@@ -1,4 +1,4 @@
-- sd_models = Rails.application.config.x.nyoy.default_sd_models
+- sd_models = (Rails.application.config.x.nyoy.default_sd_models + prompt_lora.compatible_models_list).uniq
 
 = form_with model: prompt_lora, class: "space-y-4 max-w-3xl" do |form|
   - if prompt_lora.errors.any?

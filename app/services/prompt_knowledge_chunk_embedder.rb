@@ -8,7 +8,15 @@ class PromptKnowledgeChunkEmbedder
   end
 
   def embed_text(text)
-    vector = @client.embed(input: text.to_s.strip)
+    input = EmbeddingInput.truncate(text)
+    if EmbeddingInput.truncated?(text)
+      Rails.logger.warn(
+        "Embedding input truncated to #{input.length} chars " \
+        "(EMBEDDING_MAX_CHARS=#{Rails.application.config.x.nyoy.embedding_max_chars})"
+      )
+    end
+
+    vector = @client.embed(input: input)
     validate_dimensions!(vector)
     vector
   rescue EmbeddingClient::Error => e

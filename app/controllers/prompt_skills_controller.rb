@@ -12,6 +12,7 @@ class PromptSkillsController < ApplicationController
 
   def new
     @prompt_skill = PromptSkill.new(default: PromptSkill.none?)
+    apply_draft_from_session!
   end
 
   def create
@@ -53,5 +54,14 @@ class PromptSkillsController < ApplicationController
 
   def prompt_skill_params
     params.require(:prompt_skill).permit(:name, :body, :default, :default_negative_prompt)
+  end
+
+  def apply_draft_from_session!
+    session.delete(:prompt_skill_draft)
+    draft = PromptSkillDraftStore.fetch(session.delete(:prompt_skill_draft_token))
+    return unless draft.is_a?(Hash)
+
+    @prompt_skill.assign_attributes(draft.slice("name", "body", "default_negative_prompt"))
+    @draft_source_chunk_ids = Array(draft["source_chunk_ids"]).map(&:to_i).uniq
   end
 end

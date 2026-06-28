@@ -67,13 +67,14 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `EMBEDDINGS_URL` | bge-m3 embeddings API | `http://balvenie:10020` |
 | `EMBEDDINGS_MODEL` | 埋め込みモデル名 | `groonga/bge-m3-Q4_K_M-GGUF` |
 | `EMBEDDING_DIMENSIONS` | ベクトル次元数 | `1024` |
+| `EMBEDDING_MAX_CHARS` | embedding API へ送る最大文字数（サーバ batch 512 tokens 向け） | `1000` |
 | `LLAMA_JSON_SCHEMA` | llama.cpp へ JSON Schema 制約を送る | `true` |
 | `LLAMA_CPP_URL` | llama.cpp の URL | `http://balvenie:10010` |
 | `LLAMA_MODEL` | 使用する LLM モデル名 | `gemma-4-12b-it-vision-mtp` |
 | `SDCPP_SERVER_URL` | sd.cpp サーバーの URL | `http://balvenie:11234` |
 | `SDCPP_SWITCHD_URL` | モデル切り替え API の URL | `http://balvenie:11334` |
 | `SDCPP_SWITCHD_TOKEN` | switchd 認証トークン | （未設定） |
-| `SDCPP_DEFAULT_MODELS` | UI に表示する SD モデル（カンマ区切り） | `flat2d,anythingv5,dreamshaper8,pony-v6` |
+| `SDCPP_DEFAULT_MODELS` | UI に表示する SD モデル（カンマ区切り） | `flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL` |
 
 ## 使い方
 

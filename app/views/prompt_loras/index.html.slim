@@ -18,5 +18,7 @@ p.text-sm.kb-text-secondary RAG / PromptSpec 生成で参照する LoRA 名・tr
             | weight #{lora.weight_min}..#{lora.weight_max}
         - if lora.trigger_words.present?
           p.mt-1.text-sm.kb-text-muted trigger: #{lora.trigger_words}
+        .flex.flex-wrap.items-center.gap-3.mt-3
+          = link_to "編集", edit_prompt_lora_path(lora), class: "kb-chrome-link text-sm"
 - else
   p.mt-4.text-sm.kb-text-muted 未登録です。

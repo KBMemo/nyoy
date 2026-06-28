@@ -21,7 +21,9 @@
   div
     = form.label :body, "本文", class: "#{kb_label} mb-1"
     = form.text_area :body, rows: 12, required: true, class: kb_field_input_classes, placeholder: "画風・LoRA trigger・追加ネガティブの方針など"
-    p.mt-1.text-sm.kb-text-muted RAG 用の可変知識。実行時固定ネガティブの tag リストをそのままコピーしないでください。保存時に bge-m3 で embedding を生成します。
+    p.mt-1.text-sm.kb-text-muted
+      | RAG 用の可変知識。実行時固定ネガティブの tag リストをそのままコピーしないでください。
+      |  embedding は先頭 #{Rails.application.config.x.nyoy.embedding_max_chars} 文字を使用します（本文は RAG 表示で全文参照）。
 
   .flex.flex-wrap.items-center.gap-3
     = form.submit(prompt_knowledge_chunk.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)

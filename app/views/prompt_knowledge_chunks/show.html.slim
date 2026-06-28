@@ -13,4 +13,5 @@
 
 .flex.flex-wrap.items-center.gap-3.mt-6
   = link_to "編集", edit_prompt_knowledge_chunk_path(@prompt_knowledge_chunk), class: kb_btn_primary_sm
+  = button_to "スキル草案を生成", generate_skill_prompt_knowledge_chunks_path(chunk_ids: [@prompt_knowledge_chunk.id]), method: :post, class: kb_btn_secondary_sm
   = link_to "一覧へ", prompt_knowledge_chunks_path, class: "kb-chrome-link text-sm"

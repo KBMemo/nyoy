@@ -10,10 +10,12 @@ Rails.application.config.x.nyoy.tap do |config|
   config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://balvenie:10020")
   config.embeddings_model = ENV.fetch("EMBEDDINGS_MODEL", "groonga/bge-m3-Q4_K_M-GGUF")
   config.embedding_dimensions = ENV.fetch("EMBEDDING_DIMENSIONS", 1024).to_i
+  config.embedding_max_chars = ENV.fetch("EMBEDDING_MAX_CHARS", 1000).to_i
   config.llama_json_schema = ENV.fetch("LLAMA_JSON_SCHEMA", "true") == "true"
+  config.llama_read_timeout = ENV.fetch("LLAMA_READ_TIMEOUT", 300).to_i
   config.default_sd_models = ENV.fetch(
     "SDCPP_DEFAULT_MODELS",
-    "flat2d,anythingv5,dreamshaper8,pony-v6"
+    "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL"
   ).split(",").map(&:strip).reject(&:empty?)
   config.sd_model_loras = {
     "pony-v6" => ["ChojuGiga_Illustrious"]

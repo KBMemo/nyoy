@@ -2,5 +2,8 @@
 
 .mb-6
   h1 class=kb_page_title スキルを作成
+  - if @draft_source_chunk_ids&.any?
+    p.mt-1.text-sm.kb-text-secondary
+      | ナレッジ #{@draft_source_chunk_ids.size} 件から LLM が草案を生成しました。RAG 用ナレッジはそのまま残り、スキルには LLM 作法のみが入ります。
 
 = render "form", prompt_skill: @prompt_skill

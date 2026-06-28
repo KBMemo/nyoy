@@ -3,7 +3,11 @@ Rails.application.routes.draw do
 
   resources :memo_illustrations, only: %i[index show new create]
   resources :prompt_skills
-  resources :prompt_knowledge_chunks
+  resources :prompt_knowledge_chunks do
+    collection do
+      post :generate_skill
+    end
+  end
   resources :prompt_loras
   resources :prompt_presets
   resources :generation_presets

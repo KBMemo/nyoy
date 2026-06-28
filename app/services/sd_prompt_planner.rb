@@ -30,7 +30,8 @@ class SdPromptPlanner
       ],
       temperature: 0.2,
       max_tokens: MAX_TOKENS,
-      response_format: response_format
+      response_format: response_format,
+      read_timeout: Rails.application.config.x.nyoy.llama_read_timeout
     )
 
     content = response_text(response)

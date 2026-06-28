@@ -15,7 +15,7 @@ class LlamaCppClient
     @model = model
   end
 
-  def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil)
+  def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil, read_timeout: nil)
     payload = {
       model: @model,
       messages: messages,
@@ -24,7 +24,7 @@ class LlamaCppClient
     }
     payload[:response_format] = response_format if response_format.present?
 
-    post_json("/v1/chat/completions", payload)
+    post_json("/v1/chat/completions", payload, read_timeout: read_timeout)
   end
 
   def message_text(response)
@@ -67,7 +67,7 @@ class LlamaCppClient
 
   private
 
-  def post_json(path, payload)
+  def post_json(path, payload, read_timeout: nil)
     uri = URI("#{@base_url}#{path}")
     req = Net::HTTP::Post.new(uri)
     req["Content-Type"] = "application/json"
@@ -75,7 +75,7 @@ class LlamaCppClient
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.open_timeout = 5
-    http.read_timeout = 120
+    http.read_timeout = read_timeout || Rails.application.config.x.nyoy.llama_read_timeout
 
     res = http.request(req)
     json = JSON.parse(res.body)
@@ -85,5 +85,7 @@ class LlamaCppClient
     end
 
     json
+  rescue Net::ReadTimeout, Timeout::Error
+    raise Error, "llama.cpp read timeout (#{http.read_timeout}s)"
   end
 end
