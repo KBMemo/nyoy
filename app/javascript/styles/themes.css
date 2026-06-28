@@ -296,6 +296,15 @@
   width: min(calc(100% - var(--size-6)), var(--size-content-2));
 }
 
+.kb-flash-dismiss {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
 .kb-flash-dismiss-success { --kb-flash-dismiss-ring: var(--kb-status-success-strong); }
 .kb-flash-dismiss-warning { --kb-flash-dismiss-ring: var(--kb-status-warning-strong); }
 
