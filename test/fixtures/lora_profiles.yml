@@ -1,0 +1,13 @@
+chojugiga:
+  key: chojugiga_illustrious
+  name: ChojuGiga_Illustrious
+  family: illustrious
+  path: chojugiga/ChojuGiga_Illustrious.safetensors
+  trigger_words:
+    - chojugiga
+    - emaki
+  default_multiplier: 0.8
+  min_multiplier: 0.7
+  max_multiplier: 0.9
+  enabled: true
+  notes: 鳥獣戯画 LoRA

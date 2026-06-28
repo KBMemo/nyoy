@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -116,6 +116,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_120000) do
     t.index ["refine_preset_id"], name: "index_image_generations_on_refine_preset_id"
   end
 
+  create_table "lora_profiles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.decimal "default_multiplier", precision: 4, scale: 2, default: "0.7", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "family"
+    t.string "key", null: false
+    t.decimal "max_multiplier", precision: 4, scale: 2, default: "1.5", null: false
+    t.decimal "min_multiplier", precision: 4, scale: 2, default: "0.0", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.string "path", null: false
+    t.string "trigger_words", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_lora_profiles_on_key", unique: true
+    t.index ["path"], name: "index_lora_profiles_on_path", unique: true
+  end
+
   create_table "memo_illustrations", force: :cascade do |t|
     t.text "body", null: false
     t.float "cfg_scale", default: 7.0, null: false
@@ -187,6 +204,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_120000) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["default"], name: "index_prompt_skills_on_default"
+  end
+
+  create_table "sd_model_profiles", force: :cascade do |t|
+    t.string "base_url"
+    t.datetime "created_at", null: false
+    t.jsonb "default_params", default: {}, null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "family", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.integer "sort_order", default: 0, null: false
+    t.string "switch_key", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_sd_model_profiles_on_key", unique: true
+    t.index ["switch_key"], name: "index_sd_model_profiles_on_switch_key"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

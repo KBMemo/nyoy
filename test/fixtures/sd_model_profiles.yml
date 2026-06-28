@@ -1,0 +1,17 @@
+pony:
+  key: pony-v6
+  name: Pony Diffusion V6 XL
+  family: pony
+  switch_key: pony-v6
+  default_params: { "width": 768, "height": 768, "steps": 24, "cfg_scale": 6.0, "sampler_name": "euler_a" }
+  enabled: true
+  sort_order: 0
+
+flat2d:
+  key: flat2d
+  name: Flat2D
+  family: sd15
+  switch_key: flat2d
+  default_params: { "width": 512, "height": 512, "steps": 20, "cfg_scale": 7.0, "sampler_name": "euler_a" }
+  enabled: true
+  sort_order: 1

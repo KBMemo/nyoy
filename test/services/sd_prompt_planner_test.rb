@@ -4,7 +4,7 @@ require "test_helper"
 
 class SdPromptPlannerTest < ActiveSupport::TestCase
   FakeClient = Struct.new(:response, keyword_init: true) do
-    def chat(messages:, temperature:, max_tokens:, response_format: nil)
+    def chat(messages:, temperature:, max_tokens:, response_format: nil, read_timeout: nil)
       response
     end
   end
@@ -136,7 +136,7 @@ class SdPromptPlannerTest < ActiveSupport::TestCase
     captured_messages = nil
 
     client = Class.new do
-      define_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil|
+      define_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil, read_timeout: nil|
         captured_messages = messages
         {
           "choices" => [{
@@ -210,7 +210,7 @@ class SdPromptPlannerTest < ActiveSupport::TestCase
   test "requests max_tokens 4096" do
     calls = []
     client = Object.new
-    client.define_singleton_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil|
+    client.define_singleton_method(:chat) do |messages:, temperature:, max_tokens:, response_format: nil, read_timeout: nil|
       calls << max_tokens
       {
         "choices" => [
