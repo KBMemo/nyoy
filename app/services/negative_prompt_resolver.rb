@@ -19,6 +19,11 @@ class NegativePromptResolver
     )
   end
 
+  # Tag-aware merge of arbitrary comma-separated parts (style negative + extra).
+  def self.merge(*parts)
+    new.send(:merge_tags, *parts)
+  end
+
   def initialize(supplemental: nil, preset: nil, skill: nil)
     @supplemental = supplemental
     @preset = preset
