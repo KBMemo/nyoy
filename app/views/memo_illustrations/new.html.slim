@@ -2,9 +2,7 @@
 
 .mb-6
   h1 class=kb_page_title イラストを生成
-  p.mt-1.text-sm.kb-text-secondary メモや文章だけ入力してください。プロンプトと生成パラメータは、プロンプトナレッジ (RAG) とスキルから自動で決定します。
-
-= render "shared/sd_catalog_status"
+  p.mt-1.text-sm.kb-text-secondary メモや文章だけ入力してください。スタイル・モデル・LoRA・生成パラメータは、スタイル設定とプロンプトナレッジ (RAG) から自動で決定します。
 
 = form_with model: @memo_illustration, class: "space-y-4 max-w-xl" do |form|
   - if @memo_illustration.errors.any?
@@ -17,18 +15,15 @@
     = form.label :body, "文章", class: "#{kb_label} mb-1"
     = form.text_area :body, rows: 8, required: true, class: kb_field_input_classes, placeholder: "例: 今日の打ち合わせメモ。窓際のカフェでノートPCを開き、コーヒーを飲みながら考え込んでいる。落ち着いた雰囲気。"
 
-  - if @prompt_skills.any?
+  - if @prompt_styles.any?
     div
-      = form.label :prompt_skill_id, "プロンプトスキル", class: "#{kb_label} mb-1"
-      = form.collection_select :prompt_skill_id, @prompt_skills, :id, :name, { selected: @prompt_skills.find(&:default?)&.id || @prompt_skills.first&.id }, { required: true, class: kb_field_input_classes }
-      p.mt-1.text-sm.kb-text-muted JSON 出力スキルのみ表示しています（翻訳専用スキルは画像生成画面向けです）。
+      = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"
+      = form.select :style_id, @prompt_styles.map { |style| [style.name, style.style_id] }, { include_blank: "おまかせ（自動選択）" }, { class: kb_field_input_classes }
+      p.mt-1.text-sm.kb-text-muted 「おまかせ」を選ぶと、文章とナレッジから LLM が最適なスタイルを選びます。
   - else
     .kb-alert.kb-alert-warning
-      p
-        | プロンプトスキルが未登録です。
-        = link_to "スキルを作成", new_prompt_skill_path, class: "kb-chrome-link"
-        | してください。
+      p スタイルが未登録です。seed でスタイルを作成してください。
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @prompt_skills.empty? || @catalog_error.present? || @sd_models.empty?
+    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @prompt_styles.empty?
     = link_to "戻る", root_path, class: "kb-chrome-link text-sm"

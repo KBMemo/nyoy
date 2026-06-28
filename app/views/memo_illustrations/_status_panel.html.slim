@@ -4,8 +4,10 @@
       h1 class=kb_page_title 生成結果
       p.mt-1.text-sm.kb-text-secondary
         span class="nyoy-status nyoy-status-#{memo_illustration.status}" = memo_illustration.status_label
-        |  · #{memo_illustration.sd_model}
-        |  · スキル: #{memo_illustration.prompt_skill.name}
+        - if memo_illustration.sd_model.present?
+          |  · #{memo_illustration.sd_model}
+        - if memo_illustration.style_label.present?
+          |  · スタイル: #{memo_illustration.style_label}
         = render "shared/generation_phase_timing", record: memo_illustration
 
   .kb-card.p-4

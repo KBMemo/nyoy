@@ -4,8 +4,6 @@
     = link_to "新しいイラスト", new_memo_illustration_path, class: kb_btn_primary_sm
   p.mt-1.text-sm.kb-text-secondary メモや文章から、キーワードを抽出してイラストを生成します。
 
-= render "shared/sd_catalog_status"
-
 - if @memo_illustrations.any?
   section.nyoy-card-list
     - @memo_illustrations.each do |illustration|

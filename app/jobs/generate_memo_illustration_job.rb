@@ -7,9 +7,8 @@ class GenerateMemoIllustrationJob < ApplicationJob
     illustration = MemoIllustration.find(memo_illustration_id)
     illustration.update!(started_at: Time.current, status: "preparing")
 
-    switch_model(illustration)
-    plan_prompts(illustration)
-    generate_image(illustration)
+    resolved = plan_prompts(illustration)
+    generate_image(illustration, resolved)
 
     illustration.update!(status: "completed", finished_at: Time.current)
   rescue StandardError => e
@@ -20,48 +19,58 @@ class GenerateMemoIllustrationJob < ApplicationJob
 
   private
 
-  def switch_model(illustration)
-    switch = SdModelSwitcher.new
-    switch.switch(illustration.sd_model)
-  end
-
   def plan_prompts(illustration)
     illustration.update!(status: "planning", prompt_started_at: Time.current)
 
-    plan = SdPromptPlanner.new.plan(
-      body: illustration.body,
-      skill: illustration.prompt_skill,
-      record: illustration
+    plan = StylePlanGenerator.new(flow: :memo).call(
+      illustration.body,
+      forced_style_id: illustration.style_id.presence
     )
 
+    resolved = SdPromptStyleResolver.new(
+      style_id: plan.style_id,
+      subject_prompt: plan.subject_prompt,
+      negative_extra: plan.negative_extra,
+      aspect_ratio: plan.aspect_ratio
+    ).call
+
+    params = resolved[:resolved_params]
     illustration.update!(
-      positive_prompt: plan[:positive],
-      negative_prompt: plan[:negative],
-      width: plan[:width],
-      height: plan[:height],
-      steps: plan[:steps],
-      cfg_scale: plan[:cfg_scale],
-      seed: plan[:seed],
-      llama_raw_response: plan[:raw_response],
-      rag_source_chunk_ids: plan[:source_chunk_ids],
+      style_id: resolved[:style_id],
+      sd_model: resolved[:resolved_model_key],
+      positive_prompt: resolved[:resolved_prompt],
+      negative_prompt: plan.negative_extra,
+      resolved_negative_prompt: resolved[:resolved_negative_prompt],
+      resolved_loras: resolved[:resolved_loras],
+      resolved_params: params,
+      width: params["width"] || illustration.width,
+      height: params["height"] || illustration.height,
+      steps: params["steps"] || illustration.steps,
+      cfg_scale: params["cfg_scale"] || illustration.cfg_scale,
+      llama_raw_response: plan.raw_response,
+      rag_source_chunk_ids: plan.source_chunk_ids,
       prompt_finished_at: Time.current
     )
+
+    resolved
   end
 
-  def generate_image(illustration)
+  def generate_image(illustration, resolved)
     illustration.update!(status: "generating", image_started_at: Time.current)
 
+    switch_model(resolved)
+
+    params = illustration.resolved_params
     png_data = SdCppClient.new.txt2img(
       prompt: illustration.positive_prompt,
-      negative_prompt: NegativePromptResolver.resolve(
-        user: illustration.negative_prompt,
-        skill: illustration.prompt_skill
-      ),
+      negative_prompt: illustration.resolved_negative_prompt,
       width: illustration.width,
       height: illustration.height,
       steps: illustration.steps,
       cfg_scale: illustration.cfg_scale,
-      seed: illustration.seed || -1
+      seed: illustration.seed || -1,
+      sampler_name: params["sampler_name"],
+      lora: illustration.loras_for_api
     )
 
     illustration.image.attach(
@@ -70,6 +79,10 @@ class GenerateMemoIllustrationJob < ApplicationJob
       content_type: "image/png"
     )
     illustration.update!(image_finished_at: Time.current)
+  end
+
+  def switch_model(resolved)
+    SdModelSwitcher.new.switch(resolved[:switch_key])
   end
 
   def stamp_open_phases!(illustration)

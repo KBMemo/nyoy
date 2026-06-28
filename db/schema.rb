@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000006) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000007) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -146,17 +146,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000006) do
     t.text "negative_prompt"
     t.text "positive_prompt"
     t.datetime "prompt_finished_at"
-    t.integer "prompt_skill_id", null: false
+    t.integer "prompt_skill_id"
     t.datetime "prompt_started_at"
     t.jsonb "rag_source_chunk_ids", default: [], null: false
-    t.string "sd_model", null: false
+    t.jsonb "resolved_loras", default: [], null: false
+    t.text "resolved_negative_prompt"
+    t.jsonb "resolved_params", default: {}, null: false
+    t.string "sd_model"
     t.integer "seed"
     t.datetime "started_at"
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
+    t.string "style_id"
     t.datetime "updated_at", null: false
     t.integer "width", default: 512, null: false
     t.index ["prompt_skill_id"], name: "index_memo_illustrations_on_prompt_skill_id"
+    t.index ["style_id"], name: "index_memo_illustrations_on_style_id"
   end
 
   create_table "prompt_knowledge_chunks", force: :cascade do |t|

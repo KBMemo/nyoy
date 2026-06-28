@@ -3,7 +3,7 @@
 class MemoIllustration < ApplicationRecord
   include GenerationProgressBroadcastable
 
-  belongs_to :prompt_skill
+  belongs_to :prompt_skill, optional: true
 
   has_one_attached :image
 
@@ -18,7 +18,6 @@ class MemoIllustration < ApplicationRecord
   }.freeze
 
   validates :body, presence: true
-  validates :sd_model, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :width, :height, numericality: { only_integer: true, greater_than: 0 }
   validates :steps, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
@@ -38,8 +37,32 @@ class MemoIllustration < ApplicationRecord
     STATUS_LABELS.fetch(status, status)
   end
 
+  # Prefer the resolved snapshot (style flow); fall back to legacy skill-based
+  # resolution for rows created before the style rebuild.
   def resolved_negative_prompt
+    snapshot = self[:resolved_negative_prompt]
+    return snapshot if snapshot.present?
+
     NegativePromptResolver.resolve(supplemental: negative_prompt, skill: prompt_skill)
+  end
+
+  def prompt_style
+    return if style_id.blank?
+
+    @prompt_style ||= PromptStyle.find_by(style_id: style_id)
+  end
+
+  def style_label
+    prompt_style&.name || style_id.presence || prompt_skill&.name
+  end
+
+  def loras_for_api
+    Array(resolved_loras).filter_map do |entry|
+      path = entry["path"].presence
+      next if path.blank?
+
+      { "path" => path, "multiplier" => entry.fetch("multiplier", 1.0).to_f }
+    end
   end
 
   def rag_source_chunks
