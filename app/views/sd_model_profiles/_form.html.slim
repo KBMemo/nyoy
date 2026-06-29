@@ -1,0 +1,61 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: sd_model_profile, class: "space-y-4 max-w-3xl" do |form|
+  - if sd_model_profile.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - sd_model_profile.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :key, "key（内部識別子）", class: "#{kb_label} mb-1"
+    - if sd_model_profile.persisted? && sd_model_profile.linked_to_styles?
+      p.nyoy-monospace.text-sm.kb-text-secondary = sd_model_profile.key
+      p.mt-1.text-sm.kb-text-muted スタイルに紐づいているため変更できません（削除と同じ制約）。
+    - else
+      = form.text_field :key, required: true, class: kb_field_input_classes, placeholder: "illustrious_pencil-XL"
+      p.mt-1.text-sm.kb-text-muted
+        | prompt_styles から参照する一意キーです。
+        - if sd_model_profile.persisted?
+          |  まだスタイルに紐づいていない間だけ変更できます。変更する場合は switch_key も合わせて直してください（通常は key と同じ値）。
+
+  div
+    = form.label :name, "表示名", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
+
+  div
+    = form.label :family, "ファミリ", class: "#{kb_label} mb-1"
+    = form.select :family, SdModelProfile::FAMILY_LABELS.map { |key, label| [label, key] }, {}, class: kb_field_input_classes
+
+  div
+    = form.label :switch_key, "switch_key", class: "#{kb_label} mb-1"
+    = form.text_field :switch_key, required: true, class: kb_field_input_classes
+    p.mt-1.text-sm.kb-text-muted sdcpp-switchd に渡すモデル名。通常は key と同じ値にしてください。key を変更した場合はこちらも揃えてください。
+
+  div
+    = form.label :base_url, "base_url（任意）", class: "#{kb_label} mb-1"
+    = form.url_field :base_url, class: kb_field_input_classes, placeholder: "http://balvenie:11234"
+
+  div
+    = form.label :default_params_json, "default_params（JSON）", class: "#{kb_label} mb-1"
+    = form.text_area :default_params_json, rows: 8, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: '{"width":768,"height":768,"steps":24,"cfg_scale":6.0,"sampler_name":"euler_a"}'
+    p.mt-1.text-sm.kb-text-muted 解像度・steps などの既定値。スタイルの generation_defaults と組み合わせて使われます。
+
+  div
+    = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+    = form.text_area :notes, rows: 3, class: kb_field_input_classes
+
+  .flex.flex-wrap.items-center.gap-4
+    div
+      = form.label :sort_order, "表示順", class: "#{kb_label} mb-1"
+      = form.number_field :sort_order, min: 0, step: 1, class: kb_field_input_classes
+    label.flex.items-center.gap-2.text-sm
+      = form.check_box :enabled, class: "kb-control-accent"
+      span 有効
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(sd_model_profile.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", sd_model_profile.persisted? ? sd_model_profile_path(sd_model_profile) : sd_model_profiles_path, class: "kb-chrome-link text-sm"

@@ -1,0 +1,31 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title SD モデルプロファイル
+  = link_to "新規登録", new_sd_model_profile_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary sd.cpp / switchd で利用可能なモデル定義です。スタイル（prompt_styles）から key で参照されます。
+
+- if @sd_model_profiles.any?
+  section.nyoy-card-list.mt-4
+    - @sd_model_profiles.each do |profile|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to profile.name, profile, class: "kb-text-primary no-underline"
+          .flex.flex-wrap.items-center.gap-2
+            span.kb-badge.kb-badge-muted = profile.family_label
+            - unless profile.enabled?
+              span.kb-badge.kb-badge-muted 無効
+        dl.mt-3.grid.gap-1.text-sm.kb-text-secondary class="sm:grid-cols-[auto_1fr]"
+          dt.font-medium key
+          dd.nyoy-monospace = profile.key
+          dt.font-medium switch_key
+          dd.nyoy-monospace = profile.switch_key
+          - if profile.base_url.present?
+            dt.font-medium base_url
+            dd.nyoy-monospace = profile.base_url
+        - if profile.notes.present?
+          p.mt-2.text-sm.kb-text-secondary = truncate(profile.notes, length: 120)
+        .mt-3
+          = link_to "編集", edit_sd_model_profile_path(profile), class: "kb-chrome-link text-sm"
+- else
+  p.mt-4.text-sm.kb-text-muted モデルプロファイルが未登録です。

@@ -43,4 +43,14 @@ class SdModelProfileTest < ActiveSupport::TestCase
   test "enabled and ordered scopes" do
     assert_includes SdModelProfile.enabled.ordered, sd_model_profiles(:pony)
   end
+
+  test "linked_to_styles reflects prompt style models" do
+    assert sd_model_profiles(:illustrious).linked_to_styles?
+    assert_not SdModelProfile.create!(
+      key: "solo-model",
+      name: "Solo",
+      family: "sd15",
+      switch_key: "solo-model"
+    ).linked_to_styles?
+  end
 end

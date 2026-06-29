@@ -4,6 +4,15 @@
 # Holds only the definition; prompt/look concerns live in PromptStyle.
 class SdModelProfile < ApplicationRecord
   FAMILIES = %w[sd15 sdxl pony illustrious flux].freeze
+  FAMILY_LABELS = {
+    "sd15" => "SD 1.5",
+    "sdxl" => "SDXL",
+    "pony" => "Pony",
+    "illustrious" => "Illustrious",
+    "flux" => "Flux"
+  }.freeze
+
+  has_many :prompt_style_models, dependent: :restrict_with_error
 
   validates :key, :name, :family, :switch_key, presence: true
   validates :key, uniqueness: true
@@ -11,6 +20,14 @@ class SdModelProfile < ApplicationRecord
 
   scope :enabled, -> { where(enabled: true) }
   scope :ordered, -> { order(sort_order: :asc, name: :asc) }
+
+  def family_label
+    FAMILY_LABELS.fetch(family, family)
+  end
+
+  def linked_to_styles?
+    prompt_style_models.exists?
+  end
 
   def default_params_json
     JSON.pretty_generate(default_params.presence || {})

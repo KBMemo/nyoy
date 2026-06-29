@@ -1,0 +1,33 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title = @sd_model_profile.name
+    .flex.flex-wrap.items-center.gap-2
+      span.kb-badge.kb-badge-muted = @sd_model_profile.family_label
+      - unless @sd_model_profile.enabled?
+        span.kb-badge.kb-badge-muted 無効
+
+.kb-card.p-4
+  dl.nyoy-settings-list
+    dt key
+    dd.nyoy-monospace = @sd_model_profile.key
+    dt switch_key
+    dd.nyoy-monospace = @sd_model_profile.switch_key
+    - if @sd_model_profile.base_url.present?
+      dt base_url
+      dd.nyoy-monospace = @sd_model_profile.base_url
+    dt 表示順
+    dd = @sd_model_profile.sort_order
+    dt 状態
+    dd = @sd_model_profile.enabled? ? "有効" : "無効"
+  - if @sd_model_profile.default_params.present?
+    h2.mt-6 class=kb_section_title default_params
+    pre.mt-2.text-sm.whitespace-pre-wrap.nyoy-monospace = @sd_model_profile.default_params_json
+  - if @sd_model_profile.notes.present?
+    h2.mt-6 class=kb_section_title メモ
+    pre.mt-2.text-sm.whitespace-pre-wrap = @sd_model_profile.notes
+  p.mt-4.text-xs.kb-text-muted 更新 #{l(@sd_model_profile.updated_at, format: :long)}
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_sd_model_profile_path(@sd_model_profile), class: kb_btn_primary_sm
+  = button_to "削除", @sd_model_profile, method: :delete, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "削除しますか？" } }
+  = link_to "一覧へ", sd_model_profiles_path, class: "kb-chrome-link text-sm"
