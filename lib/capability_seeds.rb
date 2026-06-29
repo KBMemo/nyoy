@@ -32,7 +32,7 @@ module CapabilitySeeds
       default_multiplier: 0.8,
       min_multiplier: 0.7,
       max_multiplier: 0.9,
-      notes: "鳥獣戯画 LoRA。Illustrious / pony 系向け。"
+      notes: "鳥獣戯画 LoRA。Illustrious 系向け（pony 系でも利用可）。"
     }
   ].freeze
 

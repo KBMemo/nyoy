@@ -14,8 +14,8 @@ class SdPromptStyleResolverTest < ActiveSupport::TestCase
     result = resolve
 
     assert_equal "chojugiga_emaki", result[:style_id]
-    assert_equal "pony-v6", result[:resolved_model_key]
-    assert_equal "pony-v6", result[:switch_key]
+    assert_equal "illustrious_pencil-XL", result[:resolved_model_key]
+    assert_equal "illustrious_pencil-XL", result[:switch_key]
     assert_includes result[:resolved_prompt], "chojugiga, emaki"
     assert_includes result[:resolved_prompt], "rabbit and frog wrestling"
     assert_includes result[:resolved_prompt], "chojugiga" # trigger words injected
@@ -46,15 +46,15 @@ class SdPromptStyleResolverTest < ActiveSupport::TestCase
   end
 
   test "model_key override selects an allowed style model" do
-    result = resolve(model_key: "flat2d")
+    result = resolve(model_key: "pony-v6")
 
-    assert_equal "flat2d", result[:resolved_model_key]
+    assert_equal "pony-v6", result[:resolved_model_key]
   end
 
   test "unknown model_key falls back to default" do
     result = resolve(model_key: "does-not-exist")
 
-    assert_equal "pony-v6", result[:resolved_model_key]
+    assert_equal "illustrious_pencil-XL", result[:resolved_model_key]
   end
 
   test "safe_overrides clamps within allowed range" do

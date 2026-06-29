@@ -38,8 +38,8 @@ module PromptStyleSeeds
       aliases: ["鳥獣戯画", "鳥獣人物戯画", "chojugiga", "emaki", "墨絵"],
       sort_order: 0,
       models: [
-        { key: "pony-v6", default: true },
-        { key: "illustrious_pencil-XL", default: false }
+        { key: "illustrious_pencil-XL", default: true },
+        { key: "pony-v6", default: false }
       ],
       loras: [
         { key: "chojugiga_illustrious", multiplier: 0.8, required: false }

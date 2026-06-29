@@ -26,17 +26,17 @@ class PromptStyleTest < ActiveSupport::TestCase
   end
 
   test "default_model returns the default style model" do
-    assert_equal sd_model_profiles(:pony), prompt_styles(:chojugiga).default_model
+    assert_equal sd_model_profiles(:illustrious), prompt_styles(:chojugiga).default_model
   end
 
   test "style_model_for falls back to default when key blank" do
-    assert_equal sd_model_profiles(:pony),
+    assert_equal sd_model_profiles(:illustrious),
       prompt_styles(:chojugiga).style_model_for(nil).sd_model_profile
   end
 
   test "style_model_for picks the matching model" do
-    assert_equal sd_model_profiles(:flat2d),
-      prompt_styles(:chojugiga).style_model_for("flat2d").sd_model_profile
+    assert_equal sd_model_profiles(:pony),
+      prompt_styles(:chojugiga).style_model_for("pony-v6").sd_model_profile
   end
 
   test "requires exactly one default model when models present" do

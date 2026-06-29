@@ -7,6 +7,15 @@ pony:
   enabled: true
   sort_order: 0
 
+illustrious:
+  key: illustrious_pencil-XL
+  name: Illustrious Pencil XL
+  family: illustrious
+  switch_key: illustrious_pencil-XL
+  default_params: { "width": 768, "height": 768, "steps": 24, "cfg_scale": 6.0, "sampler_name": "euler_a" }
+  enabled: true
+  sort_order: 1
+
 flat2d:
   key: flat2d
   name: Flat2D
@@ -14,4 +23,4 @@ flat2d:
   switch_key: flat2d
   default_params: { "width": 512, "height": 512, "steps": 20, "cfg_scale": 7.0, "sampler_name": "euler_a" }
   enabled: true
-  sort_order: 1
+  sort_order: 2

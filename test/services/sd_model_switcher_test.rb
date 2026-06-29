@@ -13,12 +13,12 @@ class SdModelSwitcherTest < ActiveSupport::TestCase
     end
   end
 
-  test "passes default lora when switching pony-v6" do
+  test "passes default lora when switching illustrious_pencil-XL" do
     client = FakeClient.new(configured: true, calls: [])
     switcher = SdModelSwitcher.new(client: client)
 
-    assert switcher.switch("pony-v6")
-    assert_equal [{ model: "pony-v6", lora: "ChojuGiga_Illustrious" }], client.calls
+    assert switcher.switch("illustrious_pencil-XL")
+    assert_equal [{ model: "illustrious_pencil-XL", lora: "ChojuGiga_Illustrious" }], client.calls
   end
 
   test "does not pass lora for models without default lora" do

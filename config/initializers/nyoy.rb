@@ -18,9 +18,9 @@ Rails.application.config.x.nyoy.tap do |config|
     "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL"
   ).split(",").map(&:strip).reject(&:empty?)
   config.sd_model_loras = {
-    "pony-v6" => ["ChojuGiga_Illustrious"]
+    "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }
   config.sd_model_default_loras = {
-    "pony-v6" => "ChojuGiga_Illustrious"
+    "illustrious_pencil-XL" => "ChojuGiga_Illustrious"
   }
 end

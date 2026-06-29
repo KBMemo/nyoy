@@ -1,11 +1,11 @@
-chojugiga_pony:
+chojugiga_illustrious:
   prompt_style: chojugiga
-  sd_model_profile: pony
+  sd_model_profile: illustrious
   default: true
   sort_order: 0
 
-chojugiga_flat2d:
+chojugiga_pony:
   prompt_style: chojugiga
-  sd_model_profile: flat2d
+  sd_model_profile: pony
   default: false
   sort_order: 1

@@ -50,7 +50,7 @@ class GenerateMemoIllustrationJobTest < ActiveJob::TestCase
     illustration.reload
     assert_equal "completed", illustration.status
     assert_equal "chojugiga_emaki", illustration.style_id
-    assert_equal "pony-v6", illustration.sd_model
+    assert_equal "illustrious_pencil-XL", illustration.sd_model
     assert_includes illustration.positive_prompt, "rabbit and frog wrestling"
     assert_includes illustration.resolved_negative_prompt, "busy background"
     assert_equal 1024, illustration.width

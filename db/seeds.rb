@@ -29,7 +29,7 @@ RenderPresetSeeds.seed!
       LoRA名: ChojuGiga_Illustrious
       trigger: chojugiga
       推奨 weight: 0.7〜0.9
-      pony-v6 / Illustrious 系で使用。
+      pony-v6 / Illustrious 系で使用（Illustrious 推奨）。
     BODY
   },
   {

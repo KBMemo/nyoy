@@ -72,13 +72,13 @@ class SdModelCatalogTest < ActiveSupport::TestCase
     assert_not catalog.configured?
   end
 
-  test "returns pony-v6 default lora from config" do
+  test "returns illustrious default lora from config" do
     catalog = SdModelCatalog.new(
       switch_client: FakeSwitchClient.new(configured: false)
     )
 
-    assert_equal ["ChojuGiga_Illustrious"], catalog.loras_for("pony-v6")
-    assert_equal "ChojuGiga_Illustrious", catalog.default_lora_for("pony-v6")
+    assert_equal ["ChojuGiga_Illustrious"], catalog.loras_for("illustrious_pencil-XL")
+    assert_equal "ChojuGiga_Illustrious", catalog.default_lora_for("illustrious_pencil-XL")
     assert_empty catalog.loras_for("flat2d")
   end
 end

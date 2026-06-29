@@ -4,7 +4,7 @@ require "test_helper"
 
 class PromptStyleModelTest < ActiveSupport::TestCase
   test "valid fixture" do
-    assert prompt_style_models(:chojugiga_pony).valid?
+    assert prompt_style_models(:chojugiga_illustrious).valid?
   end
 
   test "model is unique within a style" do
@@ -17,10 +17,10 @@ class PromptStyleModelTest < ActiveSupport::TestCase
   end
 
   test "setting default clears other defaults in the same style" do
-    flat = prompt_style_models(:chojugiga_flat2d)
-    flat.update!(default: true)
+    pony = prompt_style_models(:chojugiga_pony)
+    pony.update!(default: true)
 
-    assert prompt_style_models(:chojugiga_pony).reload.default == false
-    assert flat.reload.default
+    assert prompt_style_models(:chojugiga_illustrious).reload.default == false
+    assert pony.reload.default
   end
 end

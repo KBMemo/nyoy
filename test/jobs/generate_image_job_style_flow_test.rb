@@ -53,7 +53,7 @@ class GenerateImageJobStyleFlowTest < ActiveJob::TestCase
     generation.reload
     assert_equal "awaiting_selection", generation.status
     assert_equal "chojugiga_emaki", generation.style_id
-    assert_equal "pony-v6", generation.sd_model
+    assert_equal "illustrious_pencil-XL", generation.sd_model
     assert_includes generation.prompt, "rabbit and frog wrestling"
     assert_includes generation.resolved_negative_prompt, "busy background"
     assert_equal 2, generation.drafts.count

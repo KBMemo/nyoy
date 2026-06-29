@@ -107,7 +107,7 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 
 ### 鳥獣戯画（seed 例）
 
-- **スタイル**: `chojugiga_emaki` — prefix/suffix、固定ネガ、ChojuGiga LoRA、pony-v6
+- **スタイル**: `chojugiga_emaki` — prefix/suffix、固定ネガ、ChojuGiga LoRA、Illustrious Pencil XL
 - **render preset**: 案出し / 本番 / メモ single
 - **RAG ナレッジ**: 画風指針（`style_ref: chojugiga_emaki`）、LoRA 方針、追加ネガの書き方
 
