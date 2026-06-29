@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000009) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -44,6 +44,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000009) do
   end
 
   create_table "image_generations", force: :cascade do |t|
+    t.string "aspect_ratio"
     t.float "cfg_scale", default: 7.0, null: false
     t.datetime "created_at", null: false
     t.integer "draft_batch_size", default: 4, null: false
@@ -84,6 +85,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000009) do
     t.datetime "updated_at", null: false
     t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
+    t.index ["aspect_ratio"], name: "index_image_generations_on_aspect_ratio"
     t.index ["refine_render_preset_id"], name: "index_image_generations_on_refine_render_preset_id"
     t.index ["render_preset_id"], name: "index_image_generations_on_render_preset_id"
     t.index ["style_id"], name: "index_image_generations_on_style_id"

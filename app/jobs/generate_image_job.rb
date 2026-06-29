@@ -38,11 +38,12 @@ class GenerateImageJob < ApplicationJob
       forced_style_id: generation.style_id.presence
     )
 
+    negative_for_resolve = generation.negative_prompt.presence || plan.negative_extra
     resolved = SdPromptStyleResolver.new(
       style_id: plan.style_id,
       subject_prompt: plan.subject_prompt,
-      negative_extra: plan.negative_extra,
-      aspect_ratio: plan.aspect_ratio
+      negative_extra: negative_for_resolve,
+      aspect_ratio: resolve_aspect_ratio(generation, plan)
     ).call
 
     persist_resolved!(generation, plan, resolved)
@@ -56,6 +57,7 @@ class GenerateImageJob < ApplicationJob
       style_id: generation.style_id,
       subject_prompt: generation.prompt,
       negative_extra: generation.negative_prompt,
+      aspect_ratio: generation.aspect_ratio.presence,
       execution_only: true
     ).call
 
@@ -63,12 +65,17 @@ class GenerateImageJob < ApplicationJob
     generation.update!(prompt_finished_at: Time.current)
   end
 
+  def resolve_aspect_ratio(generation, plan)
+    generation.aspect_ratio.presence || plan&.aspect_ratio
+  end
+
   def persist_resolved!(generation, plan, resolved, keep_prompt: false)
     params = resolved[:resolved_params].merge("switch_key" => resolved[:switch_key])
     attrs = {
       style_id: resolved[:style_id],
+      aspect_ratio: generation.aspect_ratio.presence || plan&.aspect_ratio,
       sd_model: resolved[:resolved_model_key],
-      negative_prompt: plan&.negative_extra.presence || generation.negative_prompt,
+      negative_prompt: generation.negative_prompt.presence || plan&.negative_extra,
       resolved_negative_prompt: resolved[:resolved_negative_prompt],
       resolved_loras: resolved[:resolved_loras],
       resolved_params: params,
@@ -95,8 +102,8 @@ class GenerateImageJob < ApplicationJob
     png_list = SdCppClient.new.txt2img(
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
-      width: generation.width,
-      height: generation.height,
+      width: generation.draft_width,
+      height: generation.draft_height,
       steps: generation.draft_steps_for_api,
       cfg_scale: generation.cfg_scale,
       seed: generation.seed || -1,

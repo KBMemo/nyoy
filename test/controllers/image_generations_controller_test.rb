@@ -16,11 +16,28 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "日本語プロンプトを入力してください", response.parsed_body["error"]
   end
 
+  test "create stores aspect_ratio and enqueues job" do
+    assert_enqueued_with(job: GenerateImageJob) do
+      post image_generations_path, params: {
+        image_generation: {
+          japanese_prompt: "ウサギ",
+          style_id: "chojugiga_emaki",
+          aspect_ratio: "landscape",
+          draft_batch_size: 2
+        }
+      }
+    end
+
+    generation = ImageGeneration.order(:id).last
+    assert_equal "landscape", generation.aspect_ratio
+    assert_redirected_to image_generation_path(generation)
+  end
+
   test "translate_prompt returns resolved prompt from style plan" do
     plan = StylePlanGenerator::Plan.new(
       style_id: "chojugiga_emaki",
       subject_prompt: "rabbit and frog",
-      negative_extra: "",
+      negative_extra: "low quality",
       aspect_ratio: "square",
       source_chunk_ids: [],
       raw_response: "{}"
@@ -36,9 +53,10 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
       headers: @headers
 
     assert_response :success
-    body = response.parsed_body["prompt"]
-    assert_includes body, "chojugiga"
-    assert_includes body, "rabbit and frog"
+    body = response.parsed_body
+    assert_includes body["prompt"], "chojugiga"
+    assert_includes body["prompt"], "rabbit and frog"
+    assert_equal "low quality", body["negative_prompt"]
   ensure
     StylePlanGenerator.singleton_class.send(:define_method, :new, original)
   end

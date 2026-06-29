@@ -26,9 +26,6 @@
     - if @prompt_style.prompt_suffix.present?
       dt suffix
       dd.nyoy-monospace = @prompt_style.prompt_suffix
-    - if @prompt_style.negative_prompt.present?
-      dt 固定ネガティブ
-      dd.nyoy-monospace = @prompt_style.negative_prompt
 
   h2.mt-6 class=kb_section_title モデル
   - if @prompt_style.prompt_style_models.any?

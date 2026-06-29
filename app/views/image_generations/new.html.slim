@@ -19,10 +19,15 @@
     div
       = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"
       = form.select :style_id, @prompt_styles.map { |s| [s.name, s.style_id] }, { include_blank: "おまかせ（自動選択）" }, class: kb_field_input_classes, data: { image_generation_form_target: "styleId" }
-      p.mt-1.text-sm.kb-text-muted スタイルがモデル・LoRA・固定ネガティブ・解像度を決めます。
+      p.mt-1.text-sm.kb-text-muted スタイルがモデル・LoRA を決めます。
   - else
     .kb-alert.kb-alert-warning
       p スタイルが未登録です。seed でスタイルを作成してください。
+
+  div
+    = form.label :aspect_ratio, "画像サイズ", class: "#{kb_label} mb-1"
+    = form.select :aspect_ratio, options_for_select([["おまかせ（自動）", ""]] + ImageGeneration.aspect_ratio_options, @image_generation.aspect_ratio), {}, class: kb_field_input_classes, data: { image_generation_form_target: "aspectRatio" }
+    p.mt-1.text-sm.kb-text-muted スタイルの aspect_presets から解像度を決めます。未指定時は LLM が選びます。
 
   div
     = form.label :prompt, "SD プロンプト (任意・上書き)", class: "#{kb_label} mb-1"
@@ -33,9 +38,12 @@
     p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
 
   div
-    = form.label :negative_prompt, "追加ネガティブ (任意)", class: "#{kb_label} mb-1"
-    = form.text_area :negative_prompt, rows: 2, class: kb_field_input_classes, placeholder: "busy background, hard shadows"
-    p.mt-1.text-sm.kb-text-muted スタイルの固定ネガティブは自動適用されます。
+    = form.label :negative_prompt, "ネガティブプロンプト (任意・上書き)", class: "#{kb_label} mb-1"
+    .flex.flex-wrap.items-center.gap-2.mb-1
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+    = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { image_generation_form_target: "negativePrompt", action: "input->image-generation-form#negativePromptInput" }
+    p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="negativeTranslateStatus"
 
   div
     = form.label :seed, "Seed (空欄でランダム)", class: "#{kb_label} mb-1"
@@ -44,7 +52,7 @@
   .kb-card.p-4
     .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1
       h2 class=kb_section_title ラフ生成
-      p.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。
+      p.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。ラフは設定解像度の約 2/3 で生成します。
     .nyoy-field-grid.mt-4
       - if @draft_render_presets.any?
         div

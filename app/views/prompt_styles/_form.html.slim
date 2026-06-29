@@ -62,11 +62,6 @@
       = form.label :prompt_suffix, "prompt_suffix", class: "#{kb_label} mb-1"
       = form.text_area :prompt_suffix, rows: 2, class: kb_field_input_classes
 
-    div
-      = form.label :negative_prompt, "固定ネガティブ", class: "#{kb_label} mb-1"
-      = form.text_area :negative_prompt, rows: 3, class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted LLM の negative_extra とマージされます。
-
   section.space-y-3
     h2 class=kb_section_title モデル
     p.text-sm.kb-text-muted このスタイルで選べる SD モデル。既定を 1 つ指定してください。

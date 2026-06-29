@@ -9,6 +9,8 @@
           |  · #{image_generation.sd_model}
         - if image_generation.style_label.present?
           |  · スタイル: #{image_generation.style_label}
+        - if image_generation.aspect_ratio.present?
+          |  · サイズ: #{image_generation.aspect_ratio_label}
         - if image_generation.render_preset
           |  · 案出し: #{image_generation.render_preset.name}
         - if image_generation.refine_render_preset
@@ -25,17 +27,15 @@
       p.mt-2.text-sm.nyoy-monospace = image_generation.prompt
 
     - if image_generation.resolved_negative_prompt.present?
-      h2.mt-6 class=kb_section_title 実行時ネガティブ
+      h2 class=(image_generation.prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") ネガティブプロンプト
       p.mt-2.text-sm.nyoy-monospace = image_generation.resolved_negative_prompt
-      - if image_generation.negative_prompt.present?
-        p.mt-2.text-sm.kb-text-secondary
-          | 追加:
-          span.nyoy-monospace.ml-1 = image_generation.negative_prompt
 
     h2.mt-6 class=kb_section_title 生成設定
     dl.mt-2.nyoy-settings-list
       dt サイズ
       dd = "#{image_generation.width}×#{image_generation.height}"
+      dt ラフサイズ
+      dd = "#{image_generation.draft_width}×#{image_generation.draft_height}（仕上げ img2img もこの解像度）"
       dt ラフ枚数 / Steps
       dd = "#{image_generation.draft_batch_size} 枚 / #{image_generation.draft_steps_for_api}"
       dt 仕上げ Steps / 強度

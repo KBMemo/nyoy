@@ -151,4 +151,17 @@ class ImageGenerationTest < ActiveSupport::TestCase
     assert_equal 768, generation.hires_target_width
     assert_equal 1152, generation.hires_target_height
   end
+
+  test "draft dimensions scale to about two thirds aligned to 8px" do
+    generation = ImageGeneration.new(width: 768, height: 768, loras: "[]")
+    assert_equal 512, generation.draft_width
+    assert_equal 512, generation.draft_height
+    assert generation.needs_output_upscale?
+
+    generation.width = 1024
+    generation.height = 768
+    assert_equal 680, generation.draft_width
+    assert_equal 512, generation.draft_height
+    assert generation.needs_output_upscale?
+  end
 end

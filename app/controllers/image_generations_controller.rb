@@ -72,14 +72,18 @@ class ImageGenerationsController < ApplicationController
       japanese_prompt,
       forced_style_id: params[:style_id].presence
     )
+    aspect_ratio = params[:aspect_ratio].presence || plan.aspect_ratio
     resolved = SdPromptStyleResolver.new(
       style_id: plan.style_id,
       subject_prompt: plan.subject_prompt,
       negative_extra: plan.negative_extra,
-      aspect_ratio: plan.aspect_ratio
+      aspect_ratio: aspect_ratio
     ).call
 
-    render json: { prompt: resolved[:resolved_prompt] }
+    render json: {
+      prompt: resolved[:resolved_prompt],
+      negative_prompt: plan.negative_extra
+    }
   rescue StylePlanGenerator::Error, SdPromptStyleResolver::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
@@ -138,6 +142,7 @@ class ImageGenerationsController < ApplicationController
       :prompt,
       :negative_prompt,
       :style_id,
+      :aspect_ratio,
       :seed,
       :render_preset_id,
       :refine_render_preset_id,

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Resolves a minimal LLM plan (style_id + subject_prompt + negative_extra +
+# Resolves a minimal LLM plan (style_id + subject_prompt + negative prompt +
 # aspect_ratio) into a concrete sd.cpp payload using DB-backed PromptStyle data.
 # The LLM never picks numbers, model paths, or LoRA paths — they come from here.
 class SdPromptStyleResolver
@@ -29,7 +29,7 @@ class SdPromptStyleResolver
       .deep_merge(safe_overrides(style))
 
     prompt = @execution_only ? @subject_prompt : build_prompt(style)
-    negative = NegativePromptResolver.merge(style.negative_prompt, @negative_extra.presence)
+    negative = @negative_extra.presence || ""
     loras = resolve_loras(style)
 
     {

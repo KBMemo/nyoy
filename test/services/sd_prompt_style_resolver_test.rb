@@ -22,12 +22,10 @@ class SdPromptStyleResolverTest < ActiveSupport::TestCase
     assert_includes result[:resolved_prompt], "ink brush strokes" # suffix
   end
 
-  test "merges style negative with negative_extra and dedupes" do
+  test "uses negative_extra as resolved negative prompt" do
     result = resolve(negative_extra: "photorealistic, busy background")
 
-    tags = result[:resolved_negative_prompt].split(",").map(&:strip)
-    assert_includes tags, "busy background"
-    assert_equal tags.uniq, tags
+    assert_equal "photorealistic, busy background", result[:resolved_negative_prompt]
   end
 
   test "resolves loras from style with path and multiplier" do
@@ -99,6 +97,6 @@ class SdPromptStyleResolverTest < ActiveSupport::TestCase
     ).call
 
     assert_equal "custom full prompt", result[:resolved_prompt]
-    assert_includes result[:resolved_negative_prompt], "extra tag"
+    assert_equal "extra tag", result[:resolved_negative_prompt]
   end
 end

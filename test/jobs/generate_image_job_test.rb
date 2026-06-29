@@ -14,6 +14,14 @@ module ImageGenerationJobTestHelper
     SdModelSwitcher.singleton_class.send(:define_method, :new, original_switcher_new)
     SdCppClient.singleton_class.send(:define_method, :new, original_client_new)
   end
+
+  def with_image_resizer_stub(return_value: "resized-bytes")
+    original = ImageResizer.method(:resize_png)
+    ImageResizer.define_singleton_method(:resize_png) { |*_| return_value }
+    yield
+  ensure
+    ImageResizer.singleton_class.send(:define_method, :resize_png, original)
+  end
 end
 
 class GenerateImageJobTest < ActiveJob::TestCase
@@ -90,9 +98,13 @@ class RefineImageJobTest < ActiveJob::TestCase
 
     generation.reload
     assert_equal 2, calls.size
+    assert_equal generation.draft_width, calls.first[:width]
+    assert_equal generation.draft_height, calls.first[:height]
     assert_equal "draft-bytes", calls.first[:init_image]
     assert_in_delta 0.4, calls.first[:denoising_strength]
     assert_equal "refined-bytes", calls.second[:init_image]
+    assert_equal generation.draft_width, calls.second[:width]
+    assert_equal generation.draft_height, calls.second[:height]
     assert calls.second[:enable_hr]
     assert_equal 768, calls.second[:hr_resize_x]
     assert_equal 768, calls.second[:hr_resize_y]
@@ -107,6 +119,8 @@ class RefineImageJobTest < ActiveJob::TestCase
       prompt: "chojugiga, rabbit",
       sd_model: "flat2d",
       loras: "[]",
+      width: 512,
+      height: 512,
       status: "awaiting_selection",
       selected_draft_index: 0,
       refine_denoising_strength: 0.4,
@@ -130,13 +144,17 @@ class RefineImageJobTest < ActiveJob::TestCase
       end
     end
 
-    with_generation_stubs(switcher:, client:) do
-      RefineImageJob.perform_now(generation.id)
+    with_image_resizer_stub(return_value: "upscaled-bytes") do
+      with_generation_stubs(switcher:, client:) do
+        RefineImageJob.perform_now(generation.id)
+      end
     end
 
     assert_equal 1, calls.size
+    assert_equal generation.draft_width, calls.first[:width]
+    assert_equal generation.draft_height, calls.first[:height]
     assert_equal 1, generation.reload.refined_images.count
-    assert_equal "refined-bytes", generation.refined_images.last.download
+    assert_equal "upscaled-bytes", generation.refined_images.last.download
   end
 
   test "keeps previous refined images when refining again" do
@@ -167,13 +185,15 @@ class RefineImageJobTest < ActiveJob::TestCase
     end
 
     generation.update!(selected_draft_index: 1)
-    with_generation_stubs(switcher:, client:) do
-      RefineImageJob.perform_now(generation.id)
+    with_image_resizer_stub do
+      with_generation_stubs(switcher:, client:) do
+        RefineImageJob.perform_now(generation.id)
+      end
     end
 
     generation.reload
     assert_equal 2, generation.refined_images.count
     assert_equal "first-result", generation.refined_images.attachments.order(:created_at).first.download
-    assert_equal "second-result", generation.refined_images.attachments.order(:created_at).last.download
+    assert_equal "resized-bytes", generation.refined_images.attachments.order(:created_at).last.download
   end
 end

@@ -12,7 +12,7 @@ class RefineImageJob < ApplicationJob
 
     switch_model(generation)
     refined_png = refine_image(generation, draft)
-    final_png = generation.enable_hires? ? upscale_image(generation, refined_png) : refined_png
+    final_png = finalize_output(generation, refined_png)
     attach_final_image(generation, final_png)
 
     generation.update!(status: "completed", image_finished_at: Time.current, finished_at: Time.current)
@@ -34,8 +34,8 @@ class RefineImageJob < ApplicationJob
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       init_image: draft.download,
-      width: generation.width,
-      height: generation.height,
+      width: generation.draft_width,
+      height: generation.draft_height,
       steps: generation.refine_steps_for_api,
       cfg_scale: generation.cfg_scale,
       seed: generation.seed || -1,
@@ -46,13 +46,27 @@ class RefineImageJob < ApplicationJob
     )
   end
 
+  def finalize_output(generation, refined_png)
+    if generation.enable_hires?
+      upscale_image(generation, refined_png)
+    elsif generation.needs_output_upscale?
+      ImageResizer.resize_png(
+        refined_png,
+        width: generation.width,
+        height: generation.height
+      )
+    else
+      refined_png
+    end
+  end
+
   def upscale_image(generation, init_image)
     SdCppClient.new.img2img(
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       init_image: init_image,
-      width: generation.width,
-      height: generation.height,
+      width: generation.draft_width,
+      height: generation.draft_height,
       steps: generation.hires_steps_for_api,
       cfg_scale: generation.cfg_scale,
       seed: generation.seed || -1,

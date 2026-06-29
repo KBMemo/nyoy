@@ -24,6 +24,13 @@ class ImageGeneration < ApplicationRecord
     "failed" => "失敗"
   }.freeze
   HIRES_UPSCALERS = %w[Latent Latent\ (nearest-exact) Lanczos Nearest].freeze
+  ASPECT_RATIOS = StylePlanJsonSchema::ASPECT_RATIOS
+  ASPECT_RATIO_LABELS = {
+    "square" => "正方形",
+    "portrait" => "縦長",
+    "landscape" => "横長"
+  }.freeze
+  DRAFT_SIZE_SCALE = 2.0 / 3.0
 
   validates :sd_model, presence: true, unless: :style_flow?
   validate :prompt_source_present
@@ -41,8 +48,23 @@ class ImageGeneration < ApplicationRecord
   validates :hires_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
   validates :hires_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :hires_upscaler, inclusion: { in: HIRES_UPSCALERS }
+  validates :aspect_ratio, inclusion: { in: ASPECT_RATIOS }, allow_blank: true
 
   scope :recent, -> { order(created_at: :desc) }
+
+  def self.aspect_ratio_options
+    ASPECT_RATIO_LABELS.map { |value, label| [label, value] }
+  end
+
+  def self.sd_aligned_dimension(value)
+    [(value.to_f / 8).round * 8, 8].max
+  end
+
+  def aspect_ratio_label
+    return "おまかせ" if aspect_ratio.blank?
+
+    ASPECT_RATIO_LABELS.fetch(aspect_ratio, aspect_ratio)
+  end
 
   def in_progress?
     status.in?(%w[pending preparing translating drafting refining])
@@ -69,6 +91,18 @@ class ImageGeneration < ApplicationRecord
 
   def draft_steps_for_api
     draft_steps.presence || [steps, 18].min
+  end
+
+  def draft_width
+    self.class.sd_aligned_dimension(width * DRAFT_SIZE_SCALE)
+  end
+
+  def draft_height
+    self.class.sd_aligned_dimension(height * DRAFT_SIZE_SCALE)
+  end
+
+  def needs_output_upscale?
+    draft_width != width || draft_height != height
   end
 
   def refine_steps_for_api
@@ -147,6 +181,7 @@ class ImageGeneration < ApplicationRecord
       render_preset: render_preset,
       refine_render_preset: refine_render_preset,
       style_id: style_id,
+      aspect_ratio: aspect_ratio,
       japanese_prompt: japanese_prompt,
       prompt: prompt,
       negative_prompt: negative_prompt,
