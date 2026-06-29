@@ -32,12 +32,12 @@ export default class extends Controller {
     }
 
     this.setTranslating(true)
-    this.showTranslateStatus("SD プロンプトを生成中…")
+    this.showTranslateStatus("翻訳プロンプトを生成中…")
 
     try {
       const prompt = await this.fetchTranslatedPrompt(japanesePrompt)
       this.applyPrompt(prompt, mode)
-      this.showTranslateStatus(mode === "insert" ? "SD プロンプトを挿入しました" : "SD プロンプトを置き換えました")
+      this.showTranslateStatus(mode === "insert" ? "翻訳プロンプトを挿入しました" : "翻訳プロンプトに置き換えました")
     } catch (error) {
       this.showTranslateStatus(error.message, true)
     } finally {
@@ -85,7 +85,7 @@ export default class extends Controller {
     })
 
     if (this.hasInsertSdPromptButtonTarget) {
-      this.insertSdPromptButtonTarget.textContent = active ? "生成中…" : "挿入"
+      this.insertSdPromptButtonTarget.textContent = active ? "生成中…" : "翻訳挿入"
     }
   }
 

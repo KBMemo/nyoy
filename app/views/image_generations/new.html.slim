@@ -27,8 +27,8 @@
   div
     = form.label :prompt, "SD プロンプト (任意・上書き)", class: "#{kb_label} mb-1"
     .flex.flex-wrap.items-center.gap-2.mb-1
-      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" プレビューを挿入
-      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" プレビューで置換
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 翻訳置換
     = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { image_generation_form_target: "sdPrompt", action: "input->image-generation-form#sdPromptInput" }
     p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
 
