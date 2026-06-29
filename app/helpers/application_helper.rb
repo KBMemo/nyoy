@@ -25,10 +25,42 @@ module ApplicationHelper
     "kb-label"
   end
 
+  SETTINGS_NAV_CONTROLLERS = %w[
+    prompt_knowledge_chunks
+    prompt_styles
+    sd_model_profiles
+    lora_profiles
+  ].freeze
+
   def kb_chrome_link_class(controller)
     classes = ["kb-chrome-link"]
     classes << "font-semibold" if controller_name == controller
     classes.join(" ")
+  end
+
+  def kb_settings_nav_active?
+    SETTINGS_NAV_CONTROLLERS.include?(controller_name)
+  end
+
+  def kb_chrome_settings_trigger_class
+    classes = ["kb-chrome-link", "kb-chrome-dropdown-trigger", kb_focus_ring]
+    classes << "font-semibold" if kb_settings_nav_active?
+    classes.join(" ")
+  end
+
+  def kb_chrome_dropdown_item_class(controller)
+    classes = ["kb-chrome-dropdown-item"]
+    classes << "font-semibold" if controller_name == controller
+    classes.join(" ")
+  end
+
+  def kb_settings_nav_items
+    [
+      ["ナレッジ", "prompt_knowledge_chunks", prompt_knowledge_chunks_path],
+      ["スタイル", "prompt_styles", prompt_styles_path],
+      ["モデル", "sd_model_profiles", sd_model_profiles_path],
+      ["LoRA", "lora_profiles", lora_profiles_path]
+    ]
   end
 
   def kb_btn_primary_sm

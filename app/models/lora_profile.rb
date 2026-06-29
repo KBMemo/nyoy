@@ -3,6 +3,11 @@
 # Capability layer: a LoRA that sd.cpp can load.
 # Holds only the definition; style ↔ lora wiring lives in PromptStyleLora.
 class LoraProfile < ApplicationRecord
+  FAMILIES = SdModelProfile::FAMILIES
+  FAMILY_LABELS = SdModelProfile::FAMILY_LABELS
+
+  has_many :prompt_style_loras, dependent: :restrict_with_error
+
   validates :key, :name, :path, presence: true
   validates :key, :path, uniqueness: true
   validates :default_multiplier, :min_multiplier, :max_multiplier,
@@ -11,6 +16,24 @@ class LoraProfile < ApplicationRecord
 
   scope :enabled, -> { where(enabled: true) }
   scope :ordered, -> { order(name: :asc) }
+
+  def linked_to_styles?
+    prompt_style_loras.exists?
+  end
+
+  def family_label
+    return if family.blank?
+
+    FAMILY_LABELS.fetch(family, family)
+  end
+
+  def trigger_words_text
+    trigger_words_list.join(", ")
+  end
+
+  def trigger_words_text=(value)
+    self.trigger_words_list = value
+  end
 
   def trigger_words_list
     Array(trigger_words).reject(&:blank?)

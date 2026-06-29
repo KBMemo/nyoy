@@ -1,0 +1,64 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: lora_profile, class: "space-y-4 max-w-3xl" do |form|
+  - if lora_profile.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - lora_profile.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :key, "key（内部識別子）", class: "#{kb_label} mb-1"
+    - if lora_profile.persisted? && lora_profile.linked_to_styles?
+      p.nyoy-monospace.text-sm.kb-text-secondary = lora_profile.key
+      p.mt-1.text-sm.kb-text-muted スタイルに紐づいているため変更できません（削除と同じ制約）。
+    - else
+      = form.text_field :key, required: true, class: kb_field_input_classes, placeholder: "chojugiga_illustrious"
+      p.mt-1.text-sm.kb-text-muted
+        | prompt_styles から参照する一意キーです。
+        - if lora_profile.persisted?
+          |  まだスタイルに紐づいていない間だけ変更できます。
+
+  div
+    = form.label :name, "表示名", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
+
+  div
+    = form.label :family, "ファミリ（任意）", class: "#{kb_label} mb-1"
+    = form.select :family, LoraProfile::FAMILY_LABELS.map { |key, label| [label, key] }, { include_blank: "—" }, class: kb_field_input_classes
+
+  div
+    = form.label :path, "path", class: "#{kb_label} mb-1"
+    = form.text_field :path, required: true, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "chojugiga/ChojuGiga_Illustrious.safetensors"
+    p.mt-1.text-sm.kb-text-muted sd.cpp が読み込む safetensors の相対パス。実ファイルと一致させてください。
+
+  div
+    = form.label :trigger_words_text, "trigger_words", class: "#{kb_label} mb-1"
+    = form.text_field :trigger_words_text, class: kb_field_input_classes, placeholder: "chojugiga, emaki"
+    p.mt-1.text-sm.kb-text-muted カンマ区切り。スタイル解決時にプロンプトへ注入される場合があります。
+
+  .grid.gap-4 class="sm:grid-cols-3"
+    div
+      = form.label :default_multiplier, "既定 multiplier", class: "#{kb_label} mb-1"
+      = form.number_field :default_multiplier, min: 0, max: 2, step: 0.05, class: kb_field_input_classes
+    div
+      = form.label :min_multiplier, "最小", class: "#{kb_label} mb-1"
+      = form.number_field :min_multiplier, min: 0, max: 2, step: 0.05, class: kb_field_input_classes
+    div
+      = form.label :max_multiplier, "最大", class: "#{kb_label} mb-1"
+      = form.number_field :max_multiplier, min: 0, max: 2, step: 0.05, class: kb_field_input_classes
+
+  div
+    = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+    = form.text_area :notes, rows: 3, class: kb_field_input_classes
+
+  label.flex.items-center.gap-2.text-sm
+    = form.check_box :enabled, class: "kb-control-accent"
+    span 有効
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(lora_profile.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", lora_profile.persisted? ? lora_profile_path(lora_profile) : lora_profiles_path, class: "kb-chrome-link text-sm"

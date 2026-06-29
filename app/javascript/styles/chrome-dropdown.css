@@ -1,0 +1,47 @@
+.kb-chrome-dropdown {
+  position: relative;
+}
+
+.kb-chrome-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.kb-chrome-dropdown-caret {
+  font-size: 0.625rem;
+  opacity: 0.7;
+}
+
+.kb-chrome-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  z-index: 50;
+  min-width: 9.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--kb-border);
+  border-radius: var(--kb-radius-sm);
+  background-color: var(--kb-bg-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.kb-chrome-dropdown-item {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border-radius: calc(var(--kb-radius-sm) - 2px);
+  color: var(--kb-link);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kb-chrome-dropdown-item:hover {
+  color: var(--kb-link-hover);
+  background-color: var(--kb-bg-muted);
+}

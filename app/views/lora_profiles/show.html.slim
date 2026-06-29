@@ -1,0 +1,32 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title = @lora_profile.name
+    .flex.flex-wrap.items-center.gap-2
+      - if @lora_profile.family_label.present?
+        span.kb-badge.kb-badge-muted = @lora_profile.family_label
+      - unless @lora_profile.enabled?
+        span.kb-badge.kb-badge-muted 無効
+
+.kb-card.p-4
+  dl.nyoy-settings-list
+    dt key
+    dd.nyoy-monospace = @lora_profile.key
+    dt path
+    dd.nyoy-monospace = @lora_profile.path
+    - if @lora_profile.trigger_words_list.any?
+      dt trigger_words
+      dd = @lora_profile.trigger_words_text
+    dt multiplier
+    dd = "#{@lora_profile.min_multiplier} .. #{@lora_profile.max_multiplier}（既定 #{@lora_profile.default_multiplier}）"
+    dt 状態
+    dd = @lora_profile.enabled? ? "有効" : "無効"
+  - if @lora_profile.notes.present?
+    h2.mt-6 class=kb_section_title メモ
+    pre.mt-2.text-sm.whitespace-pre-wrap = @lora_profile.notes
+  p.mt-4.text-xs.kb-text-muted 更新 #{l(@lora_profile.updated_at, format: :long)}
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_lora_profile_path(@lora_profile), class: kb_btn_primary_sm
+  - unless @lora_profile.linked_to_styles?
+    = button_to "削除", @lora_profile, method: :delete, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "削除しますか？" } }
+  = link_to "一覧へ", lora_profiles_path, class: "kb-chrome-link text-sm"

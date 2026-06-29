@@ -1,0 +1,32 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title LoRA プロファイル
+  = link_to "新規登録", new_lora_profile_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary sd.cpp で読み込む LoRA 定義です。プロンプトスタイルから key で参照されます。
+
+- if @lora_profiles.any?
+  section.nyoy-card-list.mt-4
+    - @lora_profiles.each do |profile|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to profile.name, profile, class: "kb-text-primary no-underline"
+          .flex.flex-wrap.items-center.gap-2
+            - if profile.family_label.present?
+              span.kb-badge.kb-badge-muted = profile.family_label
+            - unless profile.enabled?
+              span.kb-badge.kb-badge-muted 無効
+        dl.mt-3.grid.gap-1.text-sm.kb-text-secondary class="sm:grid-cols-[auto_1fr]"
+          dt.font-medium key
+          dd.nyoy-monospace = profile.key
+          dt.font-medium path
+          dd.nyoy-monospace = profile.path
+          - if profile.trigger_words_list.any?
+            dt.font-medium trigger
+            dd = profile.trigger_words_text
+        - if profile.notes.present?
+          p.mt-2.text-sm.kb-text-secondary = truncate(profile.notes, length: 120)
+        .mt-3
+          = link_to "編集", edit_lora_profile_path(profile), class: "kb-chrome-link text-sm"
+- else
+  p.mt-4.text-sm.kb-text-muted LoRA プロファイルが未登録です。

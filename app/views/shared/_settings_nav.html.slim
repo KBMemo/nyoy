@@ -1,0 +1,7 @@
+.kb-chrome-dropdown.relative data-controller="nav-dropdown"
+  button type="button" class=kb_chrome_settings_trigger_class data-nav-dropdown-target="trigger" data-action="nav-dropdown#toggle" aria-expanded="false" aria-haspopup="true"
+    span 設定
+    span.kb-chrome-dropdown-caret aria-hidden="true" ▾
+  .kb-chrome-dropdown-panel.hidden data-nav-dropdown-target="menu" role="menu"
+    - kb_settings_nav_items.each do |label, controller, path|
+      = link_to label, path, class: kb_chrome_dropdown_item_class(controller), role: "menuitem", data: { action: "nav-dropdown#close" }

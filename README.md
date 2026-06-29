@@ -134,6 +134,7 @@ bin/rails test
 | `/prompt_knowledge_chunks` | プロンプトナレッジ (RAG) |
 | `/prompt_styles` | プロンプトスタイル |
 | `/sd_model_profiles` | SD モデルプロファイル |
+| `/lora_profiles` | LoRA プロファイル |
 
 ## 開発メモ
 
