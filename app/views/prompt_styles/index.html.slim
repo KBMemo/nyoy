@@ -1,0 +1,32 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title プロンプトスタイル
+  = link_to "新規登録", new_prompt_style_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary 見た目（prefix/suffix/固定ネガ/LoRA/モデル）を style_id で定義します。LLM は style_id を選び、実行設定はここから解決されます。
+
+- if @prompt_styles.any?
+  section.nyoy-card-list.mt-4
+    - @prompt_styles.each do |style|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to style.name, style, class: "kb-text-primary no-underline"
+          .flex.flex-wrap.items-center.gap-2
+            span.kb-badge.kb-badge-muted.nyoy-monospace = style.style_id
+            - unless style.enabled?
+              span.kb-badge.kb-badge-muted 無効
+        - if style.description.present?
+          p.mt-2.text-sm.kb-text-secondary = truncate(style.description, length: 120)
+        dl.mt-3.grid.gap-1.text-sm.kb-text-secondary class="sm:grid-cols-[auto_1fr]"
+          dt.font-medium 既定モデル
+          dd = style.default_model&.name || "—"
+          dt.font-medium LoRA
+          dd
+            - if style.lora_profiles.any?
+              = style.lora_profiles.map(&:name).join(", ")
+            - else
+              | —
+        .mt-3
+          = link_to "編集", edit_prompt_style_path(style), class: "kb-chrome-link text-sm"
+- else
+  p.mt-4.text-sm.kb-text-muted プロンプトスタイルが未登録です。

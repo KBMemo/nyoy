@@ -51,4 +51,18 @@ class PromptStyleTest < ActiveSupport::TestCase
     assert_equal({ "width" => 1024, "height" => 768 },
       prompt_styles(:chojugiga).aspect_dimensions("landscape"))
   end
+
+  test "referenced when used by generations or knowledge" do
+    style = PromptStyle.create!(style_id: "solo-style", name: "Solo", prompt_prefix: "x")
+    assert_not style.referenced?
+
+    ImageGeneration.create!(japanese_prompt: "test", style_id: style.style_id, status: "completed")
+
+    assert PromptStyle.find(style.id).referenced?
+  end
+
+  test "aliases_text round trips" do
+    style = PromptStyle.new(aliases_text: "鳥獣戯画, chojugiga")
+    assert_equal %w[鳥獣戯画 chojugiga], style.aliases
+  end
 end

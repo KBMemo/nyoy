@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   resources :memo_illustrations, only: %i[index show new create]
   resources :prompt_knowledge_chunks
   resources :sd_model_profiles
+  resources :prompt_styles
   resources :image_generations, only: %i[index show new create] do
     member do
       post :refine

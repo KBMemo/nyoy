@@ -132,6 +132,7 @@ bin/rails test
 | `/image_generations` | 画像生成履歴 |
 | `/image_generations/new` | 画像の新規生成 |
 | `/prompt_knowledge_chunks` | プロンプトナレッジ (RAG) |
+| `/prompt_styles` | プロンプトスタイル |
 | `/sd_model_profiles` | SD モデルプロファイル |
 
 ## 開発メモ

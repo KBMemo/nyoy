@@ -17,6 +17,46 @@ class PromptStyle < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
   scope :ordered, -> { order(sort_order: :asc, name: :asc) }
 
+  def referenced?
+    return @_referenced if defined?(@_referenced)
+
+    @_referenced = MemoIllustration.exists?(style_id: style_id) ||
+                   ImageGeneration.exists?(style_id: style_id) ||
+                   PromptKnowledgeChunk.exists?(style_ref: style_id)
+  end
+
+  def aliases_text
+    Array(aliases).join(", ")
+  end
+
+  def aliases_text=(value)
+    self.aliases = value.to_s.split(/[,、\n]/).map(&:strip).reject(&:blank?)
+  end
+
+  def generation_defaults_json
+    JSON.pretty_generate(generation_defaults.presence || {})
+  end
+
+  def generation_defaults_json=(value)
+    assign_json_field(:generation_defaults, value)
+  end
+
+  def allowed_overrides_json
+    JSON.pretty_generate(allowed_overrides.presence || {})
+  end
+
+  def allowed_overrides_json=(value)
+    assign_json_field(:allowed_overrides, value)
+  end
+
+  def aspect_presets_json
+    JSON.pretty_generate(aspect_presets.presence || {})
+  end
+
+  def aspect_presets_json=(value)
+    assign_json_field(:aspect_presets, value)
+  end
+
   def default_style_model
     prompt_style_models.detect(&:default?) || prompt_style_models.min_by(&:sort_order)
   end
@@ -36,6 +76,13 @@ class PromptStyle < ApplicationRecord
   end
 
   private
+
+  def assign_json_field(attribute, value)
+    text = value.to_s.strip
+    self[attribute] = text.blank? ? {} : JSON.parse(text)
+  rescue JSON::ParserError
+    errors.add(attribute, "must be valid JSON")
+  end
 
   def exactly_one_default_model
     defaults = prompt_style_models.select(&:default?).size

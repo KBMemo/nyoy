@@ -1,0 +1,73 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title = @prompt_style.name
+    .flex.flex-wrap.items-center.gap-2
+      span.kb-badge.kb-badge-muted.nyoy-monospace = @prompt_style.style_id
+      - unless @prompt_style.enabled?
+        span.kb-badge.kb-badge-muted 無効
+
+.kb-card.p-4
+  - if @prompt_style.description.present?
+    p.text-sm.kb-text-secondary = @prompt_style.description
+
+  dl.mt-4.nyoy-settings-list
+    dt 表示順
+    dd = @prompt_style.sort_order
+    dt 状態
+    dd = @prompt_style.enabled? ? "有効" : "無効"
+    - if @prompt_style.aliases.any?
+      dt エイリアス
+      dd = @prompt_style.aliases_text
+
+  h2.mt-6 class=kb_section_title プロンプト
+  dl.mt-2.nyoy-settings-list
+    dt prefix
+    dd.nyoy-monospace = @prompt_style.prompt_prefix
+    - if @prompt_style.prompt_suffix.present?
+      dt suffix
+      dd.nyoy-monospace = @prompt_style.prompt_suffix
+    - if @prompt_style.negative_prompt.present?
+      dt 固定ネガティブ
+      dd.nyoy-monospace = @prompt_style.negative_prompt
+
+  h2.mt-6 class=kb_section_title モデル
+  - if @prompt_style.prompt_style_models.any?
+    ul.mt-2.space-y-2
+      - @prompt_style.prompt_style_models.ordered.each do |link|
+        li.text-sm
+          = link.sd_model_profile.name
+          span.nyoy-monospace.ml-2.kb-text-muted = link.sd_model_profile.key
+          - if link.default?
+            span.kb-badge.kb-badge-muted.ml-2 既定
+  - else
+    p.mt-2.text-sm.kb-text-muted 未設定
+
+  h2.mt-6 class=kb_section_title LoRA
+  - if @prompt_style.prompt_style_loras.any?
+    ul.mt-2.space-y-2
+      - @prompt_style.prompt_style_loras.ordered.each do |link|
+        li.text-sm
+          = link.lora_profile.name
+          span.nyoy-monospace.ml-2.kb-text-muted = "#{link.lora_profile.path} (#{link.multiplier})"
+          - if link.required?
+            span.kb-badge.kb-badge-muted.ml-2 必須
+  - else
+    p.mt-2.text-sm.kb-text-muted 未設定
+
+  - if @prompt_style.generation_defaults.present?
+    h2.mt-6 class=kb_section_title generation_defaults
+    pre.mt-2.text-sm.whitespace-pre-wrap.nyoy-monospace = @prompt_style.generation_defaults_json
+  - if @prompt_style.aspect_presets.present?
+    h2.mt-6 class=kb_section_title aspect_presets
+    pre.mt-2.text-sm.whitespace-pre-wrap.nyoy-monospace = @prompt_style.aspect_presets_json
+  - if @prompt_style.allowed_overrides.present?
+    h2.mt-6 class=kb_section_title allowed_overrides
+    pre.mt-2.text-sm.whitespace-pre-wrap.nyoy-monospace = @prompt_style.allowed_overrides_json
+
+  p.mt-4.text-xs.kb-text-muted 更新 #{l(@prompt_style.updated_at, format: :long)}
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_prompt_style_path(@prompt_style), class: kb_btn_primary_sm
+  - unless @prompt_style.referenced?
+    = button_to "削除", @prompt_style, method: :delete, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "削除しますか？" } }
+  = link_to "一覧へ", prompt_styles_path, class: "kb-chrome-link text-sm"

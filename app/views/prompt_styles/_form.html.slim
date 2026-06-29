@@ -1,0 +1,132 @@
+- selected_model_ids = prompt_style.prompt_style_models.map(&:sd_model_profile_id)
+- default_model_id = prompt_style.default_style_model&.sd_model_profile_id
+- selected_lora_ids = prompt_style.prompt_style_loras.map(&:lora_profile_id)
+
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: prompt_style, class: "space-y-6 max-w-3xl" do |form|
+  - if prompt_style.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - prompt_style.errors.full_messages.each do |message|
+          li = message
+
+  section.space-y-4
+    h2 class=kb_section_title 基本
+
+    div
+      = form.label :style_id, "style_id", class: "#{kb_label} mb-1"
+      - if prompt_style.persisted? && prompt_style.referenced?
+        p.nyoy-monospace.text-sm.kb-text-secondary = prompt_style.style_id
+        p.mt-1.text-sm.kb-text-muted 生成履歴またはナレッジから参照されているため変更できません（削除と同じ制約）。
+      - else
+        = form.text_field :style_id, required: true, class: kb_field_input_classes, placeholder: "chojugiga_emaki"
+        p.mt-1.text-sm.kb-text-muted
+          | LLM が選ぶ一意キーです。
+          - if prompt_style.persisted?
+            |  まだ参照されていない間だけ変更できます。
+
+    div
+      = form.label :name, "表示名", class: "#{kb_label} mb-1"
+      = form.text_field :name, required: true, class: kb_field_input_classes
+
+    div
+      = form.label :description, "説明", class: "#{kb_label} mb-1"
+      = form.text_area :description, rows: 2, class: kb_field_input_classes
+
+    div
+      = form.label :aliases_text, "エイリアス", class: "#{kb_label} mb-1"
+      = form.text_field :aliases_text, class: kb_field_input_classes, placeholder: "鳥獣戯画, chojugiga"
+      p.mt-1.text-sm.kb-text-muted カンマ区切り。StylePlan のスタイル選択ヒントに使われます。
+
+    .flex.flex-wrap.items-center.gap-4
+      div
+        = form.label :sort_order, "表示順", class: "#{kb_label} mb-1"
+        = form.number_field :sort_order, min: 0, step: 1, class: kb_field_input_classes
+      label.flex.items-center.gap-2.text-sm
+        = form.check_box :enabled, class: "kb-control-accent"
+        span 有効
+
+  section.space-y-4
+    h2 class=kb_section_title プロンプト
+
+    div
+      = form.label :prompt_prefix, "prompt_prefix", class: "#{kb_label} mb-1"
+      = form.text_area :prompt_prefix, rows: 3, required: true, class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted subject_prompt の前に付与される固定 tag。
+
+    div
+      = form.label :prompt_suffix, "prompt_suffix", class: "#{kb_label} mb-1"
+      = form.text_area :prompt_suffix, rows: 2, class: kb_field_input_classes
+
+    div
+      = form.label :negative_prompt, "固定ネガティブ", class: "#{kb_label} mb-1"
+      = form.text_area :negative_prompt, rows: 3, class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted LLM の negative_extra とマージされます。
+
+  section.space-y-3
+    h2 class=kb_section_title モデル
+    p.text-sm.kb-text-muted このスタイルで選べる SD モデル。既定を 1 つ指定してください。
+    - if @sd_model_profiles.any?
+      .space-y-2
+        - @sd_model_profiles.each do |profile|
+          .flex.flex-wrap.items-center.gap-x-4.gap-y-2.rounded.border.p-3 class="border-[var(--kb-border)]"
+            label.flex.items-center.gap-2.text-sm
+              = check_box_tag "prompt_style[model_profile_ids][]", profile.id, selected_model_ids.include?(profile.id), class: "kb-control-accent", id: "model_profile_#{profile.id}"
+              span.font-medium = profile.name
+              span.nyoy-monospace.text-xs.kb-text-muted = profile.key
+            label.flex.items-center.gap-2.text-sm
+              = radio_button_tag "prompt_style[default_model_profile_id]", profile.id, default_model_id == profile.id, class: "kb-control-accent"
+              span 既定
+      = hidden_field_tag "prompt_style[model_profile_ids][]", ""
+    - else
+      p.text-sm.kb-text-muted
+        | 有効なモデルプロファイルがありません。
+        = link_to "モデルを登録", new_sd_model_profile_path, class: "kb-chrome-link ml-1"
+
+  section.space-y-3
+    h2 class=kb_section_title LoRA
+    p.text-sm.kb-text-muted スタイルに紐づける LoRA（任意）。ChojuGiga など Illustrious 系 LoRA は対応モデルと組み合わせてください。
+    - if @lora_profiles.any?
+      .space-y-2
+        - @lora_profiles.each do |profile|
+          - link = prompt_style.prompt_style_loras.find { |l| l.lora_profile_id == profile.id }
+          .flex.flex-wrap.items-center.gap-x-4.gap-y-2.rounded.border.p-3 class="border-[var(--kb-border)]"
+            label.flex.items-center.gap-2.text-sm
+              = check_box_tag "prompt_style[lora_profile_ids][]", profile.id, selected_lora_ids.include?(profile.id), class: "kb-control-accent", id: "lora_profile_#{profile.id}"
+              span.font-medium = profile.name
+              span.nyoy-monospace.text-xs.kb-text-muted = profile.path
+            label.flex.items-center.gap-2.text-sm
+              span multiplier
+              = number_field_tag "prompt_style[lora_multipliers][#{profile.id}]", (link&.multiplier || profile.default_multiplier), min: 0, max: 2, step: 0.05, class: "#{kb_field_input_classes} w-24"
+            label.flex.items-center.gap-2.text-sm
+              = check_box_tag "prompt_style[lora_required][#{profile.id}]", "1", link&.required?, class: "kb-control-accent"
+              span 必須
+      = hidden_field_tag "prompt_style[lora_profile_ids][]", ""
+    - else
+      p.text-sm.kb-text-muted LoRA プロファイルが未登録です（seed で投入）。
+
+  section.space-y-4
+    h2 class=kb_section_title 実行パラメータ
+
+    div
+      = form.label :generation_defaults_json, "generation_defaults（JSON）", class: "#{kb_label} mb-1"
+      = form.text_area :generation_defaults_json, rows: 6, class: "#{kb_field_input_classes} nyoy-monospace"
+      p.mt-1.text-sm.kb-text-muted width / height / steps / cfg_scale / sampler_name などの既定値。
+
+    div
+      = form.label :aspect_presets_json, "aspect_presets（JSON）", class: "#{kb_label} mb-1"
+      = form.text_area :aspect_presets_json, rows: 6, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: '{"square":{"width":768,"height":768},"landscape":{"width":1024,"height":768}}'
+      p.mt-1.text-sm.kb-text-muted aspect_ratio（square / portrait / landscape）ごとの解像度。
+
+    div
+      = form.label :allowed_overrides_json, "allowed_overrides（JSON）", class: "#{kb_label} mb-1"
+      = form.text_area :allowed_overrides_json, rows: 4, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: '{"steps":{"min":16,"max":32}}'
+      p.mt-1.text-sm.kb-text-muted UI から安全に上書きできるパラメータ範囲。
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(prompt_style.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", prompt_style.persisted? ? prompt_style_path(prompt_style) : prompt_styles_path, class: "kb-chrome-link text-sm"
