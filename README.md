@@ -1,15 +1,15 @@
 # Nyoy
 
 日本語テキストから Stable Diffusion 画像を生成する Rails アプリです。  
-llama.cpp でプロンプトを翻訳・計画し、sd.cpp サーバーで txt2img を実行します。
+llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptStyleResolver` で実行設定を解決して sd.cpp で txt2img を実行します。
 
 ## 機能
 
-- **メモ挿絵** — 短文メモとプロンプトスキルから JSON 形式の生成計画を作成し、画像を生成
-- **画像生成** — 日本語プロンプトを英語 SD プロンプトに翻訳し、モデル・LoRA・sampler 等を指定して生成
-- **プロンプトスキル** — llama.cpp 向け LLM 作法 (system prompt) を CRUD で管理。実行時固定ネガティブも設定可能
-- **プロンプトナレッジ** — 画風・LoRA・ネガティブ方針を chunk 化し、pgvector + neighbor で RAG 検索（可変知識）
-- **生成プリセット** — SD モデル、解像度、LoRA、sampler、VAE tiling、スキル、実行時固定ネガティブをセットで保存
+- **メモ挿絵** — 短文メモから style 計画（`style_id` + `subject_prompt`）を作成し、画像を生成
+- **画像生成** — 日本語プロンプトを style 計画に変換し、案出し → 選択 → 仕上げ（Hires）のパイプラインで生成
+- **プロンプトスタイル** — 見た目（prefix/suffix/固定ネガ/LoRA/モデル）を `prompt_styles` で管理（seed）
+- **描画プリセット** — draft / refine / single のパイプライン設定を `render_presets` で管理（seed）
+- **プロンプトナレッジ** — 画風・LoRA・ネガティブ方針を chunk 化し、pgvector + neighbor で RAG 検索
 - **リアルタイム進捗** — Turbo Streams でステータスパネルを自動更新
 - **フェーズ別タイム計測** — プロンプト生成時間と画像生成時間を分けて表示
 
@@ -19,7 +19,7 @@ llama.cpp でプロンプトを翻訳・計画し、sd.cpp サーバーで txt2i
 - Node.js（Vite 用）
 - PostgreSQL 16 + pgvector（`bowmore.artif.org:5432`）
 - 外部サービス
-  - **llama.cpp** — プロンプト翻訳・計画（`LLAMA_CPP_URL`）
+  - **llama.cpp** — style 計画（`LLAMA_CPP_URL`）
   - **sd.cpp server** — 画像生成（`SDCPP_SERVER_URL`）
   - **sdcpp-switchd** — SD モデル切り替え（`SDCPP_SWITCHD_URL` / `SDCPP_SWITCHD_TOKEN`）
 
@@ -80,42 +80,36 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 
 ### メモ挿絵
 
-1. トップページ（`/memo_illustrations`）で文章とプロンプトスキルを入力
-2. 入力文章からプロンプトナレッジ (RAG) を検索し、llama.cpp が JSON 生成計画を作成
-3. 生成完了までステータスが自動更新される
-4. 結果ページで positive / negative プロンプト、参照ナレッジ、画像を確認
-
-JSON 出力スキル（例: 鳥獣戯画プロンプト (JSON)）向けの機能です。`/prompt_knowledge_chunks` でナレッジを管理できます。
+1. トップページ（`/memo_illustrations`）で文章と任意のスタイル（`style_id`）を入力
+2. RAG でナレッジを検索し、llama.cpp が最小 JSON（`style_id` + `subject_prompt` + `negative_extra` + `aspect_ratio`）を出力
+3. `SdPromptStyleResolver` が prefix/suffix/LoRA/解像度を解決し、single 用 render preset で生成
+4. 結果ページで subject プロンプト、実行時ネガティブ、参照ナレッジ、画像を確認
 
 ### 画像生成
 
-1. `/image_generations/new` で日本語プロンプトを入力
-2. 案出しプリセットを選ぶと、モデル・LoRA 等が自動入力される
-3. 必要なら追加ネガティブや seed を調整して生成
+1. `/image_generations/new` で日本語プロンプトとスタイル（任意）を入力
+2. 案出し / 本番の render preset を選び、ラフ枚数などを調整して生成
+3. ラフ案を選んで仕上げ（img2img + 任意 Hires）
 
-日本語プロンプトのみの場合、RAG（プロンプトナレッジ）→ llama.cpp → JSON `PromptSpec` → sd.cpp の流れで SD プロンプトを生成します。`/prompt_knowledge_chunks` でナレッジを管理できます。
-
-翻訳スキル（例: 鳥獣戯画プロンプト (翻訳)）は positive のみ出力します。
+日本語プロンプトのみの場合、RAG → llama.cpp → `StylePlanGenerator` → `SdPromptStyleResolver` → sd.cpp の流れです。
 
 ### プロンプト設計の役割分担
 
 | レイヤ | 役割 | いつ使う |
 |--------|------|----------|
-| **スキル** (`body`) | LLM 作法（出力形式・翻訳ルール） | llama.cpp の system prompt |
-| **実行時固定ネガティブ** | スキル / 生成プリセットの `default_negative_prompt` | sd.cpp 呼び出し時に `NegativePromptResolver` が常にマージ |
-| **追加ネガティブ** | フォーム入力、RAG `PromptSpec` の `negative_prompt` | 固定 tag に上乗せ（重複は uniq で除去） |
-| **ナレッジ / テンプレ** | 画風・LoRA 方針・シーン向け negative の**指針** | RAG コンテキストのみ。tag リストの固定コピー源にしない |
+| **スタイル** (`prompt_styles`) | 見た目: prefix/suffix、固定 negative、LoRA、モデル、解像度プリセット | `SdPromptStyleResolver` が LLM 出力を実行設定に変換 |
+| **描画** (`render_presets`) | パイプライン: draft batch/steps、refine denoise/hires | 生成フォーム・ジョブが適用 |
+| **ナレッジ** | どの `style_id` を選ぶか / subject に何を書くかの**指針** | RAG コンテキスト（`kind=style` は `style_ref` 必須） |
+| **作法** | flow ごとの固定 system prompt（コード） | LLM に最小 JSON 契約を守らせる |
+| **記録** | `resolved_*` スナップショット | 再現用に生成レコードへ保存 |
 
-RAG の LLM には「固定ネガティブは実行時適用済み」と指示し、`negative_prompt` には situational な追加 tag のみを出力させます。
+固定ネガティブは style に集約され、`negative_extra` は situational な追加 tag のみです。
 
-### 鳥獣戯画プリセット
+### 鳥獣戯画（seed 例）
 
-seed で以下が登録されます。
-
-- **生成プリセット**: `鳥獣戯画 (Illustrious + ChojuGiga)` — pony-v6, 768×768, ChojuGiga LoRA
-- **スキル**: 鳥獣戯画プロンプト (翻訳) / (JSON) — LLM 作法のみ
-- **実行時固定ネガティブ**: 生成プリセットに鳥獣戯画向け tag 群（文字・花押・水印など）
-- **RAG ナレッジ**: 画風・追加 negative の**方針**（固定 tag リストのコピーではない）
+- **スタイル**: `chojugiga_emaki` — prefix/suffix、固定ネガ、ChojuGiga LoRA、pony-v6
+- **render preset**: 案出し / 本番 / メモ single
+- **RAG ナレッジ**: 画風指針（`style_ref: chojugiga_emaki`）、LoRA 方針、追加ネガの書き方
 
 ## テスト
 
@@ -137,15 +131,12 @@ bin/rails test
 | `/memo_illustrations/new` | メモ挿絵の新規生成 |
 | `/image_generations` | 画像生成履歴 |
 | `/image_generations/new` | 画像の新規生成 |
-| `/prompt_skills` | プロンプトスキル管理 |
 | `/prompt_knowledge_chunks` | プロンプトナレッジ (RAG) |
-| `/prompt_loras` | LoRA 辞書 |
-| `/prompt_presets` | プロンプトテンプレート (RAG) |
-| `/generation_presets` | 生成プリセット管理 |
 
 ## 開発メモ
 
 - ジョブは `image_generation` キューで実行（開発時は Puma 内蔵 Solid Queue）
 - Turbo Stream 更新時の画像 URL は相対パス（`/rails/active_storage/...`）を使用。`ApplicationHelper#nyoy_blob_image_tag` 参照
-- スキル seed の定義: `lib/prompt_skill_seeds.rb`, `lib/generation_preset_seeds.rb`
+- スタイル / render preset / 能力の seed: `lib/prompt_style_seeds.rb`, `lib/render_preset_seeds.rb`, `lib/capability_seeds.rb`
+- 設計詳細: `docs/prompt-architecture-redesign.md`
 - seed 再適用: `bin/rails db:seed`

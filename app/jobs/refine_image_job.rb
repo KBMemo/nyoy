@@ -32,7 +32,7 @@ class RefineImageJob < ApplicationJob
   def refine_image(generation, draft)
     SdCppClient.new.img2img(
       prompt: generation.prompt,
-      negative_prompt: NegativePromptResolver.for_generation(generation),
+      negative_prompt: generation.resolved_negative_prompt,
       init_image: draft.download,
       width: generation.width,
       height: generation.height,
@@ -49,7 +49,7 @@ class RefineImageJob < ApplicationJob
   def upscale_image(generation, init_image)
     SdCppClient.new.img2img(
       prompt: generation.prompt,
-      negative_prompt: NegativePromptResolver.for_generation(generation),
+      negative_prompt: generation.resolved_negative_prompt,
       init_image: init_image,
       width: generation.width,
       height: generation.height,

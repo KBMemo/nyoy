@@ -16,6 +16,8 @@ class PromptKnowledgeChunk < ApplicationRecord
 
   validates :title, :body, presence: true
   validates :kind, inclusion: { in: KINDS }
+  validates :style_ref, presence: true, if: -> { kind == "style" }
+  validate :style_ref_must_exist, if: -> { style_ref.present? }
 
   scope :ordered, -> { order(updated_at: :desc, id: :desc) }
   scope :embedded, -> { where.not(embedding: nil) }
@@ -31,13 +33,19 @@ class PromptKnowledgeChunk < ApplicationRecord
   end
 
   def to_rag_context
-    <<~TEXT.strip
-      [#{id}] #{kind_label}: #{title}
-      #{body}
-    TEXT
+    lines = ["[#{id}] #{kind_label}: #{title}"]
+    lines << "style_ref: #{style_ref}" if style_ref.present?
+    lines << body
+    lines.join("\n")
   end
 
   private
+
+  def style_ref_must_exist
+    return if PromptStyle.exists?(style_id: style_ref)
+
+    errors.add(:style_ref, "は有効な style_id を指定してください")
+  end
 
   def should_reembed?
     saved_change_to_title? || saved_change_to_body? || embedding.nil?

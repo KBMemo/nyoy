@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "prompt_skill_seeds"
-
-# Phase 2 (style layer) seeds. Rebuilds the old GenerationPreset / PromptPreset /
-# skill fixed-negative content as style_id-keyed PromptStyle rows.
+# Phase 2 (style layer) seeds. Rebuilds legacy preset/skill content as style_id-keyed PromptStyle rows.
 module PromptStyleSeeds
+  CHOJUGIGA_DEFAULT_NEGATIVE = [
+    "worst quality, low quality, blurry, photorealistic, photo, 3d, modern, colorful, vibrant colors, detailed background, anime cel shading, human focus",
+    "text, letters, words, writing, calligraphy, kanji, hiragana, katakana, alphabet, caption, subtitle, watermark, signature, artist signature, seal, red seal, stamp, hanko, inkan, monogram, logo, inscription, speech bubble, manga text, scroll text, poem text"
+  ].join(", ").freeze
+
   XL_DEFAULTS = {
     "width" => 768, "height" => 768, "steps" => 22,
     "cfg_scale" => 6.0, "sampler_name" => "euler_a"
@@ -29,7 +31,7 @@ module PromptStyleSeeds
       prompt_prefix: "chojugiga, emaki, scroll painting, ink wash painting, sumi-e, " \
         "japanese medieval art, yamato-e, monochrome, minimal background, dynamic pose, humorous",
       prompt_suffix: "ink brush strokes, bold ink lines",
-      negative_prompt: PromptSkillSeeds::CHOJUGIGA_DEFAULT_NEGATIVE,
+      negative_prompt: CHOJUGIGA_DEFAULT_NEGATIVE,
       generation_defaults: XL_DEFAULTS,
       aspect_presets: XL_ASPECTS,
       allowed_overrides: XL_OVERRIDES,

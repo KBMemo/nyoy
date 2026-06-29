@@ -1,4 +1,0 @@
-default:
-  name: Default Prompt Skill
-  body: You are a Stable Diffusion prompt engineer.
-  default: true

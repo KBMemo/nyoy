@@ -2,35 +2,25 @@
   h1 class=kb_page_title プロンプトナレッジ
   = link_to "新規登録", new_prompt_knowledge_chunk_path, class: kb_btn_primary_sm
 
-p.text-sm.kb-text-secondary 画風・LoRA・追加ネガティブの方針などを chunk 化し、pgvector + neighbor で RAG 検索します（実行時固定 tag のコピー源ではありません）。
+p.text-sm.kb-text-secondary 画風・LoRA・追加ネガティブの方針などを chunk 化し、pgvector + neighbor で RAG 検索します。kind=画風 の chunk は style_ref で prompt_styles.style_id を参照します。
 
 - if @prompt_knowledge_chunks.any?
-  = form_with url: generate_skill_prompt_knowledge_chunks_path, method: :post, class: "mt-4 space-y-4" do |form|
-    .flex.flex-wrap.items-end.gap-3
-      div
-        label.kb-label.mb-1 for="output_kind" スキル種別
-        select#output_kind name="output_kind" class=kb_field_input_classes
-          - PromptSkillDraftGenerator::OUTPUT_KINDS.each do |key, label|
-            option value=key = label
-      = form.submit "選択したナレッジからスキル草案を生成", class: kb_btn_secondary_sm
-
-    section.nyoy-card-list
-      - @prompt_knowledge_chunks.each do |chunk|
-        article.kb-card.p-4
-          .flex.flex-wrap.items-start.gap-3
-            label.flex.items-start.gap-2.text-sm.mt-1
-              = check_box_tag "chunk_ids[]", chunk.id, false, class: "kb-control-accent mt-0.5"
-              span.sr-only = chunk.title
-            div.flex-1.min-w-0
-              .flex.flex-wrap.items-center.justify-between.gap-2
-                h2.text-base.font-semibold
-                  = link_to chunk.title, chunk, class: "kb-text-primary no-underline"
-                span.kb-badge.kb-badge-muted = chunk.kind_label
-              p.mt-2.text-sm.kb-text-secondary = truncate(chunk.body, length: 160)
-              p.mt-2.text-xs.kb-text-muted
-                - if chunk.embedding.present?
-                  | embedding 済
-                - else
-                  | embedding 未生成
+  section.nyoy-card-list.mt-4
+    - @prompt_knowledge_chunks.each do |chunk|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to chunk.title, chunk, class: "kb-text-primary no-underline"
+          span.kb-badge.kb-badge-muted = chunk.kind_label
+        - if chunk.style_ref.present?
+          p.mt-2.text-sm.kb-text-secondary
+            | style_ref:
+            span.nyoy-monospace.ml-1 = chunk.style_ref
+        p.mt-2.text-sm.kb-text-secondary = truncate(chunk.body, length: 160)
+        p.mt-2.text-xs.kb-text-muted
+          - if chunk.embedding.present?
+            | embedding 済
+          - else
+            | embedding 未生成
 - else
   p.mt-4.text-sm.kb-text-muted ナレッジが未登録です。

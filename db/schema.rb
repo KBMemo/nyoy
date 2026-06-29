@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -43,36 +43,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "generation_presets", force: :cascade do |t|
-    t.float "cfg_scale", default: 6.0, null: false
-    t.datetime "created_at", null: false
-    t.boolean "default", default: false, null: false
-    t.text "default_negative_prompt"
-    t.integer "draft_batch_size", default: 4, null: false
-    t.integer "draft_steps"
-    t.boolean "enable_hires", default: true, null: false
-    t.integer "height", default: 768, null: false
-    t.float "hires_denoising_strength", default: 0.35, null: false
-    t.float "hires_scale", default: 1.5, null: false
-    t.integer "hires_steps"
-    t.string "hires_upscaler", default: "Latent", null: false
-    t.text "loras", default: "[]", null: false
-    t.string "name", null: false
-    t.string "preset_kind", default: "draft", null: false
-    t.integer "prompt_skill_id"
-    t.float "refine_denoising_strength", default: 0.4, null: false
-    t.integer "refine_steps"
-    t.string "sampler_name", default: "euler_a", null: false
-    t.string "sd_model", null: false
-    t.integer "steps", default: 22, null: false
-    t.datetime "updated_at", null: false
-    t.boolean "vae_tiling", default: true, null: false
-    t.integer "width", default: 768, null: false
-    t.index ["default"], name: "index_generation_presets_on_default"
-    t.index ["preset_kind"], name: "index_generation_presets_on_preset_kind"
-    t.index ["prompt_skill_id"], name: "index_generation_presets_on_prompt_skill_id"
-  end
-
   create_table "image_generations", force: :cascade do |t|
     t.float "cfg_scale", default: 7.0, null: false
     t.datetime "created_at", null: false
@@ -81,7 +51,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.boolean "enable_hires", default: true, null: false
     t.text "error_message"
     t.datetime "finished_at"
-    t.integer "generation_preset_id"
     t.integer "height", default: 512, null: false
     t.float "hires_denoising_strength", default: 0.35, null: false
     t.float "hires_scale", default: 1.5, null: false
@@ -94,12 +63,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.text "negative_prompt"
     t.text "prompt"
     t.datetime "prompt_finished_at"
-    t.integer "prompt_skill_id"
     t.jsonb "prompt_spec"
     t.datetime "prompt_started_at"
     t.jsonb "rag_source_chunk_ids", default: [], null: false
     t.float "refine_denoising_strength", default: 0.4, null: false
-    t.integer "refine_preset_id"
     t.bigint "refine_render_preset_id"
     t.integer "refine_steps"
     t.bigint "render_preset_id"
@@ -117,9 +84,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.datetime "updated_at", null: false
     t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
-    t.index ["generation_preset_id"], name: "index_image_generations_on_generation_preset_id"
-    t.index ["prompt_skill_id"], name: "index_image_generations_on_prompt_skill_id"
-    t.index ["refine_preset_id"], name: "index_image_generations_on_refine_preset_id"
     t.index ["refine_render_preset_id"], name: "index_image_generations_on_refine_render_preset_id"
     t.index ["render_preset_id"], name: "index_image_generations_on_render_preset_id"
     t.index ["style_id"], name: "index_image_generations_on_style_id"
@@ -155,7 +119,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.text "negative_prompt"
     t.text "positive_prompt"
     t.datetime "prompt_finished_at"
-    t.integer "prompt_skill_id"
     t.datetime "prompt_started_at"
     t.jsonb "rag_source_chunk_ids", default: [], null: false
     t.jsonb "resolved_loras", default: [], null: false
@@ -169,7 +132,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.string "style_id"
     t.datetime "updated_at", null: false
     t.integer "width", default: 512, null: false
-    t.index ["prompt_skill_id"], name: "index_memo_illustrations_on_prompt_skill_id"
     t.index ["style_id"], name: "index_memo_illustrations_on_style_id"
   end
 
@@ -179,45 +141,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
     t.vector "embedding", limit: 1024
     t.string "kind", default: "style", null: false
     t.jsonb "metadata", default: {}, null: false
+    t.string "style_ref"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["embedding"], name: "index_prompt_knowledge_chunks_on_embedding_hnsw", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["kind"], name: "index_prompt_knowledge_chunks_on_kind"
-  end
-
-  create_table "prompt_loras", force: :cascade do |t|
-    t.string "compatible_models", default: [], null: false, array: true
-    t.datetime "created_at", null: false
-    t.string "name", null: false
-    t.text "notes"
-    t.string "path"
-    t.text "trigger_words"
-    t.datetime "updated_at", null: false
-    t.float "weight_max", default: 1.0, null: false
-    t.float "weight_min", default: 0.0, null: false
-    t.index ["name"], name: "index_prompt_loras_on_name", unique: true
-  end
-
-  create_table "prompt_presets", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.jsonb "default_params", default: {}, null: false
-    t.string "model_family", null: false
-    t.string "name", null: false
-    t.text "negative_template"
-    t.text "positive_template"
-    t.datetime "updated_at", null: false
-    t.index ["model_family"], name: "index_prompt_presets_on_model_family"
-    t.index ["name"], name: "index_prompt_presets_on_name", unique: true
-  end
-
-  create_table "prompt_skills", force: :cascade do |t|
-    t.text "body", null: false
-    t.datetime "created_at", null: false
-    t.boolean "default", default: false, null: false
-    t.text "default_negative_prompt"
-    t.string "name", null: false
-    t.datetime "updated_at", null: false
-    t.index ["default"], name: "index_prompt_skills_on_default"
+    t.index ["style_ref"], name: "index_prompt_knowledge_chunks_on_style_ref"
   end
 
   create_table "prompt_style_loras", force: :cascade do |t|
@@ -302,13 +231,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "generation_presets", "prompt_skills"
-  add_foreign_key "image_generations", "generation_presets"
-  add_foreign_key "image_generations", "generation_presets", column: "refine_preset_id"
-  add_foreign_key "image_generations", "prompt_skills"
   add_foreign_key "image_generations", "render_presets"
   add_foreign_key "image_generations", "render_presets", column: "refine_render_preset_id"
-  add_foreign_key "memo_illustrations", "prompt_skills"
   add_foreign_key "prompt_style_loras", "lora_profiles"
   add_foreign_key "prompt_style_loras", "prompt_styles"
   add_foreign_key "prompt_style_models", "prompt_styles"

@@ -2,7 +2,7 @@
 
 # Phase 1 (capability layer) seeds: sd_model_profiles and lora_profiles.
 # The model list previously lived only in SDCPP_DEFAULT_MODELS; it now becomes
-# DB-backed here. Existing PromptLora rows are migrated into lora_profiles.
+# DB-backed here.
 module CapabilitySeeds
   SD15_PARAMS = {
     "width" => 512, "height" => 512, "steps" => 20,
@@ -41,7 +41,6 @@ module CapabilitySeeds
   def seed!
     seed_models!
     seed_loras!
-    migrate_prompt_loras!
   end
 
   def seed_models!
@@ -65,30 +64,5 @@ module CapabilitySeeds
       profile.assign_attributes(attrs)
       profile.save!
     end
-  end
-
-  # Bring across any PromptLora rows that are not covered by the curated LORAS above.
-  def migrate_prompt_loras!
-    return unless defined?(PromptLora)
-
-    PromptLora.find_each do |lora|
-      next if lora.path.blank?
-      next if LoraProfile.exists?(path: lora.path)
-
-      LoraProfile.create!(
-        key: lora.name.to_s.parameterize.underscore.presence || "lora_#{lora.id}",
-        name: lora.name,
-        path: lora.path,
-        trigger_words: split_trigger_words(lora.trigger_words),
-        default_multiplier: lora.default_weight,
-        min_multiplier: lora.weight_min,
-        max_multiplier: lora.weight_max,
-        notes: lora.notes
-      )
-    end
-  end
-
-  def split_trigger_words(value)
-    value.to_s.split(",").map(&:strip).reject(&:blank?)
   end
 end

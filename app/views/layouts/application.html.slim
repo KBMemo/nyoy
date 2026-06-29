@@ -24,11 +24,7 @@ html lang="ja"
           span Nyoy
         .flex.flex-wrap.items-center.gap-x-4.gap-y-2.text-sm
           = link_to "メモイラスト", root_path, class: kb_chrome_link_class("memo_illustrations")
-          = link_to "スキル", prompt_skills_path, class: kb_chrome_link_class("prompt_skills")
           = link_to "ナレッジ", prompt_knowledge_chunks_path, class: kb_chrome_link_class("prompt_knowledge_chunks")
-          = link_to "LoRA辞書", prompt_loras_path, class: kb_chrome_link_class("prompt_loras")
-          = link_to "テンプレ", prompt_presets_path, class: kb_chrome_link_class("prompt_presets")
-          = link_to "生成プリセット", generation_presets_path, class: kb_chrome_link_class("generation_presets")
           = link_to "画像生成", image_generations_path, class: kb_chrome_link_class("image_generations")
     main#main-content.mx-auto.w-full.px-4.py-8 tabindex="-1" class=content_max_width_class
       = yield

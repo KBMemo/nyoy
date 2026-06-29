@@ -3,8 +3,6 @@
 class MemoIllustration < ApplicationRecord
   include GenerationProgressBroadcastable
 
-  belongs_to :prompt_skill, optional: true
-
   has_one_attached :image
 
   STATUSES = %w[pending preparing planning generating completed failed].freeze
@@ -37,13 +35,11 @@ class MemoIllustration < ApplicationRecord
     STATUS_LABELS.fetch(status, status)
   end
 
-  # Prefer the resolved snapshot (style flow); fall back to legacy skill-based
-  # resolution for rows created before the style rebuild.
   def resolved_negative_prompt
     snapshot = self[:resolved_negative_prompt]
     return snapshot if snapshot.present?
 
-    NegativePromptResolver.resolve(supplemental: negative_prompt, skill: prompt_skill)
+    negative_prompt.to_s.strip
   end
 
   def prompt_style
@@ -53,7 +49,7 @@ class MemoIllustration < ApplicationRecord
   end
 
   def style_label
-    prompt_style&.name || style_id.presence || prompt_skill&.name
+    prompt_style&.name || style_id.presence
   end
 
   def loras_for_api

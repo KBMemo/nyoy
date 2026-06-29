@@ -6,9 +6,6 @@
 
 = render "shared/sd_catalog_status"
 
-.flex.flex-wrap.items-center.gap-3.mb-6
-  = link_to "生成プリセット", generation_presets_path, class: "kb-chrome-link text-sm"
-
 - if @image_generations.any?
   section.nyoy-card-list
     - @image_generations.each do |generation|

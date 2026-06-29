@@ -4,6 +4,7 @@ chojugiga_style:
     chojugiga, emaki, ink outline, minimal background, playful animals.
     線画を優先し、背景は余白多め。現代的な彩色や3D表現は避ける。
   kind: style
+  style_ref: chojugiga_emaki
 
 chojugiga_lora:
   title: ChojuGiga LoRA
@@ -17,6 +18,6 @@ chojugiga_lora:
 default_negative:
   title: 共通ネガティブ
   body: |
-    シーンに応じた追加ネガティブを negative_prompt に出力する。
-    固定 tag（text, watermark, low quality 等）は実行時にスキル/プリセットから自動適用されるため重複させない。
+    シーンに応じた追加ネガティブを negative_extra に出力する。
+    固定 tag（text, watermark, low quality 等）は style の negative_prompt から自動適用されるため重複させない。
   kind: negative

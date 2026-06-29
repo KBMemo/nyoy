@@ -3,31 +3,19 @@
 require "test_helper"
 
 class NegativePromptResolverTest < ActiveSupport::TestCase
-  test "merges skill and preset defaults without duplicates" do
-    skill = PromptSkill.new(default_negative_prompt: "text, watermark, low quality")
-    preset = GenerationPreset.new(default_negative_prompt: "text, blurry, low quality")
+  test "merge deduplicates comma-separated tags" do
+    result = NegativePromptResolver.merge("text, watermark", "watermark, blurry")
 
-    result = NegativePromptResolver.base(skill: skill, preset: preset)
-
-    assert_equal "text, watermark, low quality, blurry", result
+    assert_equal "text, watermark, blurry", result
   end
 
-  test "appends supplemental tags to fixed defaults" do
-    skill = PromptSkill.new(default_negative_prompt: "text, watermark")
-    preset = GenerationPreset.new(default_negative_prompt: "blurry")
+  test "for_generation returns supplemental negative on record" do
+    generation = ImageGeneration.new(negative_prompt: "extra artifact")
 
-    result = NegativePromptResolver.resolve(supplemental: "extra artifact", skill: skill, preset: preset)
-
-    assert_equal "text, watermark, blurry, extra artifact", result
+    assert_equal "extra artifact", NegativePromptResolver.for_generation(generation)
   end
 
-  test "returns supplemental tags when fixed defaults are blank" do
-    result = NegativePromptResolver.resolve(supplemental: "custom only")
-
-    assert_equal "custom only", result
-  end
-
-  test "returns blank when all inputs are blank" do
-    assert_equal "", NegativePromptResolver.resolve
+  test "merge returns blank when all inputs are blank" do
+    assert_equal "", NegativePromptResolver.merge
   end
 end

@@ -19,6 +19,11 @@
     = form.select :kind, PromptKnowledgeChunk::KIND_LABELS.map { |key, label| [label, key] }, {}, class: kb_field_input_classes
 
   div
+    = form.label :style_ref, "style_ref（kind=画風 のとき必須）", class: "#{kb_label} mb-1"
+    = form.select :style_ref, options_from_collection_for_select(@prompt_styles, :style_id, :name, prompt_knowledge_chunk.style_ref), { include_blank: "—" }, class: kb_field_input_classes
+    p.mt-1.text-sm.kb-text-muted prompt_styles.style_id を指定します。
+
+  div
     = form.label :body, "本文", class: "#{kb_label} mb-1"
     = form.text_area :body, rows: 12, required: true, class: kb_field_input_classes, placeholder: "画風・LoRA trigger・追加ネガティブの方針など"
     p.mt-1.text-sm.kb-text-muted

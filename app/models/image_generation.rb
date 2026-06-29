@@ -3,9 +3,6 @@
 class ImageGeneration < ApplicationRecord
   include GenerationProgressBroadcastable
 
-  belongs_to :generation_preset, optional: true
-  belongs_to :refine_preset, class_name: "GenerationPreset", optional: true
-  belongs_to :prompt_skill, optional: true
   belongs_to :render_preset, optional: true
   belongs_to :refine_render_preset, class_name: "RenderPreset", optional: true
 
@@ -147,11 +144,8 @@ class ImageGeneration < ApplicationRecord
 
   def apply_settings_to(generation)
     generation.assign_attributes(
-      generation_preset: generation_preset,
-      refine_preset: refine_preset,
       render_preset: render_preset,
       refine_render_preset: refine_render_preset,
-      prompt_skill: prompt_skill,
       style_id: style_id,
       japanese_prompt: japanese_prompt,
       prompt: prompt,
@@ -202,7 +196,7 @@ class ImageGeneration < ApplicationRecord
   end
 
   def style_label
-    prompt_style&.name || style_id.presence || prompt_skill&.name
+    prompt_style&.name || style_id.presence
   end
 
   def style_flow?
@@ -226,9 +220,6 @@ class ImageGeneration < ApplicationRecord
   end
 
   def progress_panel_locals
-    {
-      image_generation: self,
-      refine_presets: GenerationPreset.refine.ordered
-    }
+    { image_generation: self }
   end
 end
