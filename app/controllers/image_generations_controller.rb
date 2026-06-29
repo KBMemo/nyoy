@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
 class ImageGenerationsController < ApplicationController
-  include SdCatalogLoadable
-  include LoraParamsParseable
-
   before_action :set_image_generation, only: %i[show refine]
-  before_action :load_sd_catalog, only: %i[index new create translate_prompt]
-  before_action :load_generation_options, only: %i[new create translate_prompt show refine]
+  before_action :load_generation_options, only: %i[index new create translate_prompt show refine]
 
   def index
     @image_generations = ImageGeneration.recent.limit(20)
@@ -43,7 +39,7 @@ class ImageGenerationsController < ApplicationController
     attrs[:hires_scale] = refine_params[:hires_scale] if refine_params[:hires_scale].present?
     attrs[:hires_steps] = refine_params[:hires_steps].presence if refine_params.key?(:hires_steps)
     attrs[:hires_denoising_strength] = refine_params[:hires_denoising_strength] if refine_params.key?(:hires_denoising_strength)
-    attrs[:refine_preset_id] = refine_params[:refine_preset_id].presence if refine_params.key?(:refine_preset_id)
+    attrs[:refine_render_preset_id] = refine_params[:refine_render_preset_id].presence if refine_params.key?(:refine_render_preset_id)
 
     @image_generation.update!(attrs)
     RefineImageJob.perform_later(@image_generation.id)
@@ -56,13 +52,9 @@ class ImageGenerationsController < ApplicationController
 
   def create
     @image_generation = ImageGeneration.new(image_generation_params)
-    assign_loras_from_param(@image_generation, params.dig(:image_generation, :loras))
+    apply_render_presets!(@image_generation)
 
-    unless sd_model_available?(@image_generation.sd_model)
-      @image_generation.errors.add(:sd_model, "は利用できません")
-    end
-
-    if @image_generation.errors.empty? && @image_generation.save
+    if @image_generation.save
       GenerateImageJob.perform_later(@image_generation.id)
       redirect_to @image_generation
     else
@@ -76,10 +68,19 @@ class ImageGenerationsController < ApplicationController
       return render json: { error: "日本語プロンプトを入力してください" }, status: :unprocessable_entity
     end
 
-    skill = PromptSkill.find_by(id: params[:prompt_skill_id])
-    prompt = SdPromptTranslator.new.translate(japanese_prompt, skill: skill)
-    render json: { prompt: prompt }
-  rescue SdPromptTranslator::Error => e
+    plan = StylePlanGenerator.new(flow: :free).call(
+      japanese_prompt,
+      forced_style_id: params[:style_id].presence
+    )
+    resolved = SdPromptStyleResolver.new(
+      style_id: plan.style_id,
+      subject_prompt: plan.subject_prompt,
+      negative_extra: plan.negative_extra,
+      aspect_ratio: plan.aspect_ratio
+    ).call
+
+    render json: { prompt: resolved[:resolved_prompt] }
+  rescue StylePlanGenerator::Error, SdPromptStyleResolver::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
@@ -90,67 +91,45 @@ class ImageGenerationsController < ApplicationController
   end
 
   def load_generation_options
-    @draft_presets = GenerationPreset.draft.includes(:prompt_skill).ordered
-    @refine_presets = GenerationPreset.refine.ordered
-    @generation_presets = @draft_presets
-    @prompt_skills = PromptSkill.ordered
-    load_sd_loras_and_samplers
-  end
-
-  def load_sd_loras_and_samplers
-    @sd_loras = SdLoraCatalog.new.list
-    @sd_samplers = SdSamplerCatalog.new.names
-  rescue SdLoraCatalog::Error, SdSamplerCatalog::Error => e
-    @lora_catalog_error = e.message
-    @sd_loras = []
-    @sd_samplers = %w[euler_a]
-  end
-
-  def apply_selected_preset(generation)
-    preset = if params[:generation_preset_id].present?
-      GenerationPreset.draft.find_by(id: params[:generation_preset_id])
-    else
-      GenerationPreset.default_for_generation
-    end
-
-    return unless preset
-
-    preset.apply_draft_to(generation)
-    apply_selected_refine_preset(generation)
-    generation.sd_model = resolve_sd_model unless sd_model_available?(generation.sd_model)
-  end
-
-  def apply_selected_refine_preset(generation)
-    preset = if params[:refine_preset_id].present?
-      GenerationPreset.refine.find_by(id: params[:refine_preset_id])
-    else
-      GenerationPreset.default_for_kind("refine")
-    end
-
-    preset&.apply_refine_to(generation)
+    @prompt_styles = PromptStyle.enabled.ordered
+    @draft_render_presets = RenderPreset.of_kind("draft").ordered
+    @refine_render_presets = RenderPreset.of_kind("refine").ordered
   end
 
   def build_new_image_generation
     generation = ImageGeneration.new(
-      sd_model: resolve_sd_model,
-      width: 512,
-      height: 512,
-      steps: 20,
-      cfg_scale: 7.0,
+      width: 768,
+      height: 768,
+      steps: 22,
+      cfg_scale: 6.0,
       sampler_name: "euler_a",
-      vae_tiling: false,
-      loras: "[]"
+      vae_tiling: true,
+      draft_batch_size: 4,
+      refine_denoising_strength: 0.4,
+      enable_hires: true,
+      hires_upscaler: "Latent",
+      hires_scale: 1.5,
+      hires_denoising_strength: 0.35
     )
 
     if params[:copy_from].present?
       source = ImageGeneration.find_by(id: params[:copy_from])
       source&.apply_settings_to(generation)
     else
-      apply_selected_preset(generation)
+      apply_default_render_presets!(generation)
     end
 
-    generation.sd_model = resolve_sd_model unless sd_model_available?(generation.sd_model)
     generation
+  end
+
+  def apply_default_render_presets!(generation)
+    RenderPreset.default_for_kind("draft")&.apply_draft_to(generation)
+    RenderPreset.default_for_kind("refine")&.apply_refine_to(generation)
+  end
+
+  def apply_render_presets!(generation)
+    RenderPreset.find_by(id: generation.render_preset_id)&.apply_draft_to(generation)
+    RenderPreset.find_by(id: generation.refine_render_preset_id)&.apply_refine_to(generation)
   end
 
   def image_generation_params
@@ -158,17 +137,10 @@ class ImageGenerationsController < ApplicationController
       :japanese_prompt,
       :prompt,
       :negative_prompt,
-      :sd_model,
-      :width,
-      :height,
-      :steps,
-      :cfg_scale,
+      :style_id,
       :seed,
-      :sampler_name,
-      :vae_tiling,
-      :generation_preset_id,
-      :refine_preset_id,
-      :prompt_skill_id,
+      :render_preset_id,
+      :refine_render_preset_id,
       :draft_batch_size,
       :draft_steps,
       :refine_steps,
@@ -183,7 +155,7 @@ class ImageGenerationsController < ApplicationController
 
   def refine_image_generation_params
     params.permit(
-      :refine_preset_id,
+      :refine_render_preset_id,
       :refine_denoising_strength,
       :refine_steps,
       :enable_hires,

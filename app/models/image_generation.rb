@@ -6,6 +6,8 @@ class ImageGeneration < ApplicationRecord
   belongs_to :generation_preset, optional: true
   belongs_to :refine_preset, class_name: "GenerationPreset", optional: true
   belongs_to :prompt_skill, optional: true
+  belongs_to :render_preset, optional: true
+  belongs_to :refine_render_preset, class_name: "RenderPreset", optional: true
 
   has_one_attached :image
   has_many_attached :drafts
@@ -26,14 +28,14 @@ class ImageGeneration < ApplicationRecord
   }.freeze
   HIRES_UPSCALERS = %w[Latent Latent\ (nearest-exact) Lanczos Nearest].freeze
 
-  validates :sd_model, presence: true
+  validates :sd_model, presence: true, unless: :style_flow?
   validate :prompt_source_present
   validates :status, inclusion: { in: STATUSES }
   validates :width, :height, numericality: { only_integer: true, greater_than: 0 }
   validates :steps, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :cfg_scale, numericality: { greater_than: 0, less_than_or_equal_to: 30 }
   validates :sampler_name, presence: true
-  validates :loras, presence: true
+  validates :loras, presence: true, unless: :style_flow?
   validates :draft_batch_size, numericality: { only_integer: true, in: 2..4 }
   validates :refine_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
   validates :draft_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
@@ -123,6 +125,15 @@ class ImageGeneration < ApplicationRecord
   end
 
   def loras_for_api
+    if resolved_loras.present?
+      return Array(resolved_loras).filter_map do |entry|
+        path = entry["path"].presence
+        next if path.blank?
+
+        { "path" => path, "multiplier" => entry.fetch("multiplier", 1.0).to_f }
+      end
+    end
+
     loras_array.filter_map do |entry|
       path = entry["path"].presence
       next if path.blank?
@@ -138,10 +149,16 @@ class ImageGeneration < ApplicationRecord
     generation.assign_attributes(
       generation_preset: generation_preset,
       refine_preset: refine_preset,
+      render_preset: render_preset,
+      refine_render_preset: refine_render_preset,
       prompt_skill: prompt_skill,
+      style_id: style_id,
       japanese_prompt: japanese_prompt,
       prompt: prompt,
       negative_prompt: negative_prompt,
+      resolved_negative_prompt: resolved_negative_prompt,
+      resolved_loras: resolved_loras,
+      resolved_params: resolved_params,
       sd_model: sd_model,
       width: width,
       height: height,
@@ -172,7 +189,28 @@ class ImageGeneration < ApplicationRecord
   end
 
   def resolved_negative_prompt
+    snapshot = self[:resolved_negative_prompt]
+    return snapshot if snapshot.present?
+
     NegativePromptResolver.for_generation(self)
+  end
+
+  def prompt_style
+    return if style_id.blank?
+
+    @prompt_style ||= PromptStyle.find_by(style_id: style_id)
+  end
+
+  def style_label
+    prompt_style&.name || style_id.presence || prompt_skill&.name
+  end
+
+  def style_flow?
+    style_id.present? || japanese_prompt.present?
+  end
+
+  def rag_source_chunks
+    PromptKnowledgeChunk.where(id: Array(rag_source_chunk_ids))
   end
 
   private

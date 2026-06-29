@@ -25,8 +25,8 @@ class RefineImageJob < ApplicationJob
   private
 
   def switch_model(generation)
-    switch = SdModelSwitcher.new
-    switch.switch(generation.sd_model, lora: generation.switch_lora_name)
+    switch_key = generation.resolved_params["switch_key"].presence || generation.sd_model
+    SdModelSwitcher.new.switch(switch_key)
   end
 
   def refine_image(generation, draft)

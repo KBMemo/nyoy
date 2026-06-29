@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000007) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000008) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -100,20 +100,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000007) do
     t.jsonb "rag_source_chunk_ids", default: [], null: false
     t.float "refine_denoising_strength", default: 0.4, null: false
     t.integer "refine_preset_id"
+    t.bigint "refine_render_preset_id"
     t.integer "refine_steps"
+    t.bigint "render_preset_id"
+    t.jsonb "resolved_loras", default: [], null: false
+    t.text "resolved_negative_prompt"
+    t.jsonb "resolved_params", default: {}, null: false
     t.string "sampler_name", default: "euler_a", null: false
-    t.string "sd_model", null: false
+    t.string "sd_model"
     t.integer "seed"
     t.integer "selected_draft_index"
     t.datetime "started_at"
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
+    t.string "style_id"
     t.datetime "updated_at", null: false
     t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
     t.index ["generation_preset_id"], name: "index_image_generations_on_generation_preset_id"
     t.index ["prompt_skill_id"], name: "index_image_generations_on_prompt_skill_id"
     t.index ["refine_preset_id"], name: "index_image_generations_on_refine_preset_id"
+    t.index ["refine_render_preset_id"], name: "index_image_generations_on_refine_render_preset_id"
+    t.index ["render_preset_id"], name: "index_image_generations_on_render_preset_id"
+    t.index ["style_id"], name: "index_image_generations_on_style_id"
   end
 
   create_table "lora_profiles", force: :cascade do |t|
@@ -297,6 +306,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000007) do
   add_foreign_key "image_generations", "generation_presets"
   add_foreign_key "image_generations", "generation_presets", column: "refine_preset_id"
   add_foreign_key "image_generations", "prompt_skills"
+  add_foreign_key "image_generations", "render_presets"
+  add_foreign_key "image_generations", "render_presets", column: "refine_render_preset_id"
   add_foreign_key "memo_illustrations", "prompt_skills"
   add_foreign_key "prompt_style_loras", "lora_profiles"
   add_foreign_key "prompt_style_loras", "prompt_styles"

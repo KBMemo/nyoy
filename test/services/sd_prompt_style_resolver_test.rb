@@ -89,4 +89,16 @@ class SdPromptStyleResolverTest < ActiveSupport::TestCase
     assert payload.key?("lora")
     assert_equal payload["prompt"], resolve[:resolved_prompt]
   end
+
+  test "execution_only uses subject prompt without style prefix" do
+    result = SdPromptStyleResolver.new(
+      style_id: "chojugiga_emaki",
+      subject_prompt: "custom full prompt",
+      negative_extra: "extra tag",
+      execution_only: true
+    ).call
+
+    assert_equal "custom full prompt", result[:resolved_prompt]
+    assert_includes result[:resolved_negative_prompt], "extra tag"
+  end
 end

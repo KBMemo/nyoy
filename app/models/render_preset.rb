@@ -42,6 +42,27 @@ class RenderPreset < ApplicationRecord
     KIND_LABELS.fetch(kind, kind)
   end
 
+  def apply_draft_to(generation)
+    generation.assign_attributes(
+      render_preset: self,
+      draft_batch_size: draft_batch_size || 4,
+      draft_steps: draft_steps
+    )
+  end
+
+  def apply_refine_to(generation)
+    generation.assign_attributes(
+      refine_render_preset: self,
+      refine_steps: refine_steps,
+      refine_denoising_strength: refine_denoising_strength,
+      enable_hires: enable_hires,
+      hires_upscaler: hires_upscaler,
+      hires_scale: hires_scale,
+      hires_steps: hires_steps,
+      hires_denoising_strength: hires_denoising_strength
+    )
+  end
+
   private
 
   def clear_other_defaults

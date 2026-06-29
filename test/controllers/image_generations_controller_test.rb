@@ -16,18 +16,31 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "日本語プロンプトを入力してください", response.parsed_body["error"]
   end
 
-  test "translate_prompt returns translated prompt" do
-    original = SdPromptTranslator.instance_method(:translate)
-    SdPromptTranslator.define_method(:translate) { |*_args, **_kwargs| "chojugiga, rabbit" }
+  test "translate_prompt returns resolved prompt from style plan" do
+    plan = StylePlanGenerator::Plan.new(
+      style_id: "chojugiga_emaki",
+      subject_prompt: "rabbit and frog",
+      negative_extra: "",
+      aspect_ratio: "square",
+      source_chunk_ids: [],
+      raw_response: "{}"
+    )
+    planner = Object.new
+    planner.define_singleton_method(:call) { |*_, **_| plan }
+
+    original = StylePlanGenerator.method(:new)
+    StylePlanGenerator.define_singleton_method(:new) { |**_| planner }
 
     post translate_prompt_image_generations_path,
-      params: { japanese_prompt: "ウサギ" }.to_json,
+      params: { japanese_prompt: "ウサギ", style_id: "chojugiga_emaki" }.to_json,
       headers: @headers
 
     assert_response :success
-    assert_equal "chojugiga, rabbit", response.parsed_body["prompt"]
+    body = response.parsed_body["prompt"]
+    assert_includes body, "chojugiga"
+    assert_includes body, "rabbit and frog"
   ensure
-    SdPromptTranslator.define_method(:translate, original)
+    StylePlanGenerator.singleton_class.send(:define_method, :new, original)
   end
 
   test "refine enqueues job when draft is selected" do

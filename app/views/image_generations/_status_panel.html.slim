@@ -1,15 +1,18 @@
 = turbo_frame_tag dom_id(image_generation, :status), data: { controller: "image-preview" } do
-  - refine_presets = local_assigns.fetch(:refine_presets) { @refine_presets || GenerationPreset.refine.ordered }
+  - refine_presets = local_assigns.fetch(:refine_presets) { @refine_render_presets || RenderPreset.of_kind("refine").ordered }
   div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
     div
       h1 class=kb_page_title 生成結果
       p.mt-1.text-sm.kb-text-secondary
         span class="nyoy-status nyoy-status-#{image_generation.status}" = image_generation.status_label
-        |  · #{image_generation.sd_model}
-        - if image_generation.generation_preset
-          |  · #{image_generation.generation_preset.name}
-        - if image_generation.refine_preset
-          |  · 本番: #{image_generation.refine_preset.name}
+        - if image_generation.sd_model.present?
+          |  · #{image_generation.sd_model}
+        - if image_generation.style_label.present?
+          |  · スタイル: #{image_generation.style_label}
+        - if image_generation.render_preset
+          |  · 案出し: #{image_generation.render_preset.name}
+        - if image_generation.refine_render_preset
+          |  · 本番: #{image_generation.refine_render_preset.name}
         = render "shared/generation_phase_timing", record: image_generation, show_prompt_timing: false
 
   .kb-card.p-4
@@ -51,12 +54,15 @@
       dd = image_generation.sampler_name
       dt VAE Tiling
       dd = image_generation.vae_tiling ? "ON" : "OFF"
-      - if image_generation.prompt_skill
-        dt プロンプトスキル
-        dd = image_generation.prompt_skill.name
-      - image_generation.loras_array.each do |entry|
+      - if image_generation.rag_source_chunks.any?
+        dt 参照ナレッジ
+        dd
+          ul.list-disc.pl-5
+            - image_generation.rag_source_chunks.each do |chunk|
+              li = link_to chunk.title, chunk, class: "kb-chrome-link"
+      - image_generation.loras_for_api.each do |entry|
         dt LoRA
-        dd = "#{entry['name'] || entry['path']} (#{entry['multiplier']})"
+        dd = "#{entry['path']} (#{entry['multiplier']})"
 
     - if image_generation.error_message.present?
       .kb-alert.kb-alert-danger.mt-4
@@ -114,10 +120,6 @@
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
-    - if image_generation.generation_preset
-      = link_to "案出しプリセットを更新", edit_generation_preset_path(image_generation.generation_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
-    - if image_generation.refine_preset
-      = link_to "本番プリセットを更新", edit_generation_preset_path(image_generation.refine_preset), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
 

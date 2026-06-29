@@ -1,6 +1,8 @@
 - refine_presets = local_assigns.fetch(:refine_presets, [])
+- preset_id_field = local_assigns.fetch(:preset_id_field, :refine_render_preset_id)
 - form_builder = local_assigns[:form_builder]
 - image_generation = local_assigns.fetch(:image_generation)
+- preset_id_value = image_generation.public_send(preset_id_field)
 
 section.space-y-4 data-controller="refine-preset-form" data-refine-preset-form-presets-value=refine_presets_stimulus_data(refine_presets).to_json
   - if refine_presets.any?
@@ -9,14 +11,14 @@ section.space-y-4 data-controller="refine-preset-form" data-refine-preset-form-p
       select#refine_preset_select class=kb_field_input_classes data-refine-preset-form-target="presetSelect" data-action="change->refine-preset-form#applyPreset"
         option value="" カスタム
         - refine_presets.each do |preset|
-          option value=preset.id selected=(image_generation.refine_preset_id == preset.id)
+          option value=preset.id selected=(preset_id_value == preset.id)
             = preset.name
             - if preset.default?
               |  (default)
       - if form_builder
-        = form_builder.hidden_field :refine_preset_id, data: { refine_preset_form_target: "refinePresetId" }
+        = form_builder.hidden_field preset_id_field, data: { refine_preset_form_target: "refinePresetId" }
       - else
-        = hidden_field_tag :refine_preset_id, image_generation.refine_preset_id, data: { refine_preset_form_target: "refinePresetId" }
+        = hidden_field_tag preset_id_field, preset_id_value, data: { refine_preset_form_target: "refinePresetId" }
 
   .grid.gap-4.sm:grid-cols-2
     div

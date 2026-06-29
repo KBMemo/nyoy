@@ -36,6 +36,23 @@ class RenderPresetTest < ActiveSupport::TestCase
     assert render_presets(:single).reload.default
   end
 
+  test "apply_draft_to sets batch fields" do
+    generation = ImageGeneration.new
+    render_presets(:draft).apply_draft_to(generation)
+
+    assert_equal render_presets(:draft), generation.render_preset
+    assert_equal 4, generation.draft_batch_size
+  end
+
+  test "apply_refine_to sets refine and hires fields" do
+    generation = ImageGeneration.new
+    render_presets(:refine).apply_refine_to(generation)
+
+    assert_equal render_presets(:refine), generation.refine_render_preset
+    assert generation.enable_hires?
+    assert_in_delta 0.4, generation.refine_denoising_strength
+  end
+
   test "hires_upscaler must be allowed when present" do
     preset = render_presets(:refine)
     preset.hires_upscaler = "Bogus"

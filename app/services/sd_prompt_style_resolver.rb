@@ -7,13 +7,14 @@ class SdPromptStyleResolver
   class Error < StandardError; end
 
   def initialize(style_id:, subject_prompt:, negative_extra: nil, aspect_ratio: nil,
-                 model_key: nil, overrides: {})
+                 model_key: nil, overrides: {}, execution_only: false)
     @style_id = style_id.to_s
     @subject_prompt = subject_prompt.to_s.strip
     @negative_extra = negative_extra.to_s.strip
     @aspect_ratio = aspect_ratio
     @model_key = model_key.presence
     @overrides = (overrides || {}).transform_keys(&:to_s)
+    @execution_only = execution_only
   end
 
   def call
@@ -27,7 +28,7 @@ class SdPromptStyleResolver
       .deep_merge(aspect_params(style))
       .deep_merge(safe_overrides(style))
 
-    prompt = build_prompt(style)
+    prompt = @execution_only ? @subject_prompt : build_prompt(style)
     negative = NegativePromptResolver.merge(style.negative_prompt, @negative_extra.presence)
     loras = resolve_loras(style)
 
@@ -51,7 +52,7 @@ class SdPromptStyleResolver
   private
 
   def find_style
-    raise Error, "subject_prompt required" if @subject_prompt.blank?
+    raise Error, "subject_prompt required" if @subject_prompt.blank? && !@execution_only
 
     style = PromptStyle.includes(prompt_style_models: :sd_model_profile,
                                  prompt_style_loras: :lora_profile)

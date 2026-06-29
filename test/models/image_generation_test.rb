@@ -10,16 +10,12 @@ class ImageGenerationTest < ActiveSupport::TestCase
     assert_includes generation.errors[:base], "日本語プロンプトまたは SD プロンプトを入力してください"
   end
 
-  test "accepts japanese prompt only" do
-    generation = ImageGeneration.new(
-      japanese_prompt: "テスト",
-      sd_model: "flat2d",
-      loras: "[]"
-    )
+  test "accepts japanese prompt only for style flow without sd model" do
+    generation = ImageGeneration.new(japanese_prompt: "テスト")
     assert generation.valid?
   end
 
-  test "accepts sd prompt only" do
+  test "accepts sd prompt only with sd model for legacy flow" do
     generation = ImageGeneration.new(
       prompt: "chojugiga, rabbit, frog",
       sd_model: "flat2d",
@@ -127,6 +123,27 @@ class ImageGenerationTest < ActiveSupport::TestCase
     )
 
     assert_equal "仕上がり 3 · ラフ案 3", generation.refined_image_label(generation.refined_images.attachments.first)
+  end
+
+  test "resolved_negative_prompt prefers snapshot column" do
+    generation = ImageGeneration.new(
+      japanese_prompt: "テスト",
+      resolved_negative_prompt: "photorealistic"
+    )
+    assert_equal "photorealistic", generation.resolved_negative_prompt
+  end
+
+  test "style_label resolves from style_id" do
+    generation = ImageGeneration.new(japanese_prompt: "x", style_id: prompt_styles(:chojugiga).style_id)
+    assert_equal prompt_styles(:chojugiga).name, generation.style_label
+  end
+
+  test "loras_for_api uses resolved_loras when present" do
+    generation = ImageGeneration.new(
+      japanese_prompt: "x",
+      resolved_loras: [{ "path" => "a.safetensors", "multiplier" => 0.8 }]
+    )
+    assert_equal 1, generation.loras_for_api.size
   end
 
   test "hires target dimensions scale from base size" do

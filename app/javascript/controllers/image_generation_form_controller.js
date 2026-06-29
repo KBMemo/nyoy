@@ -4,7 +4,7 @@ export default class extends Controller {
   static targets = [
     "japanesePrompt",
     "sdPrompt",
-    "promptSkillId",
+    "styleId",
     "insertSdPromptButton",
     "replaceSdPromptButton",
     "translateStatus"
@@ -67,7 +67,7 @@ export default class extends Controller {
       },
       body: JSON.stringify({
         japanese_prompt: japanesePrompt,
-        prompt_skill_id: this.promptSkillId
+        style_id: this.styleId
       })
     })
 
@@ -111,10 +111,10 @@ export default class extends Controller {
     ].filter(Boolean)
   }
 
-  get promptSkillId() {
-    if (!this.hasPromptSkillIdTarget) return ""
+  get styleId() {
+    if (!this.hasStyleIdTarget) return ""
 
-    return this.promptSkillIdTarget.value
+    return this.styleIdTarget.value
   }
 
   get csrfToken() {
