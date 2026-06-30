@@ -516,7 +516,25 @@
   width: 100%;
   height: auto;
   border-radius: var(--kb-radius-sm);
+  display: block;
+}
+
+.nyoy-card-image-link {
+  display: block;
   margin-top: var(--kb-space-3);
+  border-radius: var(--kb-radius-sm);
+  overflow: hidden;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.nyoy-card-image-link:hover {
+  opacity: 0.88;
+}
+
+.nyoy-card-image-link:focus-visible {
+  outline: 2px solid var(--kb-accent);
+  outline-offset: 2px;
 }
 
 .nyoy-card-open {

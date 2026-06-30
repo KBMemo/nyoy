@@ -83,6 +83,9 @@
     - unless memo_illustration.in_progress?
       - if memo_illustration.inpaintable?
         = link_to "部分修正", inpaint_memo_illustration_path(memo_illustration, source_attachment_id: memo_illustration.image_attachment.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+      - if memo_illustration.image.attached?
+        - transfer_attachment = memo_illustration.latest_display_attachment
+        = link_to "Img2Imgで変換", new_img2img_generation_path(from_memo: memo_illustration.id, attachment_id: transfer_attachment.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
       = link_to "再生成", new_memo_illustration_path(copy_from: memo_illustration.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
     = link_to "新しいイラスト", new_memo_illustration_path, class: (memo_illustration.in_progress? ? kb_btn_primary_sm : kb_btn_secondary_sm), data: { turbo_frame: "_top" }
     = link_to "一覧へ", root_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }

@@ -1,0 +1,93 @@
+- content_for :title, "Img2Img を生成"
+
+.mb-6
+  h1 class=kb_page_title Img2Img を生成
+  p.mt-1.text-sm.kb-text-secondary 元画像をアップロードするか、他の生成結果から転記して img2img 変換します。転記時は元のプロンプト・パラメータを引き継ぎます。
+
+= form_with model: @img2img_generation, class: "space-y-4", html: { multipart: true }, data: { controller: "image-generation-form", image_generation_form_translate_url_value: translate_prompt_img2img_generations_path } do |form|
+  - if @transfer_error.present?
+    .kb-alert.kb-alert-warning
+      p = @transfer_error
+
+  - if @img2img_generation.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - @img2img_generation.errors.full_messages.each do |message|
+          li = message
+
+  - transfer = transfer_params
+  - if transfer.present?
+    - transfer.each do |key, value|
+      = form.hidden_field key, value: value
+
+  .kb-card.p-4
+    h2 class=kb_section_title 元画像
+    - if @img2img_generation.source_image.attached?
+      - if @img2img_generation.source_label.present?
+        p.mt-2.text-sm.kb-text-secondary = @img2img_generation.source_label
+      figure.mt-3
+        = nyoy_blob_image_tag @img2img_generation.source_image.variant(resize_to_limit: [512, 512]), alt: "元画像"
+      p.mt-2.text-sm.kb-text-muted 別の画像に差し替える場合は、下から再アップロードしてください。
+    div.mt-4
+      = form.label :source_image, "画像ファイル", class: "#{kb_label} mb-1"
+      = form.file_field :source_image, accept: "image/png,image/jpeg,image/webp", class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted PNG / JPEG / WebP に対応しています。
+
+    div.mt-4
+      label.flex.items-center.gap-2
+        = form.check_box :use_source_dimensions, class: "kb-control-accent"
+        span.text-sm 元画像の解像度を使う（オフにすると下の出力サイズまたはスタイル aspect を使用）
+    = form.hidden_field :source_label
+
+  div
+    = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
+    = form.text_area :japanese_prompt, rows: 4, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風の水彩タッチに仕上げる", data: { image_generation_form_target: "japanesePrompt" }
+
+  - if @prompt_styles.any?
+    div
+      = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"
+      = form.select :style_id, @prompt_styles.map { |s| [s.name, s.style_id] }, { include_blank: "おまかせ（自動選択）" }, class: kb_field_input_classes, data: { image_generation_form_target: "styleId" }
+      p.mt-1.text-sm.kb-text-muted プロンプト未入力時にスタイル・モデル・LoRA を決めます。
+  - else
+    .kb-alert.kb-alert-warning
+      p スタイルが未登録です。seed でスタイルを作成してください。
+
+  div
+    = form.label :prompt, "SD プロンプト", class: "#{kb_label} mb-1"
+    .flex.flex-wrap.items-center.gap-2.mb-1
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+    = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力。空欄かつ日本語のみの場合は生成時に LLM が決定します", data: { image_generation_form_target: "sdPrompt", action: "input->image-generation-form#sdPromptInput" }
+    p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
+
+  div
+    = form.label :negative_prompt, "ネガティブプロンプト", class: "#{kb_label} mb-1"
+    .flex.flex-wrap.items-center.gap-2.mb-1
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+    = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力", data: { image_generation_form_target: "negativePrompt", action: "input->image-generation-form#negativePromptInput" }
+    p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="negativeTranslateStatus"
+
+  .kb-card.p-4
+    h2 class=kb_section_title 生成パラメータ
+    .nyoy-field-grid.mt-4
+      div
+        = form.label :denoising_strength, "変換強度 (denoising)", class: "#{kb_label} mb-1"
+        = form.number_field :denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
+        p.mt-1.text-xs.kb-text-muted 低いほど元画像の構図を保ちます
+      div
+        = form.label :steps, "Steps", class: "#{kb_label} mb-1"
+        = form.number_field :steps, min: 1, max: 150, step: 1, class: kb_field_input_classes
+      div
+        = form.label :cfg_scale, "CFG Scale", class: "#{kb_label} mb-1"
+        = form.number_field :cfg_scale, min: 1, max: 30, step: 0.5, class: kb_field_input_classes
+      div
+        = form.label :seed, "Seed (空欄でランダム)", class: "#{kb_label} mb-1"
+        = form.number_field :seed, min: -1, class: kb_field_input_classes
+      div
+        = form.label :aspect_ratio, "出力サイズ（元画像解像度オフ時）", class: "#{kb_label} mb-1"
+        = form.select :aspect_ratio, options_for_select([["おまかせ（自動）", ""]] + Img2imgGeneration.aspect_ratio_options, @img2img_generation.aspect_ratio), {}, class: kb_field_input_classes, data: { image_generation_form_target: "aspectRatio" }
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit "生成する", class: kb_btn_primary_sm, disabled: @prompt_styles.empty?
+    = link_to "戻る", img2img_generations_path, class: "kb-chrome-link text-sm"

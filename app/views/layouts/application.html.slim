@@ -25,6 +25,7 @@ html lang="ja"
         .flex.flex-wrap.items-center.gap-x-4.gap-y-2.text-sm
           = link_to "メモイラスト", root_path, class: kb_chrome_link_class("memo_illustrations")
           = link_to "画像生成", image_generations_path, class: kb_chrome_link_class("image_generations")
+          = link_to "Img2Img", img2img_generations_path, class: kb_chrome_link_class("img2img_generations")
           = render "shared/settings_nav"
     main#main-content.mx-auto.w-full.px-4.py-8 tabindex="-1" class=content_max_width_class
       = yield

@@ -120,6 +120,10 @@
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    - if image_generation.latest_refined_attachment
+      = link_to "Img2Imgで変換", new_img2img_generation_path(from_image_generation: image_generation.id, attachment_id: image_generation.latest_refined_attachment.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+    - elsif image_generation.drafts.attached?
+      = link_to "Img2Imgで変換", new_img2img_generation_path(from_image_generation: image_generation.id, attachment: "draft_0"), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "新しい画像", new_image_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     = link_to "一覧へ", image_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
 

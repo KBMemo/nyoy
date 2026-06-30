@@ -1,0 +1,70 @@
+= turbo_frame_tag dom_id(img2img_generation, :status), data: { controller: "image-preview" } do
+  div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
+    div
+      h1 class=kb_page_title 生成結果
+      p.mt-1.text-sm.kb-text-secondary
+        span class="nyoy-status nyoy-status-#{img2img_generation.status}" = img2img_generation.status_label
+        - if img2img_generation.sd_model.present?
+          |  · #{img2img_generation.sd_model}
+        - if img2img_generation.style_label.present?
+          |  · スタイル: #{img2img_generation.style_label}
+        = render "shared/generation_phase_timing", record: img2img_generation, show_prompt_timing: true
+
+  .kb-card.p-4
+    - if img2img_generation.source_label.present?
+      h2 class=kb_section_title 転記元
+      p.mt-2.text-sm.kb-text-secondary = img2img_generation.source_label
+
+    - if img2img_generation.japanese_prompt.present?
+      h2 class=(img2img_generation.source_label.present? ? "mt-6 kb-section-title" : "kb-section-title") 日本語プロンプト
+      p.mt-2.text-sm.kb-text-secondary = simple_format(img2img_generation.japanese_prompt)
+
+    - if img2img_generation.prompt.present?
+      h2 class=(img2img_generation.japanese_prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") SD プロンプト
+      p.mt-2.text-sm.nyoy-monospace = img2img_generation.prompt
+
+    - if img2img_generation.resolved_negative_prompt.present?
+      h2.mt-6 class=kb_section_title ネガティブプロンプト
+      p.mt-2.text-sm.nyoy-monospace = img2img_generation.resolved_negative_prompt
+
+    h2.mt-6 class=kb_section_title 生成設定
+    dl.mt-2.nyoy-settings-list
+      dt サイズ
+      dd = "#{img2img_generation.width}×#{img2img_generation.height}"
+      dt 元画像解像度
+      dd = img2img_generation.use_source_dimensions? ? "使用" : "スタイル aspect を使用"
+      dt Steps / 変換強度 / CFG
+      dd = "#{img2img_generation.steps} / #{img2img_generation.denoising_strength} / #{img2img_generation.cfg_scale}"
+      dt Sampler
+      dd = img2img_generation.sampler_name
+      dt Seed
+      dd = nyoy_format_seed(img2img_generation.seed)
+
+    - if img2img_generation.error_message.present?
+      .kb-alert.kb-alert-danger.mt-4
+        p = img2img_generation.error_message
+
+    - if img2img_generation.in_progress?
+      p.mt-4.text-sm.kb-text-muted 生成中です… 状態は自動更新されます。
+
+  - if img2img_generation.source_image.attached?
+    h2.mt-4 class=kb_section_title 元画像
+    figure.nyoy-result-image.mt-2
+      button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(img2img_generation.source_image) data-image-preview-label="元画像" data-image-preview-download-url=nyoy_blob_download_path(img2img_generation.source_image, filename: img2img_generation.source_image.filename.to_s)
+        = nyoy_blob_image_tag img2img_generation.source_image, alt: "元画像"
+
+  - if img2img_generation.image.attached?
+    h2.mt-6 class=kb_section_title 生成結果
+    figure.nyoy-result-image.mt-2
+      button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(img2img_generation.image) data-image-preview-label="生成結果" data-image-preview-download-url=nyoy_blob_download_path(img2img_generation.image, filename: "img2img-#{img2img_generation.id}.png")
+        = nyoy_blob_image_tag img2img_generation.image, alt: img2img_generation.display_summary
+
+  .flex.flex-wrap.items-center.gap-3.mt-6
+    - unless img2img_generation.in_progress?
+      = link_to "同じ設定で再生成", new_img2img_generation_path(copy_from: img2img_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+      - if img2img_generation.image.attached?
+        = link_to "この結果で Img2Img", new_img2img_generation_path(from_img2img: img2img_generation.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+    = link_to "新しい生成", new_img2img_generation_path, class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+    = link_to "一覧へ", img2img_generations_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
+
+  = render "shared/image_preview_dialog"

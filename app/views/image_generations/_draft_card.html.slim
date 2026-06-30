@@ -22,3 +22,4 @@
   - elsif local_assigns.fetch(:refineable, false)
     .nyoy-draft-actions
       = button_tag "仕上げ生成", type: "submit", name: "draft_index", value: index, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"
+      = link_to "Img2Img", new_img2img_generation_path(from_image_generation: image_generation.id, attachment: "draft_#{index}"), class: "kb-chrome-link text-xs", data: { turbo_frame: "_top" }

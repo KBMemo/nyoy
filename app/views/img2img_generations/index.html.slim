@@ -1,0 +1,25 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title Img2Img
+    = link_to "新しい生成", new_img2img_generation_path, class: kb_btn_primary_sm
+  p.mt-1.text-sm.kb-text-secondary 元画像とプロンプトから img2img で変換します。メモイラストや画像生成の結果を転記して使えます。
+
+- if @img2img_generations.any?
+  section.nyoy-card-list
+    - @img2img_generations.each do |generation|
+      article.kb-card.p-4.nyoy-card-item
+        .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+          span class="nyoy-status nyoy-status-#{generation.status}" = generation.status_label
+          .flex.flex-wrap.items-center.gap-2
+            - if generation.sd_model.present?
+              span.text-xs.kb-text-muted = generation.sd_model
+            = render "shared/card_open_link", path: img2img_generation_path(generation)
+            - unless generation.in_progress?
+              = render "shared/card_delete_button", path: img2img_generation_path(generation), confirm: "この Img2Img 生成を削除しますか？"
+        p.text-sm.kb-text-secondary = truncate(generation.display_summary, length: 80)
+        - if generation.image.attached?
+          = render "shared/card_image_link", path: img2img_generation_path(generation), source: generation.image.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
+        - elsif generation.source_image.attached?
+          = render "shared/card_image_link", path: img2img_generation_path(generation), source: generation.source_image.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
+- else
+  p.text-sm.kb-text-muted まだ生成履歴がありません。

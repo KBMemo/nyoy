@@ -1,0 +1,6 @@
+- path = local_assigns.fetch(:path)
+- alt = local_assigns.fetch(:alt)
+- source = local_assigns.fetch(:source)
+
+= link_to path, class: "nyoy-card-image-link #{kb_focus_ring}", title: "詳細を開く", aria: { label: "詳細を開く: #{alt}" } do
+  = nyoy_blob_image_tag source, alt: alt

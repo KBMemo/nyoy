@@ -18,6 +18,6 @@
               = render "shared/card_delete_button", path: memo_illustration_path(illustration), confirm: "このイラストを削除しますか？"
         p.text-sm.kb-text-secondary = truncate(illustration.body, length: 80)
         - if illustration.image.attached?
-          = nyoy_blob_image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
+          = render "shared/card_image_link", path: memo_illustration_path(illustration), source: illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
 - else
   p.text-sm.kb-text-muted まだ生成履歴がありません。

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -89,6 +89,42 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
     t.index ["refine_render_preset_id"], name: "index_image_generations_on_refine_render_preset_id"
     t.index ["render_preset_id"], name: "index_image_generations_on_render_preset_id"
     t.index ["style_id"], name: "index_image_generations_on_style_id"
+  end
+
+  create_table "img2img_generations", force: :cascade do |t|
+    t.string "aspect_ratio"
+    t.float "cfg_scale", default: 6.0, null: false
+    t.datetime "created_at", null: false
+    t.float "denoising_strength", default: 0.55, null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.integer "height", default: 768, null: false
+    t.datetime "image_finished_at"
+    t.datetime "image_started_at"
+    t.text "japanese_prompt"
+    t.text "loras", default: "[]", null: false
+    t.text "negative_prompt"
+    t.text "prompt"
+    t.datetime "prompt_finished_at"
+    t.datetime "prompt_started_at"
+    t.jsonb "rag_source_chunk_ids", default: [], null: false
+    t.jsonb "resolved_loras", default: [], null: false
+    t.text "resolved_negative_prompt"
+    t.jsonb "resolved_params", default: {}, null: false
+    t.string "sampler_name", default: "euler_a", null: false
+    t.string "sd_model"
+    t.integer "seed"
+    t.string "source_label"
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.integer "steps", default: 22, null: false
+    t.string "style_id"
+    t.datetime "updated_at", null: false
+    t.boolean "use_source_dimensions", default: true, null: false
+    t.boolean "vae_tiling", default: true, null: false
+    t.integer "width", default: 768, null: false
+    t.index ["status"], name: "index_img2img_generations_on_status"
+    t.index ["style_id"], name: "index_img2img_generations_on_style_id"
   end
 
   create_table "lora_profiles", force: :cascade do |t|

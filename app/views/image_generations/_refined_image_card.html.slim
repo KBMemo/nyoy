@@ -11,3 +11,4 @@
 
   .nyoy-draft-actions
     = link_to "保存", download_url, class: "kb-chrome-link text-xs", download: ""
+    = link_to "Img2Img", new_img2img_generation_path(from_image_generation: image_generation.id, attachment: "refined_#{attachment.id}"), class: "kb-chrome-link text-xs", data: { turbo_frame: "_top" }

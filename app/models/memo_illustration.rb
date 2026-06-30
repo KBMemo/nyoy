@@ -189,11 +189,14 @@ class MemoIllustration < ApplicationRecord
   def broadcast_progress_panel
     super
 
+    locals = inpaint_panel_locals
+    return if locals[:source_attachment].blank?
+
     broadcast_replace_to(
       self,
       target: ActionView::RecordIdentifier.dom_id(self, :inpaint),
       partial: "memo_illustrations/inpaint_panel",
-      locals: inpaint_panel_locals
+      locals: locals
     )
   end
 
