@@ -89,4 +89,28 @@ class SdCppClientTest < ActiveSupport::TestCase
     assert_equal "Latent", captured[:payload][:hr_upscaler]
     assert_equal 768, captured[:payload][:hr_resize_x]
   end
+
+  test "inpaint payload includes init image mask and denoising strength" do
+    client = SdCppClient.new(base_url: "http://example.test")
+    captured = {}
+
+    client.define_singleton_method(:post_json) do |path, payload|
+      captured[:path] = path
+      captured[:payload] = payload
+      { "images" => [Base64.strict_encode64("inpainted")] }
+    end
+
+    result = client.inpaint(
+      prompt: "natural hands",
+      init_image: "source-bytes",
+      mask: "mask-bytes",
+      denoising_strength: 0.6
+    )
+
+    assert_equal "/sdapi/v1/img2img", captured[:path]
+    assert_equal [Base64.strict_encode64("source-bytes")], captured[:payload][:init_images]
+    assert_equal Base64.strict_encode64("mask-bytes"), captured[:payload][:mask]
+    assert_in_delta 0.6, captured[:payload][:denoising_strength]
+    assert_equal "inpainted", result
+  end
 end

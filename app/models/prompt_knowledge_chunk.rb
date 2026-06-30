@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class PromptKnowledgeChunk < ApplicationRecord
-  KINDS = %w[style model lora negative composition camera lighting].freeze
+  KINDS = %w[style model lora negative composition camera lighting inpaint].freeze
   KIND_LABELS = {
     "style" => "画風",
     "model" => "モデル",
@@ -9,7 +9,8 @@ class PromptKnowledgeChunk < ApplicationRecord
     "negative" => "ネガティブ",
     "composition" => "構図",
     "camera" => "カメラ",
-    "lighting" => "照明"
+    "lighting" => "照明",
+    "inpaint" => "部分修正"
   }.freeze
 
   has_neighbors :embedding

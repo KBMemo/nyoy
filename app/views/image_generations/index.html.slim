@@ -9,16 +9,20 @@
 - if @image_generations.any?
   section.nyoy-card-list
     - @image_generations.each do |generation|
-      = link_to image_generation_path(generation), class: "nyoy-card-link" do
-        .kb-card.p-4
-          .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
-            span class="nyoy-status nyoy-status-#{generation.status}" = generation.status_label
-            span.text-xs.kb-text-muted = generation.sd_model
-          p.text-sm.kb-text-secondary = truncate(generation.display_summary, length: 80)
-          - attachment = generation.latest_refined_attachment
-          - if attachment
-            = nyoy_blob_image_tag attachment.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
-          - elsif generation.drafts.attached?
-            = nyoy_blob_image_tag generation.drafts.first.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
+      article.kb-card.p-4.nyoy-card-item
+        .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+          span class="nyoy-status nyoy-status-#{generation.status}" = generation.status_label
+          .flex.flex-wrap.items-center.gap-2
+            - if generation.sd_model.present?
+              span.text-xs.kb-text-muted = generation.sd_model
+            = render "shared/card_open_link", path: image_generation_path(generation)
+            - unless generation.in_progress?
+              = render "shared/card_delete_button", path: image_generation_path(generation), confirm: "この画像生成を削除しますか？"
+        p.text-sm.kb-text-secondary = truncate(generation.display_summary, length: 80)
+        - attachment = generation.latest_refined_attachment
+        - if attachment
+          = nyoy_blob_image_tag attachment.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
+        - elsif generation.drafts.attached?
+          = nyoy_blob_image_tag generation.drafts.first.variant(resize_to_limit: [256, 256]), alt: generation.display_summary
 - else
   p.text-sm.kb-text-muted まだ生成履歴がありません。

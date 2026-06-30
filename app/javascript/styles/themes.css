@@ -348,6 +348,7 @@
 .nyoy-status-translating,
 .nyoy-status-planning,
 .nyoy-status-generating,
+.nyoy-status-inpainting,
 .nyoy-status-drafting,
 .nyoy-status-refining {
   color: var(--kb-link);
@@ -376,9 +377,19 @@
 }
 
 .nyoy-draft-actions {
+  align-items: center;
   display: flex;
+  gap: var(--kb-space-3);
   justify-content: center;
   min-height: 1.875rem;
+}
+
+.nyoy-inline-delete-btn {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 .nyoy-result-preview-btn {
@@ -501,21 +512,59 @@
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
 }
 
-.nyoy-card-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.nyoy-card-link:hover .kb-card {
-  border-color: var(--kb-border-strong);
-}
-
-.nyoy-card-link img {
+.nyoy-card-item img {
   width: 100%;
   height: auto;
   border-radius: var(--kb-radius-sm);
   margin-top: var(--kb-space-3);
+}
+
+.nyoy-card-open {
+  align-items: center;
+  border-radius: var(--kb-radius-sm);
+  color: var(--kb-text-secondary);
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  line-height: 1;
+  padding: 0.25rem;
+  text-decoration: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.nyoy-card-open:hover {
+  background-color: var(--kb-surface-muted);
+  color: var(--kb-text-primary);
+}
+
+.nyoy-card-delete-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.nyoy-card-delete {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--kb-radius-sm);
+  color: var(--kb-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.nyoy-card-delete:hover {
+  background-color: var(--kb-surface-muted);
+  color: var(--kb-status-danger-strong);
+}
+
+.nyoy-card-open-icon {
+  block-size: 1rem;
+  inline-size: 1rem;
 }
 
 .nyoy-result-image img {
@@ -524,6 +573,46 @@
   height: auto;
   border-radius: var(--kb-radius-sm);
   margin-top: var(--kb-space-3);
+}
+
+.nyoy-inpaint-viewport {
+  margin-inline: auto;
+  max-width: 100%;
+  position: relative;
+  width: fit-content;
+}
+
+.nyoy-inpaint-buffer {
+  block-size: 0;
+  border: 0;
+  inline-size: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+
+.nyoy-inpaint-overlay {
+  border: 1px solid var(--kb-border);
+  border-radius: var(--kb-radius-sm);
+  cursor: crosshair;
+  display: block;
+  max-width: 100%;
+  touch-action: none;
+}
+
+.kb-chrome-btn-secondary.nyoy-inpaint-tool-active {
+  background-color: var(--kb-accent);
+  border-color: var(--kb-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kb-accent) 20%, transparent);
+  color: var(--kb-accent-fg);
+  font-weight: 600;
+}
+
+.kb-chrome-btn-secondary.nyoy-inpaint-tool-active:hover {
+  background-color: var(--kb-accent-hover);
+  border-color: var(--kb-accent-hover);
+  color: var(--kb-accent-fg);
 }
 
 .nyoy-field-grid {

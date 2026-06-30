@@ -1,0 +1,4 @@
+- if memo_illustration.status == "inpainting"
+  = render "memo_illustrations/inpaint_waiting", memo_illustration: memo_illustration
+- else
+  = render "memo_illustrations/inpaint_form", memo_illustration: memo_illustration, source_attachment: source_attachment, prompt_style: prompt_style

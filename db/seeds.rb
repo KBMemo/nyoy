@@ -36,6 +36,22 @@ RenderPresetSeeds.seed!
     title: "鳥獣戯画向けネガティブ",
     kind: "negative",
     body: RagKnowledgeSeeds::CHOJUGIGA_NEGATIVE_GUIDANCE
+  },
+  {
+    title: InpaintNoteTranslator::SKILL_TITLE,
+    kind: "inpaint",
+    body: <<~BODY.squish
+      You translate Japanese inpainting correction notes into short English Stable Diffusion prompt fragments.
+      The user is fixing only a masked region of an existing image via img2img inpaint.
+      Output comma-separated English tags and short phrases describing the corrected detail only.
+      Focus on anatomy, hands, fingers, objects, textures, and local fixes.
+      Do not rewrite the whole scene. Do not add quality tags unless the note asks for them.
+      Output only the English fragment with no explanation, quotes, or markdown.
+      Examples:
+      - 手を自然に、指をはっきり → natural hands, detailed fingers, correct anatomy
+      - ボールの模様をはっきり → clear soccer ball pattern, sharp pentagon panels
+      - 生ビールのグラスを追加 → draft beer glass, foam, condensation
+    BODY
   }
 ].each do |attrs|
   chunk = PromptKnowledgeChunk.find_or_create_by!(title: attrs[:title]) do |record|

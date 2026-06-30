@@ -28,5 +28,5 @@
 .flex.flex-wrap.items-center.gap-3.mt-6
   = link_to "編集", edit_lora_profile_path(@lora_profile), class: kb_btn_primary_sm
   - unless @lora_profile.linked_to_styles?
-    = button_to "削除", @lora_profile, method: :delete, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "削除しますか？" } }
+    = button_to "削除", @lora_profile, method: :delete, class: kb_btn_secondary_sm, form: { data: { controller: "confirm-delete", confirm_delete_message_value: "削除しますか？" } }
   = link_to "一覧へ", lora_profiles_path, class: "kb-chrome-link text-sm"

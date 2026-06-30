@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ImageGenerationsController < ApplicationController
-  before_action :set_image_generation, only: %i[show refine]
+  before_action :set_image_generation, only: %i[show refine destroy]
   before_action :load_generation_options, only: %i[index new create translate_prompt show refine]
 
   def index
@@ -9,6 +9,16 @@ class ImageGenerationsController < ApplicationController
   end
 
   def show
+  end
+
+  def destroy
+    if @image_generation.in_progress?
+      redirect_to image_generations_path, alert: "生成中の画像は削除できません"
+      return
+    end
+
+    @image_generation.destroy!
+    redirect_to image_generations_path, notice: "画像生成を削除しました"
   end
 
   def refine

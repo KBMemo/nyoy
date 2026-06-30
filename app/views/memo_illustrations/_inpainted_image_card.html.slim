@@ -1,0 +1,19 @@
+- label_text = memo_illustration.inpainted_image_label(attachment)
+- full_url = nyoy_blob_image_path(attachment)
+- download_url = nyoy_blob_download_path(attachment, filename: attachment.filename.to_s)
+
+.nyoy-refined-card
+  p.text-xs.kb-text-secondary = label_text
+  = render "memo_illustrations/inpaint_prompt_breakdown", memo_illustration: memo_illustration, attachment: attachment
+  - if (inpaint_note = memo_illustration.inpaint_note_for(attachment)).present?
+    p.text-xs.kb-text-secondary.mt-1
+      | 日本語:
+      = inpaint_note
+
+  figure.nyoy-draft-thumb
+    button.nyoy-draft-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=full_url data-image-preview-label=label_text data-image-preview-download-url=download_url
+      = nyoy_blob_image_tag attachment.variant(resize_to_limit: [320, 320]), alt: label_text
+
+  .nyoy-draft-actions
+    = link_to "この版を修正", inpaint_memo_illustration_path(memo_illustration, source_attachment_id: attachment.id), class: "kb-chrome-link text-xs", data: { turbo_frame: "_top" }
+    = button_to "削除", inpainted_image_memo_illustration_path(memo_illustration, attachment_id: attachment.id), method: :delete, class: "kb-chrome-link text-xs nyoy-inline-delete-btn", form: { class: "inline", data: { controller: "confirm-delete", confirm_delete_message_value: "#{label_text}を削除しますか？", turbo_frame: "_top" } }

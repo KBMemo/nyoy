@@ -1,0 +1,11 @@
+- content_for :title, "部分修正"
+
+= turbo_stream_from @memo_illustration
+
+.mb-6
+  h1 class=kb_page_title 部分修正
+  p.mt-1.text-sm.kb-text-secondary
+    | 直したい範囲を赤く塗ってから実行します。元画像の構図はできるだけ保ち、マスク内だけ再描画します。
+
+= turbo_frame_tag dom_id(@memo_illustration, :inpaint) do
+  = render "memo_illustrations/inpaint_panel", memo_illustration: @memo_illustration, source_attachment: @source_attachment, prompt_style: @prompt_style

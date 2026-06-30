@@ -1,4 +1,4 @@
-= turbo_frame_tag dom_id(memo_illustration, :status) do
+= turbo_frame_tag dom_id(memo_illustration, :status), data: { controller: "image-preview" } do
   div.mb-6.flex.flex-wrap.items-start.justify-between.gap-3
     div
       h1 class=kb_page_title 生成結果
@@ -43,12 +43,48 @@
         p = memo_illustration.error_message
 
     - if memo_illustration.in_progress?
-      p.mt-4.text-sm.kb-text-muted 生成中です… 状態は自動更新されます。
+      p.mt-4.text-sm.kb-text-muted
+        - if memo_illustration.status == "inpainting"
+          | 部分修正中です… 状態は自動更新されます。
+        - else
+          | 生成中です… 状態は自動更新されます。
 
-    - if memo_illustration.image.attached?
-      figure.nyoy-result-image.mt-4
-        = nyoy_blob_image_tag memo_illustration.image, alt: memo_illustration.body
+  - if memo_illustration.image.attached?
+    - display_attachment = memo_illustration.latest_display_attachment
+    - display_label = memo_illustration.inpainted_images.attached? ? memo_illustration.inpainted_image_label(display_attachment) : "生成結果"
+    h2.mt-4 class=kb_section_title 表示中の画像
+    figure.nyoy-result-image.mt-2
+      button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(display_attachment) data-image-preview-label=display_label data-image-preview-download-url=nyoy_blob_download_path(display_attachment, filename: display_attachment.filename.to_s)
+        = nyoy_blob_image_tag display_attachment, alt: memo_illustration.body
+
+    - if memo_illustration.inpainted_attachment?(display_attachment)
+      - breakdown = memo_illustration.inpaint_prompt_breakdown_for(display_attachment)
+      - if breakdown.values_at(:prefix, :delta, :suffix, :full).any?(&:present?)
+        h3.mt-4 class=kb_section_title 修正に使ったプロンプト
+        = render "memo_illustrations/inpaint_prompt_breakdown", memo_illustration: memo_illustration, attachment: display_attachment
+        - if (inpaint_note = memo_illustration.inpaint_note_for(display_attachment)).present?
+          p.mt-2.text-sm.kb-text-secondary
+            | 日本語指示:
+            = inpaint_note
+
+    - if memo_illustration.inpainted_images.attached?
+      h2.mt-6 class=kb_section_title 修正履歴
+      p.mt-2.text-sm.kb-text-secondary 新しい順に表示します。クリックで実寸表示、各版から再修正もできます。
+      .nyoy-refined-grid.mt-2
+        - memo_illustration.inpainted_image_attachments.each do |attachment|
+          = render "memo_illustrations/inpainted_image_card", memo_illustration: memo_illustration, attachment: attachment
+
+      h2.mt-6 class=kb_section_title 元画像
+      figure.nyoy-result-image.mt-2
+        button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(memo_illustration.image) data-image-preview-label="元画像" data-image-preview-download-url=nyoy_blob_download_path(memo_illustration.image, filename: "memo-illustration-#{memo_illustration.id}.png")
+          = nyoy_blob_image_tag memo_illustration.image, alt: memo_illustration.body
 
   .flex.flex-wrap.items-center.gap-3.mt-6
-    = link_to "新しいイラスト", new_memo_illustration_path, class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    - unless memo_illustration.in_progress?
+      - if memo_illustration.inpaintable?
+        = link_to "部分修正", inpaint_memo_illustration_path(memo_illustration, source_attachment_id: memo_illustration.image_attachment.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
+      = link_to "再生成", new_memo_illustration_path(copy_from: memo_illustration.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    = link_to "新しいイラスト", new_memo_illustration_path, class: (memo_illustration.in_progress? ? kb_btn_primary_sm : kb_btn_secondary_sm), data: { turbo_frame: "_top" }
     = link_to "一覧へ", root_path, class: "kb-chrome-link text-sm", data: { turbo_frame: "_top" }
+
+  = render "shared/image_preview_dialog"

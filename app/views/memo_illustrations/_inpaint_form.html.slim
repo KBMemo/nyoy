@@ -1,0 +1,63 @@
+= form_with url: inpaint_memo_illustration_path(memo_illustration), method: :post, class: "space-y-4", data: { turbo_frame: "_top", controller: "inpaint-mask inpaint-form", action: "submit->inpaint-mask#beforeSubmit:capture", inpaint_mask_image_url_value: nyoy_blob_image_path(source_attachment), inpaint_form_translate_url_value: translate_inpaint_note_memo_illustration_path(memo_illustration) } do
+  = hidden_field_tag :source_attachment_id, source_attachment.id
+  = hidden_field_tag :mask, "", data: { inpaint_mask_target: "maskInput" }
+
+  .kb-card.p-4
+    .flex.flex-wrap.items-center.gap-2.mb-3
+      button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-inpaint-mask-target="brushButton" data-action="inpaint-mask#useBrush" aria-pressed="true" ブラシ
+      button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-inpaint-mask-target="eraserButton" data-action="inpaint-mask#useEraser" aria-pressed="false" 消しゴム
+      button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="inpaint-mask#clearMask" マスクをクリア
+      label.flex.items-center.gap-2.text-sm.kb-text-secondary
+        | ブラシサイズ
+        input type="range" min="8" max="96" value="32" data-inpaint-mask-target="brushSizeInput" data-action="input->inpaint-mask#brushSizeChanged"
+    p.text-sm.kb-text-muted data-inpaint-mask-target="status" 画像を読み込み中…
+
+    .nyoy-inpaint-viewport.mt-3 data-inpaint-mask-target="viewport"
+      canvas.nyoy-inpaint-overlay touch-action="none" data-inpaint-mask-target="overlayCanvas" data-action="pointerdown->inpaint-mask#pointerDown pointermove->inpaint-mask#pointerMove pointerup->inpaint-mask#pointerUp pointerleave->inpaint-mask#pointerUp pointercancel->inpaint-mask#pointerUp"
+      img.nyoy-inpaint-buffer data-inpaint-mask-target="sourceImage" alt="" src=nyoy_blob_image_path(source_attachment)
+      canvas.nyoy-inpaint-buffer data-inpaint-mask-target="maskCanvas"
+
+  .kb-card.p-4.space-y-4
+    p.text-sm.kb-text-muted
+      | マスク内だけを差分プロンプトで再描画します。生成時の subject 全体は使わず、修正内容＋任意でスタイル prefix/suffix を組み立てます。
+
+    div
+      = label_tag :inpaint_note, "修正指示 (日本語)", class: "#{kb_label} mb-1"
+      .flex.flex-wrap.items-center.gap-2.mb-1
+        button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-inpaint-form-translate-button="true" data-action="inpaint-form#translateNote" 英語に翻訳
+        span.text-sm.kb-text-muted aria-live="polite" data-inpaint-form-target="translateElapsed"
+      = text_area_tag :inpaint_note, "", rows: 2, class: kb_field_input_classes, placeholder: "例: ボールを胸の高さに上げ、両手で下から支える", data: { inpaint_form_target: "note", action: "input->inpaint-form#noteInput" }
+      p.mt-1.text-sm.kb-text-muted data-inpaint-form-target="translateStatus"
+
+    div
+      = label_tag :inpaint_prompt_delta, "差分プロンプト (英語・編集可)", class: "#{kb_label} mb-1"
+      = text_area_tag :inpaint_prompt_delta, "", rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "例: soccer ball at chest height, hands supporting ball from below, natural fingers", data: { inpaint_form_target: "promptDelta" }
+      p.mt-1.text-sm.kb-text-muted 翻訳結果をここで編集できます。直接英語を書いても構いません。未入力で実行すると日本語指示を自動翻訳します。
+
+    - if prompt_style
+      .space-y-3
+        p.text-sm.kb-text-secondary スタイルタグ（チェックしたものだけ差分プロンプトに付けます）
+        - if prompt_style.prompt_prefix.present?
+          label.flex.items-start.gap-2.text-sm
+            = check_box_tag :include_style_prefix, "1", false, class: "kb-control-accent mt-1"
+            span
+              span.font-medium Prefix
+              span.block.mt-1.text-xs.nyoy-monospace.kb-text-muted = prompt_style.prompt_prefix
+        - if prompt_style.prompt_suffix.present?
+          label.flex.items-start.gap-2.text-sm
+            = check_box_tag :include_style_suffix, "1", false, class: "kb-control-accent mt-1"
+            span
+              span.font-medium Suffix
+              span.block.mt-1.text-xs.nyoy-monospace.kb-text-muted = prompt_style.prompt_suffix
+    - else
+      p.text-sm.kb-text-muted スタイル未設定のため prefix/suffix は付けられません。
+
+    div
+      = label_tag :denoising_strength, "修正強度 (denoising)", class: "#{kb_label} mb-1"
+      = number_field_tag :denoising_strength, MemoIllustration::DEFAULT_INPAINT_DENOISING_STRENGTH, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted 低いほど周囲を保ちます（0.45〜0.65 推奨）。高すぎるとマスク外も変わりやすくなります。
+
+  .flex.flex-wrap.items-center.gap-3
+    p.text-sm.kb-text-muted data-inpaint-mask-target="submitStatus"
+    = submit_tag "部分修正を実行", class: kb_btn_primary_sm, data: { disable_with: false, inpaint_mask_target: "submitButton", action: "click->inpaint-mask#validateClick:capture" }
+    = link_to "結果に戻る", memo_illustration, class: "kb-chrome-link text-sm"

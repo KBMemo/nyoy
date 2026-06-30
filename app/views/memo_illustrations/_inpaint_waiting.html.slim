@@ -1,0 +1,13 @@
+.kb-card.p-4
+  p.text-sm.kb-text-secondary 部分修正を実行しています。完了すると結果画面へ移動します。
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  span.kb-chrome-btn-primary.kb-btn-sm.opacity-50 aria-disabled="true" 部分修正を実行
+  - if memo_illustration.image_started_at.present?
+    span.text-sm.kb-text-muted aria-live="polite" data-controller="generation-timer" data-generation-timer-started-at-value=memo_illustration.image_started_at.iso8601 data-generation-timer-finished-at-value=(memo_illustration.image_finished_at&.iso8601) data-generation-timer-active-value=memo_illustration.image_phase_active?
+      span data-generation-timer-target="elapsed"
+  - else
+    span.text-sm.kb-text-muted 処理中…
+  = link_to "結果を先に見る", memo_illustration, class: "kb-chrome-link text-sm"
+
+div.hidden data-controller="inpaint-progress" data-inpaint-progress-url-value=progress_memo_illustration_path(memo_illustration) data-inpaint-progress-redirect-url-value=memo_illustration_path(memo_illustration)

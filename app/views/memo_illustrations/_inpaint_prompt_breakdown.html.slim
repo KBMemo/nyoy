@@ -1,0 +1,22 @@
+- breakdown = memo_illustration.inpaint_prompt_breakdown_for(attachment)
+- has_parts = breakdown[:prefix].present? || breakdown[:delta].present? || breakdown[:suffix].present?
+
+- if has_parts
+  - if breakdown[:prefix].present?
+    p.text-xs.kb-text-secondary.mt-1
+      | Prefix:
+      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:prefix]
+  - if breakdown[:delta].present?
+    p.text-xs.kb-text-secondary.mt-1
+      | 差分:
+      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:delta]
+  - if breakdown[:suffix].present?
+    p.text-xs.kb-text-secondary.mt-1
+      | Suffix:
+      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:suffix]
+  - if breakdown[:full].present?
+    details.mt-1
+      summary.text-xs.kb-text-muted.cursor-pointer 送信プロンプト全文
+      p.text-xs.nyoy-monospace.kb-text-muted.mt-1 = breakdown[:full]
+- elsif breakdown[:full].present?
+  p.text-xs.kb-text-muted.nyoy-monospace.mt-1 = breakdown[:full]

@@ -1,12 +1,20 @@
 Rails.application.routes.draw do
   root "memo_illustrations#index"
 
-  resources :memo_illustrations, only: %i[index show new create]
+  resources :memo_illustrations, only: %i[index show new create destroy] do
+    member do
+      get :inpaint
+      post :inpaint, action: :create_inpaint
+      post :translate_inpaint_note
+      get :progress
+      delete "inpainted_images/:attachment_id", action: :destroy_inpainted_image, as: :inpainted_image
+    end
+  end
   resources :prompt_knowledge_chunks
   resources :sd_model_profiles
   resources :lora_profiles
   resources :prompt_styles
-  resources :image_generations, only: %i[index show new create] do
+  resources :image_generations, only: %i[index show new create destroy] do
     member do
       post :refine
     end

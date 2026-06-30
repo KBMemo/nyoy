@@ -111,6 +111,37 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to image_generation_path(generation)
   end
 
+  test "destroy deletes completed generation" do
+    generation = create_generation_awaiting_selection(draft_count: 1)
+
+    assert_difference "ImageGeneration.count", -1 do
+      delete image_generation_path(generation)
+    end
+
+    assert_redirected_to image_generations_path
+  end
+
+  test "destroy rejects in progress generation" do
+    generation = create_generation_awaiting_selection(draft_count: 1)
+    generation.update!(status: "drafting")
+
+    assert_no_difference "ImageGeneration.count" do
+      delete image_generation_path(generation)
+    end
+
+    assert_redirected_to image_generations_path
+  end
+
+  test "index delete button includes turbo confirm" do
+    create_generation_awaiting_selection(draft_count: 1)
+
+    get image_generations_path
+
+    assert_response :success
+    assert_select "form.nyoy-card-delete-form[data-controller=?]", "confirm-delete"
+    assert_select "form[data-confirm-delete-message-value=?]", "この画像生成を削除しますか？"
+  end
+
   private
 
   def create_generation_awaiting_selection(draft_count:)

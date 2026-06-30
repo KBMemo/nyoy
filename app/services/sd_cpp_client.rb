@@ -165,6 +165,40 @@ class SdCppClient
     decode_images(post_json("/sdapi/v1/img2img", payload)).first
   end
 
+  def inpaint(
+    prompt:,
+    init_image:,
+    mask:,
+    negative_prompt: "",
+    width: 512,
+    height: 512,
+    steps: 20,
+    cfg_scale: 7.0,
+    seed: -1,
+    sampler_name: nil,
+    vae_tiling: nil,
+    denoising_strength: 0.55,
+    lora: []
+  )
+    payload = build_generation_payload(
+      prompt: prompt,
+      negative_prompt: negative_prompt,
+      width: width,
+      height: height,
+      steps: steps,
+      cfg_scale: cfg_scale,
+      seed: seed,
+      sampler_name: sampler_name,
+      vae_tiling: vae_tiling,
+      lora: lora
+    )
+    payload[:init_images] = [Base64.strict_encode64(init_image)]
+    payload[:mask] = Base64.strict_encode64(mask)
+    payload[:denoising_strength] = denoising_strength
+
+    decode_images(post_json("/sdapi/v1/img2img", payload)).first
+  end
+
   private
 
   def build_generation_payload(

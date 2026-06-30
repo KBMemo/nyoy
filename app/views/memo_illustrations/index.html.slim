@@ -7,13 +7,17 @@
 - if @memo_illustrations.any?
   section.nyoy-card-list
     - @memo_illustrations.each do |illustration|
-      = link_to memo_illustration_path(illustration), class: "nyoy-card-link" do
-        .kb-card.p-4
-          .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
-            span class="nyoy-status nyoy-status-#{illustration.status}" = illustration.status
-            span.text-xs.kb-text-muted = illustration.sd_model
-          p.text-sm.kb-text-secondary = truncate(illustration.body, length: 80)
-          - if illustration.image.attached?
-            = nyoy_blob_image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
+      article.kb-card.p-4.nyoy-card-item
+        .flex.flex-wrap.items-center.justify-between.gap-2.mb-2
+          span class="nyoy-status nyoy-status-#{illustration.status}" = illustration.status_label
+          .flex.flex-wrap.items-center.gap-2
+            - if illustration.sd_model.present?
+              span.text-xs.kb-text-muted = illustration.sd_model
+            = render "shared/card_open_link", path: memo_illustration_path(illustration)
+            - unless illustration.in_progress?
+              = render "shared/card_delete_button", path: memo_illustration_path(illustration), confirm: "このイラストを削除しますか？"
+        p.text-sm.kb-text-secondary = truncate(illustration.body, length: 80)
+        - if illustration.image.attached?
+          = nyoy_blob_image_tag illustration.image.variant(resize_to_limit: [256, 256]), alt: illustration.body
 - else
   p.text-sm.kb-text-muted まだ生成履歴がありません。
