@@ -64,7 +64,27 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     end
   end
 
-  test "forced_style_id restricts available styles" do
+  test "forced_style_id overrides wrong style_id from llama" do
+    client = FakeClient.new(
+      response: llama_response(
+        style_id: "pencil_still_life_sketch",
+        subject_prompt: "cafe table with latte and notebook",
+        negative_extra: "people",
+        aspect_ratio: "landscape"
+      )
+    )
+
+    plan = StylePlanGenerator.new(
+      flow: :memo,
+      client: client,
+      retriever: FakeRetriever.new(chunks: [])
+    ).call("カフェ、水彩画", forced_style_id: "chojugiga_emaki")
+
+    assert_equal "chojugiga_emaki", plan.style_id
+    assert_equal "cafe table with latte and notebook", plan.subject_prompt
+  end
+
+  test "forced_style_id uses fixed style prompt" do
     captured = {}
     client = FakeClient.new(
       response: llama_response(
@@ -76,6 +96,8 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     StylePlanGenerator.new(flow: :memo, client: client,
                            retriever: FakeRetriever.new(chunks: [])).call("テスト", forced_style_id: "chojugiga_emaki")
 
+    assert_includes captured[:messages].last[:content], "Fixed style"
+    assert_includes captured[:messages].last[:content], "chojugiga_emaki"
     enum = captured[:response_format][:json_schema][:schema][:properties][:style_id][:enum]
     assert_equal ["chojugiga_emaki"], enum
   end

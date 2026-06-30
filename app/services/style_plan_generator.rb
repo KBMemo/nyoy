@@ -24,10 +24,14 @@ class StylePlanGenerator
     text = query.to_s.strip
     raise Error, "query required" if text.blank?
 
-    styles = available_styles(forced_style_id)
+    @forced_style_id = forced_style_id.presence
+    styles = available_styles(@forced_style_id)
     raise Error, "no enabled styles" if styles.empty?
+    if @forced_style_id.present? && styles.none? { |style| style.style_id == @forced_style_id }
+      raise Error, "unknown forced style_id: #{@forced_style_id}"
+    end
 
-    chunks = @retriever.retrieve(text).to_a
+    chunks = filter_chunks(@retriever.retrieve(text).to_a, styles)
     response = @client.chat(
       messages: [
         { role: "system", content: StylePlanPrompts.system_for(@flow) },
@@ -58,7 +62,36 @@ class StylePlanGenerator
     StylePlanJsonSchema.build(style_ids: styles.map(&:style_id))
   end
 
+  def filter_chunks(chunks, styles)
+    enabled_ids = styles.map(&:style_id).to_set
+    filtered = chunks.select do |chunk|
+      chunk.style_ref.blank? || enabled_ids.include?(chunk.style_ref)
+    end
+
+    return filtered unless @forced_style_id.present?
+
+    filtered.select { |chunk| chunk.style_ref.blank? || chunk.style_ref == @forced_style_id }
+  end
+
   def user_prompt(query, styles, chunks)
+    if @forced_style_id.present? && styles.size == 1
+      style = styles.first
+      return <<~PROMPT
+        Japanese request:
+        #{query}
+
+        Fixed style (do not change):
+        - #{style.style_id}: #{style.name}
+        #{("- #{style.description}" if style.description.present?)}
+
+        Retrieved knowledge:
+        #{chunk_section(chunks)}
+
+        Return JSON with keys: style_id, subject_prompt, negative_extra, aspect_ratio.
+        Set style_id to "#{style.style_id}" exactly.
+      PROMPT
+    end
+
     <<~PROMPT
       Japanese request:
       #{query}
@@ -91,14 +124,10 @@ class StylePlanGenerator
 
   def build_plan(content, styles, chunks)
     json = parse_json(content)
-    style_id = json["style_id"].to_s.strip
+    style_id = resolve_style_id(json, styles)
     subject = json["subject_prompt"].to_s.strip
 
-    raise Error, "style_id missing from llama response" if style_id.blank?
     raise Error, "subject_prompt missing from llama response" if subject.blank?
-    unless styles.any? { |style| style.style_id == style_id }
-      raise Error, "unknown style_id from llama: #{style_id}"
-    end
 
     Plan.new(
       style_id: style_id,
@@ -108,6 +137,22 @@ class StylePlanGenerator
       source_chunk_ids: chunks.map(&:id),
       raw_response: content
     )
+  end
+
+  def resolve_style_id(json, styles)
+    if @forced_style_id.present? && styles.size == 1
+      return styles.first.style_id
+    end
+
+    style_id = json["style_id"].to_s.strip
+    raise Error, "style_id missing from llama response" if style_id.blank?
+
+    if styles.any? { |style| style.style_id == style_id }
+      return style_id
+    end
+
+    available = styles.map(&:style_id).join(", ")
+    raise Error, "unknown style_id from llama: #{style_id} (available: #{available})"
   end
 
   def parse_json(content)

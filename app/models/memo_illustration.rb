@@ -20,6 +20,7 @@ class MemoIllustration < ApplicationRecord
   validates :width, :height, numericality: { only_integer: true, greater_than: 0 }
   validates :steps, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :cfg_scale, numericality: { greater_than: 0, less_than_or_equal_to: 30 }
+  validate :style_id_must_be_enabled
 
   scope :recent, -> { order(created_at: :desc) }
 
@@ -66,6 +67,13 @@ class MemoIllustration < ApplicationRecord
   end
 
   private
+
+  def style_id_must_be_enabled
+    return if style_id.blank?
+    return if PromptStyle.enabled.exists?(style_id: style_id)
+
+    errors.add(:style_id, "は有効なスタイルを指定してください")
+  end
 
   def progress_panel_partial
     "memo_illustrations/status_panel"
