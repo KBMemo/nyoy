@@ -29,9 +29,11 @@
       = text_area_tag :inpaint_note, "", rows: 2, class: kb_field_input_classes, placeholder: "例: ボールを胸の高さに上げ、両手で下から支える", data: { inpaint_form_target: "note", action: "input->inpaint-form#noteInput" }
       p.mt-1.text-sm.kb-text-muted data-inpaint-form-target="translateStatus"
 
-    div
-      = label_tag :inpaint_prompt_delta, "差分プロンプト (英語・編集可)", class: "#{kb_label} mb-1"
-      = text_area_tag :inpaint_prompt_delta, "", rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "例: soccer ball at chest height, hands supporting ball from below, natural fingers", data: { inpaint_form_target: "promptDelta" }
+    div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+      .nyoy-prompt-heading.mb-1
+        = label_tag :inpaint_prompt_delta, "差分プロンプト (英語・編集可)", class: kb_label
+        span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" 0 / 75
+      = text_area_tag :inpaint_prompt_delta, "", rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "例: soccer ball at chest height, hands supporting ball from below, natural fingers", data: { prompt_token_count_target: "field", inpaint_form_target: "promptDelta", action: "input->prompt-token-count#update" }
       p.mt-1.text-sm.kb-text-muted 翻訳結果をここで編集できます。直接英語を書いても構いません。未入力で実行すると日本語指示を自動翻訳します。
 
     - if prompt_style

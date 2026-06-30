@@ -21,6 +21,7 @@ export default class extends Controller {
     try {
       const data = await this.fetchTranslation(note)
       this.promptDeltaTarget.value = data.translated_note
+      this.promptDeltaTarget.dispatchEvent(new Event("input", { bubbles: true }))
       if (data.translated) {
         this.showStatus("差分プロンプト欄に反映しました。必要なら編集してください。")
       } else {

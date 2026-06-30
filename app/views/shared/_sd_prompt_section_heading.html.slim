@@ -1,0 +1,10 @@
+- title = local_assigns.fetch(:title)
+- text = local_assigns[:text].to_s
+- mt = local_assigns.fetch(:mt, false)
+- wrapper_class = [mt ? "mt-6" : nil, local_assigns[:class]].compact.join(" ")
+- over_limit = text.present? && nyoy_sd_prompt_token_over_limit?(text)
+
+.nyoy-prompt-heading class=wrapper_class.presence
+  h2 class=kb_section_title = title
+  - if text.present?
+    span.text-sm.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(text)

@@ -91,6 +91,7 @@ export default class extends Controller {
     }
 
     this.updateReplaceButtonVisibility()
+    this.sdPromptTarget.dispatchEvent(new Event("input", { bubbles: true }))
   }
 
   applyNegativePrompt(negativePrompt, mode) {
@@ -103,6 +104,7 @@ export default class extends Controller {
     }
 
     this.updateNegativeReplaceButtonVisibility()
+    this.negativePromptTarget.dispatchEvent(new Event("input", { bubbles: true }))
   }
 
   async fetchTranslatedPlan(japanesePrompt) {

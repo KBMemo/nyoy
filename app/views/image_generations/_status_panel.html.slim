@@ -23,11 +23,11 @@
       p.mt-2.text-sm.kb-text-secondary = simple_format(image_generation.japanese_prompt)
 
     - if image_generation.prompt.present?
-      h2 class=(image_generation.japanese_prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") SD プロンプト
+      = render "shared/sd_prompt_section_heading", title: "SD プロンプト", text: image_generation.prompt, mt: image_generation.japanese_prompt.present?
       p.mt-2.text-sm.nyoy-monospace = image_generation.prompt
 
     - if image_generation.resolved_negative_prompt.present?
-      h2 class=(image_generation.prompt.present? ? "mt-6 kb-section-title" : "kb-section-title") ネガティブプロンプト
+      = render "shared/sd_prompt_section_heading", title: "ネガティブプロンプト", text: image_generation.resolved_negative_prompt, mt: image_generation.prompt.present? || image_generation.japanese_prompt.present?
       p.mt-2.text-sm.nyoy-monospace = image_generation.resolved_negative_prompt
 
     h2.mt-6 class=kb_section_title 生成設定

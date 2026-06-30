@@ -667,6 +667,42 @@
   font-size: var(--kb-font-size-xs);
 }
 
+.nyoy-prompt-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--kb-space-3);
+  width: 100%;
+}
+
+summary.nyoy-prompt-heading {
+  list-style: none;
+}
+
+summary.nyoy-prompt-heading::-webkit-details-marker {
+  display: none;
+}
+
+.nyoy-prompt-heading > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.nyoy-prompt-heading .kb-label {
+  display: inline;
+  margin: 0;
+}
+
+.nyoy-prompt-token-count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.4;
+  text-align: right;
+  min-width: 4.75rem;
+}
+
 .nyoy-settings-list {
   display: grid;
   grid-template-columns: max-content 1fr;

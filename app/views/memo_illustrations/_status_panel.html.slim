@@ -15,11 +15,11 @@
     p.mt-2.text-sm.kb-text-secondary = simple_format(memo_illustration.body)
 
     - if memo_illustration.positive_prompt.present?
-      h2.mt-6 class=kb_section_title Positive Prompt
+      = render "shared/sd_prompt_section_heading", title: "Positive Prompt", text: memo_illustration.positive_prompt, mt: true
       p.mt-2.text-sm.nyoy-monospace = memo_illustration.positive_prompt
 
     - if memo_illustration.resolved_negative_prompt.present?
-      h2.mt-6 class=kb_section_title ネガティブプロンプト
+      = render "shared/sd_prompt_section_heading", title: "ネガティブプロンプト", text: memo_illustration.resolved_negative_prompt, mt: true
       p.mt-2.text-sm.nyoy-monospace = memo_illustration.resolved_negative_prompt
 
     - if memo_illustration.rag_source_chunks.any?

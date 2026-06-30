@@ -53,14 +53,18 @@
   section.space-y-4
     h2 class=kb_section_title プロンプト
 
-    div
-      = form.label :prompt_prefix, "prompt_prefix", class: "#{kb_label} mb-1"
-      = form.text_area :prompt_prefix, rows: 3, required: true, class: kb_field_input_classes
+    div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+      .nyoy-prompt-heading.mb-1
+        = form.label :prompt_prefix, "prompt_prefix", class: kb_label
+        span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@prompt_style.prompt_prefix)
+      = form.text_area :prompt_prefix, rows: 3, required: true, class: kb_field_input_classes, data: { prompt_token_count_target: "field", action: "input->prompt-token-count#update" }
       p.mt-1.text-sm.kb-text-muted subject_prompt の前に付与される固定 tag。
 
-    div
-      = form.label :prompt_suffix, "prompt_suffix", class: "#{kb_label} mb-1"
-      = form.text_area :prompt_suffix, rows: 2, class: kb_field_input_classes
+    div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+      .nyoy-prompt-heading.mb-1
+        = form.label :prompt_suffix, "prompt_suffix", class: kb_label
+        span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@prompt_style.prompt_suffix)
+      = form.text_area :prompt_suffix, rows: 2, class: kb_field_input_classes, data: { prompt_token_count_target: "field", action: "input->prompt-token-count#update" }
 
   section.space-y-3
     h2 class=kb_section_title モデル

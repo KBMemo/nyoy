@@ -20,12 +20,14 @@
       dd = @prompt_style.aliases_text
 
   h2.mt-6 class=kb_section_title プロンプト
-  dl.mt-2.nyoy-settings-list
-    dt prefix
-    dd.nyoy-monospace = @prompt_style.prompt_prefix
+  .mt-2.space-y-4
+    div
+      = render "shared/sd_prompt_section_heading", title: "prefix", text: @prompt_style.prompt_prefix
+      p.mt-2.text-sm.nyoy-monospace = @prompt_style.prompt_prefix
     - if @prompt_style.prompt_suffix.present?
-      dt suffix
-      dd.nyoy-monospace = @prompt_style.prompt_suffix
+      div
+        = render "shared/sd_prompt_section_heading", title: "suffix", text: @prompt_style.prompt_suffix, mt: true
+        p.mt-2.text-sm.nyoy-monospace = @prompt_style.prompt_suffix
 
   h2.mt-6 class=kb_section_title モデル
   - if @prompt_style.prompt_style_models.any?

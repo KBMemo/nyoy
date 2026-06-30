@@ -89,6 +89,21 @@ module ApplicationHelper
     seed.to_s
   end
 
+  def nyoy_sd_prompt_token_label(text)
+    SdPromptTokenizer.label(text.to_s)
+  end
+
+  def nyoy_sd_prompt_token_over_limit?(text)
+    SdPromptTokenizer.over_limit?(text.to_s)
+  end
+
+  def nyoy_sd_prompt_token_badge(text)
+    text = text.to_s
+    return "0 / 75" if text.blank?
+
+    nyoy_sd_prompt_token_label(text)
+  end
+
   def nyoy_blob_image_tag(source, **options)
     path = nyoy_blob_image_path(source)
     return unless path

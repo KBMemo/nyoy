@@ -3,20 +3,33 @@
 
 - if has_parts
   - if breakdown[:prefix].present?
-    p.text-xs.kb-text-secondary.mt-1
-      | Prefix:
-      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:prefix]
+    - over_limit = nyoy_sd_prompt_token_over_limit?(breakdown[:prefix])
+    .nyoy-prompt-heading.mt-1
+      p.text-xs.kb-text-secondary Prefix:
+      span.text-xs.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(breakdown[:prefix])
+    span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:prefix]
   - if breakdown[:delta].present?
-    p.text-xs.kb-text-secondary.mt-1
-      | 差分:
-      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:delta]
+    - over_limit = nyoy_sd_prompt_token_over_limit?(breakdown[:delta])
+    .nyoy-prompt-heading.mt-1
+      p.text-xs.kb-text-secondary 差分:
+      span.text-xs.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(breakdown[:delta])
+    span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:delta]
   - if breakdown[:suffix].present?
-    p.text-xs.kb-text-secondary.mt-1
-      | Suffix:
-      span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:suffix]
+    - over_limit = nyoy_sd_prompt_token_over_limit?(breakdown[:suffix])
+    .nyoy-prompt-heading.mt-1
+      p.text-xs.kb-text-secondary Suffix:
+      span.text-xs.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(breakdown[:suffix])
+    span.block.mt-0.5.nyoy-monospace.kb-text-muted = breakdown[:suffix]
   - if breakdown[:full].present?
+    - over_limit = nyoy_sd_prompt_token_over_limit?(breakdown[:full])
     details.mt-1
-      summary.text-xs.kb-text-muted.cursor-pointer 送信プロンプト全文
+      summary.nyoy-prompt-heading.text-xs.kb-text-muted.cursor-pointer
+        span 送信プロンプト全文
+        span.text-xs.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(breakdown[:full])
       p.text-xs.nyoy-monospace.kb-text-muted.mt-1 = breakdown[:full]
 - elsif breakdown[:full].present?
+  - over_limit = nyoy_sd_prompt_token_over_limit?(breakdown[:full])
+  .nyoy-prompt-heading.mt-1
+    p.text-xs.kb-text-muted 送信プロンプト
+    span.text-xs.nyoy-prompt-token-count class=(over_limit ? "kb-text-danger nyoy-prompt-token-count-over" : "kb-text-muted") = nyoy_sd_prompt_token_label(breakdown[:full])
   p.text-xs.kb-text-muted.nyoy-monospace.mt-1 = breakdown[:full]

@@ -62,20 +62,24 @@
     .kb-alert.kb-alert-warning
       p スタイルが未登録です。seed でスタイルを作成してください。
 
-  div
-    = form.label :prompt, "SD プロンプト", class: "#{kb_label} mb-1"
+  div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+    .nyoy-prompt-heading.mb-1
+      = form.label :prompt, "SD プロンプト", class: kb_label
+      span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@img2img_generation.prompt)
     .flex.flex-wrap.items-center.gap-2.mb-1
       button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
       button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 翻訳置換
-    = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力。空欄かつ日本語のみの場合は生成時に LLM が決定します", data: { image_generation_form_target: "sdPrompt", action: "input->image-generation-form#sdPromptInput" }
+    = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力。空欄かつ日本語のみの場合は生成時に LLM が決定します", data: { prompt_token_count_target: "field", image_generation_form_target: "sdPrompt", action: "input->prompt-token-count#update input->image-generation-form#sdPromptInput" }
     p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
 
-  div
-    = form.label :negative_prompt, "ネガティブプロンプト", class: "#{kb_label} mb-1"
+  div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+    .nyoy-prompt-heading.mb-1
+      = form.label :negative_prompt, "ネガティブプロンプト", class: kb_label
+      span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@img2img_generation.negative_prompt)
     .flex.flex-wrap.items-center.gap-2.mb-1
       button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
       button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" 翻訳置換
-    = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力", data: { image_generation_form_target: "negativePrompt", action: "input->image-generation-form#negativePromptInput" }
+    = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "転記または手入力", data: { prompt_token_count_target: "field", image_generation_form_target: "negativePrompt", action: "input->prompt-token-count#update input->image-generation-form#negativePromptInput" }
     p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="negativeTranslateStatus"
 
   .kb-card.p-4
