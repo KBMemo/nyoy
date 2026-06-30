@@ -114,8 +114,8 @@ class StylePlanGenerator
     json_text = LlamaJsonParser.normalize(content)
     raise Error, "no JSON object found in llama response" if json_text.blank?
 
-    JSON.parse(json_text)
-  rescue JSON::ParserError => e
-    raise Error, "invalid JSON from llama: #{e.message}"
+    LlamaJsonParser.repair_truncated(json_text)
+  rescue LlamaJsonParser::Error => e
+    raise Error, e.message
   end
 end

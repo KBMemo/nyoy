@@ -79,4 +79,20 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     enum = captured[:response_format][:json_schema][:schema][:properties][:style_id][:enum]
     assert_equal ["chojugiga_emaki"], enum
   end
+
+  test "repairs truncated json from llama" do
+    truncated = '{"style_id":"chojugiga_emaki","subject_prompt":"rabbit","negative_extra":"busy background, photorealistic, 3d, anime, detailed face'
+    client = FakeClient.new(response: { "choices" => [{ "message" => { "content" => truncated } }] })
+
+    plan = StylePlanGenerator.new(
+      flow: :memo,
+      client: client,
+      retriever: FakeRetriever.new(chunks: [])
+    ).call("余白多め、パステル水彩背景、シンプルな人物シルエット")
+
+    assert_equal "chojugiga_emaki", plan.style_id
+    assert_equal "rabbit", plan.subject_prompt
+    assert_includes plan.negative_extra, "busy background"
+    assert_equal "square", plan.aspect_ratio
+  end
 end

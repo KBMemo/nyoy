@@ -33,6 +33,13 @@ class LlamaCppClient
 
   def self.message_text(response)
     message = response.dig("choices", 0, "message") || {}
+
+    json_text = [message["content"], message["reasoning_content"]]
+      .filter_map { |part| extract_json_text(part) }
+      .max_by { |candidate| candidate[:score] }
+      &.dig(:text)
+    return json_text if json_text.present?
+
     content = message["content"].to_s.strip
     return content if content.present?
 
@@ -43,6 +50,23 @@ class LlamaCppClient
     return json_text if json_text.present?
 
     extract_text_from_reasoning(reasoning)
+  end
+
+  def self.extract_json_text(source)
+    return nil if source.blank?
+
+    normalized = LlamaJsonParser.normalize(source.to_s.strip)
+    return nil if normalized.blank? || !normalized.start_with?("{")
+
+    begin
+      parsed = LlamaJsonParser.parse(normalized)
+      return { text: parsed.to_json, score: 100 + normalized.length }
+    rescue LlamaJsonParser::Error
+      parsed = LlamaJsonParser.repair_truncated(normalized)
+      { text: parsed.to_json, score: 50 + normalized.length }
+    end
+  rescue LlamaJsonParser::Error
+    nil
   end
 
   def self.message_sources(response)

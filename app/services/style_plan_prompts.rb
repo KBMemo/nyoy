@@ -10,8 +10,9 @@ module StylePlanPrompts
     comma-separated English Stable Diffusion tags describing only the subject,
     action, and composition — do NOT include the style's own look tags, model
     names, LoRA names, file paths, or generation numbers (width, height, steps,
-    cfg). Put situational negative tags in negative_extra (comma-separated English
-    tags). Choose aspect_ratio from: square, portrait, landscape.
+    cfg). Put situational negative tags in negative_extra as a short comma-separated
+    list (at most 8 tags, under 120 characters). Choose aspect_ratio from: square,
+    portrait, landscape.
   TEXT
 
   MEMO_SYSTEM = <<~TEXT.squish
