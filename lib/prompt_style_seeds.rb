@@ -64,6 +64,31 @@ module PromptStyleSeeds
         { key: "illustrious_pencil-XL", default: true }
       ],
       loras: []
+    },
+    {
+      style_id: "watercolor_still_life",
+      name: "水彩静物画",
+      description: "柔らかな水彩タッチの静物画。カフェや日用品、食器などテーブル上の物を描く。紙の質感と余白を活かす。",
+      prompt_prefix: "watercolor still life painting, soft watercolor wash, wet-on-wet, translucent pigments, " \
+        "paper texture, traditional media, hand-painted, delicate brush strokes, natural light, soft shadows, " \
+        "calm composition, table top still life, simple everyday objects, minimal background, white space",
+      prompt_suffix: "quiet atmosphere, gentle color bleeding, artistic watercolor illustration",
+      negative_prompt: "photorealistic, photo, 3d render, glossy, sharp digital rendering, anime cel shading, " \
+        "character focus, human focus, people, portrait, busy background, cluttered scene, neon colors, " \
+        "oversaturated, harsh lighting, text, letters, watermark, logo, signature",
+      generation_defaults: XL_DEFAULTS,
+      aspect_presets: XL_ASPECTS,
+      allowed_overrides: XL_OVERRIDES,
+      aliases: [
+        "水彩静物画", "水彩画", "静物画", "watercolor still life", "watercolor painting",
+        "cafe watercolor", "カフェ水彩", "still life watercolor"
+      ],
+      sort_order: 2,
+      models: [
+        { key: "illustrious_pencil-XL", default: true },
+        { key: "pony-v6", default: false }
+      ],
+      loras: []
     }
   ].freeze
 

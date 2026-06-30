@@ -38,6 +38,25 @@ RenderPresetSeeds.seed!
     body: RagKnowledgeSeeds::CHOJUGIGA_NEGATIVE_GUIDANCE
   },
   {
+    title: "水彩静物画の構図とタッチ",
+    kind: "style",
+    style_ref: "watercolor_still_life",
+    body: <<~BODY.strip
+      watercolor still life, soft wash, table top objects, cafe items, cups, books, flowers.
+      テーブル上の日常品を主題に。人物は原則なし。余白と紙の質感を活かす。
+      カフェラテ、ノート、カーテンなど静かな室内シーンに向く。
+    BODY
+  },
+  {
+    title: "水彩静物画向けネガティブ",
+    kind: "negative",
+    style_ref: "watercolor_still_life",
+    body: <<~BODY.strip
+      photorealistic, 3d, anime, character focus, human focus, busy background,
+      harsh contrast, digital sharpness, neon colors, cluttered scene
+    BODY
+  },
+  {
     title: InpaintNoteTranslator::SKILL_TITLE,
     kind: "inpaint",
     body: <<~BODY.squish
