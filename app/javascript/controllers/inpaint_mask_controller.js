@@ -18,7 +18,8 @@ export default class extends Controller {
   static values = {
     imageUrl: String,
     submitLabel: { type: String, default: "部分修正を実行" },
-    submittingLabel: { type: String, default: "送信中…" }
+    submittingLabel: { type: String, default: "送信中…" },
+    promptValidation: { type: Boolean, default: true }
   }
 
   connect() {
@@ -28,6 +29,9 @@ export default class extends Controller {
     this.brushSize = 32
     this.activePointerId = null
     this.onTurboSubmitEnd = this.onTurboSubmitEnd.bind(this)
+    this.boundSourceChanged = this.onSourceChanged.bind(this)
+
+    this.element.addEventListener("source-image:changed", this.boundSourceChanged)
 
     const image = this.sourceImageTarget
     image.addEventListener("load", () => this.initialize())
@@ -47,6 +51,7 @@ export default class extends Controller {
 
   disconnect() {
     this.initialized = false
+    this.element.removeEventListener("source-image:changed", this.boundSourceChanged)
     this.element.removeEventListener("turbo:submit-end", this.onTurboSubmitEnd)
     if (this.resizeOverlayBound) {
       window.removeEventListener("resize", this.resizeOverlayBound)
@@ -73,6 +78,15 @@ export default class extends Controller {
     this.resizeOverlayBound = () => this.resizeOverlay()
     window.addEventListener("resize", this.resizeOverlayBound)
     this.setStatus("修正したい範囲を塗ってください")
+  }
+
+  onSourceChanged(event) {
+    const url = event.detail?.url
+    if (!url) return
+
+    this.initialized = false
+    this.hasMaskStrokes = false
+    this.sourceImageTarget.src = url
   }
 
   resetMaskCanvas() {
@@ -247,10 +261,12 @@ export default class extends Controller {
       return { kind: "mask", message: "修正したい範囲をマスクしてください" }
     }
 
-    const delta = this.element.querySelector('[name="inpaint_prompt_delta"]')?.value.trim()
-    const note = this.element.querySelector('[name="inpaint_note"]')?.value.trim()
-    if (!delta && !note) {
-      return { kind: "prompt", message: "修正指示または差分プロンプトを入力してください" }
+    if (this.promptValidationValue) {
+      const delta = this.element.querySelector('[name="inpaint_prompt_delta"]')?.value.trim()
+      const note = this.element.querySelector('[name="inpaint_note"]')?.value.trim()
+      if (!delta && !note) {
+        return { kind: "prompt", message: "修正指示または差分プロンプトを入力してください" }
+      }
     }
 
     return null

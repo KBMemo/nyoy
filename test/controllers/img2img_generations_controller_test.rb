@@ -28,14 +28,51 @@ class Img2imgGenerationsControllerTest < ActionDispatch::IntegrationTest
           cfg_scale: 6.0,
           sampler_name: "euler_a",
           loras: "[]",
-          sd_model: "test-model"
+          sd_model: "test-model",
+          generation_mode: "img2img"
         }
       }
     end
 
     generation = Img2imgGeneration.order(:created_at).last
     assert generation.source_image.attached?
+    assert_equal "img2img", generation.generation_mode
     assert_redirected_to img2img_generation_path(generation)
+  end
+
+  test "new renders mode tabs" do
+    get new_img2img_generation_path
+    assert_response :success
+    assert_select "button.nyoy-img2img-tab", count: 5
+    assert_select "button.nyoy-img2img-tab[data-mode='sketch']", text: "Sketch"
+  end
+
+  test "create inpaint mode attaches mask from data url" do
+    file = Rack::Test::UploadedFile.new(StringIO.new(PNG), "image/png", original_filename: "source.png")
+    mask_data = "data:image/png;base64,#{Base64.strict_encode64(PNG)}"
+
+    assert_enqueued_with(job: GenerateImg2imgJob) do
+      post img2img_generations_path, params: {
+        mask: mask_data,
+        img2img_generation: {
+          japanese_prompt: "修正",
+          prompt: "fix area",
+          negative_prompt: "bad",
+          source_image: file,
+          denoising_strength: 0.55,
+          steps: 22,
+          cfg_scale: 6.0,
+          sampler_name: "euler_a",
+          loras: "[]",
+          sd_model: "test-model",
+          generation_mode: "inpaint"
+        }
+      }
+    end
+
+    generation = Img2imgGeneration.order(:created_at).last
+    assert_equal "inpaint", generation.generation_mode
+    assert generation.mask_image.attached?
   end
 
   test "new transfers image and prompts from memo illustration" do

@@ -537,6 +537,14 @@
   outline-offset: 2px;
 }
 
+.nyoy-source-preview {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  height: auto;
+  border-radius: var(--kb-radius-sm);
+}
+
 .nyoy-card-open {
   align-items: center;
   border-radius: var(--kb-radius-sm);
@@ -628,6 +636,20 @@
 }
 
 .kb-chrome-btn-secondary.nyoy-inpaint-tool-active:hover {
+  background-color: var(--kb-accent-hover);
+  border-color: var(--kb-accent-hover);
+  color: var(--kb-accent-fg);
+}
+
+.nyoy-img2img-tab-active {
+  background-color: var(--kb-accent);
+  border-color: var(--kb-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kb-accent) 20%, transparent);
+  color: var(--kb-accent-fg);
+  font-weight: 600;
+}
+
+.nyoy-img2img-tab-active:hover {
   background-color: var(--kb-accent-hover);
   border-color: var(--kb-accent-hover);
   color: var(--kb-accent-fg);

@@ -1,0 +1,74 @@
+- active_mode = @img2img_generation.generation_mode.presence || "img2img"
+- source_attached = @img2img_generation.source_image.attached?
+- source_preview_url = source_attached ? nyoy_blob_image_path(@img2img_generation.source_image.variant(resize_to_limit: [512, 512])) : nil
+
+= hidden_field_tag :mask, "", data: { img2img_mode_target: "maskInput" }
+= hidden_field_tag :sketch_composite, "", data: { img2img_mode_target: "sketchCompositeInput" }
+
+.kb-card.p-4.mt-4
+  h2 class=kb_section_title モード
+  p.mt-1.text-sm.kb-text-muted img2img / Sketch / Inpaint 系のタブを切り替えて、元画像の使い方を選びます。
+  nav.mt-3.flex.flex-wrap.gap-2 role="tablist" aria-label="Img2Img モード"
+    - Img2imgGeneration::GENERATION_MODE_LABELS.each do |mode, label|
+      button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-img2img-tab type="button" role="tab" data-mode=mode data-img2img-mode-target="tab" data-action="img2img-mode#selectMode" aria-selected=(mode == active_mode ? "true" : "false") class=("nyoy-img2img-tab-active" if mode == active_mode) = label
+
+  - Img2imgGeneration::GENERATION_MODES.each do |mode|
+    - panel_hidden = mode != active_mode
+    .mt-4 data-mode=mode data-img2img-mode-target="panel" hidden=panel_hidden
+      - case mode
+      - when "img2img"
+        p.text-sm.kb-text-muted 元画像全体をプロンプトに沿って変換します（マスクなし）。
+      - when "sketch"
+        .space-y-3 data-controller="img2img-sketch"
+          p.text-sm.kb-text-muted 元画像の上にスケッチを描き、描いた内容を含めた画像で img2img します。
+          .flex.flex-wrap.items-center.gap-2
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-img2img-sketch-target="brushButton" data-action="img2img-sketch#useBrush" aria-pressed="true" ブラシ
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-img2img-sketch-target="eraserButton" data-action="img2img-sketch#useEraser" aria-pressed="false" 消しゴム
+            button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="img2img-sketch#clearStrokes" スケッチをクリア
+            label.flex.items-center.gap-2.text-sm.kb-text-secondary
+              | ブラシサイズ
+              input type="range" min="4" max="96" value="24" data-img2img-sketch-target="brushSizeInput" data-action="input->img2img-sketch#brushSizeChanged"
+          p.text-sm.kb-text-muted data-img2img-sketch-target="status" 元画像を選択すると編集できます。
+          .nyoy-inpaint-viewport data-img2img-sketch-target="viewport"
+            canvas.nyoy-inpaint-overlay touch-action="none" data-img2img-sketch-target="overlayCanvas" data-action="pointerdown->img2img-sketch#pointerDown pointermove->img2img-sketch#pointerMove pointerup->img2img-sketch#pointerUp pointerleave->img2img-sketch#pointerUp pointercancel->img2img-sketch#pointerUp"
+            img.nyoy-inpaint-buffer data-img2img-sketch-target="sourceImage" alt="" src=source_preview_url
+            canvas.nyoy-inpaint-buffer data-img2img-sketch-target="strokeCanvas"
+      - when "inpaint"
+        .space-y-3 data-controller="inpaint-mask" data-inpaint-mask-prompt-validation-value="false"
+          p.text-sm.kb-text-muted マスクした範囲だけをプロンプトで再描画します。
+          .flex.flex-wrap.items-center.gap-2
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-inpaint-mask-target="brushButton" data-action="inpaint-mask#useBrush" aria-pressed="true" ブラシ
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-inpaint-mask-target="eraserButton" data-action="inpaint-mask#useEraser" aria-pressed="false" 消しゴム
+            button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="inpaint-mask#clearMask" マスクをクリア
+            label.flex.items-center.gap-2.text-sm.kb-text-secondary
+              | ブラシサイズ
+              input type="range" min="8" max="96" value="32" data-inpaint-mask-target="brushSizeInput" data-action="input->inpaint-mask#brushSizeChanged"
+          p.text-sm.kb-text-muted data-inpaint-mask-target="status" 元画像を選択すると編集できます。
+          .nyoy-inpaint-viewport data-inpaint-mask-target="viewport"
+            canvas.nyoy-inpaint-overlay touch-action="none" data-inpaint-mask-target="overlayCanvas" data-action="pointerdown->inpaint-mask#pointerDown pointermove->inpaint-mask#pointerMove pointerup->inpaint-mask#pointerUp pointerleave->inpaint-mask#pointerUp pointercancel->inpaint-mask#pointerUp"
+            img.nyoy-inpaint-buffer data-inpaint-mask-target="sourceImage" alt="" src=source_preview_url
+            canvas.nyoy-inpaint-buffer data-inpaint-mask-target="maskCanvas"
+      - when "inpaint_sketch"
+        .space-y-3 data-controller="img2img-sketch"
+          p.text-sm.kb-text-muted スケッチで修正したい範囲を示し、マスク付き inpaint で再描画します。
+          .flex.flex-wrap.items-center.gap-2
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-img2img-sketch-target="brushButton" data-action="img2img-sketch#useBrush" aria-pressed="true" ブラシ
+            button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-inpaint-tool type="button" data-img2img-sketch-target="eraserButton" data-action="img2img-sketch#useEraser" aria-pressed="false" 消しゴム
+            button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-action="img2img-sketch#clearStrokes" スケッチをクリア
+            label.flex.items-center.gap-2.text-sm.kb-text-secondary
+              | ブラシサイズ
+              input type="range" min="4" max="96" value="24" data-img2img-sketch-target="brushSizeInput" data-action="input->img2img-sketch#brushSizeChanged"
+          p.text-sm.kb-text-muted data-img2img-sketch-target="status" 元画像を選択すると編集できます。
+          .nyoy-inpaint-viewport data-img2img-sketch-target="viewport"
+            canvas.nyoy-inpaint-overlay touch-action="none" data-img2img-sketch-target="overlayCanvas" data-action="pointerdown->img2img-sketch#pointerDown pointermove->img2img-sketch#pointerMove pointerup->img2img-sketch#pointerUp pointerleave->img2img-sketch#pointerUp pointercancel->img2img-sketch#pointerUp"
+            img.nyoy-inpaint-buffer data-img2img-sketch-target="sourceImage" alt="" src=source_preview_url
+            canvas.nyoy-inpaint-buffer data-img2img-sketch-target="strokeCanvas"
+      - when "inpaint_upload"
+        p.text-sm.kb-text-muted
+          | 元画像と別ファイルのマスク画像をアップロードして inpaint します。白い部分が再描画されます。
+        div.mt-3
+          = label_tag "img2img_generation_mask_image", "マスク画像", class: "#{kb_label} mb-1"
+          = file_field_tag "img2img_generation[mask_image]", accept: "image/png,image/jpeg,image/webp", class: kb_field_input_classes
+          p.mt-1.text-sm.kb-text-muted 白い部分が再描画されます。PNG 推奨。
+
+p.mt-2.text-sm.kb-text-muted data-img2img-mode-target="submitStatus"

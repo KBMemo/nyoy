@@ -4,7 +4,20 @@ class Img2imgGeneration < ApplicationRecord
   include GenerationProgressBroadcastable
 
   has_one_attached :source_image
+  has_one_attached :mask_image
+  has_one_attached :sketch_image
   has_one_attached :image
+
+  GENERATION_MODES = %w[img2img sketch inpaint inpaint_sketch inpaint_upload].freeze
+  GENERATION_MODE_LABELS = {
+    "img2img" => "img2img",
+    "sketch" => "Sketch",
+    "inpaint" => "Inpaint",
+    "inpaint_sketch" => "Inpaint sketch",
+    "inpaint_upload" => "Inpaint upload"
+  }.freeze
+  INPAINT_MODES = %w[inpaint inpaint_sketch inpaint_upload].freeze
+  SKETCH_MODES = %w[sketch inpaint_sketch].freeze
 
   STATUSES = %w[pending preparing translating generating completed failed].freeze
   STATUS_LABELS = {
@@ -31,12 +44,18 @@ class Img2imgGeneration < ApplicationRecord
   validates :loras, presence: true, unless: :style_flow?
   validates :denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
   validates :aspect_ratio, inclusion: { in: ASPECT_RATIOS }, allow_blank: true
+  validates :generation_mode, inclusion: { in: GENERATION_MODES }
   validate :source_image_content_type, if: -> { source_image.attached? }
+  validate :mode_attachments_present, on: :create
 
   scope :recent, -> { order(created_at: :desc) }
 
   def self.aspect_ratio_options
     ASPECT_RATIO_LABELS.map { |value, label| [label, value] }
+  end
+
+  def self.generation_mode_options
+    GENERATION_MODE_LABELS.map { |value, label| [label, value] }
   end
 
   def self.sd_aligned_dimension(value)
@@ -112,7 +131,8 @@ class Img2imgGeneration < ApplicationRecord
       vae_tiling: vae_tiling,
       loras: loras,
       denoising_strength: denoising_strength,
-      use_source_dimensions: use_source_dimensions
+      use_source_dimensions: use_source_dimensions,
+      generation_mode: generation_mode
     )
   end
 
@@ -145,6 +165,18 @@ class Img2imgGeneration < ApplicationRecord
     style_id.present? || japanese_prompt.present?
   end
 
+  def generation_mode_label
+    GENERATION_MODE_LABELS.fetch(generation_mode, generation_mode)
+  end
+
+  def inpaint_mode?
+    generation_mode.in?(INPAINT_MODES)
+  end
+
+  def sketch_mode?
+    generation_mode.in?(SKETCH_MODES)
+  end
+
   def rag_source_chunks
     PromptKnowledgeChunk.where(id: Array(rag_source_chunk_ids))
   end
@@ -167,6 +199,20 @@ class Img2imgGeneration < ApplicationRecord
     return if SOURCE_IMAGE_CONTENT_TYPES.include?(source_image.content_type)
 
     errors.add(:source_image, "は PNG / JPEG / WebP にしてください")
+  end
+
+  def mode_attachments_present
+    case generation_mode
+    when "inpaint", "inpaint_sketch"
+      errors.add(:base, "マスクを描いてください") unless mask_image.attached?
+    when "inpaint_upload"
+      errors.add(:mask_image, "を選択してください") unless mask_image.attached?
+    when "sketch"
+      errors.add(:base, "スケッチを描いてください") unless sketch_image.attached?
+    when "inpaint_sketch"
+      errors.add(:base, "スケッチを描いてください") unless sketch_image.attached?
+      errors.add(:base, "マスクを描いてください") unless mask_image.attached?
+    end
   end
 
   def progress_panel_partial

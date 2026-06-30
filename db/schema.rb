@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -98,6 +98,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_140000) do
     t.float "denoising_strength", default: 0.55, null: false
     t.text "error_message"
     t.datetime "finished_at"
+    t.string "generation_mode", default: "img2img", null: false
     t.integer "height", default: 768, null: false
     t.datetime "image_finished_at"
     t.datetime "image_started_at"

@@ -32,6 +32,7 @@ class Img2imgGenerationsController < ApplicationController
     @img2img_generation = Img2imgGeneration.new
     apply_transfer_snapshot!(@img2img_generation)
     @img2img_generation.assign_attributes(img2img_generation_params)
+    apply_mode_attachments!(@img2img_generation)
 
     if @img2img_generation.save
       GenerateImg2imgJob.perform_later(@img2img_generation.id)
@@ -148,12 +149,33 @@ class Img2imgGenerationsController < ApplicationController
       :seed,
       :source_image,
       :source_label,
+      :mask_image,
       :steps,
       :cfg_scale,
       :sampler_name,
       :vae_tiling,
       :denoising_strength,
-      :use_source_dimensions
+      :use_source_dimensions,
+      :generation_mode
     )
+  end
+
+  def apply_mode_attachments!(generation)
+    attach_data_url_attachment!(generation, :mask_image, params[:mask]) if params[:mask].present?
+
+    if params[:sketch_composite].present?
+      attach_data_url_attachment!(generation, :sketch_image, params[:sketch_composite])
+    end
+  end
+
+  def attach_data_url_attachment!(record, attachment_name, data_url)
+    bytes = ImageDataUrlDecoder.decode(data_url)
+    record.public_send(attachment_name).attach(
+      io: StringIO.new(bytes),
+      filename: "#{attachment_name}-#{SecureRandom.hex(4)}.png",
+      content_type: "image/png"
+    )
+  rescue ImageDataUrlDecoder::Error => e
+    record.errors.add(:base, e.message)
   end
 end

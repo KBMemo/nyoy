@@ -83,12 +83,13 @@ class GenerateImg2imgJob < ApplicationJob
   def generate_image(generation)
     generation.update!(status: "generating", image_started_at: Time.current)
 
-    init_image = generation.source_image.download
+    init_image = resolve_init_image(generation)
     width, height = output_dimensions(generation, init_image)
     generation.update!(width: width, height: height)
 
     params = generation.resolved_params
-    png_data = SdCppClient.new.img2img(
+    client = SdCppClient.new
+    api_kwargs = {
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       init_image: init_image,
@@ -101,7 +102,14 @@ class GenerateImg2imgJob < ApplicationJob
       vae_tiling: params["vae_tiling"].nil? ? generation.vae_tiling : params["vae_tiling"],
       denoising_strength: generation.denoising_strength,
       lora: generation.loras_for_api
-    )
+    }
+
+    png_data =
+      if generation.inpaint_mode?
+        client.inpaint(**api_kwargs, mask: resolve_mask(generation))
+      else
+        client.img2img(**api_kwargs)
+      end
 
     generation.image.attach(
       io: StringIO.new(png_data),
@@ -109,6 +117,20 @@ class GenerateImg2imgJob < ApplicationJob
       content_type: "image/png"
     )
     generation.update!(image_finished_at: Time.current)
+  end
+
+  def resolve_init_image(generation)
+    if generation.sketch_mode? && generation.sketch_image.attached?
+      generation.sketch_image.download
+    else
+      generation.source_image.download
+    end
+  end
+
+  def resolve_mask(generation)
+    raise "マスク画像がありません" unless generation.mask_image.attached?
+
+    generation.mask_image.download
   end
 
   def output_dimensions(generation, init_image)

@@ -64,4 +64,43 @@ class GenerateImg2imgJobTest < ActiveJob::TestCase
     assert_in_delta 0.6, captured[:denoising_strength]
     assert_equal PNG, captured[:init_image]
   end
+
+  test "runs inpaint when generation mode is inpaint" do
+    generation = Img2imgGeneration.new(
+      prompt: "fix",
+      negative_prompt: "bad",
+      resolved_negative_prompt: "bad",
+      denoising_strength: 0.6,
+      steps: 22,
+      sampler_name: "euler_a",
+      loras: "[]",
+      sd_model: "placeholder",
+      resolved_params: { "switch_key" => "placeholder" },
+      generation_mode: "inpaint"
+    )
+    generation.source_image.attach(io: StringIO.new(PNG), filename: "source.png", content_type: "image/png")
+    generation.mask_image.attach(io: StringIO.new(PNG), filename: "mask.png", content_type: "image/png")
+    generation.save!
+
+    planner = Object.new
+    planner.define_singleton_method(:call) { |*_, **_| raise "should not plan" }
+    switcher = Class.new { def switch(*) = true }
+
+    captured = {}
+    client = Class.new do
+      define_method(:inpaint) do |**kwargs|
+        kwargs.each { |k, v| captured[k] = v }
+        "png-bytes"
+      end
+
+      define_method(:img2img) { |_| raise "should use inpaint" }
+    end
+
+    with_stubs(planner:, switcher:, client:) do
+      GenerateImg2imgJob.perform_now(generation.id)
+    end
+
+    assert_equal PNG, captured[:mask]
+    assert_equal PNG, captured[:init_image]
+  end
 end
