@@ -71,3 +71,6 @@ end
 
 gem "slim-rails", "~> 4.0"
 gem "ruby_llm"
+
+gem "kramdown", "~> 2.5"
+gem "kramdown-parser-gfm", "~> 1.1"

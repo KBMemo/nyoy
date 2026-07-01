@@ -67,4 +67,35 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#messages"
     assert_select "textarea[name='message[content]']"
   end
+
+  test "show renders assistant markdown as html" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gemma-4-12b-it-vision-mtp"))
+    chat.messages.create!(role: :assistant, content: "### 見出し\n\n**太字**")
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "#message_#{chat.messages.last.id}_content h3", text: "見出し"
+    assert_select "#message_#{chat.messages.last.id}_content strong", text: "太字"
+  end
+
+  test "show renders assistant timing and model stats" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    chat = Chat.create!(model: model)
+    message = chat.messages.create!(
+      role: :assistant,
+      content: "回答",
+      model: model,
+      response_elapsed_ms: 12_345,
+      thinking_elapsed_ms: 4567
+    )
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat", minimum: 3
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "GPT-OSS"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "12.3秒"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "4.6秒"
+  end
 end

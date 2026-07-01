@@ -1,6 +1,19 @@
 <% assistant ||= local_assigns[:message] %>
 <div id="message_<%= assistant.id %>" class="nyoy-chat-message nyoy-chat-message-assistant">
-  <div class="nyoy-chat-message-role">アシスタント</div>
-  <div id="message_<%= assistant.id %>_content" class="nyoy-chat-message-content"><%= assistant.content %></div>
+  <div class="nyoy-chat-message-header">
+    <div class="nyoy-chat-message-role">アシスタント</div>
+    <% stats = chat_message_stats(assistant) %>
+    <% if stats.any? %>
+      <dl class="nyoy-chat-message-stats">
+        <% stats.each do |stat| %>
+          <div class="nyoy-chat-message-stat">
+            <dt><%= stat[:label] %></dt>
+            <dd><%= stat[:value] %></dd>
+          </div>
+        <% end %>
+      </dl>
+    <% end %>
+  </div>
+  <div id="message_<%= assistant.id %>_content" class="nyoy-chat-message-content nyoy-chat-markdown"><%= render_chat_markdown(assistant.content) %></div>
   <div class="nyoy-chat-message-meta"><%= l(assistant.created_at, format: :short) if assistant.created_at %></div>
 </div>

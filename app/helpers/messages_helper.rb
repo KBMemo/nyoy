@@ -1,4 +1,40 @@
 module MessagesHelper
+  def render_chat_markdown(text)
+    ChatMarkdownRenderer.render(text)
+  end
+
+  def chat_message_model_name(message)
+    message.model&.name.presence || message.chat&.model&.name.presence || default_model_display_name
+  end
+
+  def chat_message_response_elapsed(message)
+    if message.response_elapsed_ms.present?
+      message.response_elapsed_ms / 1000.0
+    elsif message.created_at.present? && message.updated_at.present?
+      elapsed = message.updated_at - message.created_at
+      elapsed.positive? ? elapsed : nil
+    end
+  end
+
+  def chat_message_thinking_elapsed(message)
+    return unless message.thinking_elapsed_ms.present?
+
+    message.thinking_elapsed_ms / 1000.0
+  end
+
+  def chat_message_stats(message)
+    stats = []
+    stats << { label: "モデル", value: chat_message_model_name(message) }
+
+    response_elapsed = chat_message_response_elapsed(message)
+    stats << { label: "経過", value: nyoy_format_duration(response_elapsed) } if response_elapsed
+
+    thinking_elapsed = chat_message_thinking_elapsed(message)
+    stats << { label: "思考", value: nyoy_format_duration(thinking_elapsed) } if thinking_elapsed
+
+    stats
+  end
+
   def default_model_display_name
     model_id = RubyLLM.config.default_model
     label = Model.find_by(model_id: model_id, provider: "openai")&.name || model_id

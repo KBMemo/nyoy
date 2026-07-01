@@ -570,14 +570,134 @@
   font-size: var(--kb-font-size-sm);
   font-weight: 600;
   color: var(--kb-text-primary);
+}
+
+.nyoy-chat-message-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
   margin-bottom: var(--kb-space-2);
 }
 
+.nyoy-chat-message-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.nyoy-chat-message-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: var(--kb-font-size-xs);
+  color: var(--kb-text-muted);
+}
+
+.nyoy-chat-message-stat dt {
+  font-weight: 500;
+}
+
+.nyoy-chat-message-stat dd {
+  margin: 0;
+  color: var(--kb-text-secondary);
+}
+
 .nyoy-chat-message-content {
-  white-space: pre-wrap;
   overflow-wrap: break-word;
   font-size: var(--kb-font-size-sm);
   color: var(--kb-text-primary);
+}
+
+.nyoy-chat-message-user .nyoy-chat-message-content {
+  white-space: pre-wrap;
+}
+
+.nyoy-chat-markdown {
+  line-height: 1.6;
+  white-space: normal;
+}
+
+.nyoy-chat-markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 1em 0 0.5em;
+}
+
+.nyoy-chat-markdown h1 {
+  font-size: 1.25em;
+}
+
+.nyoy-chat-markdown h2 {
+  font-size: 1.15em;
+}
+
+.nyoy-chat-markdown h3 {
+  font-size: 1.05em;
+}
+
+.nyoy-chat-markdown p {
+  margin: 0 0 0.75em;
+}
+
+.nyoy-chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.nyoy-chat-markdown :is(ul, ol) {
+  margin: 0 0 0.75em;
+  padding-left: 1.5em;
+}
+
+.nyoy-chat-markdown li + li {
+  margin-top: 0.25em;
+}
+
+.nyoy-chat-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92em;
+  background-color: var(--kb-bg-muted);
+  padding: 0.1em 0.35em;
+  border-radius: var(--kb-radius-sm);
+}
+
+.nyoy-chat-markdown pre {
+  margin: 0 0 0.75em;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  background-color: var(--kb-bg-muted);
+  border-radius: var(--kb-radius-sm);
+}
+
+.nyoy-chat-markdown pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.nyoy-chat-markdown blockquote {
+  margin: 0 0 0.75em;
+  padding-left: 1em;
+  border-left: 3px solid var(--kb-border);
+  color: var(--kb-text-secondary);
+}
+
+.nyoy-chat-markdown a {
+  color: var(--kb-link);
+  text-decoration: underline;
+}
+
+.nyoy-chat-markdown table {
+  border-collapse: collapse;
+  margin: 0 0 0.75em;
+  width: 100%;
+}
+
+.nyoy-chat-markdown th,
+.nyoy-chat-markdown td {
+  border: 1px solid var(--kb-border);
+  padding: 0.35em 0.5em;
 }
 
 .nyoy-chat-message-meta {
