@@ -47,6 +47,36 @@ class ImageUnderstandingsControllerTest < ActionDispatch::IntegrationTest
     VisionChatService.singleton_class.send(:define_method, :new, original_new)
   end
 
+  test "create returns json for fetch submissions" do
+    file = Rack::Test::UploadedFile.new(StringIO.new(PNG), "image/png", original_filename: "sample.png")
+    service = FakeService.new(result: "猫が写っています")
+
+    original_new = VisionChatService.method(:new)
+    VisionChatService.define_singleton_method(:new) { |**| service }
+
+    post image_understandings_path,
+         params: { image: file, prompt: "何が写っていますか？" },
+         headers: { "Accept" => "application/json" }
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal "猫が写っています", json["result"]
+    assert_equal "何が写っていますか？", json["prompt"]
+    assert json["image_data_url"].start_with?("data:image/png;base64,")
+  ensure
+    VisionChatService.singleton_class.send(:define_method, :new, original_new)
+  end
+
+  test "create returns json error" do
+    post image_understandings_path,
+         params: { prompt: "説明して" },
+         headers: { "Accept" => "application/json" }
+
+    assert_response :unprocessable_entity
+    json = JSON.parse(response.body)
+    assert_equal "画像を選択してください", json["error"]
+  end
+
   test "create validates missing image" do
     post image_understandings_path, params: { prompt: "説明して" }
     assert_response :unprocessable_entity
