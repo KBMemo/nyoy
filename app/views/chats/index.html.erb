@@ -1,0 +1,26 @@
+<% content_for :title, "チャット一覧" %>
+
+<div class="mb-6">
+  <h1 class="<%= kb_page_title %>">チャット</h1>
+  <p class="mt-1 text-sm kb-text-secondary">llama-server につながった会話型チャットです。</p>
+</div>
+
+<% if @chats.any? %>
+  <div class="space-y-4" id="chats">
+    <% @chats.each do |chat| %>
+      <div class="kb-card p-4">
+        <%= render chat %>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <%= link_to "開く", chat, class: kb_btn_primary_sm %>
+          <%= button_to "削除", chat, method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { class: "inline", data: { turbo_confirm: "このチャットを削除しますか？" } } %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p class="kb-text-secondary">チャットはまだありません。</p>
+<% end %>
+
+<div class="mt-6">
+  <%= link_to "新しいチャット", new_chat_path, class: kb_btn_primary_sm %>
+</div>

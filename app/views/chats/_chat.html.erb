@@ -1,0 +1,16 @@
+<div id="<%= dom_id chat %>">
+  <div class="text-sm kb-text-secondary">
+    <strong class="kb-text-primary">モデル:</strong>
+    <%= chat.model&.name || default_model_display_name %>
+  </div>
+
+  <div class="text-sm kb-text-secondary mt-1">
+    <strong class="kb-text-primary">メッセージ数:</strong>
+    <%= chat.messages.count %>
+  </div>
+
+  <div class="text-sm kb-text-secondary mt-1">
+    <strong class="kb-text-primary">作成:</strong>
+    <%= l(chat.created_at, format: :short) %>
+  </div>
+</div>

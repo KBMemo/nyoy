@@ -11,6 +11,8 @@ CapabilitySeeds.seed!
 PromptStyleSeeds.seed!
 # Phase 3: render layer (render_presets).
 RenderPresetSeeds.seed!
+ServiceConnectionSeeds.seed!
+ChatModelSeeds.seed!
 
 [
   {

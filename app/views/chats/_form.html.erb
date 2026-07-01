@@ -1,0 +1,30 @@
+<%= form_with(model: chat, url: chats_path, class: "space-y-4") do |form| %>
+  <% if chat.errors.any? %>
+    <div class="kb-alert kb-alert-danger">
+      <ul class="list-disc pl-5">
+        <% chat.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% if @chat_models.any? %>
+    <div>
+      <%= form.label :model, "モデル", class: "#{kb_label} mb-1" %>
+      <%= form.select :model,
+          options_from_collection_for_select(@chat_models, :id, :name, @selected_model || @chat_models.first.id),
+          {},
+          class: kb_field_input_classes %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :prompt, "最初のメッセージ", class: "#{kb_label} mb-1" %>
+    <%= form.text_area :prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "何でも聞いてください", autofocus: true %>
+  </div>
+
+  <div>
+    <%= form.submit "チャットを開始", class: kb_btn_primary_sm %>
+  </div>
+<% end %>

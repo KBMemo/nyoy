@@ -1,0 +1,12 @@
+<% content_for :title, "新しいチャット" %>
+
+<div class="mb-6">
+  <h1 class="<%= kb_page_title %>">新しいチャット</h1>
+  <p class="mt-1 text-sm kb-text-secondary">メッセージを入力して会話を始めます。</p>
+</div>
+
+<%= render "form", chat: @chat %>
+
+<div class="mt-4">
+  <%= link_to "一覧へ戻る", chats_path, class: "kb-chrome-link text-sm" %>
+</div>

@@ -9,8 +9,8 @@ class VisionChatService
 
   def initialize(
     client: LlamaCppClient.new(
-      base_url: Rails.application.config.x.nyoy.vision_llama_cpp_url,
-      model: Rails.application.config.x.nyoy.vision_llama_model
+      base_url: NyoyConnectionStore.url(:vision_llama),
+      model: NyoyConnectionStore.server_model(:vision_llama)
     )
   )
     @client = client

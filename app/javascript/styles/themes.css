@@ -545,6 +545,47 @@
   border-radius: var(--kb-radius-sm);
 }
 
+.nyoy-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kb-space-3);
+}
+
+.nyoy-chat-message {
+  border: 1px solid var(--kb-border);
+  border-radius: var(--kb-radius-sm);
+  padding: var(--kb-space-3) var(--kb-space-4);
+  background-color: var(--kb-bg-surface);
+}
+
+.nyoy-chat-message-user {
+  border-left: 3px solid var(--kb-accent);
+}
+
+.nyoy-chat-message-assistant {
+  border-left: 3px solid var(--kb-link);
+}
+
+.nyoy-chat-message-role {
+  font-size: var(--kb-font-size-sm);
+  font-weight: 600;
+  color: var(--kb-text-primary);
+  margin-bottom: var(--kb-space-2);
+}
+
+.nyoy-chat-message-content {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-size: var(--kb-font-size-sm);
+  color: var(--kb-text-primary);
+}
+
+.nyoy-chat-message-meta {
+  margin-top: var(--kb-space-2);
+  font-size: var(--kb-font-size-xs);
+  color: var(--kb-text-muted);
+}
+
 .nyoy-card-open {
   align-items: center;
   border-radius: var(--kb-radius-sm);

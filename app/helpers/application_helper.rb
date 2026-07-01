@@ -30,6 +30,7 @@ module ApplicationHelper
     prompt_styles
     sd_model_profiles
     lora_profiles
+    service_connections
   ].freeze
 
   def kb_chrome_link_class(controller)
@@ -59,7 +60,8 @@ module ApplicationHelper
       ["ナレッジ", "prompt_knowledge_chunks", prompt_knowledge_chunks_path],
       ["スタイル", "prompt_styles", prompt_styles_path],
       ["モデル", "sd_model_profiles", sd_model_profiles_path],
-      ["LoRA", "lora_profiles", lora_profiles_path]
+      ["LoRA", "lora_profiles", lora_profiles_path],
+      ["接続", "service_connections", service_connections_path]
     ]
   end
 

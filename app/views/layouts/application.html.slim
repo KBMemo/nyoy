@@ -27,6 +27,7 @@ html lang="ja"
           = link_to "画像生成", image_generations_path, class: kb_chrome_link_class("image_generations")
           = link_to "Img2Img", img2img_generations_path, class: kb_chrome_link_class("img2img_generations")
           = link_to "画像理解", new_image_understanding_path, class: kb_chrome_link_class("image_understandings")
+          = link_to "チャット", chats_path, class: kb_chrome_link_class("chats")
           = render "shared/settings_nav"
     main#main-content.mx-auto.w-full.px-4.py-8 tabindex="-1" class=content_max_width_class
       = yield

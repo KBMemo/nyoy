@@ -8,8 +8,8 @@ class EmbeddingClient
   class Error < StandardError; end
 
   def initialize(
-    base_url: Rails.application.config.x.nyoy.embeddings_url,
-    model: Rails.application.config.x.nyoy.embeddings_model
+    base_url: NyoyConnectionStore.url(:embeddings),
+    model: NyoyConnectionStore.server_model(:embeddings)
   )
     @base_url = base_url.sub(%r{/\z}, "")
     @model = model

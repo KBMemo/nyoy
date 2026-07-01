@@ -1,0 +1,23 @@
+<%= turbo_stream_from "chat_#{@chat.id}" %>
+
+<% content_for :title, "チャット ##{@chat.id}" %>
+
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="<%= kb_page_title %>">チャット</h1>
+    <p class="mt-1 text-sm kb-text-secondary">
+      モデル: <strong><%= @chat.model&.name || default_model_display_name %></strong>
+    </p>
+  </div>
+  <%= link_to "一覧へ", chats_path, class: "kb-chrome-link text-sm" %>
+</div>
+
+<div id="messages" class="nyoy-chat-messages space-y-3">
+  <% @chat.messages.where.not(id: nil).each do |message| %>
+    <%= render message %>
+  <% end %>
+</div>
+
+<div class="kb-card p-4 mt-6">
+  <%= render "messages/form", chat: @chat, message: @message %>
+</div>

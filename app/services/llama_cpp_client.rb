@@ -8,8 +8,8 @@ class LlamaCppClient
   class Error < StandardError; end
 
   def initialize(
-    base_url: Rails.application.config.x.nyoy.llama_cpp_url,
-    model: Rails.application.config.x.nyoy.llama_model
+    base_url: NyoyConnectionStore.url(:llama_cpp),
+    model: NyoyConnectionStore.server_model(:llama_cpp)
   )
     @base_url = base_url.sub(%r{/\z}, "")
     @model = model

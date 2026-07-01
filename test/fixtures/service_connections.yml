@@ -1,0 +1,45 @@
+llama_cpp:
+  key: llama_cpp
+  name: Gemma Vision
+  base_url: http://balvenie:10010
+  server_model: gemma-4-12b-it-vision-mtp
+  enabled: true
+  sort_order: 0
+
+gpt_oss:
+  key: gpt_oss
+  name: GPT-OSS
+  base_url: http://balvenie:10010
+  server_model: gpt-oss
+  enabled: true
+  sort_order: 1
+
+vision_llama:
+  key: vision_llama
+  name: Qwen2.5-VL
+  base_url: http://balvenie:10021
+  server_model: qwen2.5-vl-3b
+  enabled: true
+  sort_order: 2
+
+embeddings:
+  key: embeddings
+  name: bge-m3
+  base_url: http://balvenie:10020
+  server_model: groonga/bge-m3-Q4_K_M-GGUF
+  enabled: true
+  sort_order: 3
+
+sd_cpp:
+  key: sd_cpp
+  name: sd.cpp
+  base_url: http://balvenie:11234
+  enabled: true
+  sort_order: 4
+
+sd_switchd:
+  key: sd_switchd
+  name: sd.cpp switchd
+  base_url: http://balvenie:11334
+  enabled: true
+  sort_order: 5

@@ -1,0 +1,57 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: service_connection, class: "space-y-4 max-w-3xl" do |form|
+  - if service_connection.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - service_connection.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :key, "key（内部識別子）", class: "#{kb_label} mb-1"
+    - if service_connection.persisted?
+      p.nyoy-monospace.text-sm.kb-text-secondary = service_connection.key
+      p.mt-1.text-sm.kb-text-muted 組み込み接続の key は変更できません。
+    - else
+      - available_keys = @available_keys || ServiceConnection.available_keys
+      - if available_keys.any?
+        = form.select :key, available_keys.map { |key| [ServiceConnection::KEY_LABELS.fetch(key, key), key] }, { prompt: "選択してください" }, required: true, class: kb_field_input_classes
+      - else
+        p.text-sm.kb-text-muted 登録可能な key がありません。
+
+  div
+    = form.label :name, "表示名", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes
+
+  div
+    = form.label :base_url, "URL", class: "#{kb_label} mb-1"
+    = form.url_field :base_url, required: true, class: kb_field_input_classes, placeholder: "http://balvenie:10010"
+
+  div
+    = form.label :server_model, "モデル名（任意）", class: "#{kb_label} mb-1"
+    = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias"
+    p.mt-1.text-sm.kb-text-muted llama-server / 埋め込み API で使うモデル名。sd.cpp では不要です。
+
+  div
+    = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
+    = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
+    p.mt-1.text-sm.kb-text-muted sd.cpp switchd の認証トークンなど。空欄のままなら環境変数を参照します。
+
+  div
+    = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+    = form.text_area :notes, rows: 3, class: kb_field_input_classes
+
+  .flex.flex-wrap.items-center.gap-4
+    div
+      = form.label :sort_order, "表示順", class: "#{kb_label} mb-1"
+      = form.number_field :sort_order, min: 0, step: 1, class: kb_field_input_classes
+    label.flex.items-center.gap-2.text-sm
+      = form.check_box :enabled, class: "kb-control-accent"
+      span 有効
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(service_connection.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", service_connection.persisted? ? service_connection_path(service_connection) : service_connections_path, class: "kb-chrome-link text-sm"

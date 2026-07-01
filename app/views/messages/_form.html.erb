@@ -1,0 +1,20 @@
+<%= form_with(model: message, url: [@chat, message], id: "new_message", class: "space-y-4") do |form| %>
+  <% if message.errors.any? %>
+    <div class="kb-alert kb-alert-danger">
+      <ul class="list-disc pl-5">
+        <% message.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :content, "メッセージ", class: "#{kb_label} mb-1" %>
+    <%= form.text_area :content, rows: 3, required: true, class: kb_field_input_classes, placeholder: "メッセージを入力...", autofocus: true %>
+  </div>
+
+  <div>
+    <%= form.submit "送信", class: kb_btn_primary_sm %>
+  </div>
+<% end %>

@@ -1,0 +1,33 @@
+- content_for :title, @service_connection.name
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title = @service_connection.name
+  .flex.flex-wrap.items-center.gap-3
+    = button_to "疎通確認", probe_service_connection_path(@service_connection), method: :post, class: kb_btn_secondary_sm
+    = link_to "編集", edit_service_connection_path(@service_connection), class: kb_btn_secondary_sm
+
+.kb-card.p-4.space-y-4
+  dl.grid.gap-2.text-sm class="sm:grid-cols-[auto_1fr]"
+    dt.font-medium.kb-text-secondary 種別
+    dd = @service_connection.key_label
+    dt.font-medium.kb-text-secondary key
+    dd.nyoy-monospace = @service_connection.key
+    dt.font-medium.kb-text-secondary URL
+    dd.nyoy-monospace = @service_connection.base_url
+    - if @service_connection.server_model.present?
+      dt.font-medium.kb-text-secondary モデル
+      dd.nyoy-monospace = @service_connection.server_model
+    - if @service_connection.api_token.present?
+      dt.font-medium.kb-text-secondary API トークン
+      dd.nyoy-monospace ••••••••
+    dt.font-medium.kb-text-secondary 状態
+    dd = @service_connection.enabled? ? "有効" : "無効"
+    dt.font-medium.kb-text-secondary 表示順
+    dd = @service_connection.sort_order
+  - if @service_connection.notes.present?
+    div
+      h2 class=kb_section_title メモ
+      p.mt-2.text-sm.kb-text-secondary.whitespace-pre-wrap = @service_connection.notes
+
+.mt-4
+  = link_to "一覧へ戻る", service_connections_path, class: "kb-chrome-link text-sm"

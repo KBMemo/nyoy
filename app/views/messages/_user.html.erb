@@ -1,0 +1,6 @@
+<% user ||= local_assigns[:message] %>
+<div id="message_<%= user.id %>" class="nyoy-chat-message nyoy-chat-message-user">
+  <div class="nyoy-chat-message-role">あなた</div>
+  <div id="message_<%= user.id %>_content" class="nyoy-chat-message-content"><%= user.content %></div>
+  <div class="nyoy-chat-message-meta"><%= l(user.created_at, format: :short) if user.created_at %></div>
+</div>

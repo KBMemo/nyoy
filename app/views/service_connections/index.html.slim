@@ -1,0 +1,37 @@
+- content_for :title, "接続"
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title 接続
+  - if ServiceConnection.available_keys.any?
+    = link_to "新規登録", new_service_connection_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary llama-server・sd.cpp・埋め込み API などの接続先を管理します。未登録時は環境変数の値が使われます。
+
+- if @service_connections.any?
+  section.nyoy-card-list.mt-4
+    - @service_connections.each do |connection|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to connection.name, connection, class: "kb-text-primary no-underline"
+          .flex.flex-wrap.items-center.gap-2
+            span.kb-badge.kb-badge-muted = connection.key_label
+            - unless connection.enabled?
+              span.kb-badge.kb-badge-muted 無効
+        dl.mt-3.grid.gap-1.text-sm.kb-text-secondary class="sm:grid-cols-[auto_1fr]"
+          dt.font-medium key
+          dd.nyoy-monospace = connection.key
+          dt.font-medium URL
+          dd.nyoy-monospace = connection.base_url
+          - if connection.server_model.present?
+            dt.font-medium モデル
+            dd.nyoy-monospace = connection.server_model
+        - if connection.notes.present?
+          p.mt-2.text-sm.kb-text-secondary = truncate(connection.notes, length: 120)
+        .mt-3.flex.flex-wrap.items-center.gap-3
+          = button_to "疎通確認", probe_service_connection_path(connection), method: :post, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"
+          = link_to "編集", edit_service_connection_path(connection), class: "kb-chrome-link text-sm"
+          - unless connection.builtin?
+            = button_to "削除", connection, method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { class: "inline", data: { turbo_confirm: "この接続を削除しますか？" } }
+- else
+  p.mt-4.text-sm.kb-text-muted 接続が未登録です。seed を実行するか、新規登録してください。

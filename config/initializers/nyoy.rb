@@ -3,12 +3,14 @@
 Rails.application.config.x.nyoy = ActiveSupport::OrderedOptions.new
 Rails.application.config.x.nyoy.tap do |config|
   config.llama_cpp_url = ENV.fetch("LLAMA_CPP_URL", "http://balvenie:10010")
+  config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-12b-it-vision-mtp")
+  config.gpt_oss_llama_cpp_url = ENV["GPT_OSS_LLAMA_CPP_URL"]
+  config.gpt_oss_model = ENV.fetch("GPT_OSS_MODEL", "gpt-oss")
   config.vision_llama_cpp_url = ENV.fetch("VISION_LLAMA_CPP_URL", "http://balvenie:10021")
   config.vision_llama_model = ENV.fetch("VISION_LLAMA_MODEL", "qwen2.5-vl-3b")
   config.sd_cpp_url = ENV.fetch("SDCPP_SERVER_URL", "http://balvenie:11234")
   config.sd_cpp_switchd_url = ENV.fetch("SDCPP_SWITCHD_URL", "http://balvenie:11334")
   config.sd_cpp_switchd_token = ENV["SDCPP_SWITCHD_TOKEN"]
-  config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-12b-it-vision-mtp")
   config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://balvenie:10020")
   config.embeddings_model = ENV.fetch("EMBEDDINGS_MODEL", "groonga/bge-m3-Q4_K_M-GGUF")
   config.embedding_dimensions = ENV.fetch("EMBEDDING_DIMENSIONS", 1024).to_i

@@ -8,8 +8,8 @@ class SdCppSwitchClient
   class Error < StandardError; end
 
   def initialize(
-    base_url: Rails.application.config.x.nyoy.sd_cpp_switchd_url,
-    token: Rails.application.config.x.nyoy.sd_cpp_switchd_token
+    base_url: NyoyConnectionStore.url(:sd_switchd),
+    token: NyoyConnectionStore.api_token(:sd_switchd)
   )
     @base_url = base_url.sub(%r{/\z}, "")
     @token = token

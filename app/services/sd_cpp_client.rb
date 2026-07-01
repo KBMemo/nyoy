@@ -8,7 +8,7 @@ require "uri"
 class SdCppClient
   class Error < StandardError; end
 
-  def initialize(base_url: Rails.application.config.x.nyoy.sd_cpp_url)
+  def initialize(base_url: NyoyConnectionStore.url(:sd_cpp))
     @base_url = base_url.sub(%r{/\z}, "")
   end
 
