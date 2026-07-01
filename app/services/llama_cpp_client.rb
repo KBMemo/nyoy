@@ -33,23 +33,42 @@ class LlamaCppClient
 
   def self.message_text(response)
     message = response.dig("choices", 0, "message") || {}
+    choice = response.dig("choices", 0) || {}
 
-    json_text = [message["content"], message["reasoning_content"]]
+    content = normalize_message_content(message["content"])
+    reasoning = normalize_message_content(message["reasoning_content"])
+    legacy = choice["text"].to_s.strip
+
+    json_text = [content, reasoning]
       .filter_map { |part| extract_json_text(part) }
       .max_by { |candidate| candidate[:score] }
       &.dig(:text)
     return json_text if json_text.present?
 
-    content = message["content"].to_s.strip
     return content if content.present?
+    return legacy if legacy.present?
 
-    reasoning = message["reasoning_content"].to_s.strip
     return "" if reasoning.blank?
 
     json_text = LlamaJsonParser.normalize(reasoning)
     return json_text if json_text.present?
 
     extract_text_from_reasoning(reasoning)
+  end
+
+  def self.normalize_message_content(content)
+    case content
+    when Array
+      content.filter_map do |part|
+        next unless part.is_a?(Hash)
+
+        part["text"].presence || part["content"].presence
+      end.join("\n").strip
+    when String
+      content.strip
+    else
+      content.to_s.strip
+    end
   end
 
   def self.extract_json_text(source)

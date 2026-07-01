@@ -3,6 +3,8 @@
 Rails.application.config.x.nyoy = ActiveSupport::OrderedOptions.new
 Rails.application.config.x.nyoy.tap do |config|
   config.llama_cpp_url = ENV.fetch("LLAMA_CPP_URL", "http://balvenie:10010")
+  config.vision_llama_cpp_url = ENV.fetch("VISION_LLAMA_CPP_URL", "http://balvenie:10021")
+  config.vision_llama_model = ENV.fetch("VISION_LLAMA_MODEL", "qwen2.5-vl-3b")
   config.sd_cpp_url = ENV.fetch("SDCPP_SERVER_URL", "http://balvenie:11234")
   config.sd_cpp_switchd_url = ENV.fetch("SDCPP_SWITCHD_URL", "http://balvenie:11334")
   config.sd_cpp_switchd_token = ENV["SDCPP_SWITCHD_TOKEN"]

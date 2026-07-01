@@ -28,6 +28,7 @@ Rails.application.routes.draw do
       post :translate_prompt
     end
   end
+  resources :image_understandings, only: %i[new create]
 
   post "sd_prompt_token_count", to: "sd_prompt_tokens#create", as: :sd_prompt_token_count
 

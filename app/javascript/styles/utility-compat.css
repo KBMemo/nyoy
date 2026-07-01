@@ -165,6 +165,7 @@
 .truncate { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .break-words { overflow-wrap: break-word; }
 .whitespace-nowrap { white-space: nowrap; }
+.whitespace-pre-wrap { white-space: pre-wrap; overflow-wrap: break-word; }
 .underline { text-decoration-line: underline; }
 .no-underline { text-decoration: none; }
 .underline-offset-2 { text-underline-offset: 0.125em; }

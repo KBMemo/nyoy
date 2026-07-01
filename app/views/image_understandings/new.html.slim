@@ -1,0 +1,32 @@
+- content_for :title, "画像理解"
+
+.mb-6
+  h1 class=kb_page_title 画像理解
+  p.mt-1.text-sm.kb-text-secondary 画像をアップロードし、質問や指示を入力すると Qwen2.5-VL で解析します。
+
+- if @result.present?
+  .kb-card.p-4.mb-6#vision-result
+    h2 class=kb_section_title 結果
+    p.mt-4.text-sm.kb-text-primary.break-words = @result
+
+= form_with url: image_understandings_path, method: :post, class: "space-y-4", html: { multipart: true }, data: { controller: "source-image-preview vision-form", turbo: false } do
+  .kb-card.p-4 data-source-image-preview-target="display" hidden=@image_data_url.blank?
+    h2 class=kb_section_title 画像
+    figure.mt-3
+      - if @image_data_url.present?
+        img.nyoy-source-preview src=@image_data_url alt="アップロード画像" data-source-image-preview-target="image"
+      - else
+        img.nyoy-source-preview data-source-image-preview-target="image" alt="アップロード画像" hidden=true
+    p.mt-2.text-sm.kb-text-muted data-source-image-preview-target="hint" hidden=@image_data_url.present? プレビューは画像選択後に表示されます。
+
+  div
+    label for="image" class="#{kb_label} mb-1" 画像ファイル
+    input#image type="file" name="image" accept="image/png,image/jpeg,image/webp" required=!@result.present? class=kb_field_input_classes data-action="change->source-image-preview#preview"
+
+  div
+    label for="prompt" class="#{kb_label} mb-1" プロンプト
+    textarea#prompt name="prompt" rows=4 required=true class=kb_field_input_classes placeholder="例: この画像に写っているものを日本語で説明してください" = @prompt
+
+  .flex.flex-wrap.items-center.gap-3
+    button type="submit" class=kb_btn_primary_sm data-vision-form-target="submit" 解析する
+    p.text-sm.kb-text-muted.hidden data-vision-form-target="status" 解析中です。しばらくお待ちください…

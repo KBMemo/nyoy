@@ -54,4 +54,20 @@ class LlamaCppClientTest < ActiveSupport::TestCase
     assert_equal "square", parsed["aspect_ratio"]
     assert_equal "photorealistic, 3d", parsed["negative_extra"]
   end
+
+  test "extracts text from array content" do
+    response = {
+      "choices" => [
+        {
+          "message" => {
+            "content" => [
+              { "type" => "text", "text" => "猫が写っています" }
+            ]
+          }
+        }
+      ]
+    }
+
+    assert_equal "猫が写っています", LlamaCppClient.message_text(response)
+  end
 end
