@@ -3,7 +3,7 @@
 .mb-6.flex.flex-wrap.items-center.justify-between.gap-3
   h1 class=kb_page_title = @service_connection.name
   .flex.flex-wrap.items-center.gap-3
-    = button_to "疎通確認", probe_service_connection_path(@service_connection), method: :post, class: kb_btn_secondary_sm
+    = button_to "モデル取得", refresh_models_service_connection_path(@service_connection), method: :post, class: kb_btn_secondary_sm
     = link_to "編集", edit_service_connection_path(@service_connection), class: kb_btn_secondary_sm
 
 .kb-card.p-4.space-y-4
@@ -17,6 +17,9 @@
     - if @service_connection.server_model.present?
       dt.font-medium.kb-text-secondary モデル
       dd.nyoy-monospace = @service_connection.server_model
+    - else
+      dt.font-medium.kb-text-secondary モデル
+      dd.kb-text-muted 未設定（「モデル取得」で接続先 API から取得できます）
     - if @service_connection.api_token.present?
       dt.font-medium.kb-text-secondary API トークン
       dd.nyoy-monospace ••••••••

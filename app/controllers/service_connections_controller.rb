@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ServiceConnectionsController < ApplicationController
-  before_action :set_service_connection, only: %i[show edit update destroy probe]
+  before_action :set_service_connection, only: %i[show edit update destroy refresh_models]
 
   def index
     @service_connections = ServiceConnection.ordered
@@ -30,12 +30,14 @@ class ServiceConnectionsController < ApplicationController
   end
 
   def edit
+    load_model_options
   end
 
   def update
     if @service_connection.update(service_connection_params)
       redirect_to @service_connection, notice: "接続を更新しました。"
     else
+      load_model_options
       render :edit, status: :unprocessable_entity
     end
   end
@@ -48,14 +50,14 @@ class ServiceConnectionsController < ApplicationController
     end
   end
 
-  def probe
-    result = ServiceConnectionProbe.new(@service_connection).call
-    message = format_probe_message(result)
+  def refresh_models
+    result = ServiceConnectionModelFetcher.new(@service_connection).call
 
     if result.ok
-      redirect_to @service_connection, notice: message
+      sync_server_model!(result.models)
+      redirect_to @service_connection, notice: result.message
     else
-      redirect_to @service_connection, alert: message
+      redirect_to @service_connection, alert: result.message
     end
   end
 
@@ -81,8 +83,16 @@ class ServiceConnectionsController < ApplicationController
     permitted
   end
 
-  def format_probe_message(result)
-    prefix = result.ok ? "疎通確認 OK" : "疎通確認 NG"
-    "#{prefix}（#{result.latency_ms}ms）: #{result.message}"
+  def load_model_options
+    result = ServiceConnectionModelFetcher.new(@service_connection).call
+    @model_options = result.models if result.ok
+    @model_options_error = result.message unless result.ok
+  end
+
+  def sync_server_model!(models)
+    return if models.blank?
+    return if @service_connection.server_model.present? && models.include?(@service_connection.server_model)
+
+    @service_connection.update!(server_model: models.first)
   end
 end

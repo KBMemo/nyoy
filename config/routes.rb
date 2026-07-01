@@ -21,7 +21,7 @@ Rails.application.routes.draw do
   resources :prompt_knowledge_chunks
   resources :service_connections do
     member do
-      post :probe
+      post :refresh_models
     end
   end
   resources :sd_model_profiles

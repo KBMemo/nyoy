@@ -29,7 +29,7 @@ p.text-sm.kb-text-secondary llama-server・sd.cpp・埋め込み API などの�
         - if connection.notes.present?
           p.mt-2.text-sm.kb-text-secondary = truncate(connection.notes, length: 120)
         .mt-3.flex.flex-wrap.items-center.gap-3
-          = button_to "疎通確認", probe_service_connection_path(connection), method: :post, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"
+          = button_to "モデル取得", refresh_models_service_connection_path(connection), method: :post, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"
           = link_to "編集", edit_service_connection_path(connection), class: "kb-chrome-link text-sm"
           - unless connection.builtin?
             = button_to "削除", connection, method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { class: "inline", data: { turbo_confirm: "この接続を削除しますか？" } }

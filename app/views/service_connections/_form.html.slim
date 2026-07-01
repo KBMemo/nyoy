@@ -32,8 +32,18 @@
 
   div
     = form.label :server_model, "モデル名（任意）", class: "#{kb_label} mb-1"
-    = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias"
-    p.mt-1.text-sm.kb-text-muted llama-server / 埋め込み API で使うモデル名。sd.cpp では不要です。
+    - model_options = Array(@model_options)
+    - if model_options.any?
+      - choices = model_options.map { |model| [model, model] }
+      - if service_connection.server_model.present? && !model_options.include?(service_connection.server_model)
+        - choices.unshift(["#{service_connection.server_model}（現在の設定）", service_connection.server_model])
+      = form.select :server_model, choices, { include_blank: "選択しない" }, class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted 接続先 API から取得したモデル候補です。
+    - else
+      = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias"
+      p.mt-1.text-sm.kb-text-muted llama-server / 埋め込み API で使うモデル名。編集時に接続先 API から候補を取得できない場合は手入力します。
+    - if @model_options_error.present?
+      p.mt-1.text-sm.kb-text-muted = "モデル候補を取得できませんでした: #{@model_options_error}"
 
   div
     = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
