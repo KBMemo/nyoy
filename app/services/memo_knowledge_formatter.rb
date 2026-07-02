@@ -15,7 +15,7 @@ class MemoKnowledgeFormatter
 
     lines = [PREAMBLE]
     chunks.each do |chunk|
-      entry = chunk.to_memo_rag_context
+      entry = entry_for(chunk)
       candidate = lines.join("\n\n") + "\n\n" + entry
       break if candidate.length > @max_chars && lines.length > 1
 
@@ -25,5 +25,22 @@ class MemoKnowledgeFormatter
 
     text = lines.join("\n\n")
     text.length > @max_chars ? text[0, @max_chars] : text
+  end
+
+  private
+
+  def entry_for(chunk)
+    if chunk.is_a?(MemoKnowledgeChunkCompressor::CompressedChunk)
+      format_compressed(chunk)
+    else
+      chunk.to_memo_rag_context
+    end
+  end
+
+  def format_compressed(chunk)
+    uid = chunk.metadata["memo_uid"] || chunk.metadata[:memo_uid]
+    lines = ["[memo:#{uid}] #{chunk.title}"]
+    lines << chunk.body
+    lines.join("\n")
   end
 end

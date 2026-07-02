@@ -29,9 +29,18 @@ Rails.application.config.x.nyoy.tap do |config|
   config.chat_context_turns = ENV.fetch("CHAT_CONTEXT_TURNS", 10).to_i
   config.memo_rag_enabled = ENV.fetch("MEMO_RAG_ENABLED", "true") == "true"
   config.memo_rag_top_k = ENV.fetch("MEMO_RAG_TOP_K", 5).to_i
+  config.memo_rag_top_k_simple = ENV.fetch("MEMO_RAG_TOP_K_SIMPLE", 3).to_i
+  config.memo_rag_top_k_normal = ENV.fetch("MEMO_RAG_TOP_K_NORMAL", 5).to_i
+  config.memo_rag_top_k_complex = ENV.fetch("MEMO_RAG_TOP_K_COMPLEX", 10).to_i
   config.memo_rag_max_chars = ENV.fetch("MEMO_RAG_MAX_CHARS", 12_000).to_i
+  config.memo_rag_chunk_max_output_chars = ENV.fetch("MEMO_RAG_CHUNK_MAX_OUTPUT_CHARS", 800).to_i
+  config.memo_rag_llm_compress = ENV.fetch("MEMO_RAG_LLM_COMPRESS", "false") == "true"
   config.memo_chunk_max_chars = ENV.fetch("MEMO_CHUNK_MAX_CHARS", 1500).to_i
   config.memo_ingest_page_limit = ENV.fetch("MEMO_INGEST_PAGE_LIMIT", 100).to_i
+  config.chat_summary_enabled = ENV.fetch("CHAT_SUMMARY_ENABLED", "true") == "true"
+  config.chat_summary_max_chars = ENV.fetch("CHAT_SUMMARY_MAX_CHARS", 1200).to_i
+  config.chat_summary_llm = ENV.fetch("CHAT_SUMMARY_LLM", "false") == "true"
+  config.chat_context_token_warn_ratio = ENV.fetch("CHAT_CONTEXT_TOKEN_WARN_RATIO", 0.75).to_f
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }

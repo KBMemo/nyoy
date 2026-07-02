@@ -22,7 +22,9 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     @chat.messages.create!(role: :assistant, content: "new answer")
 
     original_apply = ChatTools::Registry.method(:apply!)
+    original_rag = ChatMemoRagInjector.method(:apply!)
     ChatTools::Registry.define_singleton_method(:apply!) { |chat| chat }
+    ChatMemoRagInjector.define_singleton_method(:apply!) { |chat, **| chat }
     llm = @chat.to_llm
     contents = llm.messages.map(&:content)
 
@@ -31,7 +33,9 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     assert_includes contents, "system note"
     assert_includes contents, "new question"
     assert_includes contents, "new answer"
+    assert llm.messages.any? { |message| message.role == :system && message.content.to_s.include?("以前の会話の要約") }
   ensure
     ChatTools::Registry.define_singleton_method(:apply!, original_apply) if defined?(original_apply)
+    ChatMemoRagInjector.define_singleton_method(:apply!, original_rag) if defined?(original_rag)
   end
 end

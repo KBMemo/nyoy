@@ -19,22 +19,26 @@ class Chat < ApplicationRecord
     )
     @chat.reset_messages!
 
-    limited_messages = ChatContextLimiter.trim(
-      messages_association.to_a,
-      max_turns: Rails.application.config.x.nyoy.chat_context_turns
-    )
-    order_messages_for_llm(limited_messages).each do |message|
+    context = ChatContextBuilder.build(self)
+    order_messages_for_llm(context.messages).each do |message|
       @chat.add_message(message.to_llm)
     end
     reapply_runtime_instructions(@chat)
+    inject_conversation_summary!(@chat, context.summary)
     setup_persistence_callbacks
 
-    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(limited_messages))
+    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages))
     ChatTools::Registry.apply!(@chat)
     @chat
   end
 
   private
+
+  def inject_conversation_summary!(llm_chat, summary)
+    return if summary.blank?
+
+    llm_chat.with_instructions("以前の会話の要約:\n#{summary}", append: true)
+  end
 
   def latest_user_query(messages)
     messages.reverse_each do |message|

@@ -27,6 +27,14 @@ class MemoKnowledgeRetrieverTest < ActiveSupport::TestCase
     assert_includes results.first.body, "清水寺"
   end
 
+  test "uses higher top_k for complex queries" do
+    analysis = MemoRagQueryAnalyzer.analyze("比較してまとめて")
+    assert_equal 10, analysis.top_k
+
+    results = MemoKnowledgeRetriever.new(limit: analysis.top_k).retrieve("比較してまとめて")
+    assert results.size <= 10
+  end
+
   test "merges keyword hits from tsurezure client" do
     client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
     client.define_singleton_method(:configured?) { true }

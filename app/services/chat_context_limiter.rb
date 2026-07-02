@@ -22,6 +22,6 @@ module ChatContextLimiter
       grouped.last << message
     end
   end
+
   module_function :turns
-  private_class_method :turns
 end

@@ -7,8 +7,14 @@
     <h1 class="<%= kb_page_title %>">チャット</h1>
     <p class="mt-1 text-sm kb-text-secondary">
       モデル: <strong><%= @chat.model&.name || default_model_display_name %></strong>
+      <% stats = chat_context_stats(@chat) %>
       <% if chat_context_turn_limit.positive? %>
-        <span class="kb-text-muted">（直近 <%= chat_context_turn_limit %> ターンを送信）</span>
+        <span class="kb-text-muted">（直近 <%= chat_context_turn_limit %> ターンを送信<% if stats.summarized_turns.positive? %>、<%= stats.summarized_turns %> ターン要約<% end %>）</span>
+      <% end %>
+      <% if stats.warning %>
+        <span class="text-amber-600 dark:text-amber-400"> — 推定 <%= number_with_delimiter(stats.estimated_tokens) %> / <%= number_with_delimiter(stats.context_window) %> tokens（<%= number_to_percentage(stats.ratio * 100, precision: 0) %>）</span>
+      <% else %>
+        <span class="kb-text-muted"> — 推定 <%= number_with_delimiter(stats.estimated_tokens) %> tokens</span>
       <% end %>
     </p>
   </div>

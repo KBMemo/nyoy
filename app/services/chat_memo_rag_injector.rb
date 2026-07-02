@@ -6,8 +6,10 @@ class ChatMemoRagInjector
       return llm_chat unless enabled?
       return llm_chat if query.blank?
 
-      chunks = MemoKnowledgeRetriever.new.retrieve(query)
-      context = MemoKnowledgeFormatter.new.format(chunks)
+      analysis = MemoRagQueryAnalyzer.analyze(query)
+      chunks = MemoKnowledgeRetriever.new(limit: analysis.top_k).retrieve(query, keywords: analysis.keywords)
+      compressed = MemoKnowledgeChunkCompressor.new.compress(chunks, query: query)
+      context = MemoKnowledgeFormatter.new.format(compressed)
       return llm_chat if context.blank?
 
       llm_chat.with_instructions(context, append: true)
