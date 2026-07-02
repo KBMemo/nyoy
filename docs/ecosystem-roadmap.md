@@ -259,6 +259,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 
 ### 徒然（site）側
 
+- API 書込 `body_format: markdown` → AsciiDoc 変換（Pandoc、**未実装**）
 - Groonga 全文検索（`GET /memos?q=` の内部実装差し替え）
 - `export/deletions` エンドポイント
 

@@ -64,11 +64,11 @@ class TsurezureClientTest < ActiveSupport::TestCase
       TsurezureClientTest.fake_http_response(201, { uid: "01J8X2K3M4N5P6Q7R8S9T0UVWX", title: "t", body: "b" }.to_json)
     end
 
-    client.create_memo(title: "タイトル", body: "== 見出し\n\n本文")
+    client.create_memo(title: "タイトル", body: "## 見出し\n\n本文")
 
     assert_equal "/api/v1/memos", captured[:path]
     assert_equal "タイトル", captured[:body]["title"]
-    assert_equal "== 見出し\n\n本文", captured[:body]["body"]
+    assert_equal "## 見出し\n\n本文", captured[:body]["body"]
     assert captured[:body]["commit"]
   end
 

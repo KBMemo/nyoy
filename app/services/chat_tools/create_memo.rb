@@ -2,13 +2,13 @@
 
 module ChatTools
   class CreateMemo < RubyLLM::Tool
-    description "会話の内容を徒然に新規メモとして保存する。ユーザーが明示的に保存を求めたときのみ使う。本文は AsciiDoc。"
+    description "会話の内容を徒然に新規メモとして保存する。ユーザーが明示的に保存を求めたときのみ使う。本文は Markdown。"
 
     def name
       "create_memo"
     end
 
-    param :body, desc: "メモ本文（AsciiDoc）", required: true
+    param :body, desc: "メモ本文（Markdown）", required: true
     param :title, desc: "タイトル（省略時は徒然側で自動生成）", required: false
     param :tags, type: "array", desc: "タグ名の配列", required: false
 

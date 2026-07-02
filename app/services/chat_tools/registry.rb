@@ -8,7 +8,8 @@ module ChatTools
       さらに探すときは search_memos、本文が必要なときは get_memo を使ってください。
       create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
       update_memo では必ず get_memo で取得した updated_at を渡してください。
-      メモ本文は AsciiDoc 形式です。
+      create_memo / update_memo の body は Markdown で書いてください（徒然側で AsciiDoc に変換）。
+      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
     TEXT
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish

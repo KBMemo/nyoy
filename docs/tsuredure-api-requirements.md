@@ -103,7 +103,7 @@
 
 **要求:**
 
-- タイトル（自動生成可）+ 本文（**AsciiDoc** 想定）
+- タイトル（自動生成可）+ 本文（**Markdown** — 徒然側で AsciiDoc に変換して保存）
 - タグ・カテゴリ（徒然が持っていれば任意指定）
 - 作成者・作成日時の記録
 
@@ -119,8 +119,8 @@
 
 **要求:**
 
-- 単一メモの全文取得
-- 部分更新（append / replace section）または全文 replace
+- 単一メモの全文取得（**AsciiDoc** — 正本のまま返す）
+- 部分更新（append / replace）— 追記・置換 payload は **Markdown**（徒然側で AsciiDoc に変換）
 - **楽観的ロック**（更新競合検知）— 徒然 UI と同時編集があり得る
 - 更新前の `updated_at` による競合チェック（`lock_version` 未実装のため）
 
@@ -168,8 +168,44 @@
 | 認証 | Bearer トークン（API キン） |
 | エラー形式 | `{ "error": { "code": "...", "message": "..." } }` |
 | 日時 | ISO 8601 UTC |
-| 本文形式 | **AsciiDoc**（徒然の `memos.body` に準拠） |
+| 本文（保存） | **AsciiDoc**（`memos.body` 正本） |
+| 本文（API 書込） | **Markdown**（`body_format: markdown` — 徒然側で AsciiDoc 変換） |
+| 本文（API 読取） | **AsciiDoc**（`body_format: asciidoc`）。将来 Markdown 変換は徒然側オプション |
 | 安定 ID | **ULID**（`uid` 列、26 桁）。数値 `id` も併用可 |
+
+### 3.1.1 本文フォーマット方針（2026-07 決定）
+
+AI 連携（Chat / 将来 MCP）は出力が **Markdown** 中心のため、書き込みと読み取りで役割を分ける。
+
+| 方向 | フォーマット | 理由 |
+|------|-------------|------|
+| **如意 → 徒然**（`POST` / `PATCH` の `body`, `append_body`） | Markdown | LLM・Chat の自然な出力。如意側で AsciiDoc を生成させない |
+| **徒然 → 如意**（`GET`, `export`） | AsciiDoc（当面） | DB 正本そのまま。テキストとして LLM は読める |
+| **徒然 → 如意**（将来オプション） | Markdown | 徒然側で Pandoc 変換して返す。如意は変換しない |
+
+**徒然側実装（site Workspace）:**
+
+1. リクエストに `body_format: "markdown"`（省略時は従来どおり AsciiDoc として解釈 — 後方互換）
+2. `PandocRunner`（既存 clip 用 HTML 変換と同系）で Markdown → AsciiDoc
+3. 変換後の AsciiDoc を `memos.body` に保存し Git コミット
+4. レスポンスの `body_format` は常に `"asciidoc"`（正本を示す）
+
+**如意側:**
+
+- `create_memo` / `update_memo` は Markdown を生成
+- `TsurezureClient` は `body_format: "markdown"` を付与（**徒然側変換デプロイと同時**に有効化）
+- `get_memo` / RAG export は AsciiDoc のまま利用
+
+**Markdown 読取を将来足す場合の条件:**
+
+- LLM が AsciiDoc マクロ（`image::`, `link:`, checklist 等）を誤解するケースが増えたとき
+- 徒然 API に `Accept` または `?body_format=markdown` を追加し、**徒然側**で AsciiDoc → Markdown 変換
+- 如意側は変換ロジックを持たない（正本は AsciiDoc のまま）
+
+**注意:**
+
+- Markdown → AsciiDoc は Pandoc 経由のため、徒然固有マクロの完全な逆変換は保証しない（AI 生成メモが主対象）
+- `append_body` も Markdown 片を変換してから AsciiDoc 末尾に連結
 
 ### 3.2 認証
 
@@ -253,8 +289,8 @@ Authorization: Bearer <api_token>
 | `uid` | ✓ | **ULID**（26 桁、安定 ID。API の主キーとして推奨） |
 | `slug` | | `{stem}-{uid}` 形式。Git ファイル名にも使用 |
 | `title` | ✓ | タイトル |
-| `body` | ✓ | **AsciiDoc** ソース（プレーンテキスト） |
-| `body_format` | | 常に `asciidoc` |
+| `body` | ✓ | 本文ソース。`body_format` に応じて Markdown または AsciiDoc |
+| `body_format` | | レスポンスは常に `asciidoc`（正本）。書込時は `markdown` 可 |
 | `tags` | | タグ名の配列 |
 | `visibility` | | `public_everyone` / `group_read` / `group_read_write` / `owner_read_write` |
 | `properties` | | jsonb（`scheduled_on`, `media_album_id` 等） |
@@ -307,10 +343,13 @@ API では公開しない。作成・更新時の格納先は徒然側の既定�
 POST /memos
 {
   "title": "Chat から保存したメモ",
-  "body": "LLM が生成した本文...",
+  "body": "## 見出し\n\nLLM が生成した本文...",
+  "body_format": "markdown",
   "tags": ["ai-generated"]
 }
 ```
+
+`body_format` 省略時は `asciidoc`（従来互換）。如意 Chat からは `markdown` を送る。
 
 **レスポンス:** `201 Created` + Memo オブジェクト
 
@@ -556,6 +595,7 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` + webhook | 徒然側未実装 |
 | P3b | 徒然 Groonga 検索 | 徒然 site Workspace |
+| P3c | API 書込 Markdown → AsciiDoc 変換 | 徒然 site Workspace |
 
 ---
 
@@ -567,7 +607,7 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 4. ~~SearXNG + `fetch_url`~~ — 完了
 5. ~~メモ RAG 取込 + Chat 注入~~ — 完了（`bin/rails kbmemo:rag:ingest`）
 6. **Phase 2** — Chat への画像理解（`analyze_image`）
-7. **徒然 site** — Groonga 検索（API 契約維持）、`export/deletions`
+7. **徒然 site** — API 書込 Markdown → AsciiDoc、Groonga 検索、`export/deletions`
 8. **Phase 6** — MCP サーバー（`ChatTools::*` 再公開）
 
 ---

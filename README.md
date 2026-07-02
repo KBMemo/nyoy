@@ -19,7 +19,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 
 ### Chat（徒然・Web・RAG）
 
-- **徒然メモツール** — `search_memos` / `get_memo` / `create_memo` / `update_memo`（`kbmemo` API）
+- **徒然メモツール** — `search_memos` / `get_memo` / `create_memo` / `update_memo`（書込は Markdown → 徒然で AsciiDoc 変換、読取は AsciiDoc）
 - **Web 検索** — SearXNG 経由の `web_search`
 - **URL 取得** — `fetch_url`（SSRF 対策 + readability-js-server で本文抽出）
 - **メモ RAG** — 徒然 `export` 取込 → pgvector チャンク → 質問に関連する抜粋を Chat に自動注入

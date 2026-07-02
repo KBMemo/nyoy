@@ -520,10 +520,11 @@ components:
           type: string
         body:
           type: string
-          description: AsciiDoc ソース
+          description: 本文ソース（書込時は body_format に従う。読取時は AsciiDoc 正本）
         body_format:
           type: string
-          const: asciidoc
+          enum: [asciidoc]
+          description: レスポンスは常に asciidoc（DB 正本）
         tags:
           type: array
           items:
@@ -673,7 +674,12 @@ components:
           description: 省略時は本文先頭行から自動生成
         body:
           type: string
-          description: AsciiDoc 本文
+          description: メモ本文（body_format に従う）
+        body_format:
+          type: string
+          enum: [markdown, asciidoc]
+          default: asciidoc
+          description: markdown のとき徒然側で AsciiDoc に変換して保存。如意 Chat からは markdown を推奨
         tags:
           type: array
           items:
@@ -699,10 +705,15 @@ components:
           type: string
         body:
           type: string
-          description: 全文置換（append_body と同時指定不可）
+          description: 全文置換（append_body と同時指定不可。body_format に従う）
         append_body:
           type: string
-          description: 本文末尾へ AsciiDoc を追記
+          description: 本文末尾へ追記（body_format に従う）
+        body_format:
+          type: string
+          enum: [markdown, asciidoc]
+          default: asciidoc
+          description: body / append_body の解釈形式
         tags:
           type: array
           items:
