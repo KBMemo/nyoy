@@ -72,6 +72,26 @@ class TsurezureClientTest < ActiveSupport::TestCase
     assert captured[:body]["commit"]
   end
 
+  test "export_memos builds export query" do
+    client = TsurezureClient.new(
+      base_url: "https://kbmemo.net",
+      api_token: "kbmemo_test"
+    )
+    requested = []
+    client.define_singleton_method(:perform_request) do |uri, _req|
+      requested << uri.to_s
+      TsurezureClientTest.fake_http_response(200, { memos: [], pagination: { limit: 100, has_more: false } }.to_json)
+    end
+
+    client.export_memos(updated_since: Time.utc(2026, 7, 1, 0, 0, 0), cursor: "abc", limit: 50)
+
+    assert_equal 1, requested.size
+    assert_includes requested.first, "/api/v1/memos/export?"
+    assert_includes requested.first, "updated_since="
+    assert_includes requested.first, "cursor=abc"
+    assert_includes requested.first, "limit=50"
+  end
+
   test "raises error on api failure" do
     client = TsurezureClient.new(
       base_url: "https://kbmemo.net",

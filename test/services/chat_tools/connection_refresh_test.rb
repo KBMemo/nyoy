@@ -21,6 +21,26 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
     assert_equal "Bearer fresh_token", requested.first[1]
   end
 
+  test "readability client uses url updated in service connection" do
+    connection = service_connections(:readability)
+    connection.update!(base_url: "http://updated-readability:8030")
+    NyoyConnectionStore.clear_cache!
+
+    client = ChatTools::Registry.readability_client
+
+    assert_equal "http://updated-readability:8030", client.instance_variable_get(:@base_url)
+  end
+
+  test "url fetcher picks up updated readability connection" do
+    service_connections(:readability).update!(base_url: "http://another-readability:8030")
+    NyoyConnectionStore.clear_cache!
+
+    fetcher = ChatTools::Registry.url_fetcher
+    client = fetcher.instance_variable_get(:@readability_client)
+
+    assert_equal "http://another-readability:8030", client.instance_variable_get(:@base_url)
+  end
+
   test "service connection save clears chat tool clients" do
     called = false
     original_reset = ChatTools::Registry.method(:reset_client!)

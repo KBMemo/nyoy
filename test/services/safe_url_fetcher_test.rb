@@ -54,6 +54,77 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_not_includes result[:text], "bad()"
   end
 
+  test "uses readability when configured" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:configured?) { true }
+    fake_client.define_singleton_method(:extract) do |url|
+      {
+        "url" => url,
+        "title" => "白百合学園",
+        "textContent" => "ようこそ。学校案内です。"
+      }
+    end
+
+    fetcher = SafeUrlFetcher.new(readability_client: fake_client)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      raise "should not fetch HTML directly"
+    end
+
+    result = fetcher.fetch("https://www.shirayuri-ikehara.com/")
+
+    assert_equal "readability", result[:extractor]
+    assert_equal "白百合学園", result[:title]
+    assert_includes result[:text], "学校案内"
+  end
+
+  test "falls back to direct fetch when readability fails" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:configured?) { true }
+    fake_client.define_singleton_method(:extract) do |_url|
+      raise ReadabilityClient::Error, "upstream failed"
+    end
+
+    fetcher = SafeUrlFetcher.new(readability_client: fake_client)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><head><title>Fallback</title></head><body><p>Direct</p></body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
+    end
+
+    result = fetcher.fetch("https://example.com/page")
+
+    assert_nil result[:extractor]
+    assert_equal "Fallback", result[:title]
+    assert_includes result[:text], "Direct"
+  end
+
+  test "fetches site root without invalid markdown alternate path" do
+    calls = []
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      calls << uri.path
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><head><title>白百合学園</title></head><body><p>ようこそ</p></body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
+    end
+
+    result = fetcher.fetch("https://www.shirayuri-ikehara.com/")
+
+    assert_equal ["/"], calls
+    assert_equal "https://www.shirayuri-ikehara.com/", result[:url]
+    assert_equal 200, result[:status]
+    assert_equal "白百合学園", result[:title]
+    assert_includes result[:text], "ようこそ"
+  end
+
   test "prefers markdown alternate when available" do
     @fetcher.define_singleton_method(:perform_get) do |uri|
       if uri.path.end_with?(".md")

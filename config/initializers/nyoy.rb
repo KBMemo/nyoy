@@ -25,6 +25,13 @@ Rails.application.config.x.nyoy.tap do |config|
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
   config.searxng_url = ENV.fetch("SEARXNG_URL", "http://bowmore.artif.org:8080")
   config.searxng_api_token = ENV["SEARXNG_API_TOKEN"]
+  config.readability_url = ENV.fetch("READABILITY_URL", "http://bowmore:8030")
+  config.chat_context_turns = ENV.fetch("CHAT_CONTEXT_TURNS", 10).to_i
+  config.memo_rag_enabled = ENV.fetch("MEMO_RAG_ENABLED", "true") == "true"
+  config.memo_rag_top_k = ENV.fetch("MEMO_RAG_TOP_K", 5).to_i
+  config.memo_rag_max_chars = ENV.fetch("MEMO_RAG_MAX_CHARS", 12_000).to_i
+  config.memo_chunk_max_chars = ENV.fetch("MEMO_CHUNK_MAX_CHARS", 1500).to_i
+  config.memo_ingest_page_limit = ENV.fetch("MEMO_INGEST_PAGE_LIMIT", 100).to_i
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }

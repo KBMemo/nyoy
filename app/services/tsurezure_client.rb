@@ -78,6 +78,17 @@ class TsurezureClient
     patch_json("/memos/#{encode_ref(memo_ref)}", payload)
   end
 
+  def export_memos(updated_since: nil, include_drafts: false, fields: nil, cursor: nil, limit: 100)
+    query = compact_query(
+      updated_since: iso8601(updated_since),
+      include_drafts: include_drafts ? true : nil,
+      fields: fields,
+      cursor: cursor,
+      limit: limit
+    )
+    get_json("/memos/export#{query}")
+  end
+
   private
 
   def normalize_api_root(base_url)

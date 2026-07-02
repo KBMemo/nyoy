@@ -1,0 +1,97 @@
+# frozen_string_literal: true
+
+class MemoKnowledgeIngester
+  class Error < StandardError; end
+
+  def initialize(
+    chunker: MemoTextChunker.new,
+    client: EmbeddingClient.new,
+    dimensions: Rails.application.config.x.nyoy.embedding_dimensions
+  )
+    @chunker = chunker
+    @client = client
+    @dimensions = dimensions
+  end
+
+  def ingest!(memo)
+    uid = memo["uid"].to_s.strip
+    raise Error, "memo uid required" if uid.blank?
+
+    body = memo["body"].to_s
+    title = memo["title"].to_s.presence || "（無題）"
+    updated_at = memo["updated_at"].to_s
+    memo_id = memo["id"]
+
+    sections = @chunker.chunk(body)
+    PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", uid).delete_all
+    return 0 if sections.empty?
+
+    records = sections.each_with_index.map do |content, index|
+      build_record(
+        memo_uid: uid,
+        memo_id: memo_id,
+        title: title,
+        content: content,
+        index: index,
+        chunk_count: sections.size,
+        memo_updated_at: updated_at
+      )
+    end
+
+    vectors = batch_embed(records.map(&:embed_text))
+
+    records.each_with_index do |record, index|
+      record.skip_auto_embed = true
+      record.embedding = vectors[index]
+      record.save!
+    end
+
+    records.size
+  end
+
+  private
+
+  def build_record(memo_uid:, memo_id:, title:, content:, index:, chunk_count:, memo_updated_at:)
+    PromptKnowledgeChunk.new(
+      source: PromptKnowledgeChunk::SOURCE_MEMO,
+      kind: "memo",
+      external_id: PromptKnowledgeChunk.memo_external_id(memo_uid, index),
+      title: chunk_title(title, index, chunk_count),
+      body: content,
+      metadata: {
+        memo_uid: memo_uid,
+        memo_id: memo_id,
+        chunk_index: index,
+        chunk_count: chunk_count,
+        memo_updated_at: memo_updated_at,
+        token_count: estimate_tokens(content)
+      }
+    )
+  end
+
+  def chunk_title(title, index, chunk_count)
+    return title if chunk_count <= 1
+
+    "#{title} (#{index + 1}/#{chunk_count})"
+  end
+
+  def batch_embed(texts)
+    texts.map do |text|
+      vector = @client.embed(input: EmbeddingInput.truncate(text))
+      validate_dimensions!(vector)
+      vector
+    end
+  rescue EmbeddingClient::Error => e
+    raise Error, e.message
+  end
+
+  def validate_dimensions!(vector)
+    return if vector.length == @dimensions
+
+    raise Error, "expected #{@dimensions} dimensions, got #{vector.length}"
+  end
+
+  def estimate_tokens(text)
+    (text.to_s.length / 4.0).ceil
+  end
+end

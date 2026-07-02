@@ -58,3 +58,10 @@ searxng:
   base_url: http://bowmore.artif.org:8080
   enabled: true
   sort_order: 7
+
+readability:
+  key: readability
+  name: readability-js-server
+  base_url: http://bowmore:8030
+  enabled: true
+  sort_order: 8

@@ -13,7 +13,7 @@ class PromptKnowledgeRetriever
     return PromptKnowledgeChunk.none if text.blank?
 
     vector = @client.embed(input: text)
-    PromptKnowledgeChunk.embedded.nearest_neighbors(:embedding, vector, distance: "cosine").limit(@limit)
+    PromptKnowledgeChunk.from_prompt.embedded.nearest_neighbors(:embedding, vector, distance: "cosine").limit(@limit)
   rescue EmbeddingClient::Error
     PromptKnowledgeChunk.none
   end

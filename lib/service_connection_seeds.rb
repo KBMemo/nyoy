@@ -82,6 +82,13 @@ module ServiceConnectionSeeds
         api_token: config.searxng_api_token,
         enabled: config.searxng_url.present?,
         notes: "Chat web_search ツール用"
+      },
+      {
+        key: "readability",
+        name: "readability-js-server",
+        base_url: config.readability_url,
+        enabled: config.readability_url.present?,
+        notes: "Chat fetch_url ツール用（Mozilla Readability）"
       }
     ]
   end

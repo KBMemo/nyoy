@@ -10,6 +10,7 @@ class ServiceConnection < ApplicationRecord
     sd_switchd
     kbmemo
     searxng
+    readability
   ].freeze
 
   KEY_LABELS = {
@@ -20,7 +21,8 @@ class ServiceConnection < ApplicationRecord
     "sd_cpp" => "sd.cpp サーバー",
     "sd_switchd" => "sd.cpp switchd",
     "kbmemo" => "徒然（KBMemo API）",
-    "searxng" => "SearXNG（Web 検索）"
+    "searxng" => "SearXNG（Web 検索）",
+    "readability" => "readability-js-server（本文抽出）"
   }.freeze
 
   CHAT_KEYS = %w[llama_cpp gpt_oss].freeze

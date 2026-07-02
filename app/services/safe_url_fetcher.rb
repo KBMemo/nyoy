@@ -36,11 +36,13 @@ class SafeUrlFetcher
   def initialize(
     open_timeout: DEFAULT_OPEN_TIMEOUT,
     read_timeout: DEFAULT_READ_TIMEOUT,
-    max_body_bytes: MAX_BODY_BYTES
+    max_body_bytes: MAX_BODY_BYTES,
+    readability_client: nil
   )
     @open_timeout = open_timeout
     @read_timeout = read_timeout
     @max_body_bytes = max_body_bytes
+    @readability_client = readability_client
   end
 
   def fetch(url, max_chars: 12_000)
@@ -52,10 +54,50 @@ class SafeUrlFetcher
       return result if result[:status] == 200 && result[:text].present?
     end
 
+    readability_result = fetch_via_readability(uri, max_chars: max_chars)
+    return readability_result if readability_result
+
     fetch_response(uri, max_chars: max_chars)
   end
 
   private
+
+  def fetch_via_readability(uri, max_chars:)
+    client = @readability_client || default_readability_client
+    return nil unless client.configured?
+
+    payload = client.extract(uri.to_s)
+    text = readability_text(payload)
+    return nil if text.blank?
+
+    truncated = false
+    if text.bytesize > max_chars
+      text = text.byteslice(0, max_chars)
+      truncated = true
+    end
+
+    {
+      url: payload["url"].presence || uri.to_s,
+      status: 200,
+      title: payload["title"],
+      text: text,
+      excerpt: payload["excerpt"],
+      byline: payload["byline"],
+      site_name: payload["siteName"],
+      extractor: "readability",
+      truncated: truncated || nil
+    }.compact
+  rescue ReadabilityClient::Error
+    nil
+  end
+
+  def default_readability_client
+    @default_readability_client ||= ReadabilityClient.new
+  end
+
+  def readability_text(payload)
+    payload["textContent"].to_s.presence || markdown_to_text(payload["content"].to_s).squish.presence
+  end
 
   def fetch_response(uri, max_chars:)
     response = follow_redirects(uri)
@@ -75,8 +117,11 @@ class SafeUrlFetcher
   def markdown_alternate_uri(uri)
     return nil if uri.path.match?(/\.[a-zA-Z0-9]+\z/)
 
+    normalized_path = uri.path.to_s.chomp("/")
+    return nil if normalized_path.blank?
+
     alternate = uri.dup
-    alternate.path = "#{uri.path.chomp('/')}.md"
+    alternate.path = "#{normalized_path}.md"
     alternate
   end
 

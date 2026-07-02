@@ -2,7 +2,9 @@ class Message < ApplicationRecord
   acts_as_message
   has_many_attached :attachments
 
-  broadcasts_to ->(message) { "chat_#{message.chat_id}" }, inserts_by: :append
+  after_create_commit :broadcast_message_created
+  after_update_commit :broadcast_message_updated
+  after_destroy_commit :broadcast_message_removed
 
   def chat_error?
     role.to_s == "assistant" && content.to_s.start_with?(ChatErrorBroadcaster::ERROR_PREFIX)
@@ -18,9 +20,39 @@ class Message < ApplicationRecord
     super
   end
 
-  def broadcast_append_chunk(content)
-    broadcast_append_to "chat_#{chat_id}",
+  def broadcast_rendered_content!(text = nil)
+    broadcast_replace_to(
+      "chat_#{chat_id}",
       target: "message_#{id}_content",
-      content: ERB::Util.html_escape(content.to_s)
+      html: ChatMarkdownRenderer.render(text || content)
+    )
+  end
+
+  private
+
+  def broadcast_message_created
+    broadcast_append_to(
+      "chat_#{chat_id}",
+      target: "messages",
+      partial: to_partial_path,
+      locals: message_locals
+    )
+  end
+
+  def broadcast_message_updated
+    broadcast_replace_to(
+      "chat_#{chat_id}",
+      target: "message_#{id}",
+      partial: to_partial_path,
+      locals: message_locals
+    )
+  end
+
+  def broadcast_message_removed
+    broadcast_remove_to("chat_#{chat_id}")
+  end
+
+  def message_locals
+    { message: self, assistant: self, user: self, system: self, tool: self }
   end
 end

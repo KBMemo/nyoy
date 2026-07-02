@@ -24,6 +24,19 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_includes message.chat_error_message, "会話が長すぎます"
   end
 
+  test "stream state accumulates text per assistant message" do
+    state = ChatResponseJob::StreamState.new
+    first = Message.new(id: 1)
+    second = Message.new(id: 2)
+
+    state.append_for(first, "Hello ")
+    state.append_for(first, "world")
+    state.append_for(second, "Next")
+
+    assert_equal "Hello world", state.text_for(first)
+    assert_equal "Next", state.text_for(second)
+  end
+
   private
 
   def stub_chat_ask_to_raise(error)

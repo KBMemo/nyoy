@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_01_212053) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_02_102509) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -231,13 +231,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_01_212053) do
     t.text "body", null: false
     t.datetime "created_at", null: false
     t.vector "embedding", limit: 1024
+    t.string "external_id"
     t.string "kind", default: "style", null: false
     t.jsonb "metadata", default: {}, null: false
+    t.string "source", default: "prompt", null: false
     t.string "style_ref"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["embedding"], name: "index_prompt_knowledge_chunks_on_embedding_hnsw", opclass: :vector_cosine_ops, using: :hnsw
+    t.index ["external_id"], name: "index_prompt_knowledge_chunks_on_external_id", unique: true, where: "(external_id IS NOT NULL)"
     t.index ["kind"], name: "index_prompt_knowledge_chunks_on_kind"
+    t.index ["source"], name: "index_prompt_knowledge_chunks_on_source"
     t.index ["style_ref"], name: "index_prompt_knowledge_chunks_on_style_ref"
   end
 

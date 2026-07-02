@@ -41,6 +41,10 @@ module MessagesHelper
     "デフォルト: #{label}"
   end
 
+  def chat_context_turn_limit
+    Rails.application.config.x.nyoy.chat_context_turns.to_i
+  end
+
   def tool_result_partial(message)
     name = message.respond_to?(:parent_tool_call) ? message.parent_tool_call&.name.to_s : ""
     partial_for(prefix: "messages/tool_results", name: name)

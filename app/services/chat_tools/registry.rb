@@ -4,7 +4,8 @@ module ChatTools
   module Registry
     MEMO_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       徒然（tsuredure）メモツールが利用可能です。
-      過去のメモを探すときは search_memos、本文が必要なときは get_memo を使ってください。
+      関連メモの抜粋は自動で参照コンテキストに含まれます。
+      さらに探すときは search_memos、本文が必要なときは get_memo を使ってください。
       create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
       update_memo では必ず get_memo で取得した updated_at を渡してください。
       メモ本文は AsciiDoc 形式です。
@@ -18,6 +19,7 @@ module ChatTools
 
     FETCH_URL_INSTRUCTIONS = <<~TEXT.squish
       fetch_url で公開 Web ページの本文を取得できます。http/https URL のみ対応です。
+      HTML ページは readability-js-server で本文抽出します。
     TEXT
 
     MEMO_TOOL_CLASSES = [
@@ -79,7 +81,11 @@ module ChatTools
     end
 
     def url_fetcher
-      SafeUrlFetcher.new
+      SafeUrlFetcher.new(readability_client: readability_client)
+    end
+
+    def readability_client
+      ReadabilityClient.new
     end
 
     def reset_client!

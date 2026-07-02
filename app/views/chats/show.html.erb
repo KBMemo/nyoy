@@ -7,6 +7,9 @@
     <h1 class="<%= kb_page_title %>">チャット</h1>
     <p class="mt-1 text-sm kb-text-secondary">
       モデル: <strong><%= @chat.model&.name || default_model_display_name %></strong>
+      <% if chat_context_turn_limit.positive? %>
+        <span class="kb-text-muted">（直近 <%= chat_context_turn_limit %> ターンを送信）</span>
+      <% end %>
     </p>
   </div>
   <%= link_to "一覧へ", chats_path, class: "kb-chrome-link text-sm" %>
