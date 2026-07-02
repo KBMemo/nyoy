@@ -586,7 +586,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 - [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
 - [ ] 削除メモの RAG 同期方式（`export/deletions` 実装）
 - [ ] `visibility` が group のメモを API でどう扱うか
-- [ ] Groonga 全文検索 — **PGroonga 採用・インストール OK**（[実装手順](./tsuredure-pgroonga-search.md)）
+- [x] Groonga 全文検索 — **PGroonga**（site コード済み。[手順](./tsuredure-pgroonga-search.md)。本番 `db:migrate` 待ち）
 
 ---
 
@@ -600,7 +600,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` + webhook | 徒然側未実装 |
-| P3b | 徒然 PGroonga 検索 | **決定済・実装待ち**（[手順](./tsuredure-pgroonga-search.md)） |
+| P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | 徒然 site Workspace |
 
 ---

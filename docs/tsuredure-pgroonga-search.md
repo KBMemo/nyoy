@@ -156,10 +156,10 @@ end
 
 ## 8. 実装チェックリスト（site Workspace）
 
-- [ ] bowmore 徒然 DB に `CREATE EXTENSION pgroonga`
-- [ ] マイグレーション（インデックス）
-- [ ] `Memo.search_text` 差し替え + フォールバック
-- [ ] 既存テスト通過
+- [ ] bowmore 徒然 DB に `CREATE EXTENSION pgroonga`（本番）
+- [x] マイグレーション `20260703101000_enable_pgroonga_on_memos.rb`
+- [x] `Memo.search_text` 差し替え + LIKE フォールバック
+- [x] 既存テスト通過（PGroonga 有無で pgroonga テストは skip）
 - [ ] 本番: Web 検索・API `?q=`・如意 Chat で確認
 - [ ] （任意）OpenAPI `listMemos` description 更新
 
