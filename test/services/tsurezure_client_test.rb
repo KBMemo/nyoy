@@ -69,6 +69,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
     assert_equal "/api/v1/memos", captured[:path]
     assert_equal "タイトル", captured[:body]["title"]
     assert_equal "## 見出し\n\n本文", captured[:body]["body"]
+    assert_equal "markdown", captured[:body]["body_format"]
     assert captured[:body]["commit"]
   end
 

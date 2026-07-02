@@ -52,10 +52,11 @@ class TsurezureClient
     get_json("/memos/#{encode_ref(memo_ref)}#{query}")
   end
 
-  def create_memo(title: nil, body:, tags: nil, visibility: nil, properties: nil, commit: true)
+  def create_memo(title: nil, body:, tags: nil, visibility: nil, properties: nil, commit: true, body_format: "markdown")
     payload = compact_body(
       title: title,
       body: body,
+      body_format: body_format,
       tags: tags,
       visibility: visibility,
       properties: properties,
@@ -64,12 +65,13 @@ class TsurezureClient
     post_json("/memos", payload)
   end
 
-  def update_memo(memo_ref, updated_at:, title: nil, body: nil, append_body: nil, tags: nil, visibility: nil, properties: nil, commit: nil)
+  def update_memo(memo_ref, updated_at:, title: nil, body: nil, append_body: nil, tags: nil, visibility: nil, properties: nil, commit: nil, body_format: "markdown")
     payload = compact_body(
       updated_at: iso8601(updated_at),
       title: title,
       body: body,
       append_body: append_body,
+      body_format: body.present? || append_body.present? ? body_format : nil,
       tags: tags,
       visibility: visibility,
       properties: properties,

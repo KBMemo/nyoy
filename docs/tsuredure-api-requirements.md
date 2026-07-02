@@ -601,7 +601,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` + webhook | 徒然側未実装 |
 | P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
-| P3c | API 書込 Markdown → AsciiDoc 変換 | 徒然 site Workspace |
+| P3c | API 書込 Markdown → AsciiDoc 変換 | **site 実装済み**（本番 deploy 待ち） |
 
 ---
 
