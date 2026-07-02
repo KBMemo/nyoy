@@ -27,7 +27,7 @@ class Chat < ApplicationRecord
     inject_conversation_summary!(@chat, context.summary)
     setup_persistence_callbacks
 
-    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages))
+    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
     ChatTools::Registry.apply!(@chat)
     @chat
   end
@@ -37,7 +37,13 @@ class Chat < ApplicationRecord
   def inject_conversation_summary!(llm_chat, summary)
     return if summary.blank?
 
-    llm_chat.with_instructions("以前の会話の要約:\n#{summary}", append: true)
+    trimmed = ChatContextBudget.trim_text(
+      summary,
+      max_tokens: ChatContextBudget.allocate(self).summary_tokens
+    )
+    return if trimmed.blank?
+
+    llm_chat.with_instructions("以前の会話の要約:\n#{trimmed}", append: true)
   end
 
   def latest_user_query(messages)

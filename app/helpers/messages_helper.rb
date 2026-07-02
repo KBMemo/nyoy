@@ -49,6 +49,10 @@ module MessagesHelper
     ChatContextStats.for(chat)
   end
 
+  def memo_rag_status
+    MemoRagStatus.current
+  end
+
   def tool_result_partial(message)
     name = message.respond_to?(:parent_tool_call) ? message.parent_tool_call&.name.to_s : ""
     partial_for(prefix: "messages/tool_results", name: name)

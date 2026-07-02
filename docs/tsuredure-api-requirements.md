@@ -2,7 +2,7 @@
 
 如意（Nyoy）から徒然（kbmemo.net）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
 
-**ステータス:** Phase 4b 完了 — 徒然 API v1 本番稼働、如意 Client / Chat ツール接続確認済み  
+**ステータス:** Phase 4b + 如意 Chat 拡張完了 — 徒然 API v1 本番、如意 Client / メモツール / Web 検索 / URL 取得 / メモ RAG 接続確認済み  
 **前提:** 徒然側の実装は [kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル: `~/work/kbmemo/site`）を正とする。
 
 ---
@@ -134,12 +134,11 @@
 3. `KnowledgeChunk`（source: memo）として pgvector に保存
 4. 次回以降は `updated_since` で差分のみ再取込
 
-**要求:**
+**要求（実装済み / 残）:**
 
-- 一覧 API（ID, title, updated_at, 本文プレビュー or 全文）
-- 差分取得（`updated_since` パラメータ）
-- 削除されたメモの検知（RAG 側の削除用）
-- レート制限・ページサイズの明示
+- [x] 一覧・export API、`updated_since` 差分 — **実装済み**
+- [ ] 削除されたメモの検知 — **`export/deletions` 未実装**
+- [x] レート制限・ページサイズ — export は `MEMO_INGEST_PAGE_LIMIT` でページング
 
 ### UC-5: RAG 取込（リアルタイム、将来）
 
@@ -362,33 +361,44 @@ PATCH /memos/:uid
 
 ## 6. RAG 取込仕様（如意側）
 
-徒然 API が提供すべき最小要件と、如意側の処理。
+徒然 API が提供すべき最小要件と、如意側の処理。**2026-07 実装済み。**
 
 ### 6.1 取込フロー
 
 ```
-徒然 API                    如意
-─────────                   ────
-GET /memos/export     →     MemoIngestJob
-  ?updated_since=...        ├─ チャンク分割（~500–1000 文字）
-                            ├─ EmbeddingClient.embed
-                            └─ KnowledgeChunk upsert (source: memo)
+徒然 API                         如意
+─────────                        ────
+GET /memos/export          →     MemoKnowledgeIngestJob
+  ?updated_since=...             ├─ MemoTextChunker（~1500 文字）
+  &page=&limit=                  ├─ EmbeddingClient.embed
+                                 └─ PromptKnowledgeChunk upsert (source: memo)
+
+Solid Queue recurring / bin/rails kbmemo:rag:ingest
 ```
 
-### 6.2 チャンク設計（如意側）
+Chat 利用時（ユーザー発話ごと）:
 
-| 項目 | 案 |
-|------|-----|
-| source | `memo` |
-| external_id | `kbmemo:memo:{uid}:chunk:{index}` |
-| metadata | memo_id, title, tags, updated_at, chunk_index |
-| 削除 | export に含まれない ID は RAG から削除 |
+```
+MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RRF)
+  → MemoKnowledgeChunkCompressor → ChatMemoRagInjector
+```
 
-### 6.3 徒然 API への要求
+### 6.2 チャンク設計（如意側・実装）
 
-- `GET /memos/export?updated_since=` で変更分のみ取得可能
-- 削除メモ ID のリスト（`deleted_since` または tombstone レコード）
-- 1 メモあたりの最大サイズ上限の明示（チャンク分割の参考）
+| 項目 | 内容 |
+|------|------|
+| モデル | `PromptKnowledgeChunk`（`source: memo`） |
+| external_id | `kbmemo:{uid}:chunk:{index}` |
+| metadata | title, tags, updated_at, chunk_index 等 |
+| 削除 | **未同期** — `export/deletions` 徒然 501 のため全件 re-ingest または将来 webhook |
+
+実装: `app/services/memo_text_chunker.rb`, `memo_knowledge_ingester.rb`, `memo_knowledge_retriever.rb`, `chat_memo_rag_injector.rb`
+
+### 6.3 徒然 API への要求（残）
+
+- [x] `GET /memos/export?updated_since=` — **提供済み**
+- [ ] 削除メモ ID リスト（`export/deletions` — **501**）
+- [ ] 1 メモあたりの最大サイズ上限の明示（任意）
 
 ---
 
@@ -464,14 +474,28 @@ GET /memos/export     →     MemoIngestJob
 
 ### 9.4 検索（確認済み）
 
-PostgreSQL の `LIKE` のみ（`Memo.search_text`）。Groonga / `to_tsvector` / ベクトル検索は未使用。
+PostgreSQL の `LIKE` のみ（`Memo.search_text`）。Groonga / `to_tsvector` / ベクトル検索は**徒然側未使用**。
 
 ```ruby
 # site/app/models/memo.rb
 where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, pattern)
 ```
 
-如意 Chat のメモ検索には当面これで足りるが、RAG 連携を考えると export API の方が重要。
+**如意側:**
+
+- Chat ツール `search_memos` → `GET /api/v1/memos?q=`
+- メモ RAG キーワード leg → 同上（pgvector と RRF で併用）
+- 徒然メモ本文のベクトル検索は **如意 DB**（`PromptKnowledgeChunk` `source=memo`）で実施
+
+**Groonga 導入時（徒然 site Workspace）:**
+
+| 項目 | 内容 |
+|------|------|
+| HTTP API 変更 | **不要**（推奨）— `GET /memos?q=` の JSON 形状を維持し内部のみ Groonga 化 |
+| 如意変更 | **不要** — `TsurezureClient#list_memos` はそのまま |
+| 任意拡張 | `search_score` フィールド、 `?search=hybrid` 等（後方互換） |
+
+如意 Chat のメモ検索・RAG キーワード leg の精度は Groonga 化で向上する。export API は RAG 取込の正本。
 
 ### 9.5 認証・トークン（確認済み）
 
@@ -492,7 +516,10 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 |------|------|
 | Git 作業ツリー | `MemoRepository` がコミット時に `.adoc` を書き出し |
 | Rake | `kbmemo:notebook:export`, `kbmemo:docs:sync` |
-| HTTP API | **なし** |
+| HTTP API | **`GET /api/v1/memos/export`**（RAG 取込用。`updated_since` ページング） |
+| 削除フィード | **`GET /api/v1/memos/export/deletions`** — **501 未実装** |
+
+如意側: `TsurezureClient#export_memos` → `MemoKnowledgeIngestJob` / `bin/rails kbmemo:rag:ingest`
 
 ### 9.7 ギャップ分析（2026-07 更新）
 
@@ -502,8 +529,8 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 | `GET /api/v1/memos/:uid` | ✓ | ✓ `get_memo` |
 | `POST /api/v1/memos` | ✓ | ✓ `create_memo` ツール |
 | `PATCH` + 競合検知 | ✓ `stale_memo` | ✓ `update_memo` ツール |
-| `export?updated_since=` | ✓ | ✗ 取込ジョブ未実装 |
-| 削除フィード | ✗ 501 | ✗ |
+| `export?updated_since=` | ✓ | ✓ `MemoKnowledgeIngestJob` / `kbmemo:rag:ingest` |
+| 削除フィード | ✗ 501 | ✗ 未同期 |
 | Bearer 認証 | ✓ `clip_api_token` | ✓ `ServiceConnection` `kbmemo` |
 | DB 接続登録 | — | ✓ 設定 → 接続 |
 
@@ -514,6 +541,7 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 - [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
 - [ ] 削除メモの RAG 同期方式（`export/deletions` 実装）
 - [ ] `visibility` が group のメモを API でどう扱うか
+- [ ] Groonga 全文検索（**徒然内部**。API 形状維持なら如意変更不要）
 
 ---
 
@@ -523,10 +551,11 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 |------|------|------|
 | P0 | 徒然 API v1 CRUD + 検索 | **完了** |
 | P0 | 如意 `TsurezureClient` + Chat ツール | **完了** |
-| P1 | Chat 実運用検証（要約・保存・追記） | **推奨（今）** |
-| P1 | SearXNG + URL 取得ツール | 次フェーズ |
-| P2 | メモ RAG 取込（`export` + pgvector） | 未着手 |
+| P1 | SearXNG + URL 取得ツール | **完了** |
+| P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
+| P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` + webhook | 徒然側未実装 |
+| P3b | 徒然 Groonga 検索 | 徒然 site Workspace |
 
 ---
 
@@ -534,10 +563,12 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 
 1. ~~徒然 API v1 実装~~ — 完了
 2. ~~如意 Client + Chat ツール~~ — 完了
-3. ~~本番接続確認・DB 登録~~ — 完了（`ServiceConnection` `kbmemo`）
-4. **Chat 運用検証** — 要約・保存・追記のプロンプト確認
-5. **Phase 1** — SearXNG + `fetch_url` ツール
-6. **Phase 3** — RAG `source` 拡張 + `MemoIngestJob`
+3. ~~本番接続確認・DB 登録~~ — 完了
+4. ~~SearXNG + `fetch_url`~~ — 完了
+5. ~~メモ RAG 取込 + Chat 注入~~ — 完了（`bin/rails kbmemo:rag:ingest`）
+6. **Phase 2** — Chat への画像理解（`analyze_image`）
+7. **徒然 site** — Groonga 検索（API 契約維持）、`export/deletions`
+8. **Phase 6** — MCP サーバー（`ChatTools::*` 再公開）
 
 ---
 

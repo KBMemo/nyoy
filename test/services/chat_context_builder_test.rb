@@ -26,5 +26,13 @@ class ChatContextBuilderTest < ActiveSupport::TestCase
     assert_includes result.summary, "old question"
     assert result.messages.any? { |message| message.content == "new question" }
     assert_not result.messages.any? { |message| message.content == "old question" }
+
+    @chat.reload
+    assert @chat.context_summary.present?
+    old_boundary = @chat.messages.order(:id).second.id
+    assert_equal old_boundary, @chat.context_summary_until_message_id
+
+    cached = ChatContextBuilder.build(@chat)
+    assert_equal @chat.context_summary, cached.summary
   end
 end

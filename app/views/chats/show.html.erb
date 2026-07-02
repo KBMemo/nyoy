@@ -16,6 +16,10 @@
       <% else %>
         <span class="kb-text-muted"> — 推定 <%= number_with_delimiter(stats.estimated_tokens) %> tokens</span>
       <% end %>
+      <% rag = memo_rag_status %>
+      <% if rag.enabled %>
+        <span class="kb-text-muted"> — メモ RAG <%= number_with_delimiter(rag.chunk_count) %> チャンク<% if rag.last_synced_at %>（最終更新 <%= l(rag.last_synced_at, format: :short) %>）<% end %></span>
+      <% end %>
     </p>
   </div>
   <%= link_to "一覧へ", chats_path, class: "kb-chrome-link text-sm" %>

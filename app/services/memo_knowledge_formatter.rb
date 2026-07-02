@@ -6,6 +6,11 @@ class MemoKnowledgeFormatter
     全文や更新が必要なときは get_memo / update_memo ツールを使えます。
   TEXT
 
+  def self.for_chat(chat)
+    allocation = ChatContextBudget.allocate(chat)
+    new(max_chars: allocation.rag_tokens * ChatTokenEstimator::CHARS_PER_TOKEN.to_i)
+  end
+
   def initialize(max_chars: Rails.application.config.x.nyoy.memo_rag_max_chars)
     @max_chars = max_chars.to_i.positive? ? max_chars.to_i : 12_000
   end
