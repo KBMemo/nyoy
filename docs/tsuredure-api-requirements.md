@@ -1,0 +1,548 @@
+# 徒然（tsuredure）API 要件 — 如意連携
+
+如意（Nyoy）から徒然（kbmemo.net）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
+
+**ステータス:** Phase 0 — 要件整理（徒然現状調査済み）  
+**前提:** 徒然側の実装は [kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル: `~/work/kbmemo/site`）を正とする。本書は如意側の要求と、調査結果に基づくギャップ分析を含む。
+
+---
+
+## 0. 名称・ローマ字表記
+
+| 項目 | 表記 |
+|------|------|
+| 日本語名 | 徒然 |
+| 読み | **tsuredure**（つれづれ） |
+| ドメイン | kbmemo.net |
+| 英語名（任意） | Tsuredure |
+
+### ローマ字表記の使い分け（案）
+
+正確な読みは **tsuredure** だが、英語圏の開発者・識別子では次のように使い分ける。
+
+| 用途 | 推奨表記 | 理由 |
+|------|----------|------|
+| ドキュメント・対話 | **tsuredure** | 正式な読み。日本語名と併記 |
+| URL・API パス | **kbmemo** | 既存ドメインと一致。`https://kbmemo.net/api/v1` |
+| コード（モジュール名） | **Tsurezure** | 促音を省略した一般的ローマ字。`TsurezureClient` 等 |
+| 外部 ID プレフィックス | **kbmemo** | `kbmemo:memo:{id}:chunk:{n}` — ドメインと揃える |
+| 設定キー（如意） | **kbmemo** | `ServiceConnection` の `key: "kbmemo"` |
+
+### 英語圏向けローマ字の候補
+
+| 表記 | 例 | 長所 | 短所 |
+|------|-----|------|------|
+| **tsuredure** | Tsuredure API | 読みが正確 | `dure` が英語として紛らわしい |
+| **tsurezure** | TsurezureClient | ローマ字として自然、コード向き | 読みがやや不明瞭 |
+| **tsure-zure** | tsure-zure API | 音節が分かりやすい | ハイフン入り識別子は避けたい場面あり |
+| **kbmemo** | kbmemo API | 既存ドメインと一致、最も無難 | 日本語名との対応が直感できない |
+
+**推奨:** 対人・文書は **徒然（tsuredure）**、技術識別子は **kbmemo** を主とし、Ruby 等のコードでは **Tsurezure** を使う。
+
+---
+
+## 1. 目的
+
+### 1.1 なぜ API が必要か
+
+如意は AI 機能の集約点として、以下のユースケースで徒然のメモデータにアクセスする。
+
+| ユースケース | 方向 | 概要 |
+|-------------|------|------|
+| **メモ検索** | 徒然 → 如意 | Chat / RAG が関連メモを参照 |
+| **メモ作成** | 如意 → 徒然 | Chat の回答をメモとして保存 |
+| **メモ更新** | 如意 → 徒然 | 書き支援（推敲・追記・要約の反映） |
+| **RAG 取込** | 徒然 → 如意 | メモ本文をチャンク化・embedding して pgvector に格納 |
+| **変更通知** | 徒然 → 如意 | メモ更新時に RAG を再生成（将来） |
+
+### 1.2 スコープ
+
+**本書の対象:**
+
+- REST JSON API（第一候補）
+- 認証・認可
+- メモ CRUD + 検索
+- RAG 取込に必要な一覧・差分取得
+- 如意 Chat ツールから呼ぶ操作
+
+**本書の対象外（別途）:**
+
+- 葛籠 API（添付ファイル参照は葛籠側要件）
+- 徒然 Web UI の変更
+- MCP プロトコル自体（如意側で徒然 API をラップ）
+
+---
+
+## 2. 如意側ユースケース詳細
+
+### UC-1: Chat からメモ検索
+
+**アクター:** ユーザー（Chat 経由）、如意 LLM  
+**流れ:**
+
+1. ユーザーが「先月の旅行メモを探して」と入力
+2. LLM が `search_memos` ツールを呼ぶ
+3. 如意が徒然 API で検索
+4. 結果を LLM コンテキストに注入し、回答を生成
+
+**要求:**
+
+- 全文検索またはセマンティック検索（初期はキーワードで可）
+- タイトル・本文スニペット・更新日時・メモ ID を返す
+- ページネーション
+
+### UC-2: Chat 結果のメモ保存
+
+**アクター:** ユーザー、LLM  
+**流れ:**
+
+1. LLM が回答を生成
+2. ユーザーが「これを徒然に保存して」または LLM が `create_memo` を提案
+3. 如意が徒然 API でメモ作成
+4. 作成されたメモ URL / ID をユーザーに返す
+
+**要求:**
+
+- タイトル（自動生成可）+ 本文（**AsciiDoc** 想定）
+- タグ・カテゴリ（徒然が持っていれば任意指定）
+- 作成者・作成日時の記録
+
+### UC-3: メモ書き支援
+
+**アクター:** ユーザー、LLM  
+**流れ:**
+
+1. ユーザーが徒然メモ ID を指定、または検索で特定
+2. 如意が `get_memo` で本文取得
+3. LLM が推敲・要約・追記案を生成
+4. ユーザー確認後、`update_memo` で反映（または diff 提示）
+
+**要求:**
+
+- 単一メモの全文取得
+- 部分更新（append / replace section）または全文 replace
+- **楽観的ロック**（更新競合検知）— 徒然 UI と同時編集があり得る
+- 更新前の `updated_at` による競合チェック（`lock_version` 未実装のため）
+
+### UC-4: RAG 取込（バッチ）
+
+**アクター:** 如意バックグラウンドジョブ  
+**流れ:**
+
+1. ジョブが `list_memos`（または `export_memos`）で対象メモ一覧を取得
+2. 各メモをチャンク分割 → `EmbeddingClient` でベクトル化
+3. `KnowledgeChunk`（source: memo）として pgvector に保存
+4. 次回以降は `updated_since` で差分のみ再取込
+
+**要求:**
+
+- 一覧 API（ID, title, updated_at, 本文プレビュー or 全文）
+- 差分取得（`updated_since` パラメータ）
+- 削除されたメモの検知（RAG 側の削除用）
+- レート制限・ページサイズの明示
+
+### UC-5: RAG 取込（リアルタイム、将来）
+
+**アクター:** 徒然 → 如意 webhook  
+**流れ:**
+
+1. 徒然でメモ保存・更新・削除
+2. webhook で如意に通知
+3. 如意が該当メモのみ re-embed
+
+**要求（将来）:**
+
+- webhook エンドポイント（如意側）
+- イベント種別: created / updated / deleted
+- HMAC 署名検証
+
+---
+
+## 3. API 設計案
+
+### 3.1 基本方針
+
+| 項目 | 案 |
+|------|-----|
+| 形式 | REST JSON |
+| ベース URL | `https://kbmemo.net/api/v1`（仮） |
+| 認証 | Bearer トークン（API キン） |
+| エラー形式 | `{ "error": { "code": "...", "message": "..." } }` |
+| 日時 | ISO 8601 UTC |
+| 本文形式 | **AsciiDoc**（徒然の `memos.body` に準拠） |
+| 安定 ID | **ULID**（`uid` 列、26 桁）。数値 `id` も併用可 |
+
+### 3.2 認証
+
+```
+Authorization: Bearer <api_token>
+```
+
+徒然には **既存の Bearer トークン基盤** がある（`Api::BaseController`、`Account#clip_api_token_*`）。如意連携用 API はこれを拡張する案を第一候補とする。
+
+| 要求 | 詳細 | 徒然現状 |
+|------|------|----------|
+| トークン発行 | プロフィール UI でユーザーごとに発行 | ✓ `clip_api_token`（`kbmemo_<base64>`）が既存 |
+| 保存方式 | SHA256 ダイジェスト + prefix | ✓ `Account#digest_clip_api_token` |
+| 認可 | Pundit policy | ✓ `Api::ClipsController` で利用中 |
+| スコープ | `memos:read`, `memos:write` | ✗ 未実装（トークン種別で代替可） |
+| 如意側保管 | Rails credentials または `ServiceConnection` | — |
+
+**実装案:**
+
+1. **短期:** 既存 `clip_api_token` を如意でも流用（メモ作成はクリップと同権限）
+2. **中期:** `nyoy_api_token`（または汎用 `api_token`）を追加し、read/write スコープを分離
+3. **認可:** 既存 `MemoPolicy` を `api/v1/memos` でもそのまま適用
+
+**未決:** clip トークンと nyoy 専用トークンを分けるか、1 トークンに統合するか。
+
+### 3.3 エンドポイント一覧（案）
+
+#### メモ
+
+| Method | Path | 用途 | UC | 徒然現状 |
+|--------|------|------|-----|----------|
+| `GET` | `/memos` | 一覧・検索 | UC-1, UC-4 | ✗ HTML のみ |
+| `GET` | `/memos/:id` | 単体取得（`id` または `uid`） | UC-3 | ✗ HTML のみ |
+| `POST` | `/memos` | 新規作成 | UC-2 | △ `POST /api/clips` のみ |
+| `PATCH` | `/memos/:id` | 部分更新 | UC-3 | ✗ |
+| `PUT` | `/memos/:id` | 全文置換 | UC-3 | ✗ |
+| `DELETE` | `/memos/:id` | 削除 | UC-4 | ✗ |
+
+#### 検索・エクスポート
+
+| Method | Path | 用途 | UC |
+|--------|------|------|-----|
+| `GET` | `/memos/search` | 全文検索（`q`, `limit`, `offset`） | UC-1 |
+| `GET` | `/memos/export` | RAG 用一括 export（`updated_since`, `fields`） | UC-4 |
+
+#### メタ
+
+| Method | Path | 用途 |
+|--------|------|------|
+| `GET` | `/health` | 疎通確認 |
+| `GET` | `/me` | トークンに紐づくユーザー情報 |
+
+---
+
+## 4. リソース定義（案）
+
+### 4.1 Memo
+
+```json
+{
+  "id": 42,
+  "uid": "01J8X2K3M4N5P6Q7R8S9T0UVWX",
+  "slug": "kyoto-trip-01J8X2K3M4N5P6Q7R8S9T0UVWX",
+  "title": "京都旅行メモ",
+  "body": "== 1日目\n\n清水寺...",
+  "body_format": "asciidoc",
+  "tags": ["旅行", "2026"],
+  "visibility": "owner_read_write",
+  "properties": {},
+  "created_at": "2026-03-15T10:00:00Z",
+  "updated_at": "2026-06-20T14:30:00Z",
+  "file_committed_at": "2026-06-20T14:30:00Z",
+  "url": "https://kbmemo.net/memos/42",
+  "draft": false
+}
+```
+
+| フィールド | 必須 | 説明 |
+|-----------|------|------|
+| `id` | ✓ | 数値 PK（bigint） |
+| `uid` | ✓ | **ULID**（26 桁、安定 ID。API の主キーとして推奨） |
+| `slug` | | `{stem}-{uid}` 形式。Git ファイル名にも使用 |
+| `title` | ✓ | タイトル |
+| `body` | ✓ | **AsciiDoc** ソース（プレーンテキスト） |
+| `body_format` | | 常に `asciidoc` |
+| `tags` | | タグ名の配列 |
+| `visibility` | | `public_everyone` / `group_read` / `group_read_write` / `owner_read_write` |
+| `properties` | | jsonb（`scheduled_on`, `media_album_id` 等） |
+| `updated_at` | ✓ | DB 更新時刻 |
+| `file_committed_at` | | Git コミット時刻。`null` なら下書き |
+| `draft` | | `file_committed_at` が `null` かどうかの派生 |
+| `url` | | Web UI へのリンク |
+
+**格納ディレクトリ:**
+
+API では公開しない。作成・更新時の格納先は徒然側の既定ロジック（アカウントの Home 等）に任せる。
+
+**楽観的ロック（更新時）:**
+
+徒然に `lock_version` は無い。第一案は `updated_at` または `If-Unmodified-Since` ヘッダによる競合検知。将来 `revision` 整数列を追加してもよい。
+
+**添付・メディア:**
+
+- Git 内アセット: Active Storage → `{slug}.assets/`（API では URL 参照のみ）
+- 葛籠: 本文中の `album::` / `image::media:` マクロ + `properties.media_album_id`。バイナリは [葛籠 API](https://media.kbmemo.net) 経由
+
+### 4.2 一覧レスポンス
+
+```json
+{
+  "memos": [ { "...": "Memo 省略" } ],
+  "pagination": {
+    "total": 142,
+    "limit": 50,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+**クエリパラメータ（`GET /memos`）:**
+
+|  param | 型 | 説明 |
+|--------|-----|------|
+| `q` | string | キーワード検索 |
+| `tag` | string | タグフィルタ |
+| `updated_since` | ISO8601 | 差分 sync 用 |
+| `limit` | int | デフォルト 50、最大 200 |
+| `offset` | int | ページネーション |
+| `fields` | string | `id,title,updated_at` 等。RAG 用に軽量取得 |
+
+### 4.3 作成リクエスト
+
+```json
+POST /memos
+{
+  "title": "Chat から保存したメモ",
+  "body": "LLM が生成した本文...",
+  "tags": ["ai-generated"]
+}
+```
+
+**レスポンス:** `201 Created` + Memo オブジェクト
+
+### 4.4 更新リクエスト
+
+```json
+PATCH /memos/:uid
+{
+  "updated_at": "2026-06-20T14:30:00Z",
+  "body": "推敲後の AsciiDoc 本文...",
+  "title": "更新タイトル（任意）"
+}
+```
+
+**競合時:** `409 Conflict` + 最新 Memo オブジェクト
+
+```json
+{
+  "error": {
+    "code": "stale_memo",
+    "message": "メモは他で更新されています",
+    "current": { "...": "最新 Memo" }
+  }
+}
+```
+
+---
+
+## 5. 如意 Chat ツール映射
+
+徒然 API を如意の Chat ツールとして公開する際の対応表。
+
+| Chat ツール名 | API | 説明 |
+|--------------|-----|------|
+| `search_memos` | `GET /memos/search?q=` | キーワード検索 |
+| `get_memo` | `GET /memos/:id` | 単体取得 |
+| `create_memo` | `POST /memos` | 新規作成 |
+| `update_memo` | `PATCH /memos/:uid` | 更新（`updated_at` 必須） |
+| `append_memo` | `PATCH /memos/:id` + append 操作 | 末尾追記（PATCH の sugar 案） |
+
+**LLM 向け説明文（例）:**
+
+- `search_memos`: 徒然（tsuredure）に保存されたメモをキーワード検索する。旅行、技術メモなど過去の記録を探すときに使う。
+- `create_memo`: 会話の内容を徒然に新規メモとして保存する。ユーザーが明示的に保存を求めたときのみ使う。
+- `update_memo`: 既存メモを更新する。`updated_at` を必ず get_memo で取得してから使う。
+
+---
+
+## 6. RAG 取込仕様（如意側）
+
+徒然 API が提供すべき最小要件と、如意側の処理。
+
+### 6.1 取込フロー
+
+```
+徒然 API                    如意
+─────────                   ────
+GET /memos/export     →     MemoIngestJob
+  ?updated_since=...        ├─ チャンク分割（~500–1000 文字）
+                            ├─ EmbeddingClient.embed
+                            └─ KnowledgeChunk upsert (source: memo)
+```
+
+### 6.2 チャンク設計（如意側）
+
+| 項目 | 案 |
+|------|-----|
+| source | `memo` |
+| external_id | `kbmemo:memo:{uid}:chunk:{index}` |
+| metadata | memo_id, title, tags, updated_at, chunk_index |
+| 削除 | export に含まれない ID は RAG から削除 |
+
+### 6.3 徒然 API への要求
+
+- `GET /memos/export?updated_since=` で変更分のみ取得可能
+- 削除メモ ID のリスト（`deleted_since` または tombstone レコード）
+- 1 メモあたりの最大サイズ上限の明示（チャンク分割の参考）
+
+---
+
+## 7. 非機能要件
+
+| 項目 | 要求 |
+|------|------|
+| **可用性** | 如意 Chat からの呼び出しは 5s 以内（検索）。RAG export は非同期可 |
+| **レート制限** | レスポンスヘッダ `X-RateLimit-*`。429 時 Retry-After |
+| **HTTPS** | 必須 |
+| **CORS** | 如意 origin のみ（ブラウザ直呼びは想定しない） |
+| **監査** | API 経由の作成・更新ログ（徒然側） |
+| **バージョニング** | URL `/api/v1`。破壊的変更は v2 |
+
+---
+
+## 8. セキュリティ
+
+| リスク | 対策 |
+|--------|------|
+| トークン漏洩 | スコープ最小化、ローテーション、credentials 保管 |
+| 過剰なデータ取得 | export の rate limit、fields 指定 |
+| 如意経由の不正更新 | revision チェック、write スコープ分離 |
+| SSRF（如意 → 徒然） | 徒然 URL 固定。ユーザー入力 URL ではない |
+
+---
+
+## 9. 徒然現状調査（kbmemo_site）
+
+リポジトリ: [Artif.org/kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)  
+ローカル: `~/work/kbmemo/site`（モノレポ内の徒然アプリ。葛籠は `kbmemo-media/`）
+
+### 9.1 スタック・概要
+
+| 項目 | 内容 |
+|------|------|
+| フレームワーク | Rails 8.1 |
+| 認証 | **Rodauth**（Devise ではない） |
+| 認可 | Pundit |
+| DB | PostgreSQL |
+| 本文 | **AsciiDoc**（Asciidoctor でレンダリング） |
+| Git 連携 | コミット済みメモは `.adoc` + YAML front-matter として Git 作業ツリーに書き出し |
+| 本番 URL | https://kbmemo.net |
+
+### 9.2 データモデル（確認済み）
+
+| 項目 | 結果 |
+|------|------|
+| メモ ID | 数値 `id`（bigint PK）+ **ULID `uid`**（26 桁、unique、クライアント生成可）+ `slug` |
+| 本文フォーマット | **AsciiDoc**（`memos.body`） |
+| タグ | ✓ `tags` / `memo_tags` |
+| フォルダ | ✓ `memo_directories`（階層、`full_path`） |
+| その他分類 | notebooks（目次ツリー）、boards（カンバン）、memo_groups（共有） |
+| 添付 | (1) Active Storage → Git `{slug}.assets/`、(2) 葛籠は本文マクロ `album::` / `image::media:` + `properties.media_album_id` |
+| 削除 | **物理削除**（soft-delete / tombstone なし） |
+| 楽観的ロック | **未実装**（`lock_version` なし）。`updated_at` + `file_committed_at` のみ |
+| 下書き | `file_committed_at` が `null` の間は下書き状態 |
+
+参照: `site/app/models/memo.rb`, `site/db/schema.rb`
+
+### 9.3 既存 API（確認済み）
+
+| エンドポイント | 用途 | 認証 |
+|---------------|------|------|
+| `POST /api/clips` | Web クリッパー → メモ作成 | Bearer `clip_api_token` |
+| `GET /internal/tsuzura/albums` | 葛籠アルバム一覧 | セッション / 内部シークレット |
+| `POST /internal/tsuzura/sign_urls` | 署名 URL 生成 | 同上 |
+| `GET /up` | ヘルスチェック | なし |
+
+**無いもの:** 汎用メモ REST API、GraphQL、RSS/JSON export、`updated_since` 差分 API、削除フィード。
+
+参照: `site/config/routes.rb`, `site/app/controllers/api/`
+
+### 9.4 検索（確認済み）
+
+PostgreSQL の `LIKE` のみ（`Memo.search_text`）。Groonga / `to_tsvector` / ベクトル検索は未使用。
+
+```ruby
+# site/app/models/memo.rb
+where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, pattern)
+```
+
+如意 Chat のメモ検索には当面これで足りるが、RAG 連携を考えると export API の方が重要。
+
+### 9.5 認証・トークン（確認済み）
+
+| 項目 | 結果 |
+|------|------|
+| Web ログイン | Rodauth セッション |
+| API トークン | `clip_api_token`（`kbmemo_<base64>`）、`tsuzura_api_token`（`tsuzura_<base64>`） |
+| 保存 | SHA256 ダイジェスト + prefix + created_at |
+| 発行 UI | プロフィール画面（`resource :profile`） |
+| スコープ | トークン種別で暗黙分離。明示スコープは未実装 |
+| マルチユーザー | ✓ `accounts` + `visibility` enum + `memo_groups` |
+
+参照: `site/app/models/account.rb`, `site/app/controllers/api/base_controller.rb`
+
+### 9.6 エクスポート（確認済み）
+
+| 手段 | 説明 |
+|------|------|
+| Git 作業ツリー | `MemoRepository` がコミット時に `.adoc` を書き出し |
+| Rake | `kbmemo:notebook:export`, `kbmemo:docs:sync` |
+| HTTP API | **なし** |
+
+### 9.7 ギャップ分析（要件 vs 現状）
+
+| 如意の要求 | 徒然現状 | 必要な作業 |
+|-----------|----------|-----------|
+| `GET /api/v1/memos` 検索 | HTML `?q=` のみ | JSON API 新規 |
+| `GET /api/v1/memos/:uid` | HTML show のみ | JSON API 新規 |
+| `POST /api/v1/memos` | `POST /api/clips` のみ（HTML 変換） | 汎用 create 追加 |
+| `PATCH` 更新 + 競合検知 | 未実装 | API + `updated_at` チェック |
+| `export?updated_since=` | 未実装 | RAG 用 export 新規 |
+| 削除フィード | 物理削除のみ | tombstone または削除ログ新規 |
+| Bearer 認証 | clip トークンあり | 拡張 or 流用 |
+| AsciiDoc 本文 | ✓ 既存 | 如意側も AsciiDoc 前提に |
+| ULID | ✓ 既存 | API は `uid` を主キーに |
+
+### 9.8 徒然側への残確認事項
+
+- [ ] 如意用トークンを `clip_api_token` と分離するか
+- [x] ~~API 作成メモの格納先ディレクトリ~~ — API 非公開。徒然側の既定ロジックに任せる
+- [ ] 下書きメモを export / 検索対象に含めるか
+- [ ] 削除メモの RAG 同期方式（tombstone テーブル vs 削除ログ）
+- [ ] `visibility` が group のメモを API でどう扱うか
+
+---
+
+## 10. 実装優先度（如意視点）
+
+| 優先 | API | 理由 |
+|------|-----|------|
+| P0 | `GET /api/v1/memos/:uid` | 書き支援の前提 |
+| P0 | `GET /api/v1/memos?q=` | Chat 検索（既存 `search_text` を JSON 化） |
+| P1 | `POST /api/v1/memos` | Chat からの保存（clips を一般化） |
+| P1 | `GET /api/v1/memos/export?updated_since=` | RAG 取込 |
+| P2 | `PATCH /api/v1/memos/:uid` | 書き支援の反映 + `updated_at` 競合検知 |
+| P3 | webhook / 削除フィード | RAG 鮮度 |
+
+---
+
+## 11. 次のアクション
+
+1. ~~**徒然の現状調査**~~ — 完了（§9 参照）
+2. ~~**API 契約の確定**~~ — OpenAPI 草案 [`docs/openapi/kbmemo-v1.yaml`](./openapi/kbmemo-v1.yaml)
+3. **徒然側 Phase 1 実装** — `Api::V1::MemosController` を `Api::BaseController` 上に追加
+4. **如意側スタブ** — `TsurezureClient` + Chat ツール prototype
+5. **RAG source 拡張** — AsciiDoc チャンク分割 + `kbmemo:memo:{uid}` 外部 ID
+6. **残確認事項の決定** — §9.8 の 5 点
+
+---
+
+## 12. 関連ドキュメント
+
+- [kbmemo エコシステム — 現状・方針・ロードマップ](./ecosystem-roadmap.md)
+- [OpenAPI 3.1 草案](./openapi/kbmemo-v1.yaml) — `kbmemo-v1.yaml`

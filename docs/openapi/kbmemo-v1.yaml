@@ -1,0 +1,793 @@
+openapi: 3.1.0
+info:
+  title: Tsuredure (KBMemo) API
+  version: 1.0.0-draft
+  description: |
+    徒然（tsuredure / kbmemo.net）のメモ API 草案。
+
+    如意（Nyoy）の Chat ツール・RAG 取込・メモ書き支援向け。
+    本文は AsciiDoc。安定識別子は ULID `uid` を推奨する。
+
+    **ステータス:** 未実装（契約草案）。徒然 `kbmemo_site` への実装前提。
+
+    関連: [API 要件](../tsuredure-api-requirements.md)
+  contact:
+    name: Artif.org
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://kbmemo.net/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local development (徒然 `site/`)
+
+tags:
+  - name: account
+    description: 認証済みアカウント
+  - name: memos
+    description: メモ CRUD・検索
+  - name: export
+    description: RAG 取込用バッチ export
+
+security:
+  - bearerAuth: []
+
+paths:
+  /me:
+    get:
+      operationId: getCurrentAccount
+      tags: [account]
+      summary: トークンに紐づくアカウント情報
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /memos:
+    get:
+      operationId: listMemos
+      tags: [memos]
+      summary: メモ一覧・キーワード検索
+      description: |
+        `q` 指定時はタイトル・本文の部分一致検索（徒然 `Memo.search_text` 相当）。
+        未指定時は更新日時降順の一覧。
+      parameters:
+        - $ref: "#/components/parameters/QueryQ"
+        - $ref: "#/components/parameters/QueryTag"
+        - $ref: "#/components/parameters/QueryUpdatedSince"
+        - $ref: "#/components/parameters/QueryIncludeDrafts"
+        - $ref: "#/components/parameters/QueryFields"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+    post:
+      operationId: createMemo
+      tags: [memos]
+      summary: メモ新規作成
+      description: |
+        AsciiDoc 本文でメモを作成する。
+        `commit: true`（既定）のとき Git コミットまで行い `draft: false` とする。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /memos/{memo_ref}:
+    parameters:
+      - $ref: "#/components/parameters/MemoRef"
+    get:
+      operationId: getMemo
+      tags: [memos]
+      summary: メモ単体取得
+      parameters:
+        - $ref: "#/components/parameters/QueryFields"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateMemo
+      tags: [memos]
+      summary: メモ部分更新
+      description: |
+        `updated_at` または `If-Unmodified-Since` による楽観的ロック。
+        `append_body` 指定時は本文末尾へ AsciiDoc を追記する（`update_memo` / `append_memo` ツール用）。
+      parameters:
+        - $ref: "#/components/parameters/IfUnmodifiedSince"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StaleMemo"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    put:
+      operationId: replaceMemo
+      tags: [memos]
+      summary: メモ全文置換
+      parameters:
+        - $ref: "#/components/parameters/IfUnmodifiedSince"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoReplaceRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StaleMemo"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    delete:
+      operationId: deleteMemo
+      tags: [memos]
+      summary: メモ削除
+      description: 物理削除。RAG 同期には `export/deletions` を併用する。
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /memos/export:
+    get:
+      operationId: exportMemos
+      tags: [export]
+      summary: RAG 取込用メモ export
+      description: |
+        認可範囲内のメモをバッチ取得する。
+        `updated_since` 以降に更新されたメモのみ返す（初回は省略可）。
+        ページングは cursor 方式を推奨（大量メモ向け）。
+      parameters:
+        - $ref: "#/components/parameters/QueryUpdatedSince"
+        - $ref: "#/components/parameters/QueryIncludeDrafts"
+        - $ref: "#/components/parameters/QueryFields"
+        - name: cursor
+          in: query
+          description: 前ページの `pagination.next_cursor`
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: 1 ページあたり件数（最大 200）
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        "200":
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoExportResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /memos/export/deletions:
+    get:
+      operationId: exportMemoDeletions
+      tags: [export]
+      summary: 削除メモ ID フィード
+      description: |
+        RAG 側のチャンク削除用。`deleted_since` 以降に削除されたメモの `uid` を返す。
+        実装には tombstone テーブルまたは削除ログが必要（徒然現状は未実装）。
+      parameters:
+        - name: deleted_since
+          in: query
+          required: true
+          description: この日時以降に削除されたメモ
+          schema:
+            type: string
+            format: date-time
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoDeletionExportResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        `Authorization: Bearer <token>`
+
+        短期: 既存 `clip_api_token`（`kbmemo_<urlsafe_base64>`）を流用可。
+        中期: `nyoy_api_token` 等の専用トークンを追加予定。
+
+  headers:
+    X-RateLimit-Limit:
+      description: ウィンドウあたりの上限
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: ウィンドウ内の残り回数
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: ウィンドウリセット時刻（Unix epoch 秒）
+      schema:
+        type: integer
+    Retry-After:
+      description: 429 時の再試行までの秒数
+      schema:
+        type: integer
+
+  parameters:
+    MemoRef:
+      name: memo_ref
+      in: path
+      required: true
+      description: メモ ULID `uid`（推奨）または数値 `id`
+      schema:
+        type: string
+        pattern: '^(\d+|[0-9A-HJKMNP-TV-Z]{26})$'
+      examples:
+        uid:
+          value: "01J8X2K3M4N5P6Q7R8S9T0UVWX"
+        numeric_id:
+          value: "42"
+
+    QueryQ:
+      name: q
+      in: query
+      description: キーワード検索（タイトル・本文の部分一致）
+      schema:
+        type: string
+        minLength: 1
+
+    QueryTag:
+      name: tag
+      in: query
+      description: タグ名でフィルタ（完全一致）
+      schema:
+        type: string
+
+    QueryUpdatedSince:
+      name: updated_since
+      in: query
+      description: この日時以降に `updated_at` が更新されたメモのみ
+      schema:
+        type: string
+        format: date-time
+
+    QueryIncludeDrafts:
+      name: include_drafts
+      in: query
+      description: 下書き（`file_committed_at` が null）を含める
+      schema:
+        type: boolean
+        default: false
+
+    QueryFields:
+      name: fields
+      in: query
+      description: |
+        返却フィールドをカンマ区切りで限定（例 `uid,title,updated_at,body`）。
+        省略時はエンドポイントの既定フィールドセット。
+      schema:
+        type: string
+        example: "uid,title,updated_at,body"
+
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    IfUnmodifiedSince:
+      name: If-Unmodified-Since
+      in: header
+      description: |
+        楽観的ロック。リクエストボディの `updated_at` と同等。
+        サーバー側 `updated_at` と不一致なら 409。
+      schema:
+        type: string
+        format: date-time
+
+  responses:
+    Unauthorized:
+      description: 認証失敗
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: unauthorized
+              message: 認証に失敗しました。
+
+    Forbidden:
+      description: 権限なし
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: forbidden
+              message: 権限がありません。
+
+    NotFound:
+      description: リソースなし
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: not_found
+              message: メモが見つかりません。
+
+    ValidationError:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+
+    StaleMemo:
+      description: 楽観的ロック競合
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StaleMemoErrorResponse"
+
+    TooManyRequests:
+      description: レート制限
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/Retry-After"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: rate_limit_exceeded
+              message: リクエストが多すぎます。しばらく待ってから再試行してください。
+
+  schemas:
+    Account:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+        token_type:
+          type: string
+          description: 使用中のトークン種別
+          enum: [clip_api_token, nyoy_api_token]
+        scopes:
+          type: array
+          items:
+            type: string
+            enum: [memos:read, memos:write]
+          description: 将来拡張。現状は空配列または暗黙フルアクセス
+
+    Memo:
+      type: object
+      required:
+        - id
+        - uid
+        - title
+        - body
+        - body_format
+        - visibility
+        - created_at
+        - updated_at
+        - draft
+        - url
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 数値 PK
+        uid:
+          type: string
+          pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+          description: ULID（API 主キー推奨）
+        slug:
+          type: string
+          description: "{stem}-{uid}"
+        title:
+          type: string
+        body:
+          type: string
+          description: AsciiDoc ソース
+        body_format:
+          type: string
+          const: asciidoc
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: "#/components/schemas/MemoVisibility"
+        properties:
+          type: object
+          additionalProperties: true
+          description: jsonb（scheduled_on, media_album_id 等）
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        file_committed_at:
+          type: string
+          format: date-time
+          nullable: true
+        draft:
+          type: boolean
+          description: file_committed_at が null のとき true
+        url:
+          type: string
+          format: uri
+          description: Web UI へのリンク
+
+    MemoSummary:
+      type: object
+      required: [id, uid, title, updated_at, draft, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+        uid:
+          type: string
+          pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+        title:
+          type: string
+        snippet:
+          type: string
+          description: 本文プレビュー（検索結果用、先頭 N 文字）
+        tags:
+          type: array
+          items:
+            type: string
+        updated_at:
+          type: string
+          format: date-time
+        draft:
+          type: boolean
+        url:
+          type: string
+          format: uri
+
+    MemoVisibility:
+      type: string
+      enum:
+        - public_everyone
+        - group_read
+        - group_read_write
+        - owner_read_write
+
+    MemoListResponse:
+      type: object
+      required: [memos, pagination]
+      properties:
+        memos:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/Memo"
+              - $ref: "#/components/schemas/MemoSummary"
+        pagination:
+          $ref: "#/components/schemas/OffsetPagination"
+
+    MemoExportResponse:
+      type: object
+      required: [memos, pagination]
+      properties:
+        memos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memo"
+        pagination:
+          $ref: "#/components/schemas/CursorPagination"
+
+    MemoDeletionExportResponse:
+      type: object
+      required: [deletions, pagination]
+      properties:
+        deletions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemoDeletionRecord"
+        pagination:
+          $ref: "#/components/schemas/CursorPagination"
+
+    MemoDeletionRecord:
+      type: object
+      required: [uid, deleted_at]
+      properties:
+        uid:
+          type: string
+          pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+        id:
+          type: integer
+          format: int64
+          description: 削除時点の数値 id（参照用、将来は省略可）
+        deleted_at:
+          type: string
+          format: date-time
+
+    OffsetPagination:
+      type: object
+      required: [limit, offset, has_more]
+      properties:
+        total:
+          type: integer
+          description: 総件数（算出コストが高い場合は省略可）
+        limit:
+          type: integer
+        offset:
+          type: integer
+        has_more:
+          type: boolean
+
+    CursorPagination:
+      type: object
+      required: [limit, has_more]
+      properties:
+        limit:
+          type: integer
+        next_cursor:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+
+    MemoCreateRequest:
+      type: object
+      required: [body]
+      properties:
+        title:
+          type: string
+          description: 省略時は本文先頭行から自動生成
+        body:
+          type: string
+          description: AsciiDoc 本文
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: "#/components/schemas/MemoVisibility"
+        properties:
+          type: object
+          additionalProperties: true
+        commit:
+          type: boolean
+          default: true
+          description: true なら Git コミットまで実行
+
+    MemoPatchRequest:
+      type: object
+      properties:
+        updated_at:
+          type: string
+          format: date-time
+          description: 楽観的ロック用（取得時の updated_at を送る）
+        title:
+          type: string
+        body:
+          type: string
+          description: 全文置換（append_body と同時指定不可）
+        append_body:
+          type: string
+          description: 本文末尾へ AsciiDoc を追記
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: "#/components/schemas/MemoVisibility"
+        properties:
+          type: object
+          additionalProperties: true
+        commit:
+          type: boolean
+          description: 下書きのまま保存する場合は false
+      oneOf:
+        - required: [updated_at, body]
+        - required: [updated_at, append_body]
+        - required: [updated_at, title]
+        - required: [updated_at, tags]
+
+    MemoReplaceRequest:
+      type: object
+      required: [updated_at, title, body]
+      properties:
+        updated_at:
+          type: string
+          format: date-time
+        title:
+          type: string
+        body:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          $ref: "#/components/schemas/MemoVisibility"
+        properties:
+          type: object
+          additionalProperties: true
+        commit:
+          type: boolean
+          default: true
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            error:
+              type: object
+              properties:
+                details:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                      message:
+                        type: string
+
+    StaleMemoErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, current]
+          properties:
+            code:
+              type: string
+              const: stale_memo
+            message:
+              type: string
+            current:
+              $ref: "#/components/schemas/Memo"
