@@ -202,6 +202,7 @@ MCP Server ┘
 | **1** | Web 検索 + URL 取得 | **完了** |
 | **3a** | メモ RAG 取込 + Chat 注入 | **完了** |
 | **3b** | 動的 top_k・キーワード併用・チャンク圧縮 | **完了** |
+| **3b′** | 徒然 PGroonga 検索（site DB） | **決定・実装待ち** |
 | **3c** | 会話要約・トークン警告 UI | **完了** |
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
 | **2** | Chat への画像理解統合 | **次** |
@@ -232,7 +233,7 @@ gantt
 | 1 | ~~徒然 API 認証~~ | — | **決定:** 当面 `clip_api_token` 流用 |
 | 2 | 葛籠への画像移行タイミング | 生成物の保管 | |
 | 3 | メモ RAG 削除同期 | 鮮度 | `export/deletions` 徒然側未実装 |
-| 4 | 徒然 Groonga 検索 | キーワード RAG 精度 | **徒然内部変更で足りる**（API 形状維持） |
+| 4 | ~~徒然 Groonga 検索~~ | キーワード RAG 精度 | **決定:** PGroonga（徒然 DB）。[実装手順](./tsuredure-pgroonga-search.md) |
 | 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
 | 6 | マルチ Workspace 開発 | site + nyoy | OpenAPI 契約 + マルチルート推奨 |
 
@@ -260,7 +261,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 ### 徒然（site）側
 
 - API 書込 `body_format: markdown` → AsciiDoc 変換（Pandoc、**未実装**）
-- Groonga 全文検索（`GET /memos?q=` の内部実装差し替え）
+- PGroonga 全文検索（`Memo.search_text` 差し替え — **インストール OK**、[手順](./tsuredure-pgroonga-search.md)）
 - `export/deletions` エンドポイント
 
 ---
@@ -271,4 +272,5 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [徒然 API OpenAPI 草案](./openapi/kbmemo-v1.yaml)
 - [徒然リポジトリ](https://gitea.artif.org/Artif.org/kbmemo_site)
 - [プロンプト設計 再構築案](./prompt-architecture-redesign.md)
+- [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 - [README](../README.md)

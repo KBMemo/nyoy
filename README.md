@@ -232,4 +232,5 @@ bin/rails test
 - 設計詳細: `docs/prompt-architecture-redesign.md`
 - kbmemo エコシステム方針: `docs/ecosystem-roadmap.md`
 - 徒然 API 要件: `docs/tsuredure-api-requirements.md`
+- 徒然 PGroonga 検索: `docs/tsuredure-pgroonga-search.md`
 - seed 再適用: `bin/rails db:seed`

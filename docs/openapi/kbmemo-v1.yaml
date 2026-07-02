@@ -56,7 +56,8 @@ paths:
       tags: [memos]
       summary: メモ一覧・キーワード検索
       description: |
-        `q` 指定時はタイトル・本文の部分一致検索（徒然 `Memo.search_text` 相当）。
+        `q` 指定時はタイトル・本文を検索（徒然 `Memo.search_text`）。
+        PGroonga 導入後は日本語全文検索 + 関連度順。パラメータ形状は不変。
         未指定時は更新日時降順の一覧。
       parameters:
         - $ref: "#/components/parameters/QueryQ"

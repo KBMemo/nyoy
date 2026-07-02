@@ -511,13 +511,20 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 
 参照: `site/app/controllers/api/v1/`, `site/test/controllers/api/v1/`
 
-### 9.4 検索（確認済み）
+### 9.4 検索
 
-PostgreSQL の `LIKE` のみ（`Memo.search_text`）。Groonga / `to_tsvector` / ベクトル検索は**徒然側未使用**。
+**現状:** PostgreSQL の `LIKE` のみ（`Memo.search_text`）。
+
+**決定（2026-07）:** 徒然 DB（bowmore）へ **PGroonga** を導入。スタンドアロン Groonga サーバーは不採用。インストール **OK**。
+
+実装手順: [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 
 ```ruby
-# site/app/models/memo.rb
+# site/app/models/memo.rb（現行）
 where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, pattern)
+
+# 移行後（概要）
+where("(title || E'\\n' || body) &@~ ?", q).order(Arel.sql("pgroonga_score(tableoid, ctid) DESC"))
 ```
 
 **如意側:**
@@ -525,16 +532,15 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 - Chat ツール `search_memos` → `GET /api/v1/memos?q=`
 - メモ RAG キーワード leg → 同上（pgvector と RRF で併用）
 - 徒然メモ本文のベクトル検索は **如意 DB**（`PromptKnowledgeChunk` `source=memo`）で実施
-
-**Groonga 導入時（徒然 site Workspace）:**
+- **如意コード・API 形状の変更は不要**
 
 | 項目 | 内容 |
 |------|------|
-| HTTP API 変更 | **不要**（推奨）— `GET /memos?q=` の JSON 形状を維持し内部のみ Groonga 化 |
-| 如意変更 | **不要** — `TsurezureClient#list_memos` はそのまま |
-| 任意拡張 | `search_score` フィールド、 `?search=hybrid` 等（後方互換） |
+| HTTP API | **変更なし** — `GET /memos?q=` 維持 |
+| 如意 | **変更なし** — `TsurezureClient#list_memos` |
+| 任意拡張 | レスポンスに `search_score`（後方互換） |
 
-如意 Chat のメモ検索・RAG キーワード leg の精度は Groonga 化で向上する。export API は RAG 取込の正本。
+export API は RAG 取込の正本。キーワード検索精度は PGroonga 化で向上する。
 
 ### 9.5 認証・トークン（確認済み）
 
@@ -580,7 +586,7 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 - [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
 - [ ] 削除メモの RAG 同期方式（`export/deletions` 実装）
 - [ ] `visibility` が group のメモを API でどう扱うか
-- [ ] Groonga 全文検索（**徒然内部**。API 形状維持なら如意変更不要）
+- [ ] Groonga 全文検索 — **PGroonga 採用・インストール OK**（[実装手順](./tsuredure-pgroonga-search.md)）
 
 ---
 
@@ -594,7 +600,7 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 | P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` + webhook | 徒然側未実装 |
-| P3b | 徒然 Groonga 検索 | 徒然 site Workspace |
+| P3b | 徒然 PGroonga 検索 | **決定済・実装待ち**（[手順](./tsuredure-pgroonga-search.md)） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | 徒然 site Workspace |
 
 ---
@@ -615,4 +621,5 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 ## 12. 関連ドキュメント
 
 - [kbmemo エコシステム — 現状・方針・ロードマップ](./ecosystem-roadmap.md)
+- [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 - [OpenAPI 3.1 草案](./openapi/kbmemo-v1.yaml) — `kbmemo-v1.yaml`
