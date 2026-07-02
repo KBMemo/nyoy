@@ -21,6 +21,10 @@ Rails.application.config.x.nyoy.tap do |config|
     "SDCPP_DEFAULT_MODELS",
     "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL"
   ).split(",").map(&:strip).reject(&:empty?)
+  config.kbmemo_url = ENV.fetch("KBMEMO_URL", "https://kbmemo.net")
+  config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
+  config.searxng_url = ENV.fetch("SEARXNG_URL", "http://bowmore.artif.org:8080")
+  config.searxng_api_token = ENV["SEARXNG_API_TOKEN"]
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }

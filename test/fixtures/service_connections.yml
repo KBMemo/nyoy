@@ -43,3 +43,18 @@ sd_switchd:
   base_url: http://balvenie:11334
   enabled: true
   sort_order: 5
+
+kbmemo:
+  key: kbmemo
+  name: 徒然（KBMemo）
+  base_url: https://kbmemo.net
+  api_token: kbmemo_test_token
+  enabled: true
+  sort_order: 6
+
+searxng:
+  key: searxng
+  name: SearXNG
+  base_url: http://bowmore.artif.org:8080
+  enabled: true
+  sort_order: 7

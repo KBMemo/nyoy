@@ -1,0 +1,8 @@
+<% message = local_assigns[:message] %>
+<div id="message_<%= message.id %>" class="nyoy-chat-message nyoy-chat-message-error">
+  <div class="nyoy-chat-message-role">エラー</div>
+  <div class="kb-alert kb-alert-danger">
+    <p class="whitespace-pre-wrap text-sm m-0"><%= message.chat_error_message %></p>
+  </div>
+  <div class="nyoy-chat-message-meta"><%= l(message.created_at, format: :short) if message.created_at %></div>
+</div>

@@ -2,8 +2,8 @@
 
 如意（Nyoy）から徒然（kbmemo.net）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
 
-**ステータス:** Phase 0 — 要件整理（徒然現状調査済み）  
-**前提:** 徒然側の実装は [kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル: `~/work/kbmemo/site`）を正とする。本書は如意側の要求と、調査結果に基づくギャップ分析を含む。
+**ステータス:** Phase 4b 完了 — 徒然 API v1 本番稼働、如意 Client / Chat ツール接続確認済み  
+**前提:** 徒然側の実装は [kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル: `~/work/kbmemo/site`）を正とする。
 
 ---
 
@@ -449,18 +449,18 @@ GET /memos/export     →     MemoIngestJob
 
 参照: `site/app/models/memo.rb`, `site/db/schema.rb`
 
-### 9.3 既存 API（確認済み）
+### 9.3 既存 API（確認済み → 2026-07 実装済み）
 
 | エンドポイント | 用途 | 認証 |
 |---------------|------|------|
 | `POST /api/clips` | Web クリッパー → メモ作成 | Bearer `clip_api_token` |
-| `GET /internal/tsuzura/albums` | 葛籠アルバム一覧 | セッション / 内部シークレット |
-| `POST /internal/tsuzura/sign_urls` | 署名 URL 生成 | 同上 |
-| `GET /up` | ヘルスチェック | なし |
+| `GET /api/v1/me` | アカウント情報 | 同上 |
+| `GET/POST/PATCH/DELETE /api/v1/memos` | メモ CRUD + 検索 | 同上 |
+| `GET /api/v1/memos/export` | RAG 用 export | 同上 |
+| `GET /api/v1/memos/export/deletions` | 削除フィード | **501 未実装** |
+| `GET /internal/tsuzura/*` | 葛籠（Web UI 内部） | セッション / 内部シークレット |
 
-**無いもの:** 汎用メモ REST API、GraphQL、RSS/JSON export、`updated_since` 差分 API、削除フィード。
-
-参照: `site/config/routes.rb`, `site/app/controllers/api/`
+参照: `site/app/controllers/api/v1/`, `site/test/controllers/api/v1/`
 
 ### 9.4 検索（確認済み）
 
@@ -494,51 +494,50 @@ where("LOWER(title) LIKE LOWER(?) OR LOWER(body) LIKE LOWER(?)", pattern, patter
 | Rake | `kbmemo:notebook:export`, `kbmemo:docs:sync` |
 | HTTP API | **なし** |
 
-### 9.7 ギャップ分析（要件 vs 現状）
+### 9.7 ギャップ分析（2026-07 更新）
 
-| 如意の要求 | 徒然現状 | 必要な作業 |
-|-----------|----------|-----------|
-| `GET /api/v1/memos` 検索 | HTML `?q=` のみ | JSON API 新規 |
-| `GET /api/v1/memos/:uid` | HTML show のみ | JSON API 新規 |
-| `POST /api/v1/memos` | `POST /api/clips` のみ（HTML 変換） | 汎用 create 追加 |
-| `PATCH` 更新 + 競合検知 | 未実装 | API + `updated_at` チェック |
-| `export?updated_since=` | 未実装 | RAG 用 export 新規 |
-| 削除フィード | 物理削除のみ | tombstone または削除ログ新規 |
-| Bearer 認証 | clip トークンあり | 拡張 or 流用 |
-| AsciiDoc 本文 | ✓ 既存 | 如意側も AsciiDoc 前提に |
-| ULID | ✓ 既存 | API は `uid` を主キーに |
+| 如意の要求 | 徒然 | 如意 |
+|-----------|------|------|
+| `GET /api/v1/memos` 検索 | ✓ 実装・本番 | ✓ `TsurezureClient#list_memos` |
+| `GET /api/v1/memos/:uid` | ✓ | ✓ `get_memo` |
+| `POST /api/v1/memos` | ✓ | ✓ `create_memo` ツール |
+| `PATCH` + 競合検知 | ✓ `stale_memo` | ✓ `update_memo` ツール |
+| `export?updated_since=` | ✓ | ✗ 取込ジョブ未実装 |
+| 削除フィード | ✗ 501 | ✗ |
+| Bearer 認証 | ✓ `clip_api_token` | ✓ `ServiceConnection` `kbmemo` |
+| DB 接続登録 | — | ✓ 設定 → 接続 |
 
 ### 9.8 徒然側への残確認事項
 
-- [ ] 如意用トークンを `clip_api_token` と分離するか
-- [x] ~~API 作成メモの格納先ディレクトリ~~ — API 非公開。徒然側の既定ロジックに任せる
-- [ ] 下書きメモを export / 検索対象に含めるか
-- [ ] 削除メモの RAG 同期方式（tombstone テーブル vs 削除ログ）
+- [x] ~~如意用トークンを `clip_api_token` と分離するか~~ — **当面 clip 流用**
+- [x] ~~API 作成メモの格納先ディレクトリ~~ — API 非公開。徒然側 Home 既定
+- [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
+- [ ] 削除メモの RAG 同期方式（`export/deletions` 実装）
 - [ ] `visibility` が group のメモを API でどう扱うか
 
 ---
 
-## 10. 実装優先度（如意視点）
+## 10. 実装優先度（2026-07 更新）
 
-| 優先 | API | 理由 |
-|------|-----|------|
-| P0 | `GET /api/v1/memos/:uid` | 書き支援の前提 |
-| P0 | `GET /api/v1/memos?q=` | Chat 検索（既存 `search_text` を JSON 化） |
-| P1 | `POST /api/v1/memos` | Chat からの保存（clips を一般化） |
-| P1 | `GET /api/v1/memos/export?updated_since=` | RAG 取込 |
-| P2 | `PATCH /api/v1/memos/:uid` | 書き支援の反映 + `updated_at` 競合検知 |
-| P3 | webhook / 削除フィード | RAG 鮮度 |
+| 優先 | 項目 | 状態 |
+|------|------|------|
+| P0 | 徒然 API v1 CRUD + 検索 | **完了** |
+| P0 | 如意 `TsurezureClient` + Chat ツール | **完了** |
+| P1 | Chat 実運用検証（要約・保存・追記） | **推奨（今）** |
+| P1 | SearXNG + URL 取得ツール | 次フェーズ |
+| P2 | メモ RAG 取込（`export` + pgvector） | 未着手 |
+| P3 | `export/deletions` + webhook | 徒然側未実装 |
 
 ---
 
 ## 11. 次のアクション
 
-1. ~~**徒然の現状調査**~~ — 完了（§9 参照）
-2. ~~**API 契約の確定**~~ — OpenAPI 草案 [`docs/openapi/kbmemo-v1.yaml`](./openapi/kbmemo-v1.yaml)
-3. **徒然側 Phase 1 実装** — `Api::V1::MemosController` を `Api::BaseController` 上に追加
-4. **如意側スタブ** — `TsurezureClient` + Chat ツール prototype
-5. **RAG source 拡張** — AsciiDoc チャンク分割 + `kbmemo:memo:{uid}` 外部 ID
-6. **残確認事項の決定** — §9.8 の 5 点
+1. ~~徒然 API v1 実装~~ — 完了
+2. ~~如意 Client + Chat ツール~~ — 完了
+3. ~~本番接続確認・DB 登録~~ — 完了（`ServiceConnection` `kbmemo`）
+4. **Chat 運用検証** — 要約・保存・追記のプロンプト確認
+5. **Phase 1** — SearXNG + `fetch_url` ツール
+6. **Phase 3** — RAG `source` 拡張 + `MemoIngestJob`
 
 ---
 

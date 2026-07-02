@@ -7,7 +7,9 @@ module NyoyConnectionStore
     vision_llama: { url: :vision_llama_cpp_url, model: :vision_llama_model },
     embeddings: { url: :embeddings_url, model: :embeddings_model },
     sd_cpp: { url: :sd_cpp_url },
-    sd_switchd: { url: :sd_switchd_url, token: :sd_switchd_token }
+    sd_switchd: { url: :sd_switchd_url, token: :sd_switchd_token },
+    kbmemo: { url: :kbmemo_url, token: :kbmemo_api_token },
+    searxng: { url: :searxng_url, token: :searxng_api_token }
   }.freeze
 
   class << self
@@ -39,8 +41,8 @@ module NyoyConnectionStore
       true
     end
 
+    # 互換のため残す。接続は常に DB から読む。
     def clear_cache!
-      @cache = {}
     end
 
     private
@@ -48,8 +50,7 @@ module NyoyConnectionStore
     def connection(key)
       return nil unless table_ready?
 
-      @cache ||= {}
-      @cache[key.to_s] ||= ServiceConnection.find_by(key: key.to_s)
+      ServiceConnection.find_by(key: key.to_s)
     end
 
     def table_ready?

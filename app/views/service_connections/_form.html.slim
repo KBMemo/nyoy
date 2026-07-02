@@ -48,7 +48,10 @@
   div
     = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
     = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
-    p.mt-1.text-sm.kb-text-muted sd.cpp switchd の認証トークンなど。空欄のままなら環境変数を参照します。
+    - if service_connection.key == "searxng"
+      p.mt-1.text-sm.kb-text-muted SearXNG の認証トークン。空欄のまま更新すると既存のトークンは保持されます。
+    - else
+      p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 
   div
     = form.label :notes, "メモ", class: "#{kb_label} mb-1"

@@ -29,6 +29,24 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "http://balvenie:10022", NyoyConnectionStore.url(:vision_llama)
   end
 
+  test "update searxng api token" do
+    connection = service_connections(:searxng)
+
+    patch service_connection_path(connection), params: {
+      service_connection: {
+        name: connection.name,
+        base_url: connection.base_url,
+        api_token: "searx_saved_token",
+        enabled: true,
+        sort_order: connection.sort_order
+      }
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    assert_equal "searx_saved_token", connection.reload.api_token
+    assert_equal "searx_saved_token", NyoyConnectionStore.api_token(:searxng)
+  end
+
   test "refresh models updates server model from api" do
     connection = service_connections(:gpt_oss)
     connection.update!(server_model: "old-model")

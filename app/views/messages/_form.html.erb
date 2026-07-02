@@ -1,4 +1,4 @@
-<%= form_with(model: message, url: [@chat, message], id: "new_message", class: "space-y-4") do |form| %>
+<%= form_with(model: message, url: local_assigns.fetch(:form_url) { url_for([chat, message]) }, id: "new_message", class: "space-y-4") do |form| %>
   <% if message.errors.any? %>
     <div class="kb-alert kb-alert-danger">
       <ul class="list-disc pl-5">

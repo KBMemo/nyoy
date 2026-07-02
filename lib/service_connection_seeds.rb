@@ -6,15 +6,16 @@ module ServiceConnectionSeeds
   def seed!
     definitions.each_with_index do |definition, index|
       record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
-      record.assign_attributes(
+      attributes = {
         name: definition.fetch(:name),
         base_url: definition.fetch(:base_url),
         server_model: definition[:server_model],
-        api_token: definition[:api_token],
         enabled: definition.fetch(:enabled, true),
         sort_order: definition.fetch(:sort_order, index),
         notes: definition[:notes]
-      )
+      }
+      attributes[:api_token] = definition[:api_token] if definition[:api_token].present?
+      record.assign_attributes(attributes)
       record.save!
     end
 
@@ -65,6 +66,22 @@ module ServiceConnectionSeeds
         base_url: config.sd_cpp_switchd_url,
         api_token: config.sd_cpp_switchd_token,
         notes: "SD モデル切り替え"
+      },
+      {
+        key: "kbmemo",
+        name: "徒然（KBMemo）",
+        base_url: config.kbmemo_url,
+        api_token: config.kbmemo_api_token,
+        enabled: config.kbmemo_api_token.present?,
+        notes: "Chat メモツール用（clip API トークン）"
+      },
+      {
+        key: "searxng",
+        name: "SearXNG",
+        base_url: config.searxng_url,
+        api_token: config.searxng_api_token,
+        enabled: config.searxng_url.present?,
+        notes: "Chat web_search ツール用"
       }
     ]
   end

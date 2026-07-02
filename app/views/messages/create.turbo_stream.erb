@@ -2,6 +2,7 @@
   <%= turbo_stream.replace "new_message" do %>
     <%= render "messages/form",
       chat: @chat,
-      message: @chat.messages.build %>
+      message: @chat.messages.build,
+      form_url: chat_messages_path(@chat) %>
   <% end %>
 <% end %>

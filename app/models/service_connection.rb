@@ -8,6 +8,8 @@ class ServiceConnection < ApplicationRecord
     embeddings
     sd_cpp
     sd_switchd
+    kbmemo
+    searxng
   ].freeze
 
   KEY_LABELS = {
@@ -16,7 +18,9 @@ class ServiceConnection < ApplicationRecord
     "vision_llama" => "llama-server（画像理解）",
     "embeddings" => "埋め込み API",
     "sd_cpp" => "sd.cpp サーバー",
-    "sd_switchd" => "sd.cpp switchd"
+    "sd_switchd" => "sd.cpp switchd",
+    "kbmemo" => "徒然（KBMemo API）",
+    "searxng" => "SearXNG（Web 検索）"
   }.freeze
 
   CHAT_KEYS = %w[llama_cpp gpt_oss].freeze
@@ -61,6 +65,7 @@ class ServiceConnection < ApplicationRecord
 
   def clear_connection_cache
     NyoyConnectionStore.clear_cache!
+    ChatTools::Registry.reset_client!
   end
 
   def sync_chat_models

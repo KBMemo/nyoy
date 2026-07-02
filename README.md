@@ -75,8 +75,20 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `SDCPP_SWITCHD_URL` | モデル切り替え API の URL | `http://balvenie:11334` |
 | `SDCPP_SWITCHD_TOKEN` | switchd 認証トークン | （未設定） |
 | `SDCPP_DEFAULT_MODELS` | UI に表示する SD モデル（カンマ区切り） | `flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL` |
+| `KBMEMO_URL` | 徒然 API のベース URL | `https://kbmemo.net` |
+| `KBMEMO_API_TOKEN` | 徒然 clip API トークン（`kbmemo_...`） | （未設定） |
+
+接続は **設定 → 接続**（`/service_connections`）の `kbmemo` でも管理できます。`bin/rails db:seed` で DB 登録されます。
 
 ## 使い方
+
+### チャット（徒然連携）
+
+1. `/chats` で新規チャットを作成
+2. `kbmemo` 接続が有効なとき、メモ検索・取得・作成・更新ツールが自動で使えます
+3. 例: 「如意ノートを要約して」「この内容を徒然に保存して」
+
+詳細: [`docs/ecosystem-roadmap.md`](docs/ecosystem-roadmap.md)
 
 ### メモ挿絵
 
@@ -131,6 +143,8 @@ bin/rails test
 | `/memo_illustrations/new` | メモ挿絵の新規生成 |
 | `/image_generations` | 画像生成履歴 |
 | `/image_generations/new` | 画像の新規生成 |
+| `/chats` | チャット（徒然メモツール連携） |
+| `/service_connections` | 接続管理（設定 → 接続） |
 | `/prompt_knowledge_chunks` | プロンプトナレッジ (RAG) |
 | `/prompt_styles` | プロンプトスタイル |
 | `/sd_model_profiles` | SD モデルプロファイル |
@@ -142,4 +156,5 @@ bin/rails test
 - Turbo Stream 更新時の画像 URL は相対パス（`/rails/active_storage/...`）を使用。`ApplicationHelper#nyoy_blob_image_tag` 参照
 - スタイル / render preset / 能力の seed: `lib/prompt_style_seeds.rb`, `lib/render_preset_seeds.rb`, `lib/capability_seeds.rb`
 - 設計詳細: `docs/prompt-architecture-redesign.md`
+- kbmemo エコシステム方針: `docs/ecosystem-roadmap.md`
 - seed 再適用: `bin/rails db:seed`

@@ -19,4 +19,10 @@ class NyoyConnectionStoreTest < ActiveSupport::TestCase
     assert_equal Rails.application.config.x.nyoy.llama_cpp_url, NyoyConnectionStore.url(:llama_cpp)
     assert_equal Rails.application.config.x.nyoy.llama_model, NyoyConnectionStore.server_model(:llama_cpp)
   end
+
+  test "reads updated url without explicit cache clear" do
+    service_connections(:gpt_oss).update!(base_url: "http://updated-gpt-oss:10012")
+
+    assert_equal "http://updated-gpt-oss:10012", NyoyConnectionStore.url(:gpt_oss)
+  end
 end

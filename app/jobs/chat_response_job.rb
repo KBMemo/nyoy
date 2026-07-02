@@ -13,6 +13,8 @@ class ChatResponseJob < ApplicationJob
     end
 
     persist_assistant_timing(chat, timer)
+  rescue RubyLLM::Error, StandardError => e
+    ChatErrorBroadcaster.fail!(chat, e)
   end
 
   private

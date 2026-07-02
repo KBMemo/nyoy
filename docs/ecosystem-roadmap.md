@@ -74,14 +74,15 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | 部分修正（inpaint） | `memo_illustrations#inpaint` | 運用中 |
 | 画像理解 | `image_understandings` + `VisionChatService` | 運用中（独立 UI） |
 | プロンプトナレッジ CRUD | `prompt_knowledge_chunks` | 運用中 |
-| Chat | `chats` / `messages` | 運用中（テキストのみ） |
-| 接続管理 | `service_connections` | 運用中 |
+| Chat | `chats` / `messages` | 運用中（**徒然メモツール配線済み**） |
+| 接続管理 | `service_connections` | 運用中（**設定 → 接続**、`/service_connections`） |
 | MCP サーバー | — | **未実装** |
-| 徒然・葛籠連携 | — | **未実装** |
+| 徒然連携 | `TsurezureClient` + `ChatTools::*` | **運用中**（本番 API 接続確認済み） |
+| 葛籠連携 | — | **未実装** |
 
 ### 2.3 接続管理（ServiceConnection）
 
-組み込みバックエンド 6 種を DB で管理。環境変数へのフォールバックあり。
+組み込みバックエンド **7 種** を DB で管理。環境変数へのフォールバックあり。
 
 | key | 用途 |
 |-----|------|
@@ -91,6 +92,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | `embeddings` | bge-m3 埋め込み |
 | `sd_cpp` | sd.cpp 画像生成 |
 | `sd_switchd` | SD モデル切り替え |
+| `kbmemo` | **徒然 API**（Chat メモツール、`clip_api_token`） |
 
 Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコードを同期する。
 
@@ -99,7 +101,17 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 - `ruby_llm` の `acts_as_chat` / `acts_as_message` / `acts_as_model`
 - `ChatResponseJob` が `chat.ask` を実行し、Turbo Stream でストリーミング
 - `ChatModelCatalog.context_for` で llama.cpp の OpenAI 互換 API に接続
-- `ToolCall` モデルは存在するが **ツール未配線**
+- **`ChatTools::Registry`** — `kbmemo` 接続が有効なとき徒然ツールを自動配線
+
+| ツール | 用途 |
+|--------|------|
+| `search_memos` | 徒然メモ検索 |
+| `get_memo` | メモ取得 |
+| `create_memo` | メモ作成（AsciiDoc） |
+| `update_memo` | 更新・末尾追記 |
+
+実装: `app/services/chat_tools/`, `app/services/tsurezure_client.rb`  
+接続設定: **設定 → 接続** の `kbmemo`、または `KBMEMO_URL` / `KBMEMO_API_TOKEN`
 
 ### 2.5 RAG
 
@@ -113,8 +125,8 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | 連携先 | 状態 |
 |--------|------|
 | llama.cpp / sd.cpp / embeddings | HTTP（ServiceConnection 経由） |
+| **徒然（kbmemo.net）** | **`/api/v1` 接続済み**（`TsurezureClient`、本番確認済み） |
 | SearXNG（bowmore.artif.org:8080） | **未接続** |
-| 徒然（kbmemo.net） | **未接続**（UI テーマのみ KBMemo 互換）。徒然側は `POST /api/clips` のみ API あり |
 | 葛籠（media.kbmemo.net） | **未接続**（徒然 UI から内部 API 経由で利用） |
 | MCP | **未実装** |
 
@@ -135,9 +147,9 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | Web 検索 | SearXNG（bowmore.artif.org:8080）経由 | ServiceConnection 追加 |
 | URL データ取得 | 指定 URL の HTML / テキスト抽出 | SSRF 対策必須 |
 | 画像理解 | 添付画像または葛籠 URL から分析 | `VisionChatService` 統合 |
-| 徒然メモ書き出し | Chat 結果を徒然に保存 | **徒然 API** |
-| 徒然メモ書き支援 | 徒然の下書きを読み、推敲・追記 | **徒然 API** |
-| メモ RAG 生成 | 徒然メモから embedding チャンクを生成 | **徒然 API** + RAG 一般化 |
+| 徒然メモ書き出し | Chat 結果を徒然に保存 | ✓ `create_memo` |
+| 徒然メモ書き支援 | 徒然の下書きを読み、推敲・追記 | ✓ `get_memo` / `update_memo` |
+| メモ RAG 生成 | 徒然メモから embedding チャンクを生成 | 徒然 `export` API + RAG 一般化 |
 
 ### 3.3 ツール層アーキテクチャ（目標）
 
@@ -147,7 +159,7 @@ Chat UI ──┐
 MCP Server ┘
 ```
 
-Chat と MCP で同じツール実装を共有する。`ChatResponseJob` に `with_tool` を配線し、MCP は JSON-RPC ハンドラから同一クラスを呼ぶ。
+Chat と MCP で同じツール実装を共有する。徒然メモツールは `ChatTools::*` に実装済み。MCP は JSON-RPC ハンドラから同一クラスを呼ぶ予定。
 
 ### 3.4 RAG 拡張方針
 
@@ -176,31 +188,32 @@ Chat と MCP で同じツール実装を共有する。`ChatResponseJob` に `wi
 
 ## 4. 段階的ロードマップ
 
-| Phase | 内容 | 主な成果物 | 依存 |
-|-------|------|-----------|------|
-| **0** | 徒然 API 要件整理 | `docs/tsuredure-api-requirements.md`（現状調査済み） | — |
-| **1** | Chat ツール基盤 + Web 検索 + URL 取得 | `ChatTools::*`, SearXNG 接続 | — |
-| **2** | Chat への画像理解統合 | メッセージ添付 / 葛籠 URL | Phase 1 |
-| **3** | RAG 一般化 + メモ取込 | `source` 拡張, 取込ジョブ | 徒然 API（読取） |
-| **4** | 徒然 API 連携 | メモ CRUD ツール, 書き支援 | 徒然 API（読書） |
-| **5** | 葛籠連携 | 生成物保管, Chat から画像参照 | 葛籠 API |
-| **6** | MCP サーバー公開 | `/mcp` エンドポイント | Phase 1–4 |
+| Phase | 内容 | 状態 |
+|-------|------|------|
+| **0** | 徒然 API 要件整理 | **完了** |
+| **0b** | OpenAPI 草案 | **完了** [`openapi/kbmemo-v1.yaml`](./openapi/kbmemo-v1.yaml) |
+| **4a** | 徒然 `/api/v1` 実装 | **完了**（kbmemo_site `32a51c6`、本番デプロイ済み） |
+| **4b** | 如意 `TsurezureClient` + Chat メモツール | **完了**（本番接続確認済み） |
+| **1** | Web 検索 + URL 取得 | **次** |
+| **2** | Chat への画像理解統合 | 未着手 |
+| **3** | RAG 一般化 + メモ取込 | 未着手 |
+| **5** | 葛籠連携 | 未着手 |
+| **6** | MCP サーバー公開 | 未着手 |
 
 ```mermaid
 gantt
-  title 如意 開発フェーズ（案）
+  title 如意 開発フェーズ
   dateFormat YYYY-MM
-  section 基盤
-  徒然 API 要件整理           :done, p0, 2026-07, 1M
-  Chat ツール + SearXNG       :p1, after p0, 1M
-  section Chat 拡張
+  section 完了
+  徒然 API 要件・OpenAPI     :done, p0, 2026-07, 1M
+  徒然 API v1 実装            :done, p4a, 2026-07, 1M
+  如意 Client + Chat ツール   :done, p4b, 2026-07, 1M
+  section 次
+  Web 検索 + URL 取得         :active, p1, 2026-07, 1M
+  section 将来
   画像理解を Chat に統合       :p2, after p1, 1M
-  section RAG
   RAG 一般化 + メモ取込        :p3, after p2, 1M
-  section 連携
-  徒然 API 連携               :p4, after p3, 2M
-  葛籠連携                    :p5, after p4, 1M
-  section MCP
+  葛籠連携                    :p5, after p3, 1M
   MCP サーバー公開            :p6, after p5, 1M
 ```
 
@@ -208,17 +221,58 @@ gantt
 
 ## 5. 未決事項
 
-| # | 論点 | 影響 |
-|---|------|------|
-| 1 | 徒然 API の認証方式（API キン / OAuth / セッション共有） | 如意・MCP 双方 |
-| 2 | 葛籠への画像移行タイミング（ActiveStorage のまま vs 葛籠正本） | 生成物の保管 |
-| 3 | メモ RAG の更新方式（webhook / 定期 sync / 手動） | 鮮度・運用コスト |
-| 4 | Chat モデル切替（テキスト vs vision を会話中で切替 vs vision 一本化） | UX・実装 |
-| 5 | MCP 利用者（Cursor のみ vs 徒然からも呼ぶ） | 認可設計 |
+| # | 論点 | 影響 | 備考 |
+|---|------|------|------|
+| 1 | ~~徒然 API 認証~~ | — | **決定:** 当面 `clip_api_token` 流用 |
+| 2 | 葛籠への画像移行タイミング | 生成物の保管 | |
+| 3 | メモ RAG の更新方式 | 鮮度・運用コスト | export + 定期 sync が現実的 |
+| 4 | Chat モデル切替 | UX・実装 | |
+| 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
+| 6 | 徒然 `export/deletions` | RAG 削除同期 | 徒然側 **未実装**（501） |
 
 ---
 
-## 6. 関連ドキュメント
+## 6. 次の作業（2026-07 時点）
+
+個人利用前提。優先度順。
+
+### すぐ試せる（検証）
+
+Chat で徒然連携の動作確認:
+
+- 「如意ノートの内容を要約して」（`search_memos` → `get_memo`）
+- 「この回答を徒然にメモして」（`create_memo`）
+- 「〇〇メモに追記して」（`get_memo` → `update_memo`）
+
+### Phase 1 — Chat ツール拡張（推奨・次）
+
+| タスク | 内容 |
+|--------|------|
+| SearXNG 接続 | `ServiceConnection` に `searxng` 追加、`ChatTools::WebSearch` |
+| URL 取得 | `ChatTools::FetchUrl`（SSRF 対策付き） |
+| 接続管理 UI | 設定 → 接続 で編集 |
+
+既存 `ChatTools::Registry` パターンに乗せる。
+
+### Phase 2 — 画像理解を Chat に
+
+- メッセージへの画像添付
+- `VisionChatService` を Chat ツール `analyze_image` 化
+
+### Phase 3 — メモ RAG
+
+- `PromptKnowledgeChunk` に `source` 列追加
+- 徒然 `GET /api/v1/memos/export` から取込ジョブ
+- Chat ツール `search_knowledge`（ベクトル検索）
+
+### 将来
+
+- 葛籠連携（生成画像の保管・参照）
+- MCP サーバー（`ChatTools::*` の再公開）
+
+---
+
+## 7. 関連ドキュメント
 
 - [徒然（tsuredure）API 要件](./tsuredure-api-requirements.md) — 如意から見た徒然 API の要求仕様・現状調査（Phase 0 完了）
 - [徒然 API OpenAPI 草案](./openapi/kbmemo-v1.yaml) — `kbmemo-v1.yaml`
