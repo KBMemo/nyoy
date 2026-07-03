@@ -95,6 +95,39 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_match(/画像がありません/, result[:error])
   end
 
+  test "analyze_image downloads tsuzura media when media id given" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    service_connections(:tsuzura).update!(api_token: "tsuzura_test", enabled: true)
+
+    fake_client = Object.new
+    fake_client.define_singleton_method(:download_media) do |media_id|
+      TsuzuraClient::Download.new(data: "png-bytes", content_type: "image/png", filename: "archived.png")
+    end
+    captured = {}
+    fake_service = Object.new
+    fake_service.define_singleton_method(:analyze) do |**kwargs|
+      captured[:image] = kwargs[:image]
+      "葛籠の画像です"
+    end
+
+    original_client = ChatTools::Registry.method(:tsuzura_client)
+    original_vision = ChatTools::Registry.method(:vision_service)
+    ChatTools::Registry.define_singleton_method(:tsuzura_client) { fake_client }
+    ChatTools::Registry.define_singleton_method(:vision_service) { fake_service }
+
+    result = ChatTools::AnalyzeImage.new(chat: chat).execute(
+      prompt: "何が写っていますか？",
+      tsuzura_media_id: "01JARCHIVED"
+    )
+
+    assert_equal "葛籠の画像です", result[:analysis]
+    assert_equal "01JARCHIVED", result[:tsuzura_media_id]
+    assert_equal "png-bytes", captured[:image]
+  ensure
+    ChatTools::Registry.define_singleton_method(:tsuzura_client, original_client) if defined?(original_client)
+    ChatTools::Registry.define_singleton_method(:vision_service, original_vision) if defined?(original_vision)
+  end
+
   test "get_media returns metadata from client" do
     fake_client = Object.new
     fake_client.define_singleton_method(:get_media) do |media_id|

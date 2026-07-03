@@ -141,7 +141,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | **徒然（kbmemo.net）** | **`/api/v1` 接続済み** |
 | **SearXNG** | **接続済み**（`web_search`） |
 | **readability-js-server** | **接続済み**（`fetch_url`） |
-| 葛籠（media.kbmemo.net） | `TsuzuraClient` + Chat ツール | **Phase 5a** |
+| 葛籠（media.kbmemo.net） | `TsuzuraClient` + Chat ツール + 生成メモ保存 | **Phase 5 完了** |
 | MCP | **未実装** |
 
 ---
@@ -206,7 +206,7 @@ MCP Server ┘
 | **3c** | 会話要約・トークン警告 UI | **完了** |
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
 | **2** | Chat への画像理解統合 | **完了** |
-| **5** | 葛籠連携 | **進行中**（Client + Chat アーカイブ + ツール） |
+| **5** | 葛籠連携 | **完了**（Client + Chat + 生成メモ保存 + Bearer バイナリ GET） |
 | **6** | MCP サーバー公開 | 未着手 |
 
 ```mermaid
@@ -241,10 +241,15 @@ gantt
 
 ## 6. 次の作業
 
-### 推奨（Phase 5）
+### 推奨（Phase 6）
 
-- 葛籠 URL 参照の設計
-- 添付ファイルの正本を葛籠へ
+- MCP サーバーで `ChatTools::*` を再公開
+
+### 完了（Phase 5）
+
+- 葛籠 Client + Chat メディアツール + 添付アーカイブ
+- 生成画像の徒然メモ保存（明示保存のみ）
+- Bearer 認証バイナリ GET（`/v1/media/:id/file`）
 
 ### 完了（Phase 2）
 

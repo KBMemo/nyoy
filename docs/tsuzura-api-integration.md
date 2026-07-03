@@ -24,7 +24,7 @@ KBMemo プロフィールで発行した `tsuzura_api_token` を使用。接続�
 
 | コンポーネント | 内容 |
 |----------------|------|
-| `TsuzuraClient` | `GET /v1/albums`, `GET /v1/media/:id`, `POST /v1/media/batch` |
+| `TsuzuraClient` | `GET /v1/albums`, `GET /v1/media/:id`, `GET /v1/media/:id/file`, `POST /v1/media/batch` |
 | `TsuzuraMediaUploader` | Chat 添付 → `Nyoy Chat` アルバムへアップロード |
 | `ChatTools::ListAlbums` | アルバム一覧 |
 | `ChatTools::GetMedia` | メディアメタデータ取得 |
@@ -62,9 +62,17 @@ image::media:01JH…[]
 
 対象: `image_generations`（仕上がり）、`memo_illustrations`、`img2img_generations`。
 
-## 今後（Phase 5c 以降）
-- Bearer 認証でのバイナリ GET（現状 web 配信はメモ署名 URL のみ）
-- MCP 公開（Phase 6）で `list_albums` / `get_media` を再掲
+## 実装済み（Phase 5c）
+
+| コンポーネント | 内容 |
+|----------------|------|
+| 葛籠 `GET /v1/media/:id/file` | Bearer 認証でバイナリ配信（`?source=original` で原画） |
+| `TsuzuraClient#download_media` | 上記 API のラッパー |
+| `analyze_image` | `tsuzura_media_id` 指定時は葛籠から取得して vision 解析 |
+
+`/v1/media/:id/web` は引き続き徒然メモ用の署名 URL のみ（Bearer 不可）。
+
+## 今後（Phase 6）
 
 ## 関連
 

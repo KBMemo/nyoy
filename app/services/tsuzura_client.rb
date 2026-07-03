@@ -17,6 +17,8 @@ class TsuzuraClient
     end
   end
 
+  Download = Data.define(:data, :content_type, :filename)
+
   DEFAULT_OPEN_TIMEOUT = 5
   DEFAULT_READ_TIMEOUT = 120
 
@@ -42,6 +44,11 @@ class TsuzuraClient
 
   def get_media(media_id)
     get_json("/media/#{encode_ref(media_id)}")
+  end
+
+  def download_media(media_id, source: nil)
+    query = source.to_s == "original" ? { source: "original" } : {}
+    get_binary("/media/#{encode_ref(media_id)}/file#{compact_query(**query)}")
   end
 
   def lookup_media(checksum:)
@@ -102,6 +109,17 @@ class TsuzuraClient
     request_json(:get, path)
   end
 
+  def get_binary(path)
+    raise Error, "葛籠 API が未設定です（tsuzura の URL と API トークンを設定してください）" unless configured?
+
+    uri = URI("#{@api_root}#{path}")
+    req = Net::HTTP::Get.new(uri)
+    req["Authorization"] = "Bearer #{@api_token}"
+
+    response = perform_request(uri, req)
+    parse_binary_response(response)
+  end
+
   def post_multipart(path, fields)
     raise Error, "葛籠 API が未設定です（tsuzura の URL と API トークンを設定してください）" unless configured?
 
@@ -146,6 +164,31 @@ class TsuzuraClient
     raise Error, "葛籠 API に接続できませんでした（#{e.message}）"
   rescue Net::OpenTimeout, Net::ReadTimeout, Timeout::Error
     raise Error, "葛籠 API がタイムアウトしました"
+  end
+
+  def parse_binary_response(response)
+    return build_download(response) if response.is_a?(Net::HTTPSuccess)
+
+    body = response.body.to_s
+    payload = body.present? ? JSON.parse(body) : {}
+    error = payload["error"]
+    message = if error.is_a?(Hash)
+                error["message"].presence || error["code"].presence || body
+              else
+                error.presence || body.presence || "HTTP #{response.code}"
+              end
+    raise Error.new(message, status: response.code.to_i, code: error.is_a?(Hash) ? error["code"] : nil)
+  rescue JSON::ParserError
+    raise Error.new("葛籠 API エラー（HTTP #{response.code}）", status: response.code.to_i)
+  end
+
+  def build_download(response)
+    filename = response["Content-Disposition"].to_s[/filename="?([^";]+)"?/, 1]
+    Download.new(
+      data: response.body.b,
+      content_type: response["Content-Type"].presence || "application/octet-stream",
+      filename: filename
+    )
   end
 
   def parse_response(response)

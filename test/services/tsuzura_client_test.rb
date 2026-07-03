@@ -64,4 +64,29 @@ class TsuzuraClientTest < ActiveSupport::TestCase
     assert_equal "01JTEST", result["id"]
     assert_equal "photo.png", result["original_filename"]
   end
+
+  test "download_media returns binary payload" do
+    client = TsuzuraClient.new(
+      base_url: "http://localhost:3008",
+      api_token: "tsuzura_test"
+    )
+    requested = []
+    client.define_singleton_method(:perform_request) do |uri, req|
+      requested << [uri.to_s, req["Authorization"]]
+      response = Net::HTTPOK.new("1.1", "200", "OK")
+      response["Content-Type"] = "image/png"
+      response["Content-Disposition"] = 'inline; filename="photo.png"'
+      response.instance_variable_set(:@body, "png-bytes")
+      def response.body = @body
+      response
+    end
+
+    result = client.download_media("01JTEST")
+
+    assert_equal "http://localhost:3008/v1/media/01JTEST/file", requested.first[0]
+    assert_equal "Bearer tsuzura_test", requested.first[1]
+    assert_equal "png-bytes", result.data
+    assert_equal "image/png", result.content_type
+    assert_equal "photo.png", result.filename
+  end
 end

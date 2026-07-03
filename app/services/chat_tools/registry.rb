@@ -25,9 +25,9 @@ module ChatTools
     TEXT
 
     VISION_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      analyze_image でユーザーが添付した画像を vision LLM で解析できます。
+      analyze_image でユーザーが添付した画像、または葛籠の tsuzura_media_id を vision LLM で解析できます。
       画像に関する質問や説明依頼では prompt に具体的な質問を渡してください。
-      添付が無い場合は使えません。
+      添付もメディア ID も無い場合は使えません。
     TEXT
 
     MEMO_TOOL_CLASSES = [
@@ -53,6 +53,7 @@ module ChatTools
 
     MEDIA_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       list_albums / get_media で葛籠（tsuzura）に保存されたメディアを参照できます。
+      Bearer 認証で GET /v1/media/:id/file からバイナリ取得可能です（如意は TsuzuraClient#download_media）。
       Chat に添付した画像は「Nyoy Chat」アルバムへ自動アーカイブされ、メタデータに tsuzura_media_id が付きます。
       create_memo / update_memo 実行時に image::media: マクロが自動挿入されます。
     TEXT
