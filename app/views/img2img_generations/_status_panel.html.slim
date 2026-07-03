@@ -60,6 +60,8 @@
     figure.nyoy-result-image.mt-2
       button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(img2img_generation.image) data-image-preview-label="生成結果" data-image-preview-download-url=nyoy_blob_download_path(img2img_generation.image, filename: "img2img-#{img2img_generation.id}.png")
         = nyoy_blob_image_tag img2img_generation.image, alt: img2img_generation.display_summary
+    .mt-2
+      = render "shared/save_to_kbmemo_button", attachment: img2img_generation.image_attachment, class: "kb-chrome-link text-sm", label: "徒然に保存"
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     - unless img2img_generation.in_progress?

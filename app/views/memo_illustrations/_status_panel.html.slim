@@ -56,6 +56,8 @@
     figure.nyoy-result-image.mt-2
       button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(display_attachment) data-image-preview-label=display_label data-image-preview-download-url=nyoy_blob_download_path(display_attachment, filename: display_attachment.filename.to_s)
         = nyoy_blob_image_tag display_attachment, alt: memo_illustration.body
+    .mt-2
+      = render "shared/save_to_kbmemo_button", attachment: display_attachment, class: "kb-chrome-link text-sm", label: "徒然に保存"
 
     - if memo_illustration.inpainted_attachment?(display_attachment)
       - breakdown = memo_illustration.inpaint_prompt_breakdown_for(display_attachment)

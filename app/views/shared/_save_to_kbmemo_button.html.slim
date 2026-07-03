@@ -1,0 +1,3 @@
+- return unless generation_memo_save_available?
+- label = local_assigns.fetch(:label, "徒然に保存")
+= button_to label, generation_memo_saves_path(attachment_id: attachment.id), method: :post, class: local_assigns.fetch(:class, "kb-chrome-link text-xs"), form: { data: { turbo: false } }

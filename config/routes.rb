@@ -47,6 +47,7 @@ Rails.application.routes.draw do
   resources :image_understandings, only: %i[new create]
 
   post "sd_prompt_token_count", to: "sd_prompt_tokens#create", as: :sd_prompt_token_count
+  post "generation_memo_saves", to: "generation_memo_saves#create", as: :generation_memo_saves
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.

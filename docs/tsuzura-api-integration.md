@@ -50,9 +50,19 @@ image::media:01JH…[]
 
 如意は `{TSUZURA_URL}/v1/...` を呼ぶ。詳細は kbmemo-media の [README](https://gitea.artif.org/Artif.org/kbmemo_site/src/branch/main/kbmemo-media/README.md) を参照。
 
-## 今後（Phase 5b 以降）
+## 実装済み（Phase 5b）
 
-- 生成画像（`image_generations` 等）の葛籠アーカイブ
+生成画像を **明示保存したときだけ** 徒然メモとして残す（一括葛籠アーカイブはしない）。
+
+| コンポーネント | 内容 |
+|----------------|------|
+| `GeneratedImageMemoSaver` | 画像を `Nyoy 生成` アルバムへ upload → 徒然に Markdown メモ作成 → `image::media:` 追記 |
+| `GenerationMemoBodyBuilder` | プロンプト・設定・如意 URL を Markdown 本文に整形 |
+| `GenerationMemoSavesController` | 生成画面の「徒然に保存」ボタン |
+
+対象: `image_generations`（仕上がり）、`memo_illustrations`、`img2img_generations`。
+
+## 今後（Phase 5c 以降）
 - Bearer 認証でのバイナリ GET（現状 web 配信はメモ署名 URL のみ）
 - MCP 公開（Phase 6）で `list_albums` / `get_media` を再掲
 

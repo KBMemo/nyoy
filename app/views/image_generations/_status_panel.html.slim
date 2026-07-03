@@ -115,8 +115,9 @@
       figure.nyoy-result-image.mt-2
         button.nyoy-result-preview-btn type="button" data-action="click->image-preview#open:stop" data-image-preview-url=nyoy_blob_image_path(image_generation.image) data-image-preview-label="仕上がり" data-image-preview-download-url=nyoy_blob_download_path(image_generation.image, filename: "generation-#{image_generation.id}.png")
           = nyoy_blob_image_tag image_generation.image, alt: image_generation.display_summary
-      .mt-2
+      .mt-2.flex.flex-wrap.items-center.gap-3
         = link_to "画像を保存", nyoy_blob_download_path(image_generation.image, filename: "generation-#{image_generation.id}.png"), class: "kb-chrome-link text-sm", download: ""
+        = render "shared/save_to_kbmemo_button", attachment: image_generation.image_attachment, class: "kb-chrome-link text-sm", label: "徒然に保存"
 
   .flex.flex-wrap.items-center.gap-3.mt-6
     = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }

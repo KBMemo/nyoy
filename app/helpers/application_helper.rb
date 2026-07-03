@@ -129,6 +129,10 @@ module ApplicationHelper
     end
   end
 
+  def generation_memo_save_available?
+    GeneratedImageMemoSaver.available?
+  end
+
   def nyoy_blob_download_path(source, filename: nil)
     return unless source
 
