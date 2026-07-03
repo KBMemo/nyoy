@@ -2,6 +2,7 @@
 
 class MemoIllustration < ApplicationRecord
   include GenerationProgressBroadcastable
+  include StylePlanConnectable
 
   has_one_attached :image
   has_many_attached :inpainted_images
@@ -182,7 +183,8 @@ class MemoIllustration < ApplicationRecord
   def apply_form_settings_to(illustration)
     illustration.assign_attributes(
       body: body,
-      style_id: style_id
+      style_id: style_id,
+      style_plan_connection_key: style_plan_connection_key
     )
   end
 

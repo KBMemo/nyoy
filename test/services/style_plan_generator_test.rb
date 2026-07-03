@@ -46,6 +46,26 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     assert_includes captured[:messages].last[:content], "chojugiga_emaki"
   end
 
+  test "uses StylePlanModelCatalog client when connection_key is given" do
+    captured = {}
+    client = FakeClient.new(
+      response: llama_response(
+        style_id: "chojugiga_emaki",
+        subject_prompt: "rabbit",
+        negative_extra: "",
+        aspect_ratio: "square"
+      ),
+      captured: captured
+    )
+
+    original = StylePlanModelCatalog.method(:client_for)
+    StylePlanModelCatalog.define_singleton_method(:client_for) { |**| client }
+    plan = StylePlanGenerator.new(flow: :memo, connection_key: "gpt_oss", retriever: FakeRetriever.new(chunks: [])).call("test")
+    assert_equal "chojugiga_emaki", plan.style_id
+  ensure
+    StylePlanModelCatalog.singleton_class.send(:define_method, :client_for, original)
+  end
+
   test "raises when query is blank" do
     assert_raises(StylePlanGenerator::Error) do
       StylePlanGenerator.new(flow: :memo, client: FakeClient.new(response: {}),

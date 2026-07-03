@@ -96,6 +96,59 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to service_connection_path(connection)
   end
 
+  test "new custom llm form" do
+    get new_service_connection_path(custom: 1)
+
+    assert_response :success
+    assert_match "カスタム LLM 接続", response.body
+    assert_match "llm_", response.body
+  end
+
+  test "create custom llm connection" do
+    assert_difference -> { ServiceConnection.count }, 1 do
+      post service_connections_path, params: {
+        custom: 1,
+        service_connection: {
+          key: "llm_test_server",
+          name: "Test Server",
+          base_url: "http://balvenie:10012",
+          server_model: "test-model",
+          enabled: true,
+          sort_order: 99
+        }
+      }
+    end
+
+    connection = ServiceConnection.find_by!(key: "llm_test_server")
+    assert_redirected_to service_connection_path(connection)
+    assert_equal "http://balvenie:10012", NyoyConnectionStore.url(:llm_test_server)
+  end
+
+  test "seed_missing registers missing builtin connections" do
+    ServiceConnection.where(key: "readability").delete_all
+
+    post seed_missing_service_connections_path
+
+    assert_redirected_to service_connections_path
+    assert ServiceConnection.exists?(key: "readability")
+    assert_match(/組み込み接続 1 件/, flash[:notice])
+  end
+
+  test "destroy custom llm connection" do
+    connection = ServiceConnection.create!(
+      key: "llm_delete_me",
+      name: "Delete Me",
+      base_url: "http://example.com:8080",
+      server_model: "test-model"
+    )
+
+    assert_difference -> { ServiceConnection.count }, -1 do
+      delete service_connection_path(connection)
+    end
+
+    assert_redirected_to service_connections_path
+  end
+
   private
 
   def with_fake_model_fetcher(result)

@@ -4,6 +4,17 @@ module ServiceConnectionSeeds
   module_function
 
   def seed!
+    upsert_definitions!(definitions)
+    NyoyConnectionStore.clear_cache!
+  end
+
+  def seed_missing!
+    missing = definitions.reject { |definition| ServiceConnection.exists?(key: definition.fetch(:key)) }
+    upsert_definitions!(missing)
+    missing.size
+  end
+
+  def upsert_definitions!(definitions)
     definitions.each_with_index do |definition, index|
       record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
       attributes = {
@@ -18,8 +29,6 @@ module ServiceConnectionSeeds
       record.assign_attributes(attributes)
       record.save!
     end
-
-    NyoyConnectionStore.clear_cache!
   end
 
   def definitions

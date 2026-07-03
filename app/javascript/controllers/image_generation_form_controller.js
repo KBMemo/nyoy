@@ -7,6 +7,7 @@ export default class extends Controller {
     "negativePrompt",
     "styleId",
     "aspectRatio",
+    "stylePlanConnectionKey",
     "insertSdPromptButton",
     "replaceSdPromptButton",
     "insertNegativePromptButton",
@@ -118,7 +119,8 @@ export default class extends Controller {
       body: JSON.stringify({
         japanese_prompt: japanesePrompt,
         style_id: this.styleId,
-        aspect_ratio: this.aspectRatio
+        aspect_ratio: this.aspectRatio,
+        style_plan_connection_key: this.stylePlanConnectionKey
       })
     })
 
@@ -200,6 +202,12 @@ export default class extends Controller {
     if (!this.hasAspectRatioTarget) return ""
 
     return this.aspectRatioTarget.value
+  }
+
+  get stylePlanConnectionKey() {
+    if (!this.hasStylePlanConnectionKeyTarget) return ""
+
+    return this.stylePlanConnectionKeyTarget.value
   }
 
   get csrfToken() {

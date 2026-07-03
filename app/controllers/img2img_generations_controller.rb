@@ -48,7 +48,10 @@ class Img2imgGenerationsController < ApplicationController
       return render json: { error: "日本語プロンプトを入力してください" }, status: :unprocessable_entity
     end
 
-    plan = StylePlanGenerator.new(flow: :free).call(
+    plan = StylePlanGenerator.new(
+      flow: :free,
+      connection_key: params[:style_plan_connection_key].presence
+    ).call(
       japanese_prompt,
       forced_style_id: params[:style_id].presence
     )
@@ -76,6 +79,7 @@ class Img2imgGenerationsController < ApplicationController
 
   def load_generation_options
     @prompt_styles = PromptStyle.enabled.ordered
+    load_style_plan_connection_options
   end
 
   def build_new_img2img_generation
@@ -145,6 +149,7 @@ class Img2imgGenerationsController < ApplicationController
       :prompt,
       :negative_prompt,
       :style_id,
+      :style_plan_connection_key,
       :aspect_ratio,
       :seed,
       :source_image,

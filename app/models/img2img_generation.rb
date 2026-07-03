@@ -2,6 +2,7 @@
 
 class Img2imgGeneration < ApplicationRecord
   include GenerationProgressBroadcastable
+  include StylePlanConnectable
 
   has_one_attached :source_image
   has_one_attached :mask_image
@@ -114,6 +115,7 @@ class Img2imgGeneration < ApplicationRecord
   def apply_settings_to(generation)
     generation.assign_attributes(
       style_id: style_id,
+      style_plan_connection_key: style_plan_connection_key,
       aspect_ratio: aspect_ratio,
       japanese_prompt: japanese_prompt,
       prompt: prompt,

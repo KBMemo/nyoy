@@ -18,28 +18,28 @@ module NyoyConnectionStore
       record = connection(key)
       return record.base_url if record&.enabled? && record.base_url.present?
 
-      env_value(key, :url)
+      env_value(key, :url) if FALLBACKS.key?(key.to_sym)
     end
 
     def server_model(key)
       record = connection(key)
       return record.server_model if record&.enabled? && record.server_model.present?
 
-      env_value(key, :model)
+      env_value(key, :model) if FALLBACKS.key?(key.to_sym)
     end
 
     def api_token(key)
       record = connection(key)
       return record.api_token if record&.enabled? && record.api_token.present?
 
-      env_value(key, :token)
+      env_value(key, :token) if FALLBACKS.key?(key.to_sym)
     end
 
     def enabled?(key)
       record = connection(key)
       return record.enabled? if record
 
-      true
+      FALLBACKS.key?(key.to_sym)
     end
 
     # 互換のため残す。接続は常に DB から読む。

@@ -53,6 +53,8 @@
     = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
     = form.text_area :japanese_prompt, rows: 4, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風の水彩タッチに仕上げる", data: { image_generation_form_target: "japanesePrompt" }
 
+  = render "shared/style_plan_connection_select", form: form
+
   - if @prompt_styles.any?
     div
       = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"

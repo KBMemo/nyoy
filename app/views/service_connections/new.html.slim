@@ -1,1 +1,1 @@
-= render "form", service_connection: @service_connection, title: "新しい接続"
+= render "form", service_connection: @service_connection, title: (@custom_llm ? "カスタム LLM 接続" : "組み込み接続")

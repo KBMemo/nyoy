@@ -26,10 +26,9 @@ class ServiceConnectionModelFetcher
   private
 
   def fetch_models
-    case @connection.key
-    when *OPENAI_COMPAT_KEYS
+    if @connection.custom_llm? || OPENAI_COMPAT_KEYS.include?(@connection.key)
       fetch_openai_compatible_models
-    when "sd_switchd"
+    elsif @connection.key == "sd_switchd"
       fetch_sd_switchd_models
     else
       raise Error, "この接続種別はモデル取得に対応していません"

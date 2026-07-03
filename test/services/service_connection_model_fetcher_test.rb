@@ -30,6 +30,24 @@ class ServiceConnectionModelFetcherTest < ActiveSupport::TestCase
     assert_match(/対応していません/, result.message)
   end
 
+  test "fetches models for custom llm" do
+    connection = ServiceConnection.create!(
+      key: "llm_fetch_test",
+      name: "Fetch Test",
+      base_url: "http://balvenie:10012",
+      server_model: "test-model"
+    )
+    fetcher = ServiceConnectionModelFetcher.new(connection)
+    fetcher.define_singleton_method(:perform_get) do |uri, **|
+      { status: 200, body: { data: [{ id: "custom-model" }] }.to_json }
+    end
+
+    result = fetcher.call
+
+    assert result.ok
+    assert_equal ["custom-model"], result.models
+  end
+
   test "reports invalid json" do
     connection = service_connections(:llama_cpp)
     fetcher = ServiceConnectionModelFetcher.new(connection)

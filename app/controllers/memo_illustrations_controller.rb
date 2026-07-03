@@ -132,10 +132,11 @@ class MemoIllustrationsController < ApplicationController
 
   def load_prompt_styles
     @prompt_styles = PromptStyle.enabled.ordered
+    load_style_plan_connection_options
   end
 
   def memo_illustration_params
-    params.require(:memo_illustration).permit(:body, :style_id)
+    params.require(:memo_illustration).permit(:body, :style_id, :style_plan_connection_key)
   end
 
   def build_new_memo_illustration

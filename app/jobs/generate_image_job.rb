@@ -33,7 +33,7 @@ class GenerateImageJob < ApplicationJob
   def plan_and_resolve!(generation)
     generation.update!(status: "translating", prompt_started_at: Time.current)
 
-    plan = StylePlanGenerator.new(flow: :free).call(
+    plan = StylePlanGenerator.new(flow: :free, connection_key: generation.style_plan_connection_key).call(
       generation.japanese_prompt,
       forced_style_id: generation.style_id.presence
     )

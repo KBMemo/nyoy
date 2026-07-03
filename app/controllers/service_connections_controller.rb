@@ -5,28 +5,38 @@ class ServiceConnectionsController < ApplicationController
 
   def index
     @service_connections = ServiceConnection.ordered
+    @missing_builtin_keys = ServiceConnection.available_keys
   end
 
   def show
   end
 
   def new
+    @custom_llm = ActiveModel::Type::Boolean.new.cast(params[:custom])
     @service_connection = ServiceConnection.new(
       enabled: true,
       sort_order: ServiceConnection.maximum(:sort_order).to_i + 1
     )
-    @available_keys = ServiceConnection.available_keys
+    @service_connection.key = "llm_" if @custom_llm
+    @available_keys = ServiceConnection.available_keys unless @custom_llm
   end
 
   def create
     @service_connection = ServiceConnection.new(service_connection_params)
-    @available_keys = ServiceConnection.available_keys
+    @custom_llm = @service_connection.custom_llm?
+    @available_keys = ServiceConnection.available_keys unless @custom_llm
 
     if @service_connection.save
       redirect_to @service_connection, notice: "接続を登録しました。"
     else
       render :new, status: :unprocessable_entity
     end
+  end
+
+  def seed_missing
+    count = ServiceConnectionSeeds.seed_missing!
+    message = count.positive? ? "組み込み接続 #{count} 件を登録しました。" : "未登録の組み込み接続はありません。"
+    redirect_to service_connections_path, notice: message
   end
 
   def edit

@@ -8,4 +8,9 @@ class ApplicationController < ActionController::Base
 
     Model.where(provider: "openai", model_id: ChatModelCatalog.model_ids).order(:name)
   end
+
+  def load_style_plan_connection_options
+    ChatModelCatalog.seed! if ServiceConnection.chat_backends.enabled.any?
+    @style_plan_connection_options = StylePlanModelCatalog.options_for_select
+  end
 end

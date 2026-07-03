@@ -127,6 +127,7 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `CHAT_SUMMARY_LLM` | 要約に llama.cpp を使う | `false` |
 | `CHAT_CONTEXT_TOKEN_WARN_RATIO` | 推定 tokens が context の何割で警告するか | `0.75` |
 | `CHAT_RESPONSE_TOKEN_RESERVE` | 回答用に空ける tokens | `2000` |
+| `STYLE_PLAN_CONNECTION_KEY` | 画像生成プロンプト変換の既定接続 | `llama_cpp` |
 | `MEMO_RAG_ENABLED` | メモ RAG 自動注入 | `true` |
 | `MEMO_RAG_TOP_K_SIMPLE` / `_NORMAL` / `_COMPLEX` | 質問複雑度別 top_k | `3` / `5` / `10` |
 | `MEMO_RAG_MAX_CHARS` | RAG 注入全体の文字上限 | `12000` |

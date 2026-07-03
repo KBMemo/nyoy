@@ -2,6 +2,7 @@
 
 class ImageGeneration < ApplicationRecord
   include GenerationProgressBroadcastable
+  include StylePlanConnectable
 
   belongs_to :render_preset, optional: true
   belongs_to :refine_render_preset, class_name: "RenderPreset", optional: true
@@ -181,6 +182,7 @@ class ImageGeneration < ApplicationRecord
       render_preset: render_preset,
       refine_render_preset: refine_render_preset,
       style_id: style_id,
+      style_plan_connection_key: style_plan_connection_key,
       aspect_ratio: aspect_ratio,
       japanese_prompt: japanese_prompt,
       prompt: prompt,

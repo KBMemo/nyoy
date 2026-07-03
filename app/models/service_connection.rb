@@ -13,6 +13,9 @@ class ServiceConnection < ApplicationRecord
     readability
   ].freeze
 
+  CHAT_BUILTIN_KEYS = %w[llama_cpp gpt_oss].freeze
+  CUSTOM_LLM_KEY_FORMAT = /\Allm_[a-z0-9_]+\z/
+
   KEY_LABELS = {
     "llama_cpp" => "llama-server（テキスト LLM）",
     "gpt_oss" => "llama-server（GPT-OSS）",
@@ -25,16 +28,17 @@ class ServiceConnection < ApplicationRecord
     "readability" => "readability-js-server（本文抽出）"
   }.freeze
 
-  CHAT_KEYS = %w[llama_cpp gpt_oss].freeze
-
   validates :key, :name, :base_url, presence: true
   validates :key, uniqueness: true
-  validates :key, inclusion: { in: BUILTIN_KEYS }
+  validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
+  validate :key_must_be_allowed
   validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
+  validates :server_model, presence: true, if: :custom_llm?
 
   scope :enabled, -> { where(enabled: true) }
   scope :ordered, -> { order(sort_order: :asc, name: :asc) }
-  scope :chat_backends, -> { where(key: CHAT_KEYS) }
+  scope :chat_backends, -> { where(key: chat_keys) }
+  scope :custom_llms, -> { where("key LIKE ?", "llm_%") }
 
   before_destroy :prevent_builtin_destroy
   after_save :clear_connection_cache
@@ -44,12 +48,22 @@ class ServiceConnection < ApplicationRecord
     BUILTIN_KEYS.include?(key)
   end
 
+  def custom_llm?
+    key.to_s.match?(CUSTOM_LLM_KEY_FORMAT)
+  end
+
   def key_label
+    return "カスタム LLM（#{key}）" if custom_llm?
+
     KEY_LABELS.fetch(key, key)
   end
 
   def chat_backend?
-    CHAT_KEYS.include?(key)
+    self.class.chat_keys.include?(key)
+  end
+
+  def self.chat_keys
+    CHAT_BUILTIN_KEYS + custom_llms.pluck(:key)
   end
 
   def self.available_keys
@@ -57,6 +71,14 @@ class ServiceConnection < ApplicationRecord
   end
 
   private
+
+  def key_must_be_allowed
+    return if key.blank?
+    return if builtin?
+    return if custom_llm?
+
+    errors.add(:key, "は組み込み key か llm_ で始まるカスタム key にしてください")
+  end
 
   def prevent_builtin_destroy
     return unless builtin?

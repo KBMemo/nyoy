@@ -20,6 +20,9 @@ Rails.application.routes.draw do
   end
   resources :prompt_knowledge_chunks
   resources :service_connections do
+    collection do
+      post :seed_missing
+    end
     member do
       post :refresh_models
     end

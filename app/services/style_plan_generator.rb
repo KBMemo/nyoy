@@ -14,9 +14,10 @@ class StylePlanGenerator
     keyword_init: true
   )
 
-  def initialize(flow:, client: LlamaCppClient.new, retriever: PromptKnowledgeRetriever.new)
+  def initialize(flow:, client: nil, connection_key: nil, retriever: PromptKnowledgeRetriever.new)
     @flow = flow
-    @client = client
+    @connection_key = connection_key
+    @client = client || StylePlanModelCatalog.client_for(connection_key: connection_key)
     @retriever = retriever
   end
 

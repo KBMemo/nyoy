@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_02_212540) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_03_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -92,6 +92,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_212540) do
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
     t.string "style_id"
+    t.string "style_plan_connection_key"
     t.datetime "updated_at", null: false
     t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
@@ -130,6 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_212540) do
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 22, null: false
     t.string "style_id"
+    t.string "style_plan_connection_key"
     t.datetime "updated_at", null: false
     t.boolean "use_source_dimensions", default: true, null: false
     t.boolean "vae_tiling", default: true, null: false
@@ -179,6 +181,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_212540) do
     t.string "status", default: "pending", null: false
     t.integer "steps", default: 20, null: false
     t.string "style_id"
+    t.string "style_plan_connection_key"
     t.datetime "updated_at", null: false
     t.integer "width", default: 512, null: false
     t.index ["style_id"], name: "index_memo_illustrations_on_style_id"

@@ -1,0 +1,12 @@
+- if @style_plan_connection_options.any?
+  div
+    = form.label :style_plan_connection_key, "プロンプト変換モデル", class: "#{kb_label} mb-1"
+    = form.select :style_plan_connection_key,
+        options_for_select(@style_plan_connection_options, form.object.style_plan_connection_key || StylePlanModelCatalog.default_connection_key),
+        {},
+        class: kb_field_input_classes,
+        data: { image_generation_form_target: "stylePlanConnectionKey" }
+    p.mt-1.text-sm.kb-text-muted
+      | 接続設定の LLM で style 計画 JSON を生成します（
+      = link_to "接続", service_connections_path, class: "kb-chrome-link"
+      | ）。

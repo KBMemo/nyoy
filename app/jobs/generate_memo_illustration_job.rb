@@ -22,7 +22,7 @@ class GenerateMemoIllustrationJob < ApplicationJob
   def plan_prompts(illustration)
     illustration.update!(status: "planning", prompt_started_at: Time.current)
 
-    plan = StylePlanGenerator.new(flow: :memo).call(
+    plan = illustration.style_plan_generator(flow: :memo).call(
       illustration.body,
       forced_style_id: illustration.style_id.presence
     )

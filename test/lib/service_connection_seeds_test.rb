@@ -25,4 +25,19 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
   ensure
     Rails.application.config.x.nyoy.searxng_api_token = ENV["SEARXNG_API_TOKEN"]
   end
+
+  test "seed_missing creates only missing builtin connections" do
+    ServiceConnection.where(key: "readability").delete_all
+
+    count = ServiceConnectionSeeds.seed_missing!
+
+    assert_equal 1, count
+    assert ServiceConnection.exists?(key: "readability")
+  end
+
+  test "seed_missing returns zero when all builtins exist" do
+    ServiceConnectionSeeds.seed!
+
+    assert_equal 0, ServiceConnectionSeeds.seed_missing!
+  end
 end

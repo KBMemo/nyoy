@@ -1,9 +1,12 @@
 - content_for :title, title
+- custom_llm = @custom_llm || service_connection.custom_llm?
 
 .mb-6
   h1 class=kb_page_title = title
 
 = form_with model: service_connection, class: "space-y-4 max-w-3xl" do |form|
+  - if custom_llm && !service_connection.persisted?
+    input type="hidden" name="custom" value="1"
   - if service_connection.errors.any?
     .kb-alert.kb-alert-danger
       ul.list-disc.pl-5
@@ -14,13 +17,20 @@
     = form.label :key, "key（内部識別子）", class: "#{kb_label} mb-1"
     - if service_connection.persisted?
       p.nyoy-monospace.text-sm.kb-text-secondary = service_connection.key
-      p.mt-1.text-sm.kb-text-muted 組み込み接続の key は変更できません。
+      p.mt-1.text-sm.kb-text-muted key は変更できません。
+    - elsif custom_llm
+      = form.text_field :key, required: true, class: kb_field_input_classes, placeholder: "llm_balvenie_10012"
+      p.mt-1.text-sm.kb-text-muted
+        | llama-server 互換 API 用。必ず
+        code llm_
+        |  で始め、小文字英数字と _ のみ。Chat・画像プロンプト変換の選択肢に出ます。
     - else
       - available_keys = @available_keys || ServiceConnection.available_keys
       - if available_keys.any?
         = form.select :key, available_keys.map { |key| [ServiceConnection::KEY_LABELS.fetch(key, key), key] }, { prompt: "選択してください" }, required: true, class: kb_field_input_classes
       - else
-        p.text-sm.kb-text-muted 登録可能な key がありません。
+        p.text-sm.kb-text-muted 未登録の組み込み key がありません。
+        = link_to "カスタム LLM を追加", new_service_connection_path(custom: 1), class: "kb-chrome-link text-sm"
 
   div
     = form.label :name, "表示名", class: "#{kb_label} mb-1"
@@ -31,27 +41,28 @@
     = form.url_field :base_url, required: true, class: kb_field_input_classes, placeholder: "http://balvenie:10010"
 
   div
-    = form.label :server_model, "モデル名（任意）", class: "#{kb_label} mb-1"
+    = form.label :server_model, custom_llm ? "モデル名" : "モデル名（任意）", class: "#{kb_label} mb-1"
     - model_options = Array(@model_options)
     - if model_options.any?
       - choices = model_options.map { |model| [model, model] }
       - if service_connection.server_model.present? && !model_options.include?(service_connection.server_model)
         - choices.unshift(["#{service_connection.server_model}（現在の設定）", service_connection.server_model])
-      = form.select :server_model, choices, { include_blank: "選択しない" }, class: kb_field_input_classes
+      = form.select :server_model, choices, { include_blank: custom_llm ? false : "選択しない" }, class: kb_field_input_classes, required: custom_llm
       p.mt-1.text-sm.kb-text-muted 接続先 API から取得したモデル候補です。
     - else
-      = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias"
-      p.mt-1.text-sm.kb-text-muted llama-server / 埋め込み API で使うモデル名。編集時に接続先 API から候補を取得できない場合は手入力します。
+      = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias", required: custom_llm
+      p.mt-1.text-sm.kb-text-muted llama-server / 埋め込み API のモデル名。編集画面の「モデル取得」でも候補を取得できます。
     - if @model_options_error.present?
       p.mt-1.text-sm.kb-text-muted = "モデル候補を取得できませんでした: #{@model_options_error}"
 
-  div
-    = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
-    = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
-    - if service_connection.key == "searxng"
-      p.mt-1.text-sm.kb-text-muted SearXNG の認証トークン。空欄のまま更新すると既存のトークンは保持されます。
-    - else
-      p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
+  - unless custom_llm
+    div
+      = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
+      = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
+      - if service_connection.key == "searxng"
+        p.mt-1.text-sm.kb-text-muted SearXNG の認証トークン。空欄のまま更新すると既存のトークンは保持されます。
+      - else
+        p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 
   div
     = form.label :notes, "メモ", class: "#{kb_label} mb-1"
@@ -66,5 +77,7 @@
       span 有効
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit(service_connection.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    - available = @available_keys || ServiceConnection.available_keys
+    - submit_disabled = !service_connection.persisted? && !custom_llm && available.empty?
+    = form.submit(service_connection.persisted? ? "更新" : "作成", class: kb_btn_primary_sm, disabled: submit_disabled)
     = link_to "キャンセル", service_connection.persisted? ? service_connection_path(service_connection) : service_connections_path, class: "kb-chrome-link text-sm"

@@ -78,7 +78,10 @@ class ImageGenerationsController < ApplicationController
       return render json: { error: "日本語プロンプトを入力してください" }, status: :unprocessable_entity
     end
 
-    plan = StylePlanGenerator.new(flow: :free).call(
+    plan = StylePlanGenerator.new(
+      flow: :free,
+      connection_key: params[:style_plan_connection_key].presence
+    ).call(
       japanese_prompt,
       forced_style_id: params[:style_id].presence
     )
@@ -108,6 +111,7 @@ class ImageGenerationsController < ApplicationController
     @prompt_styles = PromptStyle.enabled.ordered
     @draft_render_presets = RenderPreset.of_kind("draft").ordered
     @refine_render_presets = RenderPreset.of_kind("refine").ordered
+    load_style_plan_connection_options
   end
 
   def build_new_image_generation
@@ -152,6 +156,7 @@ class ImageGenerationsController < ApplicationController
       :prompt,
       :negative_prompt,
       :style_id,
+      :style_plan_connection_key,
       :aspect_ratio,
       :seed,
       :render_preset_id,

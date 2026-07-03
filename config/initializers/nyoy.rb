@@ -43,7 +43,7 @@ Rails.application.config.x.nyoy.tap do |config|
   config.chat_summary_max_tokens = ENV.fetch("CHAT_SUMMARY_MAX_TOKENS", 300).to_i
   config.memo_rag_max_tokens = ENV.fetch("MEMO_RAG_MAX_TOKENS", 1500).to_i
   config.chat_response_token_reserve = ENV.fetch("CHAT_RESPONSE_TOKEN_RESERVE", 2000).to_i
-  config.chat_context_token_warn_ratio = ENV.fetch("CHAT_CONTEXT_TOKEN_WARN_RATIO", 0.75).to_f
+  config.style_plan_connection_key = ENV.fetch("STYLE_PLAN_CONNECTION_KEY", "llama_cpp")
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }
