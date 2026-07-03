@@ -23,6 +23,12 @@ module ChatTools
       HTML ページは readability-js-server で本文抽出します。
     TEXT
 
+    VISION_TOOLS_INSTRUCTIONS = <<~TEXT.squish
+      analyze_image でユーザーが添付した画像を vision LLM で解析できます。
+      画像に関する質問や説明依頼では prompt に具体的な質問を渡してください。
+      添付が無い場合は使えません。
+    TEXT
+
     MEMO_TOOL_CLASSES = [
       SearchMemos,
       GetMemo,
@@ -33,6 +39,10 @@ module ChatTools
     WEB_TOOL_CLASSES = [
       WebSearch,
       FetchUrl
+    ].freeze
+
+    VISION_TOOL_CLASSES = [
+      AnalyzeImage
     ].freeze
 
     module_function
@@ -49,28 +59,44 @@ module ChatTools
       NyoyConnectionStore.enabled?(:searxng) && NyoyConnectionStore.url(:searxng).present?
     end
 
+    def vision_tools_available?
+      NyoyConnectionStore.enabled?(:vision_llama) && NyoyConnectionStore.url(:vision_llama).present?
+    end
+
     def tool_classes
       classes = []
       classes.concat(MEMO_TOOL_CLASSES) if memo_tools_available?
       classes << WebSearch if web_tools_available?
       classes << FetchUrl
+      classes.concat(VISION_TOOL_CLASSES) if vision_tools_available?
       classes
     end
 
-    def apply!(llm_chat)
-      tools = tool_classes
+    def tool_instances(chat)
+      tool_classes.map do |tool_class|
+        tool_class == AnalyzeImage ? tool_class.new(chat: chat) : tool_class.new
+      end
+    end
+
+    def apply!(llm_chat, chat:)
+      tools = tool_instances(chat)
       return llm_chat if tools.empty?
 
       instructions = []
       instructions << MEMO_TOOLS_INSTRUCTIONS if memo_tools_available?
       if web_tools_available?
         instructions << WEB_TOOLS_INSTRUCTIONS
-      elsif tools.include?(FetchUrl)
+      elsif tools.any? { |tool| tool.is_a?(FetchUrl) }
         instructions << FETCH_URL_INSTRUCTIONS
       end
+      instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
 
-      llm_chat.with_tools(*tools.map(&:new))
+      llm_chat.with_tools(*tools)
               .with_instructions(instructions.join(" "), append: true)
+    end
+
+    def vision_service
+      @vision_service ||= VisionChatService.new
     end
 
     def client
@@ -90,6 +116,7 @@ module ChatTools
     end
 
     def reset_client!
+      @vision_service = nil if instance_variable_defined?(:@vision_service)
     end
   end
 end

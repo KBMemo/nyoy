@@ -161,7 +161,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | Web 検索 | SearXNG | **完了** |
 | URL 取得 | SSRF + readability | **完了** |
 | メモ RAG | export 取込 + 注入 + 要約 | **完了**（Groonga は徒然側） |
-| 画像理解 | Chat 添付 + `analyze_image` ツール | **未着手** |
+| 画像理解 | Chat 添付 + `analyze_image` ツール | **完了** |
 | MCP 公開 | `ChatTools::*` の再公開 | **未着手** |
 
 ### 3.3 徒然側（site Workspace）との連携
@@ -186,7 +186,7 @@ MCP Server ┘
 |--------|------|
 | `web_search` / `fetch_url` | 実装済み |
 | `search_memos` / `create_memo` / … | 徒然 API |
-| `analyze_image` | `VisionChatService`（未統合） |
+| `analyze_image` | `VisionChatService` |
 | `generate_image` 等 | SD パイプライン（将来） |
 
 ---
@@ -202,10 +202,10 @@ MCP Server ┘
 | **1** | Web 検索 + URL 取得 | **完了** |
 | **3a** | メモ RAG 取込 + Chat 注入 | **完了** |
 | **3b** | 動的 top_k・キーワード併用・チャンク圧縮 | **完了** |
-| **3b′** | 徒然 PGroonga 検索（site DB） | **site 実装済み**（本番 migrate 待ち） |
+| **3b′** | 徒然 PGroonga 検索（site DB） | **本番稼働**（git sync のみ残） |
 | **3c** | 会話要約・トークン警告 UI | **完了** |
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
-| **2** | Chat への画像理解統合 | **次** |
+| **2** | Chat への画像理解統合 | **完了** |
 | **5** | 葛籠連携 | 未着手 |
 | **6** | MCP サーバー公開 | 未着手 |
 
@@ -218,7 +218,7 @@ gantt
   Web 検索 + URL 取得          :done, p1, 2026-07, 1M
   メモ RAG + コンテキスト管理   :done, p3, 2026-07, 1M
   section 次
-  画像理解を Chat に統合        :active, p2, 2026-07, 1M
+  葛籠連携                     :active, p5, 2026-07, 1M
   section 将来
   葛籠連携                     :p5, after p2, 1M
   MCP サーバー公開             :p6, after p5, 1M
@@ -241,11 +241,15 @@ gantt
 
 ## 6. 次の作業
 
-### 推奨（Phase 2）
+### 推奨（Phase 5）
+
+- 葛籠 URL 参照の設計
+- 添付ファイルの正本を葛籠へ
+
+### 完了（Phase 2）
 
 - Chat メッセージへの画像添付
 - `VisionChatService` を `analyze_image` ツール化
-- 必要なら葛籠 URL 参照の設計
 
 ### 運用・メンテ
 

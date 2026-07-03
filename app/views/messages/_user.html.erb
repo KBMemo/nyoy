@@ -1,6 +1,15 @@
 <% user ||= local_assigns[:message] %>
 <div id="message_<%= user.id %>" class="nyoy-chat-message nyoy-chat-message-user">
   <div class="nyoy-chat-message-role">あなた</div>
-  <div id="message_<%= user.id %>_content" class="nyoy-chat-message-content"><%= user.content %></div>
+  <% if user.attachments.attached? %>
+    <div class="nyoy-chat-message-attachments">
+      <% user.attachments.each do |attachment| %>
+        <%= nyoy_blob_image_tag attachment, class: "nyoy-chat-attachment-image", alt: attachment.filename.to_s %>
+      <% end %>
+    </div>
+  <% end %>
+  <% unless ChatImageAttachments.placeholder?(user.content) %>
+    <div id="message_<%= user.id %>_content" class="nyoy-chat-message-content"><%= user.content %></div>
+  <% end %>
   <div class="nyoy-chat-message-meta"><%= l(user.created_at, format: :short) if user.created_at %></div>
 </div>

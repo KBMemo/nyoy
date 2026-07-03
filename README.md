@@ -24,10 +24,11 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 - **URL 取得** — `fetch_url`（SSRF 対策 + readability-js-server で本文抽出）
 - **メモ RAG** — 徒然 `export` 取込 → pgvector チャンク → 質問に関連する抜粋を Chat に自動注入
 - **コンテキスト管理** — 直近 N ターン制限、古い会話の要約（DB キャッシュ）、推定トークン表示、メモ RAG チャンク数
+- **画像理解** — Chat への画像添付 + `analyze_image` ツール（`vision_llama` 接続）
 
 ### その他
 
-- **画像理解** — 独立 UI（`VisionChatService`）。Chat ツール化は未実装
+- **画像理解（独立 UI）** — `/image_understandings`（`VisionChatService` 単体ページ）
 - **接続管理** — 設定 → 接続（`/service_connections`）で LLM / SD / 徒然 / SearXNG 等を編集
 
 ## 前提条件

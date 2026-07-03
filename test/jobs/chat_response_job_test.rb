@@ -13,9 +13,10 @@ class ChatResponseJobTest < ActiveJob::TestCase
   end
 
   test "reports llm failures without re-raising" do
-    stub_chat_ask_to_raise(@error) do
+    @chat.messages.create!(role: :user, content: "続きをお願い")
+    stub_chat_complete_to_raise(@error) do
       assert_nothing_raised do
-        ChatResponseJob.perform_now(@chat.id, "続きをお願い")
+        ChatResponseJob.perform_now(@chat.id)
       end
     end
 
@@ -39,12 +40,12 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
   private
 
-  def stub_chat_ask_to_raise(error)
-    original = Chat.instance_method(:ask)
-    Chat.define_method(:ask) { |*, **| raise error }
+  def stub_chat_complete_to_raise(error)
+    original = Chat.instance_method(:complete)
+    Chat.define_method(:complete) { |*, **| raise error }
 
     yield
   ensure
-    Chat.define_method(:ask, original)
+    Chat.define_method(:complete, original)
   end
 end

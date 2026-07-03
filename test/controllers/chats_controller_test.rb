@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "base64"
 require "test_helper"
 
 class ChatsControllerTest < ActionDispatch::IntegrationTest
@@ -18,6 +19,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     get new_chat_path
     assert_response :success
     assert_select "textarea[name='chat[prompt]']"
+    assert_select "input[type=file][name='chat[attachments]']"
     assert_select "select[name='chat[model]'] option", minimum: 2
   end
 
@@ -54,9 +56,35 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_equal model, chat.model
   end
 
-  test "create validates blank prompt" do
+  test "create validates blank prompt without attachment" do
     post chats_path, params: { chat: { prompt: "  " } }
     assert_response :unprocessable_entity
+  end
+
+  test "create starts chat with image attachment only" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    png = Base64.decode64(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+    assert_enqueued_with(job: ChatResponseJob) do
+      post chats_path, params: {
+        chat: {
+          prompt: "",
+          model: model.id,
+          attachments: Rack::Test::UploadedFile.new(
+            StringIO.new(png),
+            "image/png",
+            original_filename: "pixel.png"
+          )
+        }
+      }
+    end
+
+    chat = Chat.order(:created_at).last
+    message = chat.messages.where(role: :user).order(:id).last
+    assert_redirected_to chat_path(chat)
+    assert message.attachments.attached?
   end
 
   test "show renders chat thread" do
@@ -66,6 +94,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "#messages"
     assert_select "textarea[name='message[content]']"
+    assert_select "input[type=file][name='message[attachments]']"
   end
 
   test "show renders assistant markdown as html" do

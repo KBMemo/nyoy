@@ -23,7 +23,7 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
 
     original_apply = ChatTools::Registry.method(:apply!)
     original_rag = ChatMemoRagInjector.method(:apply!)
-    ChatTools::Registry.define_singleton_method(:apply!) { |chat| chat }
+    ChatTools::Registry.define_singleton_method(:apply!) { |llm_chat, **| llm_chat }
     ChatMemoRagInjector.define_singleton_method(:apply!) { |chat, **| chat }
     llm = @chat.to_llm
     contents = llm.messages.map(&:content)

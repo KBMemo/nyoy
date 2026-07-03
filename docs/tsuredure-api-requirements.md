@@ -612,9 +612,10 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 3. ~~本番接続確認・DB 登録~~ — 完了
 4. ~~SearXNG + `fetch_url`~~ — 完了
 5. ~~メモ RAG 取込 + Chat 注入~~ — 完了（`bin/rails kbmemo:rag:ingest`）
-6. **Phase 2** — Chat への画像理解（`analyze_image`）
-7. **徒然 site** — API 書込 Markdown → AsciiDoc、Groonga 検索、`export/deletions`
-8. **Phase 6** — MCP サーバー（`ChatTools::*` 再公開）
+6. ~~Phase 2~~ — Chat への画像理解（`analyze_image`）— **完了**
+7. **徒然 site** — `export/deletions`、本番 git sync
+8. **Phase 5** — 葛籠連携
+9. **Phase 6** — MCP サーバー（`ChatTools::*` 再公開）
 
 ---
 

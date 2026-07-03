@@ -4,6 +4,7 @@ require "test_helper"
 
 class ChatToolsRegistryTest < ActiveSupport::TestCase
   setup do
+    ChatModelCatalog.seed!
     NyoyConnectionStore.clear_cache!
     ChatTools::Registry.reset_client!
   end
@@ -43,6 +44,27 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_includes ChatTools::Registry.tool_classes, ChatTools::FetchUrl
   end
 
+  test "vision tools available when vision llama is enabled" do
+    assert ChatTools::Registry.vision_tools_available?
+    assert_includes ChatTools::Registry.tool_classes, ChatTools::AnalyzeImage
+  end
+
+  test "vision tools not available when vision llama is disabled" do
+    service_connections(:vision_llama).update!(enabled: false)
+    NyoyConnectionStore.clear_cache!
+
+    assert_not ChatTools::Registry.vision_tools_available?
+    assert_not_includes ChatTools::Registry.tool_classes, ChatTools::AnalyzeImage
+  end
+
+  test "apply registers analyze_image for chat with attachments context" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    instances = ChatTools::Registry.tool_instances(chat)
+    tool_names = instances.map { |tool| tool.name }
+
+    assert_includes tool_names, "analyze_image"
+  end
+
   test "search_memos returns memos from client" do
     fake_client = Object.new
     calls = []
@@ -50,6 +72,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
       calls << kwargs
       { "memos" => [{ "uid" => "01J8X2K3M4N5P6Q7R8S9T0UVWX", "title" => "旅行" }] }
     end
+    original_client = ChatTools::Registry.method(:client)
     ChatTools::Registry.define_singleton_method(:client) { fake_client }
 
     result = ChatTools::SearchMemos.new.execute(q: "旅行")
@@ -58,7 +81,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_equal "旅行", calls.first[:q]
     assert_equal 10, calls.first[:limit]
   ensure
-    ChatTools::Registry.singleton_class.remove_method(:client)
+    ChatTools::Registry.define_singleton_method(:client, original_client) if defined?(original_client)
   end
 
   test "update_memo rejects body and append_body together" do

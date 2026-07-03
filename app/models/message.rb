@@ -6,6 +6,18 @@ class Message < ApplicationRecord
   after_update_commit :broadcast_message_updated
   after_destroy_commit :broadcast_message_removed
 
+  def to_llm
+    return super unless user_message_with_attachments?
+
+    RubyLLM::Message.new(
+      role: :user,
+      content: llm_text_with_attachment_hint,
+      tool_calls: {},
+      tool_call_id: nil,
+      model_id: model_association&.model_id
+    )
+  end
+
   def chat_error?
     role.to_s == "assistant" && content.to_s.start_with?(ChatErrorBroadcaster::ERROR_PREFIX)
   end
@@ -54,5 +66,16 @@ class Message < ApplicationRecord
 
   def message_locals
     { message: self, assistant: self, user: self, system: self, tool: self }
+  end
+
+  def user_message_with_attachments?
+    role.to_s == "user" && attachments.attached?
+  end
+
+  def llm_text_with_attachment_hint
+    text = content.to_s.strip
+    text = "" if ChatImageAttachments.placeholder?(text)
+    hint = "[ユーザーが画像を #{attachments.count} 枚添付しました。analyze_image ツールで解析してください]"
+    [text, hint].reject(&:blank?).join("\n\n")
   end
 end

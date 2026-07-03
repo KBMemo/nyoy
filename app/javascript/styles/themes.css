@@ -615,6 +615,22 @@
   white-space: pre-wrap;
 }
 
+.nyoy-chat-message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kb-space-2);
+  margin-bottom: var(--kb-space-2);
+}
+
+.nyoy-chat-attachment-image {
+  max-width: min(100%, 20rem);
+  max-height: 12rem;
+  border-radius: var(--kb-radius-sm);
+  border: 1px solid var(--kb-border);
+  object-fit: contain;
+  background-color: var(--kb-bg-muted);
+}
+
 .nyoy-chat-markdown {
   line-height: 1.6;
   white-space: normal;

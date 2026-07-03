@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "base64"
 require "test_helper"
 
 class MessageTest < ActiveSupport::TestCase
@@ -31,5 +32,22 @@ class MessageTest < ActiveSupport::TestCase
     assert_equal "message_#{message.id}_content", broadcasts.first[:target]
     assert_includes broadcasts.first[:html], "<h3"
     assert_includes broadcasts.first[:html], "<strong>太字</strong>"
+  end
+
+  test "to_llm replaces attachments with analyze_image hint for chat llm" do
+    png = Base64.decode64(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+    message = @chat.messages.create!(role: :user, content: ChatImageAttachments::PLACEHOLDER)
+    message.attachments.attach(
+      io: StringIO.new(png),
+      filename: "pixel.png",
+      content_type: "image/png"
+    )
+
+    llm_message = message.to_llm
+
+    assert_includes llm_message.content, "analyze_image"
+    assert_includes llm_message.content, "1 枚添付"
   end
 end

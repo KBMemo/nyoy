@@ -28,7 +28,7 @@ class Chat < ApplicationRecord
     setup_persistence_callbacks
 
     ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
-    ChatTools::Registry.apply!(@chat)
+    ChatTools::Registry.apply!(@chat, chat: self)
     @chat
   end
 

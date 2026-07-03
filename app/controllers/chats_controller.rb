@@ -13,16 +13,32 @@ class ChatsController < ApplicationController
 
   def create
     prompt = params.dig(:chat, :prompt).to_s.strip
-    if prompt.blank?
+    uploads = Array(params.dig(:chat, :attachments)).compact
+
+    if prompt.blank? && uploads.empty?
       @chat = Chat.new
       @selected_model = params.dig(:chat, :model)
-      flash.now[:alert] = "最初のメッセージを入力してください"
+      flash.now[:alert] = "最初のメッセージまたは画像を入力してください"
+      return render :new, status: :unprocessable_entity
+    end
+
+    begin
+      ChatImageAttachments.validate_uploads!(uploads)
+    rescue ArgumentError => e
+      @chat = Chat.new
+      @selected_model = params.dig(:chat, :model)
+      flash.now[:alert] = e.message
       return render :new, status: :unprocessable_entity
     end
 
     model = selected_chat_model(params.dig(:chat, :model))
     @chat = Chat.create!(model: model)
-    ChatResponseJob.perform_later(@chat.id, prompt)
+    message = @chat.messages.create!(
+      role: :user,
+      content: prompt.presence || ChatImageAttachments::PLACEHOLDER
+    )
+    message.attachments.attach(uploads) if uploads.any?
+    ChatResponseJob.perform_later(@chat.id)
 
     redirect_to @chat, notice: "チャットを開始しました"
   end

@@ -1,10 +1,10 @@
 class ChatResponseJob < ApplicationJob
-  def perform(chat_id, content)
+  def perform(chat_id)
     chat = Chat.find(chat_id)
     timer = ChatResponseTimer.new
     stream_state = StreamState.new
 
-    chat.ask(content) do |chunk|
+    chat.complete do |chunk|
       timer.observe_chunk!(chunk)
       next unless chunk.content.present?
 
