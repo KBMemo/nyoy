@@ -4,6 +4,10 @@ module ChatTools
   class CreateMemo < RubyLLM::Tool
     description "会話の内容を徒然に新規メモとして保存する。ユーザーが明示的に保存を求めたときのみ使う。本文は Markdown。"
 
+    def initialize(chat: nil)
+      @chat = chat
+    end
+
     def name
       "create_memo"
     end
@@ -13,7 +17,8 @@ module ChatTools
     param :tags, type: "array", desc: "タグ名の配列", required: false
 
     def execute(body:, title: nil, tags: nil)
-      client.create_memo(title: title, body: body, tags: tags)
+      memo = client.create_memo(title: title, body: body, tags: tags)
+      ChatMemoMediaInserter.append_media_to_memo!(client, @chat, memo)
     rescue TsurezureClient::Error => e
       { error: e.message }
     end

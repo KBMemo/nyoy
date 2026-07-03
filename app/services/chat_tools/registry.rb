@@ -9,6 +9,7 @@ module ChatTools
       create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
       update_memo では必ず get_memo で取得した updated_at を渡してください。
       create_memo / update_memo の body は Markdown で書いてください（徒然側で AsciiDoc に変換）。
+      Chat に葛籠へアーカイブ済みの添付画像がある場合、image::media: マクロは自動で本文末尾に挿入されます（手書き不要）。
       get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
     TEXT
 
@@ -53,7 +54,7 @@ module ChatTools
     MEDIA_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       list_albums / get_media で葛籠（tsuzura）に保存されたメディアを参照できます。
       Chat に添付した画像は「Nyoy Chat」アルバムへ自動アーカイブされ、メタデータに tsuzura_media_id が付きます。
-      徒然メモへ挿入するときは image::media: マクロにこの ID を使えます。
+      create_memo / update_memo 実行時に image::media: マクロが自動挿入されます。
     TEXT
 
     module_function
@@ -88,9 +89,15 @@ module ChatTools
       classes
     end
 
+    CHAT_SCOPED_TOOL_CLASSES = [
+      AnalyzeImage,
+      CreateMemo,
+      UpdateMemo
+    ].freeze
+
     def tool_instances(chat)
       tool_classes.map do |tool_class|
-        tool_class == AnalyzeImage ? tool_class.new(chat: chat) : tool_class.new
+        CHAT_SCOPED_TOOL_CLASSES.include?(tool_class) ? tool_class.new(chat: chat) : tool_class.new
       end
     end
 

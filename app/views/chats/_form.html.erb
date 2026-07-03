@@ -1,4 +1,15 @@
-<%= form_with(model: chat, url: chats_path, class: "space-y-4", html: { multipart: true }, data: { controller: "source-image-preview" }) do |form| %>
+<%= form_with(
+  model: chat,
+  url: chats_path,
+  class: "space-y-4",
+  html: {
+    multipart: true,
+    data: {
+      controller: "source-image-preview chat-form",
+      action: 'keydown->chat-form#submitOnShortcut'
+    }
+  }
+) do |form| %>
   <% if chat.errors.any? %>
     <div class="kb-alert kb-alert-danger">
       <ul class="list-disc pl-5">
@@ -39,7 +50,7 @@
   <div>
     <%= form.label :attachments, "画像（任意）", class: "#{kb_label} mb-1" %>
     <%= form.file_field :attachments, accept: "image/jpeg,image/png,image/webp,image/gif", class: kb_field_input_classes, data: { action: "change->source-image-preview#preview", source_image_preview_target: "input" } %>
-    <p class="mt-1 text-sm kb-text-muted">JPEG / PNG / WebP / GIF。vision LLM で解析します。</p>
+    <p class="mt-1 text-sm kb-text-muted">Ctrl+Enter で送信。JPEG / PNG / WebP / GIF。vision LLM で解析します。</p>
   </div>
 
   <div>

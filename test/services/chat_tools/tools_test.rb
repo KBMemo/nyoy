@@ -124,4 +124,37 @@ class ChatToolsTest < ActiveSupport::TestCase
   ensure
     ChatTools::Registry.define_singleton_method(:tsuzura_client, original) if defined?(original)
   end
+
+  test "create_memo appends chat image macros after create" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    message = chat.messages.create!(role: :user, content: "保存")
+    message.attachments.attach(
+      io: StringIO.new("png"),
+      filename: "pixel.png",
+      content_type: "image/png",
+      metadata: { tsuzura_media_id: "01JARCHIVED" }
+    )
+
+    calls = []
+    fake_client = Object.new
+    fake_client.define_singleton_method(:create_memo) do |**|
+      calls << [:create]
+      { "uid" => "01JMEMO", "updated_at" => "2026-07-03T10:00:00Z" }
+    end
+    fake_client.define_singleton_method(:update_memo) do |memo_ref, **kwargs|
+      calls << [:update, memo_ref, kwargs]
+      { "uid" => memo_ref, "updated_at" => "2026-07-03T10:00:01Z", "appended_media_ids" => ["01JARCHIVED"] }
+    end
+    original = ChatTools::Registry.method(:client)
+    ChatTools::Registry.define_singleton_method(:client) { fake_client }
+
+    result = ChatTools::CreateMemo.new(chat: chat).execute(body: "## メモ\n\n本文")
+
+    assert_equal [:create], calls.first
+    assert_equal "01JMEMO", calls.second[1]
+    assert_equal "image::media:01JARCHIVED[]", calls.second[2][:append_body]
+    assert_equal ["01JARCHIVED"], result["appended_media_ids"]
+  ensure
+    ChatTools::Registry.define_singleton_method(:client, original) if defined?(original)
+  end
 end

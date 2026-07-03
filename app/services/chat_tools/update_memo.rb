@@ -4,6 +4,10 @@ module ChatTools
   class UpdateMemo < RubyLLM::Tool
     description "既存メモを更新する。get_memo で取得した updated_at を必ず渡す。末尾追記は append_body を使う。"
 
+    def initialize(chat: nil)
+      @chat = chat
+    end
+
     def name
       "update_memo"
     end
@@ -19,13 +23,14 @@ module ChatTools
         return { error: "body と append_body は同時に指定できません" }
       end
 
-      client.update_memo(
+      memo = client.update_memo(
         memo_ref,
         updated_at: updated_at,
         title: title,
         body: body,
         append_body: append_body
       )
+      ChatMemoMediaInserter.append_media_to_memo!(client, @chat, memo)
     rescue TsurezureClient::Error => e
       { error: e.message }
     end

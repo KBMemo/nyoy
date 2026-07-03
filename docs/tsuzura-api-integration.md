@@ -29,6 +29,7 @@ KBMemo プロフィールで発行した `tsuzura_api_token` を使用。接続�
 | `ChatTools::ListAlbums` | アルバム一覧 |
 | `ChatTools::GetMedia` | メディアメタデータ取得 |
 | `analyze_image` | 結果に `tsuzura_media_id` を含める（アーカイブ済みの場合） |
+| `create_memo` / `update_memo` | Chat 添付の `image::media:` を本文末尾へ自動追記 |
 
 ## Chat ツール
 
@@ -37,8 +38,9 @@ KBMemo プロフィールで発行した `tsuzura_api_token` を使用。接続�
 | `list_albums` | 葛籠アルバム一覧 |
 | `get_media` | ULID でメタデータ参照 |
 | `analyze_image` | 添付画像の vision 解析（従来どおりローカル blob 使用） |
+| `create_memo` / `update_memo` | 保存後に `image::media:ULID[]` を AsciiDoc で追記（Markdown 本文とは別リクエスト） |
 
-徒然メモへ画像を埋め込むときの AsciiDoc 例（葛籠側 batch API の `asciidoc` フィールドと同型）:
+徒然メモへ `image::media:` を挿入するときの AsciiDoc 例（自動挿入時も同型）:
 
 ```asciidoc
 image::media:01JH…[]
@@ -52,7 +54,6 @@ image::media:01JH…[]
 
 - 生成画像（`image_generations` 等）の葛籠アーカイブ
 - Bearer 認証でのバイナリ GET（現状 web 配信はメモ署名 URL のみ）
-- 徒然 `create_memo` と連携した `image::media:` 自動挿入
 - MCP 公開（Phase 6）で `list_albums` / `get_media` を再掲
 
 ## 関連
