@@ -27,4 +27,12 @@ module ChatImageAttachments
       raise ArgumentError, "画像ファイル（JPEG / PNG / WebP / GIF）のみ添付できます"
     end
   end
+
+  def llm_attachment_notice(count)
+    <<~TEXT.squish
+      [ユーザーが画像を #{count} 枚添付しました。
+      画像の内容（物体・文字・画面・見た目）が回答に必要なときだけ analyze_image を使ってください。
+      テキストだけで答えられる場合、最新情報は web_search で足りる場合、添付が参考程度の場合は vision 解析を呼ばないでください。]
+    TEXT
+  end
 end

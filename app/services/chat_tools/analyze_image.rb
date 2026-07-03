@@ -2,7 +2,7 @@
 
 module ChatTools
   class AnalyzeImage < RubyLLM::Tool
-    description "ユーザーが Chat に添付した画像、または葛籠のメディア ID を vision LLM で解析する。画像の内容説明・文字読取・物体識別などに使う。"
+    description "添付画像または葛籠メディア ID の視覚的内容を vision LLM で解析する。写っているもの・文字・見た目が回答に必要なときだけ使う（添付があっても自動では呼ばない）。"
 
     def initialize(chat:)
       @chat = chat

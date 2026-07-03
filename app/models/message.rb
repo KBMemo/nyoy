@@ -75,7 +75,7 @@ class Message < ApplicationRecord
   def llm_text_with_attachment_hint
     text = content.to_s.strip
     text = "" if ChatImageAttachments.placeholder?(text)
-    hint = "[ユーザーが画像を #{attachments.count} 枚添付しました。analyze_image ツールで解析してください]"
+    hint = ChatImageAttachments.llm_attachment_notice(attachments.count)
     [text, hint].reject(&:blank?).join("\n\n")
   end
 end

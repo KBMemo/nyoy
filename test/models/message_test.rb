@@ -34,7 +34,7 @@ class MessageTest < ActiveSupport::TestCase
     assert_includes broadcasts.first[:html], "<strong>太字</strong>"
   end
 
-  test "to_llm replaces attachments with analyze_image hint for chat llm" do
+  test "to_llm adds optional analyze_image notice for attachments" do
     png = Base64.decode64(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     )
@@ -49,5 +49,7 @@ class MessageTest < ActiveSupport::TestCase
 
     assert_includes llm_message.content, "analyze_image"
     assert_includes llm_message.content, "1 枚添付"
+    assert_includes llm_message.content, "必要なときだけ"
+    assert_includes llm_message.content, "web_search"
   end
 end

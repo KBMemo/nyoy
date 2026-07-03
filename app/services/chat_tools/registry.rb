@@ -13,8 +13,17 @@ module ChatTools
       get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
     TEXT
 
+    TOOL_ORCHESTRATION_INSTRUCTIONS = <<~TEXT.squish
+      ツールは必要なときだけ使う。ユーザーの質問を読んでから選ぶ。
+      最新の事実・ニュース・Web 上の情報 → web_search（詳細は fetch_url）。
+      過去の自分のメモ → search_memos / get_memo（自動注入の RAG 抜粋で足りないとき）。
+      添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
+      画像が添付されていても、質問がテキストだけで答えられるなら analyze_image は使わない。
+      複数のツールが必要なら順序よく組み合わせてよい。
+    TEXT
+
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      web_search で Web 検索、fetch_url でページ本文を取得できます。
+      web_search（SearXNG）で Web 検索、fetch_url でページ本文を取得できます。
       最新情報が必要なときは web_search を使い、詳細が必要なら fetch_url で本文を読んでください。
       fetch_url は公開 Web の http/https URL のみ取得できます。
     TEXT
@@ -25,9 +34,10 @@ module ChatTools
     TEXT
 
     VISION_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      analyze_image でユーザーが添付した画像、または葛籠の tsuzura_media_id を vision LLM で解析できます。
-      画像に関する質問や説明依頼では prompt に具体的な質問を渡してください。
-      添付もメディア ID も無い場合は使えません。
+      analyze_image は vision LLM で画像を解析する。添付画像または tsuzura_media_id を指定できる。
+      画像の説明・OCR・「何が写っているか」など視覚情報が回答に不可欠なときだけ使う。
+      メッセージ本文だけで足りる場合、Web 検索で足りる場合、添付が無関係な場合は使わない。
+      使うときは prompt に具体的な質問を渡す。
     TEXT
 
     MEMO_TOOL_CLASSES = [
@@ -106,7 +116,7 @@ module ChatTools
       tools = tool_instances(chat)
       return llm_chat if tools.empty?
 
-      instructions = []
+      instructions = [TOOL_ORCHESTRATION_INSTRUCTIONS]
       instructions << MEMO_TOOLS_INSTRUCTIONS if memo_tools_available?
       if web_tools_available?
         instructions << WEB_TOOLS_INSTRUCTIONS
@@ -117,7 +127,7 @@ module ChatTools
       instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
 
       llm_chat.with_tools(*tools)
-              .with_instructions(instructions.join(" "), append: true)
+              .with_instructions(instructions.compact.join(" "), append: true)
     end
 
     def vision_service
