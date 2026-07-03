@@ -156,12 +156,12 @@ end
 
 ## 8. 実装チェックリスト（site Workspace）
 
-- [ ] bowmore 徒然 DB に `CREATE EXTENSION pgroonga`（本番）
+- [x] bowmore 徒然 DB に `CREATE EXTENSION pgroonga`（本番 2026-07-03）
 - [x] マイグレーション `20260703101000_enable_pgroonga_on_memos.rb`
 - [x] `Memo.search_text` 差し替え + LIKE フォールバック
-- [x] 既存テスト通過（PGroonga 有無で pgroonga テストは skip）
-- [ ] 本番: Web 検索・API `?q=`・如意 Chat で確認
-- [ ] （任意）OpenAPI `listMemos` description 更新
+- [x] 本番: API `?q=` 確認（旅行/香取/静岡、如意 `TsurezureClient`）
+- [x] 本番: `kill -USR2` で Puma 再起動（2026-07-03）
+- [ ] 本番: `git pull` で origin/main と同期（`19425c3`。gitea SSH 鍵要）
 
 ---
 
