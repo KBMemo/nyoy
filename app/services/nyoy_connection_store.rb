@@ -9,6 +9,7 @@ module NyoyConnectionStore
     sd_cpp: { url: :sd_cpp_url },
     sd_switchd: { url: :sd_switchd_url, token: :sd_switchd_token },
     kbmemo: { url: :kbmemo_url, token: :kbmemo_api_token },
+    tsuzura: { url: :tsuzura_url, token: :tsuzura_api_token },
     searxng: { url: :searxng_url, token: :searxng_api_token },
     readability: { url: :readability_url }
   }.freeze

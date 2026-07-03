@@ -45,6 +45,17 @@ module ChatTools
       AnalyzeImage
     ].freeze
 
+    MEDIA_TOOL_CLASSES = [
+      ListAlbums,
+      GetMedia
+    ].freeze
+
+    MEDIA_TOOLS_INSTRUCTIONS = <<~TEXT.squish
+      list_albums / get_media で葛籠（tsuzura）に保存されたメディアを参照できます。
+      Chat に添付した画像は「Nyoy Chat」アルバムへ自動アーカイブされ、メタデータに tsuzura_media_id が付きます。
+      徒然メモへ挿入するときは image::media: マクロにこの ID を使えます。
+    TEXT
+
     module_function
 
     def available?
@@ -63,12 +74,17 @@ module ChatTools
       NyoyConnectionStore.enabled?(:vision_llama) && NyoyConnectionStore.url(:vision_llama).present?
     end
 
+    def media_tools_available?
+      NyoyConnectionStore.enabled?(:tsuzura) && NyoyConnectionStore.api_token(:tsuzura).present?
+    end
+
     def tool_classes
       classes = []
       classes.concat(MEMO_TOOL_CLASSES) if memo_tools_available?
       classes << WebSearch if web_tools_available?
       classes << FetchUrl
       classes.concat(VISION_TOOL_CLASSES) if vision_tools_available?
+      classes.concat(MEDIA_TOOL_CLASSES) if media_tools_available?
       classes
     end
 
@@ -90,6 +106,7 @@ module ChatTools
         instructions << FETCH_URL_INSTRUCTIONS
       end
       instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
+      instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
 
       llm_chat.with_tools(*tools)
               .with_instructions(instructions.join(" "), append: true)
@@ -101,6 +118,10 @@ module ChatTools
 
     def client
       TsurezureClient.new
+    end
+
+    def tsuzura_client
+      TsuzuraClient.new
     end
 
     def searxng_client

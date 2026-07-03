@@ -63,6 +63,16 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     tool_names = instances.map { |tool| tool.name }
 
     assert_includes tool_names, "analyze_image"
+    assert_includes tool_names, "list_albums"
+    assert_includes tool_names, "get_media"
+  end
+
+  test "media tools not available without token" do
+    service_connections(:tsuzura).update!(api_token: nil, enabled: true)
+    NyoyConnectionStore.clear_cache!
+
+    assert_not ChatTools::Registry.media_tools_available?
+    assert_not_includes ChatTools::Registry.tool_classes, ChatTools::ListAlbums
   end
 
   test "search_memos returns memos from client" do

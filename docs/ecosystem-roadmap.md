@@ -83,7 +83,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | Web 検索 / URL 取得 | `web_search` / `fetch_url` | **実装済み** |
 | メモ RAG | export 取込 + pgvector + Chat 注入 | **実装済み** |
 | MCP サーバー | — | **未実装** |
-| 葛籠連携 | — | **未実装** |
+| 葛籠連携 | `TsuzuraClient` + Chat アーカイブ + メディアツール | **Phase 5a 完了** |
 
 ### 2.3 接続管理（ServiceConnection）
 
@@ -141,7 +141,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | **徒然（kbmemo.net）** | **`/api/v1` 接続済み** |
 | **SearXNG** | **接続済み**（`web_search`） |
 | **readability-js-server** | **接続済み**（`fetch_url`） |
-| 葛籠（media.kbmemo.net） | **未接続** |
+| 葛籠（media.kbmemo.net） | `TsuzuraClient` + Chat ツール | **Phase 5a** |
 | MCP | **未実装** |
 
 ---
@@ -206,7 +206,7 @@ MCP Server ┘
 | **3c** | 会話要約・トークン警告 UI | **完了** |
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
 | **2** | Chat への画像理解統合 | **完了** |
-| **5** | 葛籠連携 | 未着手 |
+| **5** | 葛籠連携 | **進行中**（Client + Chat アーカイブ + ツール） |
 | **6** | MCP サーバー公開 | 未着手 |
 
 ```mermaid

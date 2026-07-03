@@ -27,8 +27,9 @@ module ChatTools
       {
         analysis: analysis,
         filename: attachment.filename.to_s,
-        content_type: attachment.content_type
-      }
+        content_type: attachment.content_type,
+        tsuzura_media_id: attachment.metadata["tsuzura_media_id"]
+      }.compact
     rescue VisionChatService::Error, LlamaCppClient::Error => e
       { error: e.message }
     end

@@ -9,6 +9,7 @@ class ServiceConnection < ApplicationRecord
     sd_cpp
     sd_switchd
     kbmemo
+    tsuzura
     searxng
     readability
   ].freeze
@@ -24,6 +25,7 @@ class ServiceConnection < ApplicationRecord
     "sd_cpp" => "sd.cpp サーバー",
     "sd_switchd" => "sd.cpp switchd",
     "kbmemo" => "徒然（KBMemo API）",
+    "tsuzura" => "葛籠（KBMemo Media API）",
     "searxng" => "SearXNG（Web 検索）",
     "readability" => "readability-js-server（本文抽出）"
   }.freeze

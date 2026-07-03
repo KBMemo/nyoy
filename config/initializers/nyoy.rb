@@ -23,6 +23,8 @@ Rails.application.config.x.nyoy.tap do |config|
   ).split(",").map(&:strip).reject(&:empty?)
   config.kbmemo_url = ENV.fetch("KBMEMO_URL", "https://kbmemo.net")
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
+  config.tsuzura_url = ENV.fetch("TSUZURA_URL", "http://localhost:3008")
+  config.tsuzura_api_token = ENV["TSUZURA_API_TOKEN"]
   config.searxng_url = ENV.fetch("SEARXNG_URL", "http://bowmore.artif.org:8080")
   config.searxng_api_token = ENV["SEARXNG_API_TOKEN"]
   config.readability_url = ENV.fetch("READABILITY_URL", "http://bowmore:8030")

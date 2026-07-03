@@ -25,6 +25,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 - **メモ RAG** — 徒然 `export` 取込 → pgvector チャンク → 質問に関連する抜粋を Chat に自動注入
 - **コンテキスト管理** — 直近 N ターン制限、古い会話の要約（DB キャッシュ）、推定トークン表示、メモ RAG チャンク数
 - **画像理解** — Chat への画像添付 + `analyze_image` ツール（`vision_llama` 接続）
+- **葛籠連携** — Chat 添付の葛籠アーカイブ + `list_albums` / `get_media` ツール（`tsuzura` 接続）
 
 ### その他
 
@@ -113,6 +114,8 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 |------|------|-----------|
 | `KBMEMO_URL` | 徒然 API ベース URL | `https://kbmemo.net` |
 | `KBMEMO_API_TOKEN` | clip API トークン（`kbmemo_...`） | （未設定） |
+| `TSUZURA_URL` | 葛籠 API ベース URL | `http://localhost:3008` |
+| `TSUZURA_API_TOKEN` | 葛籠 API トークン（`tsuzura_...`） | （未設定） |
 | `SEARXNG_URL` | SearXNG ベース URL | `http://bowmore.artif.org:8080` |
 | `SEARXNG_API_TOKEN` | SearXNG Bearer トークン | （未設定） |
 | `READABILITY_URL` | readability-js-server | `http://bowmore:8030` |

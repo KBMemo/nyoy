@@ -38,6 +38,7 @@ class ChatsController < ApplicationController
       content: prompt.presence || ChatImageAttachments::PLACEHOLDER
     )
     message.attachments.attach(uploads) if uploads.any?
+    TsuzuraMediaUploader.archive_attachments!(message.attachments) if message.attachments.attached?
     ChatResponseJob.perform_later(@chat.id)
 
     redirect_to @chat, notice: "チャットを開始しました"

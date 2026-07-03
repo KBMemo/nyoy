@@ -85,6 +85,14 @@ module ServiceConnectionSeeds
         notes: "Chat メモツール用（clip API トークン）"
       },
       {
+        key: "tsuzura",
+        name: "葛籠（KBMemo Media）",
+        base_url: config.tsuzura_url,
+        api_token: config.tsuzura_api_token,
+        enabled: config.tsuzura_api_token.present?,
+        notes: "Chat 画像アーカイブ・メディア参照（tsuzura API トークン）"
+      },
+      {
         key: "searxng",
         name: "SearXNG",
         base_url: config.searxng_url,

@@ -21,6 +21,8 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_equal "web_search", ChatTools::WebSearch.new.name
     assert_equal "fetch_url", ChatTools::FetchUrl.new.name
     assert_equal "analyze_image", ChatTools::AnalyzeImage.new(chat: Chat.new).name
+    assert_equal "list_albums", ChatTools::ListAlbums.new.name
+    assert_equal "get_media", ChatTools::GetMedia.new.name
   end
 
   test "web_search returns results from client" do
@@ -91,5 +93,35 @@ class ChatToolsTest < ActiveSupport::TestCase
     result = ChatTools::AnalyzeImage.new(chat: chat).execute(prompt: "説明して")
 
     assert_match(/画像がありません/, result[:error])
+  end
+
+  test "get_media returns metadata from client" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:get_media) do |media_id|
+      { "id" => media_id, "original_filename" => "photo.png" }
+    end
+    original = ChatTools::Registry.method(:tsuzura_client)
+    ChatTools::Registry.define_singleton_method(:tsuzura_client) { fake_client }
+
+    result = ChatTools::GetMedia.new.execute(media_id: "01JTEST")
+
+    assert_equal "01JTEST", result.dig(:media, "id")
+  ensure
+    ChatTools::Registry.define_singleton_method(:tsuzura_client, original) if defined?(original)
+  end
+
+  test "list_albums returns albums from client" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:list_albums) do
+      { "albums" => [{ "id" => "01JALBUM", "title" => "Nyoy Chat" }] }
+    end
+    original = ChatTools::Registry.method(:tsuzura_client)
+    ChatTools::Registry.define_singleton_method(:tsuzura_client) { fake_client }
+
+    result = ChatTools::ListAlbums.new.execute
+
+    assert_equal "Nyoy Chat", result[:albums].first["title"]
+  ensure
+    ChatTools::Registry.define_singleton_method(:tsuzura_client, original) if defined?(original)
   end
 end
