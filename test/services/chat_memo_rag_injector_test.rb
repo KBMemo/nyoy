@@ -3,7 +3,7 @@
 require "test_helper"
 
 class ChatMemoRagInjectorTest < ActiveSupport::TestCase
-  test "appends memo context instructions when chunks exist" do
+  test "attaches memo context to the latest user message for cache-friendly prefixes" do
     PromptKnowledgeChunk.create!(
       source: PromptKnowledgeChunk::SOURCE_MEMO,
       kind: "memo",
@@ -16,13 +16,20 @@ class ChatMemoRagInjectorTest < ActiveSupport::TestCase
     )
 
     llm_chat = RubyLLM.chat(model: "gpt-oss", provider: :openai, assume_model_exists: true)
+    llm_chat.add_message(RubyLLM::Message.new(role: :user, content: "以前の質問"))
+    llm_chat.add_message(RubyLLM::Message.new(role: :assistant, content: "以前の回答"))
+    llm_chat.add_message(RubyLLM::Message.new(role: :user, content: "京都の観光"))
+
     original = ChatMemoRagInjector.method(:enabled?)
     ChatMemoRagInjector.define_singleton_method(:enabled?) { true }
     ChatMemoRagInjector.apply!(llm_chat, query: "京都の観光")
     ChatMemoRagInjector.define_singleton_method(:enabled?, original)
 
-    system_messages = llm_chat.messages.select { |message| message.role == :system }
-    assert system_messages.any? { |message| message.content.to_s.include?("徒然メモの抜粋") }
-    assert system_messages.any? { |message| message.content.to_s.include?("清水寺") }
+    assert_equal "以前の質問", llm_chat.messages[0].content
+    assert_equal "以前の回答", llm_chat.messages[1].content
+    assert_includes llm_chat.messages[2].content, "徒然メモの抜粋"
+    assert_includes llm_chat.messages[2].content, "清水寺"
+    assert_includes llm_chat.messages[2].content, "京都の観光"
+    assert llm_chat.messages.none? { |message| message.role == :system }
   end
 end

@@ -3,6 +3,18 @@
 require "test_helper"
 
 class LlamaCppClientTest < ActiveSupport::TestCase
+  test "total_slots reads props endpoint" do
+    client = LlamaCppClient.new(base_url: "http://llama.test:8080")
+    paths = []
+    client.define_singleton_method(:get_json) do |path|
+      paths << path
+      { "total_slots" => 4, "model_path" => "model.gguf" }
+    end
+
+    assert_equal 4, client.total_slots
+    assert_equal ["/props"], paths
+  end
+
   test "extracts quoted text from reasoning content" do
     response = {
       "choices" => [

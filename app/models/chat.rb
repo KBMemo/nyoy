@@ -19,16 +19,21 @@ class Chat < ApplicationRecord
     )
     @chat.reset_messages!
 
+    # Stable system prefix first (tools), then history, then semi-stable summary.
+    # Variable RAG is attached to the latest user message so llama.cpp can reuse
+    # the KV cache for the shared conversation prefix.
+    ChatTools::Registry.apply!(@chat, chat: self)
+
     context = ChatContextBuilder.build(self)
     order_messages_for_llm(context.messages).each do |message|
       @chat.add_message(message.to_llm)
     end
     reapply_runtime_instructions(@chat)
     inject_conversation_summary!(@chat, context.summary)
+    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
+    ChatLlamaCache.apply!(@chat, chat: self)
     setup_persistence_callbacks
 
-    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
-    ChatTools::Registry.apply!(@chat, chat: self)
     @chat
   end
 

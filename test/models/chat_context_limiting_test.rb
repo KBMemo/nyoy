@@ -38,4 +38,36 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:apply!, original_apply) if defined?(original_apply)
     ChatMemoRagInjector.define_singleton_method(:apply!, original_rag) if defined?(original_rag)
   end
+
+  test "to_llm enables llama prompt cache with sticky slot" do
+    @chat.messages.create!(role: :user, content: "hello")
+    original_slots = Rails.application.config.x.nyoy.llama_slot_count
+    original_cache = Rails.application.config.x.nyoy.llama_cache_prompt
+    original_llama_new = LlamaCppClient.method(:new)
+    Rails.application.config.x.nyoy.llama_slot_count = 0
+    Rails.application.config.x.nyoy.llama_cache_prompt = true
+    ChatLlamaCache.clear_props_cache!
+
+    client = Object.new
+    client.define_singleton_method(:total_slots) { 4 }
+    LlamaCppClient.define_singleton_method(:new) { |**| client }
+
+    original_apply = ChatTools::Registry.method(:apply!)
+    original_rag = ChatMemoRagInjector.method(:apply!)
+    ChatTools::Registry.define_singleton_method(:apply!) { |llm_chat, **| llm_chat }
+    ChatMemoRagInjector.define_singleton_method(:apply!) { |chat, **| chat }
+
+    llm = @chat.to_llm
+    params = llm.instance_variable_get(:@params)
+
+    assert_equal true, params[:cache_prompt]
+    assert_equal @chat.id % 4, params[:id_slot]
+  ensure
+    Rails.application.config.x.nyoy.llama_slot_count = original_slots
+    Rails.application.config.x.nyoy.llama_cache_prompt = original_cache
+    ChatLlamaCache.clear_props_cache!
+    LlamaCppClient.define_singleton_method(:new, original_llama_new) if defined?(original_llama_new)
+    ChatTools::Registry.define_singleton_method(:apply!, original_apply) if defined?(original_apply)
+    ChatMemoRagInjector.define_singleton_method(:apply!, original_rag) if defined?(original_rag)
+  end
 end

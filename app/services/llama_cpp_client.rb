@@ -27,6 +27,18 @@ class LlamaCppClient
     post_json("/v1/chat/completions", payload, read_timeout: read_timeout)
   end
 
+  def props
+    get_json("/props")
+  end
+
+  def total_slots
+    value = props["total_slots"]
+    count = Integer(value)
+    count.positive? ? count : nil
+  rescue ArgumentError, TypeError
+    nil
+  end
+
   def message_text(response)
     self.class.message_text(response)
   end
@@ -110,25 +122,40 @@ class LlamaCppClient
 
   private
 
+  def get_json(path)
+    request_json(Net::HTTP::Get, path)
+  end
+
   def post_json(path, payload, read_timeout: nil)
+    request_json(Net::HTTP::Post, path, payload: payload, read_timeout: read_timeout)
+  end
+
+  def request_json(request_class, path, payload: nil, read_timeout: nil)
     uri = URI("#{@base_url}#{path}")
-    req = Net::HTTP::Post.new(uri)
-    req["Content-Type"] = "application/json"
-    req.body = JSON.generate(payload)
+    req = request_class.new(uri)
+    if payload
+      req["Content-Type"] = "application/json"
+      req.body = JSON.generate(payload)
+    end
+    req["Accept"] = "application/json"
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.open_timeout = 5
-    http.read_timeout = read_timeout || Rails.application.config.x.nyoy.llama_read_timeout
+    http.read_timeout = read_timeout || (payload ? Rails.application.config.x.nyoy.llama_read_timeout : 5)
 
     res = http.request(req)
-    json = JSON.parse(res.body)
+    json = res.body.to_s.present? ? JSON.parse(res.body) : {}
 
     unless res.is_a?(Net::HTTPSuccess)
-      raise Error, json["error"]&.dig("message") || res.body
+      raise Error, json["error"]&.dig("message") || json["error"].presence || res.body.presence || "HTTP #{res.code}"
     end
 
     json
+  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, SocketError => e
+    raise Error, "llama.cpp に接続できませんでした（#{e.message}）"
   rescue Net::ReadTimeout, Timeout::Error
     raise Error, "llama.cpp read timeout (#{http.read_timeout}s)"
+  rescue JSON::ParserError
+    raise Error, "llama.cpp の応答が JSON ではありません"
   end
 end
