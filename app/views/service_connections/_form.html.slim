@@ -64,6 +64,29 @@
       - else
         p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 
+  - if service_connection.searxng?
+    - searx = service_connection.searxng_settings
+    .kb-card.p-4.space-y-4
+      h2 class=kb_section_title 検索設定
+      p.text-sm.kb-text-muted CAPTCHA 回避のため件数・エンジン・同時実行を抑えます。接続画面から変更できます。
+      .grid.gap-4 class="sm:grid-cols-2"
+        div
+          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_result_count" 取得件数
+          input#service_connection_searxng_settings_result_count.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][result_count]" value=searx.result_count min=1 max=10 step=1
+          p.mt-1.text-sm.kb-text-muted 推奨 3〜5。最大 10。
+        div
+          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_concurrent_searches" 同時検索数
+          input#service_connection_searxng_settings_concurrent_searches.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][concurrent_searches]" value=searx.concurrent_searches min=1 max=3 step=1
+          p.mt-1.text-sm.kb-text-muted 推奨 1。
+        div
+          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_retry_count" リトライ回数
+          input#service_connection_searxng_settings_retry_count.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][retry_count]" value=searx.retry_count min=0 max=2 step=1
+          p.mt-1.text-sm.kb-text-muted 推奨 0〜1。
+        div class="sm:col-span-2"
+          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_engines" 検索エンジン
+          input#service_connection_searxng_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searxng_settings][engines]" value=searx.engines placeholder="duckduckgo,wikipedia"
+          p.mt-1.text-sm.kb-text-muted カンマ区切り。例: duckduckgo,wikipedia（google は CAPTCHA で空になりやすい）
+
   div
     = form.label :notes, "メモ", class: "#{kb_label} mb-1"
     = form.text_area :notes, rows: 3, class: kb_field_input_classes

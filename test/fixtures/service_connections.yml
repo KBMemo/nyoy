@@ -66,6 +66,11 @@ searxng:
   base_url: http://bowmore.artif.org:8080
   enabled: true
   sort_order: 8
+  settings:
+    result_count: 5
+    concurrent_searches: 1
+    engines: duckduckgo,wikipedia
+    retry_count: 1
 
 readability:
   key: readability

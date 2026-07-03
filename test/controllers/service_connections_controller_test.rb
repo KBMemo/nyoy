@@ -47,6 +47,32 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "searx_saved_token", NyoyConnectionStore.api_token(:searxng)
   end
 
+  test "update searxng search settings" do
+    connection = service_connections(:searxng)
+
+    patch service_connection_path(connection), params: {
+      service_connection: {
+        name: connection.name,
+        base_url: connection.base_url,
+        enabled: true,
+        sort_order: connection.sort_order,
+        searxng_settings: {
+          result_count: 3,
+          concurrent_searches: 1,
+          engines: "duckduckgo,wikipedia",
+          retry_count: 0
+        }
+      }
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    settings = connection.reload.searxng_settings
+    assert_equal 3, settings.result_count
+    assert_equal 1, settings.concurrent_searches
+    assert_equal "duckduckgo,wikipedia", settings.engines
+    assert_equal 0, settings.retry_count
+  end
+
   test "refresh models updates server model from api" do
     connection = service_connections(:gpt_oss)
     connection.update!(server_model: "old-model")

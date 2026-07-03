@@ -118,6 +118,8 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `TSUZURA_API_TOKEN` | 葛籠 API トークン（`tsuzura_...`） | （未設定） |
 | `SEARXNG_URL` | SearXNG ベース URL | `http://bowmore.artif.org:8080` |
 | `SEARXNG_API_TOKEN` | SearXNG Bearer トークン | （未設定） |
+
+SearXNG の検索方針（取得件数・同時検索数・エンジン・リトライ）は接続画面（`/service_connections` の SearXNG）で変更できます。既定は CAPTCHA 回避向けに `5` 件 / 同時 `1` / `duckduckgo,wikipedia` / リトライ `1` です。Wikipedia の infobox も結果に含めます。
 | `READABILITY_URL` | readability-js-server | `http://bowmore:8030` |
 
 ### Chat コンテキスト・メモ RAG

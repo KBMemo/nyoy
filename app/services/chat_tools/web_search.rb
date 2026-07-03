@@ -9,9 +9,9 @@ module ChatTools
     end
 
     param :q, desc: "検索クエリ", required: true
-    param :limit, type: "integer", desc: "最大件数（既定 10、最大 20）", required: false
+    param :limit, type: "integer", desc: "最大件数（省略時は接続設定の既定。最大 10）", required: false
 
-    def execute(q:, limit: 10)
+    def execute(q:, limit: nil)
       client.search(q: q, limit: limit)
     rescue SearxngClient::Error => e
       { error: e.message }

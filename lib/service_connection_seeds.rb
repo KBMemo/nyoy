@@ -26,6 +26,9 @@ module ServiceConnectionSeeds
         notes: definition[:notes]
       }
       attributes[:api_token] = definition[:api_token] if definition[:api_token].present?
+      if definition[:settings].present? && (record.new_record? || record.settings.blank?)
+        attributes[:settings] = definition[:settings]
+      end
       record.assign_attributes(attributes)
       record.save!
     end
@@ -98,7 +101,8 @@ module ServiceConnectionSeeds
         base_url: config.searxng_url,
         api_token: config.searxng_api_token,
         enabled: config.searxng_url.present?,
-        notes: "Chat web_search ツール用"
+        notes: "Chat web_search ツール用",
+        settings: SearxngSettings::DEFAULTS
       },
       {
         key: "readability",

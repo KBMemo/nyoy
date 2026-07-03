@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_03_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_04_013100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -340,6 +340,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_03_110000) do
     t.string "name", null: false
     t.text "notes"
     t.string "server_model"
+    t.jsonb "settings", default: {}, null: false
     t.integer "sort_order", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["enabled"], name: "index_service_connections_on_enabled"

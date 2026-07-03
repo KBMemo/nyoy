@@ -42,6 +42,7 @@ class ServiceConnection < ApplicationRecord
   scope :chat_backends, -> { where(key: chat_keys) }
   scope :custom_llms, -> { where("key LIKE ?", "llm_%") }
 
+  before_validation :normalize_searxng_settings, if: :searxng?
   before_destroy :prevent_builtin_destroy
   after_save :clear_connection_cache
   after_save :sync_chat_models, if: :chat_backend?
@@ -52,6 +53,20 @@ class ServiceConnection < ApplicationRecord
 
   def custom_llm?
     key.to_s.match?(CUSTOM_LLM_KEY_FORMAT)
+  end
+
+  def searxng?
+    key.to_s == "searxng"
+  end
+
+  def searxng_settings
+    SearxngSettings.from(settings)
+  end
+
+  def assign_searxng_settings(attrs)
+    return unless searxng?
+
+    self.settings = SearxngSettings.normalize(attrs)
   end
 
   def key_label
@@ -80,6 +95,10 @@ class ServiceConnection < ApplicationRecord
     return if custom_llm?
 
     errors.add(:key, "は組み込み key か llm_ で始まるカスタム key にしてください")
+  end
+
+  def normalize_searxng_settings
+    self.settings = SearxngSettings.normalize(settings)
   end
 
   def prevent_builtin_destroy

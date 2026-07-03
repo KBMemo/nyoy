@@ -27,6 +27,16 @@
     dd = @service_connection.enabled? ? "有効" : "無効"
     dt.font-medium.kb-text-secondary 表示順
     dd = @service_connection.sort_order
+    - if @service_connection.searxng?
+      - searx = @service_connection.searxng_settings
+      dt.font-medium.kb-text-secondary 取得件数
+      dd = searx.result_count
+      dt.font-medium.kb-text-secondary 同時検索数
+      dd = searx.concurrent_searches
+      dt.font-medium.kb-text-secondary リトライ
+      dd = searx.retry_count
+      dt.font-medium.kb-text-secondary 検索エンジン
+      dd.nyoy-monospace = searx.engines
   - if @service_connection.notes.present?
     div
       h2 class=kb_section_title メモ
