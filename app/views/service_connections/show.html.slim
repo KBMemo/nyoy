@@ -35,6 +35,10 @@
       dd = searx.concurrent_searches
       dt.font-medium.kb-text-secondary リトライ
       dd = searx.retry_count
+      dt.font-medium.kb-text-secondary web_search 上限
+      dd = "#{searx.max_searches_per_turn} 回 / 応答"
+      dt.font-medium.kb-text-secondary fetch_url 上限
+      dd = "#{searx.max_fetches_per_turn} 回 / 応答"
       dt.font-medium.kb-text-secondary 検索エンジン
       dd.nyoy-monospace = searx.engines
   - if @service_connection.notes.present?

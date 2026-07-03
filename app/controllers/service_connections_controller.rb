@@ -101,7 +101,16 @@ class ServiceConnectionsController < ApplicationController
     return unless connection.searxng?
 
     attrs = params.dig(:service_connection, :searxng_settings)
-    connection.assign_searxng_settings(attrs.present? ? attrs.permit(:result_count, :concurrent_searches, :engines, :retry_count) : connection.settings)
+    connection.assign_searxng_settings(
+      attrs.present? ? attrs.permit(
+        :result_count,
+        :concurrent_searches,
+        :engines,
+        :retry_count,
+        :max_searches_per_turn,
+        :max_fetches_per_turn
+      ) : connection.settings
+    )
   end
 
   def load_model_options

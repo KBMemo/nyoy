@@ -47,6 +47,7 @@ class SafeUrlFetcher
 
   def fetch(url, max_chars: 12_000)
     uri = parse_public_http_url!(url)
+    reject_pdf_url!(uri)
     markdown_uri = markdown_alternate_uri(uri)
 
     if markdown_uri
@@ -101,6 +102,7 @@ class SafeUrlFetcher
 
   def fetch_response(uri, max_chars:)
     response = follow_redirects(uri)
+    reject_pdf_response!(response)
     body, truncated = read_limited_body(response)
     content_type = response["content-type"].to_s
 
@@ -112,6 +114,15 @@ class SafeUrlFetcher
       text: extract_text(body, content_type, max_chars: max_chars),
       truncated: truncated || nil
     }.compact
+  end
+
+  def reject_pdf_url!(uri)
+    raise Error, "PDF は現在取得対象外です" if PdfUrl.blocked?(uri.to_s)
+  end
+
+  def reject_pdf_response!(response)
+    raise Error, "PDF は現在取得対象外です" if PdfUrl.blocked?(response.uri.to_s)
+    raise Error, "PDF は現在取得対象外です" if PdfUrl.blocked_content_type?(response["content-type"])
   end
 
   def markdown_alternate_uri(uri)
@@ -126,7 +137,7 @@ class SafeUrlFetcher
   end
 
   def parse_public_http_url!(url)
-    uri = URI.parse(url.to_s.strip)
+    uri = HttpUrl.parse(url)
     raise Error, "http または https の URL を指定してください" unless uri.is_a?(URI::HTTP)
 
     uri.host = uri.host.to_s.downcase
@@ -187,7 +198,7 @@ class SafeUrlFetcher
   def perform_get(uri)
     req = Net::HTTP::Get.new(uri)
     req["User-Agent"] = USER_AGENT
-    req["Accept"] = "text/markdown,text/plain,text/html,application/xhtml+xml;q=0.9,*/*;q=0.8"
+    req["Accept"] = "text/markdown,text/plain,text/html,application/xhtml+xml;q=0.9"
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.open_timeout = @open_timeout

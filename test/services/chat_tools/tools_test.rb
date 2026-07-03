@@ -43,6 +43,36 @@ class ChatToolsTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:searxng_client, original_searxng_client) if defined?(original_searxng_client)
   end
 
+  test "web_search filters pdf results and limits calls per turn" do
+    calls = []
+    fake_client = Object.new
+    fake_client.define_singleton_method(:search) do |**kwargs|
+      calls << kwargs
+      {
+        "results" => [
+          { "title" => "HTML", "url" => "https://example.com/page" },
+          { "title" => "PDF", "url" => "https://example.com/doc.pdf" }
+        ]
+      }
+    end
+    original_searxng_client = ChatTools::Registry.method(:searxng_client)
+    ChatTools::Registry.define_singleton_method(:searxng_client) { fake_client }
+
+    budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
+    tool = ChatTools::WebSearch.new(budget: budget)
+
+    first = tool.execute(q: "ruby")
+    second = tool.execute(q: "rails")
+    third = tool.execute(q: "again")
+
+    assert_equal 1, first["results"].size
+    assert_equal ["https://example.com/doc.pdf"], first["skipped_pdf_urls"]
+    assert_equal 2, calls.size
+    assert_match(/最大 2 回/, third[:error])
+  ensure
+    ChatTools::Registry.define_singleton_method(:searxng_client, original_searxng_client) if defined?(original_searxng_client)
+  end
+
   test "fetch_url returns page text" do
     calls = []
     fake_fetcher = Object.new
@@ -56,6 +86,32 @@ class ChatToolsTest < ActiveSupport::TestCase
 
     assert_equal "https://example.com", calls.first
     assert_equal "Hello", result[:text]
+  ensure
+    ChatTools::Registry.reset_client!
+  end
+
+  test "fetch_url rejects pdf and limits calls per turn" do
+    calls = []
+    fake_fetcher = Object.new
+    fake_fetcher.define_singleton_method(:fetch) do |url|
+      calls << url
+      { url: url, status: 200, text: "ok" }
+    end
+    ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
+
+    budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 2)
+    tool = ChatTools::FetchUrl.new(budget: budget)
+
+    pdf = tool.execute(url: "https://example.com/a.pdf")
+    first = tool.execute(url: "https://example.com/1")
+    second = tool.execute(url: "https://example.com/2")
+    third = tool.execute(url: "https://example.com/3")
+
+    assert_match(/PDF/, pdf[:error])
+    assert_equal "ok", first[:text]
+    assert_equal "ok", second[:text]
+    assert_match(/最大 2 回/, third[:error])
+    assert_equal 2, calls.size
   ensure
     ChatTools::Registry.reset_client!
   end

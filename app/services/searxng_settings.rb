@@ -5,16 +5,21 @@ class SearxngSettings
     "result_count" => 5,
     "concurrent_searches" => 1,
     "engines" => "duckduckgo,wikipedia",
-    "retry_count" => 1
+    "retry_count" => 1,
+    "max_searches_per_turn" => 2,
+    "max_fetches_per_turn" => 3
   }.freeze
 
   RANGES = {
     "result_count" => 1..10,
     "concurrent_searches" => 1..3,
-    "retry_count" => 0..2
+    "retry_count" => 0..2,
+    "max_searches_per_turn" => 1..5,
+    "max_fetches_per_turn" => 1..10
   }.freeze
 
-  attr_reader :result_count, :concurrent_searches, :engines, :retry_count
+  attr_reader :result_count, :concurrent_searches, :engines, :retry_count,
+              :max_searches_per_turn, :max_fetches_per_turn
 
   def self.load
     record = ServiceConnection.find_by(key: "searxng")
@@ -36,6 +41,8 @@ class SearxngSettings
     @concurrent_searches = clamp_int(source["concurrent_searches"], "concurrent_searches")
     @engines = normalize_engines(source["engines"])
     @retry_count = clamp_int(source["retry_count"], "retry_count")
+    @max_searches_per_turn = clamp_int(source["max_searches_per_turn"], "max_searches_per_turn")
+    @max_fetches_per_turn = clamp_int(source["max_fetches_per_turn"], "max_fetches_per_turn")
   end
 
   def engines_param
@@ -47,7 +54,9 @@ class SearxngSettings
       "result_count" => result_count,
       "concurrent_searches" => concurrent_searches,
       "engines" => engines,
-      "retry_count" => retry_count
+      "retry_count" => retry_count,
+      "max_searches_per_turn" => max_searches_per_turn,
+      "max_fetches_per_turn" => max_fetches_per_turn
     }
   end
 

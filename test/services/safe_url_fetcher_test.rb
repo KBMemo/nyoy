@@ -12,6 +12,52 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_equal "http または https の URL を指定してください", error.message
   end
 
+  test "rejects pdf urls" do
+    error = assert_raises(SafeUrlFetcher::Error) { @fetcher.fetch("https://example.com/report.pdf") }
+    assert_equal "PDF は現在取得対象外です", error.message
+  end
+
+  test "accepts japanese path urls as valid iris" do
+    paths = []
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      paths << uri.path
+      if uri.path.end_with?(".md")
+        SafeUrlFetcherTest.fake_http_response(404, "not found", uri: uri)
+      else
+        SafeUrlFetcherTest.fake_http_response(
+          200,
+          "<html><head><title>元三大師</title></head><body><p>良源</p></body></html>",
+          uri: uri,
+          content_type: "text/html; charset=utf-8"
+        )
+      end
+    end
+
+    result = fetcher.fetch("https://ja.wikipedia.org/wiki/元三大師")
+
+    assert_includes paths, "/wiki/%E5%85%83%E4%B8%89%E5%A4%A7%E5%B8%AB"
+    assert_equal "https://ja.wikipedia.org/wiki/%E5%85%83%E4%B8%89%E5%A4%A7%E5%B8%AB", result[:url]
+    assert_equal "元三大師", result[:title]
+    assert_includes result[:text], "良源"
+  end
+
+  test "rejects pdf content type responses" do
+    @fetcher.define_singleton_method(:perform_get) do |uri|
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "%PDF-1.4",
+        uri: uri,
+        content_type: "application/pdf"
+      )
+    end
+
+    error = assert_raises(SafeUrlFetcher::Error) { @fetcher.fetch("https://example.com/download") }
+    assert_equal "PDF は現在取得対象外です", error.message
+  end
+
   test "rejects localhost" do
     error = assert_raises(SafeUrlFetcher::Error) { @fetcher.fetch("http://localhost/secret") }
     assert_equal "このホストにはアクセスできません", error.message

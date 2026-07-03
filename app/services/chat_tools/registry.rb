@@ -19,18 +19,20 @@ module ChatTools
       過去の自分のメモ → search_memos / get_memo（自動注入の RAG 抜粋で足りないとき）。
       添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
       画像が添付されていても、質問がテキストだけで答えられるなら analyze_image は使わない。
-      複数のツールが必要なら順序よく組み合わせてよい。
+      複数のツールが必要なら順序よく組み合わせてよいが、同じ種類のツールを何度も繰り返さない。
     TEXT
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      web_search（SearXNG）で Web 検索、fetch_url でページ本文を取得できます。
-      最新情報が必要なときは web_search を使い、詳細が必要なら fetch_url で本文を読んでください。
+      web_search（SearXNG）で Web 検索、fetch_url で HTML/テキスト本文を取得できます。
+      web_search / fetch_url の1回の応答あたりの上限は接続設定（SearXNG）に従います。
+      検索はクエリを絞って少ない回数で済ませ、本文取得は必要な HTML ページだけに限定してください。
+      PDF は取得対象外です（検索結果の PDF はスキップされます）。PDF 以外の HTML を選んでください。
       fetch_url は公開 Web の http/https URL のみ取得できます。
     TEXT
 
     FETCH_URL_INSTRUCTIONS = <<~TEXT.squish
-      fetch_url で公開 Web ページの本文を取得できます。http/https URL のみ対応です。
-      HTML ページは readability-js-server で本文抽出します。
+      fetch_url で公開 Web ページの本文を取得できます。http/https の HTML/テキストのみ。PDF は不可。
+      1回の応答あたりの上限は接続設定に従います。HTML ページは readability-js-server で本文抽出します。
     TEXT
 
     VISION_TOOLS_INSTRUCTIONS = <<~TEXT.squish
@@ -106,9 +108,22 @@ module ChatTools
       UpdateMemo
     ].freeze
 
+    WEB_BUDGET_TOOL_CLASSES = [
+      WebSearch,
+      FetchUrl
+    ].freeze
+
     def tool_instances(chat)
+      web_budget = WebToolBudget.from_settings
+
       tool_classes.map do |tool_class|
-        CHAT_SCOPED_TOOL_CLASSES.include?(tool_class) ? tool_class.new(chat: chat) : tool_class.new
+        if CHAT_SCOPED_TOOL_CLASSES.include?(tool_class)
+          tool_class.new(chat: chat)
+        elsif WEB_BUDGET_TOOL_CLASSES.include?(tool_class)
+          tool_class.new(budget: web_budget)
+        else
+          tool_class.new
+        end
       end
     end
 

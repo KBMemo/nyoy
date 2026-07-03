@@ -9,7 +9,9 @@ class SeedSearxngDefaultSettings < ActiveRecord::Migration[8.0]
     "result_count" => 5,
     "concurrent_searches" => 1,
     "engines" => "duckduckgo,wikipedia",
-    "retry_count" => 1
+    "retry_count" => 1,
+    "max_searches_per_turn" => 2,
+    "max_fetches_per_turn" => 3
   }.freeze
 
   def up

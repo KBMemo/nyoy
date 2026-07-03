@@ -60,7 +60,9 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
           result_count: 3,
           concurrent_searches: 1,
           engines: "duckduckgo,wikipedia",
-          retry_count: 0
+          retry_count: 0,
+          max_searches_per_turn: 1,
+          max_fetches_per_turn: 2
         }
       }
     }
@@ -71,6 +73,8 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, settings.concurrent_searches
     assert_equal "duckduckgo,wikipedia", settings.engines
     assert_equal 0, settings.retry_count
+    assert_equal 1, settings.max_searches_per_turn
+    assert_equal 2, settings.max_fetches_per_turn
   end
 
   test "refresh models updates server model from api" do

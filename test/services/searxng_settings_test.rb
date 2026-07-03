@@ -10,6 +10,8 @@ class SearxngSettingsTest < ActiveSupport::TestCase
     assert_equal 1, settings.concurrent_searches
     assert_equal "duckduckgo,wikipedia", settings.engines
     assert_equal 1, settings.retry_count
+    assert_equal 2, settings.max_searches_per_turn
+    assert_equal 3, settings.max_fetches_per_turn
   end
 
   test "clamps values to allowed ranges" do
@@ -17,12 +19,16 @@ class SearxngSettingsTest < ActiveSupport::TestCase
       result_count: 99,
       concurrent_searches: 0,
       retry_count: -1,
+      max_searches_per_turn: 99,
+      max_fetches_per_turn: 0,
       engines: " duckduckgo , wikipedia , "
     )
 
     assert_equal 10, settings.result_count
     assert_equal 1, settings.concurrent_searches
     assert_equal 0, settings.retry_count
+    assert_equal 5, settings.max_searches_per_turn
+    assert_equal 1, settings.max_fetches_per_turn
     assert_equal "duckduckgo,wikipedia", settings.engines
   end
 

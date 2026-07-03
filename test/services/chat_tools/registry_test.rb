@@ -67,6 +67,33 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_includes tool_names, "get_media"
   end
 
+  test "web tools share a budget within one tool_instances call" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    instances = ChatTools::Registry.tool_instances(chat)
+    web_search = instances.find { |tool| tool.name == "web_search" }
+    fetch_url = instances.find { |tool| tool.name == "fetch_url" }
+    budget = web_search.instance_variable_get(:@budget)
+
+    assert_same budget, fetch_url.instance_variable_get(:@budget)
+    assert_equal 2, budget.max_searches
+    assert_equal 3, budget.max_fetches
+  end
+
+  test "web tool budget reads limits from searxng connection settings" do
+    service_connections(:searxng).update!(
+      settings: service_connections(:searxng).settings.merge(
+        "max_searches_per_turn" => 1,
+        "max_fetches_per_turn" => 4
+      )
+    )
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    budget = ChatTools::Registry.tool_instances(chat).find { |tool| tool.name == "web_search" }
+      .instance_variable_get(:@budget)
+
+    assert_equal 1, budget.max_searches
+    assert_equal 4, budget.max_fetches
+  end
+
   test "media tools not available without token" do
     service_connections(:tsuzura).update!(api_token: nil, enabled: true)
     NyoyConnectionStore.clear_cache!
