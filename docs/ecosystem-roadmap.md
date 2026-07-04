@@ -81,7 +81,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | 接続管理 | `service_connections` | 運用中 |
 | 徒然連携 | `TsurezureClient` + `ChatTools::*` | **運用中**（本番確認済み） |
 | Web 検索 / URL 取得 | `web_search` / `fetch_url` | **実装済み** |
-| メモ RAG | export 取込 + pgvector + Chat 注入 | **実装済み** |
+| メモ RAG | export 取込 + pgvector + `recall_memos`（既定）/ 自動注入 | **実装済み** |
 | MCP サーバー | — | **未実装** |
 | 葛籠連携 | `TsuzuraClient` + Chat アーカイブ + メディアツール | **Phase 5a 完了** |
 
@@ -106,19 +106,21 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 ### 2.4 Chat
 
 - `ruby_llm` の `acts_as_chat` / `acts_as_message` / `acts_as_model`
-- `ChatResponseJob` が `chat.ask` を実行し、Turbo Stream で Markdown 再レンダリング
+- `ChatResponseJob` が `chat.complete` を実行し、Turbo Stream で Markdown 再レンダリング
 - `ChatModelCatalog.context_for` で llama.cpp OpenAI 互換 API に接続
 - **`ChatTools::Registry`** — 接続状態に応じてツールを動的配線
 - **コンテキスト制御** — `ChatContextBuilder`（ターン制限 + 要約キャッシュ）、`ChatContextBudget`（トークン予算）、UI で推定 tokens・メモ RAG チャンク数
+- **高速化** — prompt cache / sticky slot、要約・RAG を最新ユーザーメッセージへ、`recall_memos` ツール化（既定）、TTFT 計測、アイドルウォームアップ。詳細は [Chat 高速化](./chat-performance.md)
 
 | ツール | 用途 | 条件 |
 |--------|------|------|
+| `recall_memos` | メモ意味検索（ハイブリッド RAG） | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
 | `search_memos` | 徒然キーワード検索 | `kbmemo` |
 | `get_memo` / `create_memo` / `update_memo` | メモ CRUD | `kbmemo` |
 | `web_search` | Web 検索 | `searxng` |
 | `fetch_url` | URL 本文取得 | 常時（readability 優先、未設定時は直接取得） |
 
-**メモ RAG（自動）:** ユーザー発話ごとに pgvector + 徒然キーワード検索（RRF）→ 関連チャンクを system instructions に注入。`get_memo` は全文が必要なときの補助。
+**メモ RAG:** 既定は `MEMO_RAG_MODE=tool`（モデルが必要時に `recall_memos`）。`inject` にすると毎ターンハイブリッド RAG を最新ユーザーメッセージへ自動注入。`get_memo` は全文が必要なときの補助。
 
 実装: `app/services/chat_tools/`, `app/services/tsurezure_client.rb`, `app/services/memo_knowledge_*`, `app/services/chat_memo_rag_injector.rb`
 
@@ -127,7 +129,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | source | 用途 | 検索 |
 |--------|------|------|
 | `prompt`（既定） | 画風・LoRA・inpaint 等 | `PromptKnowledgeRetriever` |
-| `memo` | 徒然メモチャンク | `MemoKnowledgeRetriever` + Chat 自動注入 |
+| `memo` | 徒然メモチャンク | `MemoKnowledgeRetriever` + `recall_memos` / 自動注入 |
 
 - `PromptKnowledgeChunk` — pgvector + `neighbor`、HNSW index
 - 取込: `GET /api/v1/memos/export` → `MemoKnowledgeIngestJob` / `bin/rails kbmemo:rag:ingest`
@@ -160,7 +162,8 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 |------|------|------|
 | Web 検索 | SearXNG | **完了** |
 | URL 取得 | SSRF + readability | **完了** |
-| メモ RAG | export 取込 + 注入 + 要約 | **完了**（Groonga は徒然側） |
+| メモ RAG | export 取込 + `recall_memos` / 注入切替 | **完了**（Groonga は徒然側） |
+| Chat 高速化（cache / 計測 / warmup） | prompt cache・ツール化 RAG・TTFT | **完了**（検討案件は [chat-performance.md](./chat-performance.md)） |
 | 画像理解 | Chat 添付 + `analyze_image` ツール | **完了** |
 | MCP 公開 | `ChatTools::*` の再公開 | **未着手** |
 
@@ -236,6 +239,7 @@ gantt
 | 4 | ~~徒然 Groonga 検索~~ | キーワード RAG 精度 | **決定:** PGroonga（徒然 DB）。[実装手順](./tsuredure-pgroonga-search.md) |
 | 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
 | 6 | マルチ Workspace 開発 | site + nyoy | OpenAPI 契約 + マルチルート推奨 |
+| 7 | Chat `reasoning_effort` 等 | 体感レイテンシ | 生成側が支配的。[検討案件](./chat-performance.md#4-検討案件未着手) |
 
 ---
 
