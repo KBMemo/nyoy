@@ -16,14 +16,8 @@ production:
   memo_knowledge_ingest:
     class: MemoKnowledgeIngestJob
     schedule: every hour at minute 30
-  llama_warmup:
-    class: LlamaWarmupJob
-    schedule: every 5 minutes
 
 development:
   memo_knowledge_ingest:
     class: MemoKnowledgeIngestJob
     schedule: every 6 hours
-  llama_warmup:
-    class: LlamaWarmupJob
-    schedule: every 5 minutes

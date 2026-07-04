@@ -10,7 +10,6 @@ Chat（`chats` / `messages` / `ChatResponseJob`）の応答レイテンシ改善
 | llama.cpp キャッシュ | `app/services/chat_llama_cache.rb` |
 | メモ RAG | `app/services/chat_memo_rag_injector.rb`, `app/services/chat_tools/recall_memos.rb` |
 | 計測 | `app/services/chat_response_timer.rb`, `messages` の timing カラム |
-| アイドルウォームアップ | `app/services/llama_warmup_service.rb`, `LlamaWarmupJob` |
 | ツール配線 | `app/services/chat_tools/registry.rb` |
 
 ---
@@ -73,14 +72,6 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 同じチャットを 2 回投げて比較すると、前処理・キャッシュミス・生成のどれが支配的か切り分けられる。
 
-### 2.5 アイドル時ウォームアップ
-
-- `LlamaWarmupJob` が 5 分ごとに `LlamaWarmupService` を実行（Solid Queue recurring）
-- チャット用バックエンドへ `max_tokens: 1` の最小 completion を送り、常駐と CUDA ウォームを維持
-- **直近 `LLAMA_WARMUP_SKIP_RECENT_SECONDS`（既定 480）以内に会話があればスキップ**し、稼働中の slot KV を evict しない
-
-設定: `LLAMA_WARMUP_ENABLED`, `LLAMA_WARMUP_SKIP_RECENT_SECONDS`, `LLAMA_WARMUP_READ_TIMEOUT`
-
 ---
 
 ## 3. 計測結果（参考）
@@ -98,7 +89,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 - **アプリ側のキャッシュ／前処理まわりは意図どおり動いている**
 - warm 時の体感遅さの大半は **思考トークン生成**（キャッシュでは縮まらない）
-- cold の約 1.5〜2 倍ペナルティはウォームアップで緩和する想定（運用で再計測推奨）
+- cold の約 1.5〜2 倍ペナルティは、サーバ側の常駐設定で扱う（§4.4）。Nyoy からの定期 ping は廃止済み
 
 `MEMO_RAG_MODE=tool` 後は、メモ不要ターンの前処理はさらに小さくなる想定。メモ参照ありターンはツール往復分が増える。
 
@@ -139,8 +130,8 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 項目 | 内容 |
 |------|------|
 | 狙い | idle unload がある場合の cold start をインフラ側で根絶 |
-| 案 | llama-server の常駐設定（unload 無効化等）。Nyoy の 5 分 ping はクライアント側の保険 |
-| メモ | サーバ設定は Nyoy リポジトリ外 |
+| 案 | llama-server の常駐設定（unload 無効化等） |
+| メモ | サーバ設定は Nyoy リポジトリ外。クライアント側の 5 分 ping（`LlamaWarmupJob`）は廃止済み |
 
 ### 4.5 効果の小さい項目
 
@@ -155,7 +146,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 施策後やモデル差し替え後に確認する項目:
 
 1. 同一チャットを 2 回連投し、UI の **前処理 / 初回応答 / 思考 / 経過** を記録
-2. 長時間アイドル後の 1 通目が warm 相当か（ウォームアップ効果）
+2. 長時間アイドル後の 1 通目が warm 相当か（サーバ常駐の効果）
 3. `recall_memos` を使う質問と使わない質問で前処理・往復回数の差
 4. llama-server の prompt eval / cache hit ログ（可能なら）
 
@@ -169,8 +160,6 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | `LLAMA_SLOT_COUNT` | `0` | `/props` 失敗時の slot 数フォールバック |
 | `MEMO_RAG_ENABLED` | `true` | メモ RAG 全体の有効化 |
 | `MEMO_RAG_MODE` | `tool` | `tool` / `inject` |
-| `LLAMA_WARMUP_ENABLED` | `true` | 定期ウォームアップ |
-| `LLAMA_WARMUP_SKIP_RECENT_SECONDS` | `480` | 会話中はウォームアップをスキップ |
 | `CHAT_CONTEXT_TURNS` | `10` | 送信する直近ターン数 |
 
 リコールを優先して毎ターンメモを載せたい場合は `MEMO_RAG_MODE=inject`。
@@ -185,7 +174,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 要約・RAG をプレフィックス外へ | **実装済み** |
 | RAG ツール化（既定） | **実装済み** |
 | TTFT / 前処理計測 | **実装済み** |
-| アイドルウォームアップ | **実装済み** |
+| アイドルウォームアップ（5 分 ping） | **廃止**（サーバ常駐は §4.4） |
 | `reasoning_effort` | **検討案件**（§4.1） |
 | ツール往復・slot 競合・サーバ常駐 | **検討案件**（§4.2–4.4） |
 

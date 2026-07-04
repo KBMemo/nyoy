@@ -110,7 +110,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 - `ChatModelCatalog.context_for` で llama.cpp OpenAI 互換 API に接続
 - **`ChatTools::Registry`** — 接続状態に応じてツールを動的配線
 - **コンテキスト制御** — `ChatContextBuilder`（ターン制限 + 要約キャッシュ）、`ChatContextBudget`（トークン予算）、UI で推定 tokens・メモ RAG チャンク数
-- **高速化** — prompt cache / sticky slot、要約・RAG を最新ユーザーメッセージへ、`recall_memos` ツール化（既定）、TTFT 計測、アイドルウォームアップ。詳細は [Chat 高速化](./chat-performance.md)
+- **高速化** — prompt cache / sticky slot、要約・RAG を最新ユーザーメッセージへ、`recall_memos` ツール化（既定）、TTFT 計測。詳細は [Chat 高速化](./chat-performance.md)
 
 | ツール | 用途 | 条件 |
 |--------|------|------|
@@ -163,7 +163,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | Web 検索 | SearXNG | **完了** |
 | URL 取得 | SSRF + readability | **完了** |
 | メモ RAG | export 取込 + `recall_memos` / 注入切替 | **完了**（Groonga は徒然側） |
-| Chat 高速化（cache / 計測 / warmup） | prompt cache・ツール化 RAG・TTFT | **完了**（検討案件は [chat-performance.md](./chat-performance.md)） |
+| Chat 高速化（cache / 計測） | prompt cache・ツール化 RAG・TTFT | **完了**（検討案件は [chat-performance.md](./chat-performance.md)） |
 | 画像理解 | Chat 添付 + `analyze_image` ツール | **完了** |
 | MCP 公開 | `ChatTools::*` の再公開 | **未着手** |
 
