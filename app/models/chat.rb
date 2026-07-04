@@ -37,7 +37,9 @@ class Chat < ApplicationRecord
     end
     reapply_runtime_instructions(@chat)
     inject_conversation_summary!(@chat, context.summary)
-    ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
+    if ChatMemoRagInjector.inject_mode?
+      ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
+    end
     ChatLlamaCache.apply!(@chat, chat: self)
     setup_persistence_callbacks
 

@@ -32,4 +32,21 @@ class ChatMemoRagInjectorTest < ActiveSupport::TestCase
     assert_includes llm_chat.messages[2].content, "京都の観光"
     assert llm_chat.messages.none? { |message| message.role == :system }
   end
+
+  test "mode helpers reflect memo_rag_mode config" do
+    original_mode = Rails.application.config.x.nyoy.memo_rag_mode
+    original_enabled = ChatMemoRagInjector.method(:enabled?)
+    ChatMemoRagInjector.define_singleton_method(:enabled?) { true }
+
+    Rails.application.config.x.nyoy.memo_rag_mode = "tool"
+    assert ChatMemoRagInjector.tool_mode?
+    assert_not ChatMemoRagInjector.inject_mode?
+
+    Rails.application.config.x.nyoy.memo_rag_mode = "inject"
+    assert ChatMemoRagInjector.inject_mode?
+    assert_not ChatMemoRagInjector.tool_mode?
+  ensure
+    Rails.application.config.x.nyoy.memo_rag_mode = original_mode
+    ChatMemoRagInjector.define_singleton_method(:enabled?, original_enabled) if defined?(original_enabled)
+  end
 end

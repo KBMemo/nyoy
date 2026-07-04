@@ -2,7 +2,7 @@
 
 module ChatTools
   module Registry
-    MEMO_TOOLS_INSTRUCTIONS = <<~TEXT.squish
+    MEMO_TOOLS_INSTRUCTIONS_INJECT = <<~TEXT.squish
       徒然（tsuredure）メモツールが利用可能です。
       関連メモの抜粋は自動で参照コンテキストに含まれます。
       さらに探すときは search_memos、本文が必要なときは get_memo を使ってください。
@@ -13,10 +13,21 @@ module ChatTools
       get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
     TEXT
 
+    MEMO_TOOLS_INSTRUCTIONS_TOOL = <<~TEXT.squish
+      徒然（tsuredure）メモツールが利用可能です。
+      過去の自分のメモの内容が回答に必要なときは recall_memos（意味検索で関連抜粋を取得）を呼んでください。
+      タイトル一覧をキーワードで探すだけなら search_memos、本文全体が必要なら get_memo を使ってください。
+      create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
+      update_memo では必ず get_memo で取得した updated_at を渡してください。
+      create_memo / update_memo の body は Markdown で書いてください（徒然側で AsciiDoc に変換）。
+      Chat に葛籠へアーカイブ済みの添付画像がある場合、image::media: マクロは自動で本文末尾に挿入されます（手書き不要）。
+      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
+    TEXT
+
     TOOL_ORCHESTRATION_INSTRUCTIONS = <<~TEXT.squish
       ツールは必要なときだけ使う。ユーザーの質問を読んでから選ぶ。
       最新の事実・ニュース・Web 上の情報 → web_search（詳細は fetch_url）。
-      過去の自分のメモ → search_memos / get_memo（自動注入の RAG 抜粋で足りないとき）。
+      過去の自分のメモ → recall_memos（関連知識を意味検索）。一覧探索は search_memos、本文は get_memo。
       添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
       画像が添付されていても、質問がテキストだけで答えられるなら analyze_image は使わない。
       複数のツールが必要なら順序よく組み合わせてよいが、同じ種類のツールを何度も繰り返さない。
@@ -92,9 +103,14 @@ module ChatTools
       NyoyConnectionStore.enabled?(:tsuzura) && NyoyConnectionStore.api_token(:tsuzura).present?
     end
 
+    def rag_tool_available?
+      ChatMemoRagInjector.tool_mode?
+    end
+
     def tool_classes
       classes = []
       classes.concat(MEMO_TOOL_CLASSES) if memo_tools_available?
+      classes << RecallMemos if rag_tool_available?
       classes << WebSearch if web_tools_available?
       classes << FetchUrl
       classes.concat(VISION_TOOL_CLASSES) if vision_tools_available?
@@ -105,7 +121,8 @@ module ChatTools
     CHAT_SCOPED_TOOL_CLASSES = [
       AnalyzeImage,
       CreateMemo,
-      UpdateMemo
+      UpdateMemo,
+      RecallMemos
     ].freeze
 
     WEB_BUDGET_TOOL_CLASSES = [
@@ -132,7 +149,7 @@ module ChatTools
       return llm_chat if tools.empty?
 
       instructions = [TOOL_ORCHESTRATION_INSTRUCTIONS]
-      instructions << MEMO_TOOLS_INSTRUCTIONS if memo_tools_available?
+      instructions << memo_tools_instructions if memo_tools_available?
       if web_tools_available?
         instructions << WEB_TOOLS_INSTRUCTIONS
       elsif tools.any? { |tool| tool.is_a?(FetchUrl) }
@@ -143,6 +160,10 @@ module ChatTools
 
       llm_chat.with_tools(*tools)
               .with_instructions(instructions.compact.join(" "), append: true)
+    end
+
+    def memo_tools_instructions
+      rag_tool_available? ? MEMO_TOOLS_INSTRUCTIONS_TOOL : MEMO_TOOLS_INSTRUCTIONS_INJECT
     end
 
     def vision_service

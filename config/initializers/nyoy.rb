@@ -39,6 +39,9 @@ Rails.application.config.x.nyoy.tap do |config|
   config.readability_url = ENV.fetch("READABILITY_URL", "http://bowmore:8030")
   config.chat_context_turns = ENV.fetch("CHAT_CONTEXT_TURNS", 10).to_i
   config.memo_rag_enabled = ENV.fetch("MEMO_RAG_ENABLED", "true") == "true"
+  # RAG の使い方: "tool" = モデルが recall_memos ツールを必要時に呼ぶ（毎ターンの前処理なし）、
+  # "inject" = 毎ターン関連メモ抜粋を自動注入（高リコール・前処理あり）。
+  config.memo_rag_mode = ENV.fetch("MEMO_RAG_MODE", "tool")
   config.memo_rag_top_k = ENV.fetch("MEMO_RAG_TOP_K", 5).to_i
   config.memo_rag_top_k_simple = ENV.fetch("MEMO_RAG_TOP_K_SIMPLE", 3).to_i
   config.memo_rag_top_k_normal = ENV.fetch("MEMO_RAG_TOP_K_NORMAL", 5).to_i

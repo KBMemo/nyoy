@@ -121,6 +121,41 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:client, original_client) if defined?(original_client)
   end
 
+  test "recall_memos registered in tool mode and absent in inject mode" do
+    original_mode = Rails.application.config.x.nyoy.memo_rag_mode
+
+    Rails.application.config.x.nyoy.memo_rag_mode = "tool"
+    assert_includes ChatTools::Registry.tool_classes, ChatTools::RecallMemos
+
+    Rails.application.config.x.nyoy.memo_rag_mode = "inject"
+    assert_not_includes ChatTools::Registry.tool_classes, ChatTools::RecallMemos
+  ensure
+    Rails.application.config.x.nyoy.memo_rag_mode = original_mode
+  end
+
+  test "recall_memos returns formatted context from the rag pipeline" do
+    original = ChatMemoRagInjector.method(:context_for)
+    ChatMemoRagInjector.define_singleton_method(:context_for) { |**| "徒然メモの抜粋: 清水寺" }
+
+    result = ChatTools::RecallMemos.new.execute(query: "京都の観光")
+
+    assert_equal "徒然メモの抜粋: 清水寺", result[:context]
+  ensure
+    ChatMemoRagInjector.define_singleton_method(:context_for, original) if defined?(original)
+  end
+
+  test "recall_memos reports when nothing relevant is found" do
+    original = ChatMemoRagInjector.method(:context_for)
+    ChatMemoRagInjector.define_singleton_method(:context_for) { |**| nil }
+
+    result = ChatTools::RecallMemos.new.execute(query: "無関係")
+
+    assert_nil result[:context]
+    assert result[:note].present?
+  ensure
+    ChatMemoRagInjector.define_singleton_method(:context_for, original) if defined?(original)
+  end
+
   test "update_memo rejects body and append_body together" do
     result = ChatTools::UpdateMemo.new.execute(
       memo_ref: "42",
