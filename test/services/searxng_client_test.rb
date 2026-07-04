@@ -100,6 +100,22 @@ class SearxngClientTest < ActiveSupport::TestCase
     assert_equal "test", result["query"]
   end
 
+  test "does not retry 4xx rate limit responses" do
+    settings = SearxngSettings.from(retry_count: 2)
+    client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
+    attempts = 0
+    client.define_singleton_method(:perform_request) do |*, **|
+      attempts += 1
+      SearxngClientTest.fake_http_response(429, { error: "too many requests" }.to_json)
+    end
+    client.define_singleton_method(:backoff_sleep) { |*| }
+
+    error = assert_raises(SearxngClient::Error) { client.search(q: "test") }
+
+    assert_equal 429, error.status
+    assert_equal 1, attempts
+  end
+
   test "raises error on api failure when retries exhausted" do
     settings = SearxngSettings.from(retry_count: 0)
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)

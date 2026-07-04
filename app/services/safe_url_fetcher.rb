@@ -48,12 +48,6 @@ class SafeUrlFetcher
   def fetch(url, max_chars: 12_000)
     uri = parse_public_http_url!(url)
     reject_pdf_url!(uri)
-    markdown_uri = markdown_alternate_uri(uri)
-
-    if markdown_uri
-      result = fetch_response(markdown_uri, max_chars: max_chars)
-      return result if result[:status] == 200 && result[:text].present?
-    end
 
     readability_result = fetch_via_readability(uri, max_chars: max_chars)
     return readability_result if readability_result
@@ -73,7 +67,7 @@ class SafeUrlFetcher
 
     truncated = false
     if text.bytesize > max_chars
-      text = text.byteslice(0, max_chars)
+      text = truncate_text(text, max_chars)
       truncated = true
     end
 
@@ -123,17 +117,6 @@ class SafeUrlFetcher
   def reject_pdf_response!(response)
     raise Error, "PDF は現在取得対象外です" if PdfUrl.blocked?(response.uri.to_s)
     raise Error, "PDF は現在取得対象外です" if PdfUrl.blocked_content_type?(response["content-type"])
-  end
-
-  def markdown_alternate_uri(uri)
-    return nil if uri.path.match?(/\.[a-zA-Z0-9]+\z/)
-
-    normalized_path = uri.path.to_s.chomp("/")
-    return nil if normalized_path.blank?
-
-    alternate = uri.dup
-    alternate.path = "#{normalized_path}.md"
-    alternate
   end
 
   def parse_public_http_url!(url)
@@ -267,8 +250,15 @@ class SafeUrlFetcher
            end
 
     text = text.squish
-    text = text.byteslice(0, max_chars) if text.bytesize > max_chars
-    text
+    truncate_text(text, max_chars)
+  end
+
+  # Byte-based truncation that never leaves a broken multibyte tail (scrub
+  # drops the incomplete trailing sequence), so returned JSON stays valid UTF-8.
+  def truncate_text(text, max_bytes)
+    return text if text.bytesize <= max_bytes
+
+    text.byteslice(0, max_bytes).to_s.scrub("")
   end
 
   def markdown_content?(content_type, body)

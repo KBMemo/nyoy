@@ -113,11 +113,19 @@ class SearxngClient
       yield
     rescue Error => e
       attempts += 1
-      raise if attempts > max_retries
+      raise if attempts > max_retries || !retryable_error?(e)
 
       backoff_sleep(0.4 * attempts)
       retry
     end
+  end
+
+  # Only retry transient failures (network/timeout = no status, or 5xx).
+  # 4xx incl. 429 (rate limit / CAPTCHA) are not retried — retrying immediately
+  # tends to worsen rate limiting rather than recover.
+  def retryable_error?(error)
+    status = error.status
+    status.nil? || status >= 500
   end
 
   def collect_results(payload)

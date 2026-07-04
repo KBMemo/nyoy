@@ -24,16 +24,12 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
     fetcher.define_singleton_method(:perform_get) do |uri|
       paths << uri.path
-      if uri.path.end_with?(".md")
-        SafeUrlFetcherTest.fake_http_response(404, "not found", uri: uri)
-      else
-        SafeUrlFetcherTest.fake_http_response(
-          200,
-          "<html><head><title>元三大師</title></head><body><p>良源</p></body></html>",
-          uri: uri,
-          content_type: "text/html; charset=utf-8"
-        )
-      end
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><head><title>元三大師</title></head><body><p>良源</p></body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
     end
 
     result = fetcher.fetch("https://ja.wikipedia.org/wiki/元三大師")
@@ -78,20 +74,19 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
   end
 
   test "fetches html and extracts text" do
-    @fetcher.define_singleton_method(:perform_get) do |uri|
-      if uri.path.end_with?(".md")
-        SafeUrlFetcherTest.fake_http_response(404, "not found", uri: uri)
-      else
-        SafeUrlFetcherTest.fake_http_response(
-          200,
-          "<html><head><title>Example</title></head><body><h1>Hello</h1><script>bad()</script></body></html>",
-          uri: uri,
-          content_type: "text/html; charset=utf-8"
-        )
-      end
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><head><title>Example</title></head><body><h1>Hello</h1><script>bad()</script></body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
     end
 
-    result = @fetcher.fetch("https://example.com/page")
+    result = fetcher.fetch("https://example.com/page")
 
     assert_equal "https://example.com/page", result[:url]
     assert_equal 200, result[:status]
@@ -171,31 +166,69 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_includes result[:text], "ようこそ"
   end
 
-  test "prefers markdown alternate when available" do
-    @fetcher.define_singleton_method(:perform_get) do |uri|
-      if uri.path.end_with?(".md")
-        SafeUrlFetcherTest.fake_http_response(
-          200,
-          "# LangChain overview\n\nAgent = Model + Harness.",
-          uri: uri,
-          content_type: "text/markdown; charset=utf-8"
-        )
-      else
-        SafeUrlFetcherTest.fake_http_response(
-          200,
-          "<html><body>#{'x' * 2_000_000}</body></html>",
-          uri: uri,
-          content_type: "text/html; charset=utf-8"
-        )
-      end
+  test "does not probe a .md alternate and prefers readability" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:configured?) { true }
+    fake_client.define_singleton_method(:extract) do |url|
+      {
+        "url" => url,
+        "title" => "LangChain overview",
+        "textContent" => "Agent = Model + Harness."
+      }
     end
 
-    result = @fetcher.fetch("https://docs.langchain.com/oss/python/langchain/overview")
+    calls = []
+    fetcher = SafeUrlFetcher.new(readability_client: fake_client)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      calls << uri.path
+      SafeUrlFetcherTest.fake_http_response(200, "<html></html>", uri: uri, content_type: "text/html")
+    end
 
-    assert_equal "https://docs.langchain.com/oss/python/langchain/overview.md", result[:url]
-    assert_includes result[:text], "LangChain overview"
+    result = fetcher.fetch("https://docs.langchain.com/oss/python/langchain/overview")
+
+    assert_empty calls
+    assert_equal "readability", result[:extractor]
     assert_includes result[:text], "Agent = Model + Harness"
-    assert_not result[:truncated]
+  end
+
+  test "does not probe a .md alternate before direct fetch" do
+    calls = []
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      calls << uri.path
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><head><title>Overview</title></head><body><p>Direct</p></body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
+    end
+
+    result = fetcher.fetch("https://docs.langchain.com/oss/python/langchain/overview")
+
+    assert_equal ["/oss/python/langchain/overview"], calls
+    assert_includes result[:text], "Direct"
+  end
+
+  test "truncates text on a valid utf-8 boundary" do
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        "<html><body>#{'あ' * 500}</body></html>",
+        uri: uri,
+        content_type: "text/html; charset=utf-8"
+      )
+    end
+
+    result = fetcher.fetch("https://example.com/page.html", max_chars: 100)
+
+    assert result[:text].valid_encoding?
+    assert_operator result[:text].bytesize, :<=, 100
   end
 
   test "truncates oversized html instead of erroring" do
@@ -218,18 +251,19 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
 
   test "follows redirects with validation" do
     calls = []
-    @fetcher.define_singleton_method(:perform_get) do |uri|
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:perform_get) do |uri|
       calls << uri.to_s
-      if uri.path.end_with?(".md")
-        SafeUrlFetcherTest.fake_http_response(404, "not found", uri: uri)
-      elsif uri.path == "/start"
+      if uri.path == "/start"
         SafeUrlFetcherTest.fake_http_response(302, "", uri: uri, location: "/final")
       else
         SafeUrlFetcherTest.fake_http_response(200, "plain text", uri: uri, content_type: "text/plain")
       end
     end
 
-    result = @fetcher.fetch("https://example.com/start")
+    result = fetcher.fetch("https://example.com/start")
 
     assert_includes calls, "https://example.com/start"
     assert_includes calls, "https://example.com/final"
