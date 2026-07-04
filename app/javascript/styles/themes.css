@@ -566,6 +566,54 @@
   border-left: 3px solid var(--kb-link);
 }
 
+.nyoy-chat-message-tool {
+  border-left: 3px solid var(--kb-text-muted);
+  background-color: var(--kb-bg-muted);
+}
+
+.nyoy-chat-message-tool-summary {
+  align-items: baseline;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem 1rem;
+  list-style-position: outside;
+  min-width: 0;
+}
+
+.nyoy-chat-message-tool-summary-label {
+  align-items: baseline;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.nyoy-chat-message-tool-summary .nyoy-chat-message-meta {
+  margin-top: 0;
+}
+
+.nyoy-chat-message-tool-preview {
+  color: var(--kb-text-muted);
+  flex: 1 1 auto;
+  font-family: var(--kb-font-mono);
+  font-size: var(--kb-font-size-xs);
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nyoy-chat-message-tool details[open] .nyoy-chat-message-tool-preview {
+  display: none;
+}
+
+.nyoy-chat-message-tool-body {
+  margin: var(--kb-space-2) 0 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 .nyoy-chat-message-role {
   font-size: var(--kb-font-size-sm);
   font-weight: 600;

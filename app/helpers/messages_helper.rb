@@ -80,6 +80,15 @@ module MessagesHelper
     partial_for(prefix: "messages/tool_calls", name: tool_call.name.to_s)
   end
 
+  def tool_call_body(tool_call)
+    "#{tool_call.name}(#{tool_call.arguments.map { |k, v| "#{k}: #{v.inspect}" }.join(", ")})"
+  end
+
+  def tool_message_preview(text, length: 80)
+    text.to_s.gsub(/\s+/, " ").strip.truncate(length)
+  end
+
+
   private
 
   def partial_for(prefix:, name:)
