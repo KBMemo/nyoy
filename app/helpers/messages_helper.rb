@@ -22,12 +22,30 @@ module MessagesHelper
     message.thinking_elapsed_ms / 1000.0
   end
 
+  def chat_message_first_chunk_elapsed(message)
+    return unless message.first_chunk_elapsed_ms.present?
+
+    message.first_chunk_elapsed_ms / 1000.0
+  end
+
+  def chat_message_context_build_elapsed(message)
+    return unless message.context_build_elapsed_ms.present?
+
+    message.context_build_elapsed_ms / 1000.0
+  end
+
   def chat_message_stats(message)
     stats = []
     stats << { label: "モデル", value: chat_message_model_name(message) }
 
     response_elapsed = chat_message_response_elapsed(message)
     stats << { label: "経過", value: nyoy_format_duration(response_elapsed) } if response_elapsed
+
+    first_chunk_elapsed = chat_message_first_chunk_elapsed(message)
+    stats << { label: "初回応答", value: nyoy_format_duration(first_chunk_elapsed) } if first_chunk_elapsed
+
+    context_build_elapsed = chat_message_context_build_elapsed(message)
+    stats << { label: "前処理", value: nyoy_format_duration(context_build_elapsed) } if context_build_elapsed
 
     thinking_elapsed = chat_message_thinking_elapsed(message)
     stats << { label: "思考", value: nyoy_format_duration(thinking_elapsed) } if thinking_elapsed

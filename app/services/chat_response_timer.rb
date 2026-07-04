@@ -5,9 +5,12 @@ class ChatResponseTimer
     @started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     @thinking_started_at = nil
     @thinking_elapsed_ms = nil
+    @first_chunk_elapsed_ms = nil
   end
 
   def observe_chunk!(chunk)
+    observe_first_chunk!(chunk)
+
     if thinking_chunk?(chunk)
       @thinking_started_at ||= Process.clock_gettime(Process::CLOCK_MONOTONIC)
     elsif chunk.content.present? && @thinking_started_at && @thinking_elapsed_ms.nil?
@@ -15,7 +18,8 @@ class ChatResponseTimer
     end
   end
 
-  def message_timing_attributes
+  # Elapsed time to the caller-supplied context build (Chat#to_llm) plus HTTP setup, in ms.
+  def message_timing_attributes(context_build_elapsed_ms: nil)
     ended_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     attrs = { response_elapsed_ms: elapsed_ms(@started_at, ended_at) }
 
@@ -23,10 +27,20 @@ class ChatResponseTimer
     thinking_ms ||= elapsed_ms(@thinking_started_at, ended_at) if @thinking_started_at
     attrs[:thinking_elapsed_ms] = thinking_ms if thinking_ms
 
+    attrs[:first_chunk_elapsed_ms] = @first_chunk_elapsed_ms if @first_chunk_elapsed_ms
+    attrs[:context_build_elapsed_ms] = context_build_elapsed_ms.round if context_build_elapsed_ms
+
     attrs
   end
 
   private
+
+  def observe_first_chunk!(chunk)
+    return unless @first_chunk_elapsed_ms.nil?
+    return unless chunk.content.present? || thinking_chunk?(chunk)
+
+    @first_chunk_elapsed_ms = elapsed_ms(@started_at)
+  end
 
   def thinking_chunk?(chunk)
     chunk.thinking&.text.present?

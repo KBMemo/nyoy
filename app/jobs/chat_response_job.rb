@@ -26,7 +26,9 @@ class ChatResponseJob < ApplicationJob
     assistant_message = chat.messages.where(role: :assistant).order(:id).last
     return unless assistant_message
 
-    assistant_message.update!(timer.message_timing_attributes)
+    assistant_message.update!(
+      timer.message_timing_attributes(context_build_elapsed_ms: chat.context_build_elapsed_ms)
+    )
   end
 
   class StreamState

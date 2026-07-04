@@ -3,11 +3,16 @@
 class Chat < ApplicationRecord
   acts_as_chat
 
+  # Wall-clock time spent building the LLM request in #to_llm (RAG + summary +
+  # /props etc.), in ms. Read by ChatResponseJob to attribute TTFT to prework.
+  attr_reader :context_build_elapsed_ms
+
   def assume_model_exists
     true
   end
 
   def to_llm
+    build_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     self.context = ChatModelCatalog.context_for(model_association)
     @chat = nil
 
@@ -19,9 +24,11 @@ class Chat < ApplicationRecord
     )
     @chat.reset_messages!
 
-    # Stable system prefix first (tools), then history, then semi-stable summary.
-    # Variable RAG is attached to the latest user message so llama.cpp can reuse
-    # the KV cache for the shared conversation prefix.
+    # Keep the whole prompt prefix stable so llama.cpp can reuse the KV cache.
+    # Tools/system instructions come first, then history. Both the rolling
+    # summary and the per-turn RAG context are attached to the latest user
+    # message (never the system prefix), so a growing conversation does not
+    # invalidate the cached prefix every turn.
     ChatTools::Registry.apply!(@chat, chat: self)
 
     context = ChatContextBuilder.build(self)
@@ -34,6 +41,7 @@ class Chat < ApplicationRecord
     ChatLlamaCache.apply!(@chat, chat: self)
     setup_persistence_callbacks
 
+    @context_build_elapsed_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - build_started_at) * 1000).round
     @chat
   end
 
@@ -48,7 +56,19 @@ class Chat < ApplicationRecord
     )
     return if trimmed.blank?
 
-    llm_chat.with_instructions("以前の会話の要約:\n#{trimmed}", append: true)
+    prepend_to_latest_user!(llm_chat, "以前の会話の要約:\n#{trimmed}")
+  end
+
+  # Prepends context to the latest user message instead of the system prefix,
+  # so the cached conversation prefix stays byte-identical across turns.
+  def prepend_to_latest_user!(llm_chat, text)
+    message = llm_chat.messages.reverse_each.find { |item| item.role.to_s == "user" }
+    return unless message
+
+    body = message.content.to_s
+    return if body.include?(text)
+
+    message.content = "#{text}\n\n#{body}".strip
   end
 
   def latest_user_query(messages)

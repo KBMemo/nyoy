@@ -1,4 +1,4 @@
-<% message = local_assigns[:message] %>
+<% message = local_assigns[:message] || local_assigns[:chat_error] %>
 <div id="message_<%= message.id %>" class="nyoy-chat-message nyoy-chat-message-error">
   <div class="nyoy-chat-message-role">エラー</div>
   <div class="kb-alert kb-alert-danger">

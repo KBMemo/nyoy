@@ -31,9 +31,12 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     assert_not_includes contents, "old question"
     assert_not_includes contents, "old answer"
     assert_includes contents, "system note"
-    assert_includes contents, "new question"
     assert_includes contents, "new answer"
-    assert llm.messages.any? { |message| message.role == :system && message.content.to_s.include?("以前の会話の要約") }
+    latest_user = llm.messages.reverse.find { |message| message.role == :user }
+    assert_not_nil latest_user
+    assert_includes latest_user.content.to_s, "new question"
+    assert_includes latest_user.content.to_s, "以前の会話の要約"
+    assert llm.messages.none? { |message| message.role == :system && message.content.to_s.include?("以前の会話の要約") }
   ensure
     ChatTools::Registry.define_singleton_method(:apply!, original_apply) if defined?(original_apply)
     ChatMemoRagInjector.define_singleton_method(:apply!, original_rag) if defined?(original_rag)

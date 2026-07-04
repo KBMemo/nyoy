@@ -20,6 +20,12 @@ Rails.application.config.x.nyoy.tap do |config|
   # 通常は GET /props の total_slots を使う。ここは props 取得失敗時のフォールバック（0 で無効）。
   config.llama_slot_count = ENV.fetch("LLAMA_SLOT_COUNT", "0").to_i
   config.llama_cache_prompt = ENV.fetch("LLAMA_CACHE_PROMPT", "true") == "true"
+  # チャット用 llama.cpp を定期 ping して常駐＆ウォーム状態を維持し、アイドル明けの
+  # cold start（モデルロード/グラフウォームアップ）ペナルティを抑える。
+  config.llama_warmup_enabled = ENV.fetch("LLAMA_WARMUP_ENABLED", "true") == "true"
+  # 直近この秒数以内に会話があればウォームアップをスキップ（稼働中の slot キャッシュを守る）。
+  config.llama_warmup_skip_recent_seconds = ENV.fetch("LLAMA_WARMUP_SKIP_RECENT_SECONDS", 480).to_i
+  config.llama_warmup_read_timeout = ENV.fetch("LLAMA_WARMUP_READ_TIMEOUT", 60).to_i
   config.default_sd_models = ENV.fetch(
     "SDCPP_DEFAULT_MODELS",
     "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL"
