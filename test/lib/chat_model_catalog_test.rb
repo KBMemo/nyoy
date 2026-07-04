@@ -19,4 +19,16 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
 
     assert_equal "http://balvenie:10010/v1", context.config.openai_api_base
   end
+
+  test "default_model follows app setting connection key" do
+    ChatModelCatalog.seed!
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_chat_connection_key: "gpt_oss")
+
+    model = ChatModelCatalog.default_model
+
+    assert_equal "gpt-oss", model.model_id
+  ensure
+    AppSetting.delete_all
+  end
 end

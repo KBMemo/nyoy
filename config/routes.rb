@@ -27,6 +27,7 @@ Rails.application.routes.draw do
       post :refresh_models
     end
   end
+  resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles
   resources :lora_profiles
   resources :prompt_styles

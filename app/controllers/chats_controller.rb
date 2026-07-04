@@ -66,9 +66,14 @@ class ChatsController < ApplicationController
   def selected_chat_model(model_id)
     return Model.find(model_id) if model_id.present?
 
-    available_chat_models.first || begin
+    ChatModelCatalog.default_model || available_chat_models.first || begin
       ChatModelCatalog.seed!
       Model.find_by!(provider: "openai", model_id: ChatModelCatalog.model_ids.first)
     end
   end
+
+  def default_chat_model_id
+    ChatModelCatalog.default_model&.id || @chat_models.first&.id
+  end
+  helper_method :default_chat_model_id
 end

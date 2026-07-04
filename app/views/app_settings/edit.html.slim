@@ -1,0 +1,43 @@
+- content_for :title, "既定モデル"
+
+.mb-6
+  h1 class=kb_page_title 既定モデル
+  p.mt-1.text-sm.kb-text-secondary
+    | チャットと画像生成のプロンプト変換で、フォーム未指定時に使う接続を選びます。
+    | 接続ごとのモデル名は
+    = link_to "接続設定", service_connections_path, class: "kb-chrome-link"
+    | で変更します。
+
+- if @connection_options.empty?
+  .kb-alert.kb-alert-danger
+    | 有効なチャット用 LLM 接続がありません。先に接続を登録してください。
+- else
+  = form_with model: @app_setting, url: app_settings_path, method: :patch, class: "space-y-6" do |form|
+    - if @app_setting.errors.any?
+      .kb-alert.kb-alert-danger
+        ul.list-disc.pl-5
+          - @app_setting.errors.full_messages.each do |message|
+            li = message
+
+    div
+      = form.label :default_chat_connection_key, "チャット既定モデル", class: "#{kb_label} mb-1"
+      = form.select :default_chat_connection_key,
+          options_for_select(@connection_options, @app_setting.default_chat_connection_key),
+          { include_blank: "環境変数の既定に従う" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | 新規チャットでモデルを選ばないときの接続です。現在の有効値:
+        code.nyoy-monospace.ml-1 = AppSetting.default_chat_connection_key
+
+    div
+      = form.label :default_style_plan_connection_key, "プロンプト変換既定モデル", class: "#{kb_label} mb-1"
+      = form.select :default_style_plan_connection_key,
+          options_for_select(@connection_options, @app_setting.default_style_plan_connection_key),
+          { include_blank: "環境変数の既定に従う" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | 画像生成・メモ挿絵・img2img の「プロンプト変換モデル」未指定時の接続です。現在の有効値:
+        code.nyoy-monospace.ml-1 = AppSetting.default_style_plan_connection_key
+
+    div
+      = form.submit "保存", class: kb_btn_primary_sm

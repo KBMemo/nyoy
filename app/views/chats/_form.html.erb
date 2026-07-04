@@ -36,7 +36,7 @@
     <div>
       <%= form.label :model, "モデル", class: "#{kb_label} mb-1" %>
       <%= form.select :model,
-          options_from_collection_for_select(@chat_models, :id, :name, @selected_model || @chat_models.first.id),
+          options_from_collection_for_select(@chat_models, :id, :name, @selected_model || default_chat_model_id),
           {},
           class: kb_field_input_classes %>
     </div>

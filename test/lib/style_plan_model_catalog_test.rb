@@ -5,6 +5,7 @@ require "test_helper"
 class StylePlanModelCatalogTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
+    AppSetting.delete_all
   end
 
   test "builds client from connection key" do

@@ -23,6 +23,18 @@ module ChatModelCatalog
     definitions.map(&:model_id)
   end
 
+  def default_connection_key
+    AppSetting.default_chat_connection_key.presence || definitions.first&.connection_key
+  end
+
+  def default_model
+    key = default_connection_key
+    definition = definitions.find { |item| item.connection_key == key } || definitions.first
+    return nil unless definition
+
+    Model.find_by(provider: "openai", model_id: definition.model_id)
+  end
+
   def seed!
     definitions.each do |definition|
       record = Model.find_or_initialize_by(provider: "openai", model_id: definition.model_id)

@@ -12,10 +12,7 @@ module StylePlanModelCatalog
   end
 
   def default_connection_key
-    preferred = Rails.application.config.x.nyoy.style_plan_connection_key.to_s
-    return preferred if connection_keys.include?(preferred)
-
-    connection_keys.first || "llama_cpp"
+    AppSetting.default_style_plan_connection_key.presence || connection_keys.first || "llama_cpp"
   end
 
   def options_for_select

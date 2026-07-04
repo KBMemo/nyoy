@@ -54,8 +54,8 @@ module MessagesHelper
   end
 
   def default_model_display_name
-    model_id = RubyLLM.config.default_model
-    label = Model.find_by(model_id: model_id, provider: "openai")&.name || model_id
+    model = ChatModelCatalog.default_model
+    label = model&.name.presence || RubyLLM.config.default_model
     "デフォルト: #{label}"
   end
 
