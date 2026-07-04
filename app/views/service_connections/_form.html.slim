@@ -47,7 +47,7 @@
       - choices = model_options.map { |model| [model, model] }
       - if service_connection.server_model.present? && !model_options.include?(service_connection.server_model)
         - choices.unshift(["#{service_connection.server_model}（現在の設定）", service_connection.server_model])
-      = form.select :server_model, choices, { include_blank: custom_llm ? false : "選択しない" }, class: kb_field_input_classes, required: custom_llm
+      = form.select :server_model, choices, (custom_llm ? {} : { include_blank: "選択しない" }), class: kb_field_input_classes, required: custom_llm
       p.mt-1.text-sm.kb-text-muted 接続先 API から取得したモデル候補です。
     - else
       = form.text_field :server_model, class: kb_field_input_classes, placeholder: "llama-server のモデル alias", required: custom_llm
