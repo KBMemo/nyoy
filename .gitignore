@@ -43,3 +43,12 @@ node_modules
 # https://vitejs.dev/guide/env-and-mode.html#env-files
 *.local
 
+# Local Cursor project files.
+/.cursor/
+
+# Scratch notes.
+/dev_note_tmp.md
+
+# Local CLIP vocab assets.
+/public/clip/
+
