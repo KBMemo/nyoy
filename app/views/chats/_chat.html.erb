@@ -6,7 +6,7 @@
 
   <div class="text-sm kb-text-secondary mt-1">
     <strong class="kb-text-primary">メッセージ数:</strong>
-    <%= chat.messages.count %>
+    <%= local_assigns.fetch(:message_count) { chat.messages.count } %>
   </div>
 
   <div class="text-sm kb-text-secondary mt-1">
@@ -14,3 +14,4 @@
     <%= l(chat.created_at, format: :short) %>
   </div>
 </div>
+

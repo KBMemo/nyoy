@@ -7,9 +7,40 @@ class Chat < ApplicationRecord
   # /props etc.), in ms. Read by ChatResponseJob to attribute TTFT to prework.
   attr_reader :context_build_elapsed_ms
 
+  def self.message_counts_for(chats)
+    ids = Array(chats).map(&:id)
+    return {} if ids.empty?
+
+    Message.where(chat_id: ids).group(:chat_id).count
+  end
+
+  # Preview text for the chat list: rolling summary when present, otherwise the
+  # first user message (the usual "what is this chat about?" signal).
+  def self.list_previews_for(chats)
+    chats = Array(chats)
+    return {} if chats.empty?
+
+    previews = chats.each_with_object({}) do |chat, hash|
+      hash[chat.id] = chat.context_summary if chat.context_summary.present?
+    end
+
+    missing_ids = chats.map(&:id) - previews.keys
+    return previews if missing_ids.empty?
+
+    Message
+      .where(chat_id: missing_ids, role: "user")
+      .where.not(content: [ nil, "", ChatImageAttachments::PLACEHOLDER ])
+      .select("DISTINCT ON (chat_id) chat_id, content")
+      .order(:chat_id, :created_at)
+      .each { |message| previews[message.chat_id] = message.content }
+
+    previews
+  end
+
   def assume_model_exists
     true
   end
+
 
   def to_llm
     build_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)

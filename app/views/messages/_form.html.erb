@@ -41,7 +41,9 @@
     <p class="mt-1 text-sm kb-text-muted">Ctrl+Enter で送信。JPEG / PNG / WebP / GIF。画像解析は必要なときだけ Chat がツールで行います。</p>
   </div>
 
-  <div>
+  <div class="flex flex-wrap items-center gap-3">
     <%= form.submit "送信", class: kb_btn_primary_sm %>
+    <%= link_to "一覧に戻る", chats_path, class: kb_btn_secondary_sm %>
+    <%= link_to "新規チャット", new_chat_path, class: kb_btn_secondary_sm %>
   </div>
 <% end %>

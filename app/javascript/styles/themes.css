@@ -545,6 +545,32 @@
   border-radius: var(--kb-radius-sm);
 }
 
+.nyoy-chat-list-card {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--kb-space-4);
+  justify-content: space-between;
+}
+
+.nyoy-chat-list-card-main {
+  flex: 0 1 auto;
+  min-width: 12rem;
+}
+
+.nyoy-chat-list-card-preview {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  color: var(--kb-text-muted);
+  display: -webkit-box;
+  flex: 1 1 0;
+  font-size: var(--kb-font-size-sm);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 60%;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .nyoy-chat-messages {
   display: flex;
   flex-direction: column;
