@@ -66,6 +66,13 @@
         span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@prompt_style.prompt_suffix)
       = form.text_area :prompt_suffix, rows: 2, class: kb_field_input_classes, data: { prompt_token_count_target: "field", action: "input->prompt-token-count#update" }
 
+    div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+      .nyoy-prompt-heading.mb-1
+        = form.label :negative_prompt, "negative_prompt", class: kb_label
+        span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@prompt_style.negative_prompt)
+      = form.text_area :negative_prompt, rows: 3, class: kb_field_input_classes, data: { prompt_token_count_target: "field", action: "input->prompt-token-count#update" }
+      p.mt-1.text-sm.kb-text-muted スタイル固定のネガティブ tag。LLM の negative_extra や生成時の上書きとマージされます。
+
   section.space-y-3
     h2 class=kb_section_title モデル
     p.text-sm.kb-text-muted このスタイルで選べる SD モデル。既定を 1 つ指定してください。

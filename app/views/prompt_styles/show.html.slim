@@ -28,6 +28,10 @@
       div
         = render "shared/sd_prompt_section_heading", title: "suffix", text: @prompt_style.prompt_suffix, mt: true
         p.mt-2.text-sm.nyoy-monospace = @prompt_style.prompt_suffix
+    - if @prompt_style.negative_prompt.present?
+      div
+        = render "shared/sd_prompt_section_heading", title: "negative_prompt", text: @prompt_style.negative_prompt, mt: true
+        p.mt-2.text-sm.nyoy-monospace = @prompt_style.negative_prompt
 
   h2.mt-6 class=kb_section_title モデル
   - if @prompt_style.prompt_style_models.any?

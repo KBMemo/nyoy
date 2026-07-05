@@ -139,7 +139,7 @@ class GenerateImageJobStyleFlowTest < ActiveJob::TestCase
 
     generation.reload
     assert_equal "user negative", generation.negative_prompt
-    assert_equal "user negative", generation.resolved_negative_prompt
+    assert_equal "photorealistic, 3d, colorful, user negative", generation.resolved_negative_prompt
   ensure
     originals&.each { |klass, meth| klass.singleton_class.send(:define_method, :new, meth) }
   end

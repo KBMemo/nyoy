@@ -29,7 +29,7 @@ class SdPromptStyleResolver
       .deep_merge(safe_overrides(style))
 
     prompt = @execution_only ? @subject_prompt : build_prompt(style)
-    negative = @negative_extra.presence || ""
+    negative = NegativePromptResolver.merge(style.negative_prompt, @negative_extra)
     loras = resolve_loras(style)
 
     {
