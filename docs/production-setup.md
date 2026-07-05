@@ -295,34 +295,35 @@ curl -s http://127.0.0.1:3009/up
 
 # メモ RAG 初回取込（任意）
 cd ~/sites/nyoy
-set -a && source .env.production && set +a
-RAILS_ENV=production bundle exec rails kbmemo:rag:ingest
+bin/prod kbmemo:rag:ingest
 ```
 
 ブラウザで `https://nyoy.kbmemo.net` を開き、メモ挿絵・Chat・画像生成が動くことを確認します。
 
 ## 6. 2 回目以降のデプロイ
 
-開発マシンから:
+**bowmore 上**で実行します（`ssh` は不要）。
 
 ```bash
+cd ~/sites/nyoy
 bin/deploy
 ```
 
 オプション:
 
 ```bash
-bin/deploy --check          # SSH 接続とパスの確認のみ
+bin/deploy --check          # 環境確認のみ
+bin/deploy --branch main    # 指定ブランチを pull
 bin/deploy --no-seed        # db:seed をスキップ（通常デプロイ）
-bin/deploy --seed             # db:seed を実行（seed 更新時）
+bin/deploy --seed           # db:seed を実行（seed 更新時）
+bin/deploy --skip-restart   # git pull〜assets まで。再起動は手動
 ```
 
-環境変数で接続先を上書きできます:
+環境変数:
 
 ```bash
-NYOY_DEPLOY_HOST=bowmore \
-NYOY_DEPLOY_PATH=sites/nyoy \
-NYOY_SYSTEMD_SERVICE=nyoy \
+NYOY_SYSTEMD_UNIT=nyoy \
+NYOY_HEALTH_URL=https://nyoy.kbmemo.net/up \
 bin/deploy
 ```
 

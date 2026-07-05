@@ -1,47 +1,103 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-HOST="${NYOY_DEPLOY_HOST:-bowmore}"
-DEPLOY_PATH="${NYOY_DEPLOY_PATH:-sites/nyoy}"
-SERVICE="${NYOY_SYSTEMD_SERVICE:-nyoy}"
-BRANCH="${NYOY_DEPLOY_BRANCH:-main}"
-RUN_SEED=false
-CHECK_ONLY=false
+SYSTEMD_UNIT="${NYOY_SYSTEMD_UNIT:-nyoy}"
+GIT_REMOTE="${NYOY_GIT_REMOTE:-origin}"
+GIT_BRANCH=""
+SKIP_PULL=0
+SKIP_RESTART=0
+RUN_SEED=0
+DRY_RUN=0
+CHECK_ONLY=0
 
 usage() {
   cat <<'EOF'
 Usage: bin/deploy [options]
 
-Deploy Nyoy to bowmore (default: kensei@bowmore:~/sites/nyoy, Puma :3009, https://nyoy.kbmemo.net).
+Pull the latest code, install dependencies, prepare databases, precompile assets,
+and restart the nyoy user systemd service (run on bowmore).
 
 Options:
-  --check       SSH connectivity and deploy path only
-  --seed        Run db:seed after db:prepare
-  --no-seed     Skip db:seed (default)
-  -h, --help    Show this help
+  -b, --branch BRANCH   git fetch/pull this branch (default: current branch)
+  --check               verify deploy environment only
+  --seed                run db:seed after db:prepare
+  --no-seed             skip db:seed (default)
+  --skip-pull           skip git pull
+  --skip-restart        skip systemctl --user restart and health check
+  -n, --dry-run         print commands without running them
+  -h, --help            show this help
 
-Environment overrides:
-  NYOY_DEPLOY_HOST       SSH host (default: bowmore)
-  NYOY_DEPLOY_PATH       Remote path under $HOME (default: sites/nyoy)
-  NYOY_SYSTEMD_SERVICE   user systemd unit name (default: nyoy; uses systemctl --user)
-  NYOY_DEPLOY_BRANCH     Git branch to deploy (default: main)
+Environment:
+  NYOY_SYSTEMD_UNIT     user systemd unit name (default: nyoy)
+  NYOY_HEALTH_URL       health check URL (default: https://nyoy.kbmemo.net/up)
+  NYOY_HEALTH_HOST      Host header for localhost checks (default: nyoy.kbmemo.net)
+  NYOY_GIT_REMOTE       git remote (default: origin)
+
+Example:
+  cd ~/sites/nyoy && bin/deploy
+  bin/deploy --branch main
 EOF
+}
+
+run() {
+  if [[ "${DRY_RUN}" -eq 1 ]]; then
+    printf '+'
+    printf ' %q' "$@"
+    printf '\n'
+    return 0
+  fi
+  "$@"
+}
+
+step() {
+  echo "==> $*"
+}
+
+health_check() {
+  local url="$1"
+  local host_header="${NYOY_HEALTH_HOST:-}"
+
+  if [[ -z "${host_header}" && "${url}" =~ ^https?://(127\.0\.0\.1|localhost)([:/]|$) ]]; then
+    host_header="nyoy.kbmemo.net"
+  fi
+
+  if [[ -n "${host_header}" ]]; then
+    curl -fsS -H "Host: ${host_header}" "${url}"
+  else
+    curl -fsS "${url}"
+  fi
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -b|--branch)
+      GIT_BRANCH="${2:?missing branch name}"
+      shift 2
+      ;;
     --check)
-      CHECK_ONLY=true
+      CHECK_ONLY=1
       shift
       ;;
     --seed)
-      RUN_SEED=true
+      RUN_SEED=1
       shift
       ;;
     --no-seed)
-      RUN_SEED=false
+      RUN_SEED=0
+      shift
+      ;;
+    --skip-pull)
+      SKIP_PULL=1
+      shift
+      ;;
+    --skip-restart)
+      SKIP_RESTART=1
+      shift
+      ;;
+    -n|--dry-run)
+      DRY_RUN=1
       shift
       ;;
     -h|--help)
@@ -49,87 +105,107 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "Unknown option: $1" >&2
+      echo "unknown option: $1" >&2
       usage >&2
       exit 1
       ;;
   esac
 done
 
-REMOTE_SCRIPT=$(cat <<'REMOTE'
-set -euo pipefail
-
-DEPLOY_PATH="$1"
-SERVICE="$2"
-BRANCH="$3"
-RUN_SEED="$4"
-CHECK_ONLY="$5"
-
-cd "${HOME}/${DEPLOY_PATH}"
-
-if [[ "${CHECK_ONLY}" == "true" ]]; then
-  echo "== Deploy path: ${PWD}"
-  echo "== Git remote:"
-  git remote -v
-  echo "== Current branch: $(git branch --show-current)"
-  if [[ -f scripts/production_env.sh ]]; then
-    # shellcheck source=scripts/production_env.sh
-    source scripts/production_env.sh
-  fi
-  echo "== Ruby: $(ruby -v 2>/dev/null || echo 'not found')"
-  echo "== Node: $(node -v 2>/dev/null || echo 'not found')"
-  exit 0
-fi
-
-if [[ ! -f scripts/production_env.sh ]]; then
-  echo "scripts/production_env.sh is missing on the server." >&2
+if [[ ! -f "${APP_ROOT}/scripts/production_env.sh" ]]; then
+  echo "missing ${APP_ROOT}/scripts/production_env.sh" >&2
   exit 1
 fi
 
 # shellcheck source=scripts/production_env.sh
-source scripts/production_env.sh
+source "${APP_ROOT}/scripts/production_env.sh"
 
-if [[ ! -f config/master.key ]]; then
-  echo "config/master.key is missing on the server." >&2
+if [[ "${CHECK_ONLY}" -eq 1 ]]; then
+  step "deploy path: ${APP_ROOT}"
+  step "git remote:"
+  git remote -v
+  step "current branch: $(git branch --show-current)"
+  step "ruby: $(ruby -v 2>/dev/null || echo 'not found')"
+  step "node: $(node -v 2>/dev/null || echo 'not found')"
+  if systemctl --user list-unit-files "${SYSTEMD_UNIT}.service" >/dev/null 2>&1; then
+    step "systemd unit: ${SYSTEMD_UNIT}.service (user)"
+  else
+    step "systemd unit: ${SYSTEMD_UNIT}.service not found"
+  fi
+  exit 0
+fi
+
+if [[ ! -f "${APP_ROOT}/config/master.key" ]]; then
+  echo "missing ${APP_ROOT}/config/master.key" >&2
   exit 1
 fi
 
-echo "== Updating code (${BRANCH}) =="
-git fetch origin
-git checkout "${BRANCH}"
-git pull --ff-only origin "${BRANCH}"
+HEALTH_URL="${NYOY_HEALTH_URL:-https://nyoy.kbmemo.net/up}"
 
-echo "== Installing Ruby dependencies =="
-bundle config set --local deployment 'true'
-bundle config set --local without 'development test'
-bundle install
+step "deploy nyoy (${APP_ROOT}, RAILS_ENV=${RAILS_ENV})"
 
-echo "== Installing Node dependencies =="
-npm ci
-
-echo "== Preparing database =="
-bundle exec rails db:prepare
-
-if [[ "${RUN_SEED}" == "true" ]]; then
-  echo "== Seeding database =="
-  bundle exec rails db:seed
+if [[ "${SKIP_PULL}" -eq 0 ]]; then
+  step "git pull"
+  if [[ -n "${GIT_BRANCH}" ]]; then
+    run git fetch "${GIT_REMOTE}" "${GIT_BRANCH}"
+    run git checkout "${GIT_BRANCH}"
+    run git pull --ff-only "${GIT_REMOTE}" "${GIT_BRANCH}"
+  else
+    run git pull --ff-only "${GIT_REMOTE}"
+  fi
 fi
 
-echo "== Precompiling assets =="
-bundle exec rails assets:precompile
+step "bundle install"
+run bundle config set --local deployment 'true'
+run bundle config set --local without 'development test'
+run bundle install
 
-echo "== Restarting ${SERVICE} =="
-if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files "${SERVICE}.service" >/dev/null 2>&1; then
-  systemctl --user restart "${SERVICE}"
-  systemctl --user --no-pager status "${SERVICE}"
-else
-  echo "user systemd unit ${SERVICE}.service not found; restart the app process manually." >&2
+step "npm ci"
+run npm ci
+
+step "db:prepare"
+run bundle exec rails db:prepare
+
+if [[ "${RUN_SEED}" -eq 1 ]]; then
+  step "db:seed"
+  run bundle exec rails db:seed
 fi
 
-echo "== Deploy finished =="
-REMOTE
-)
+step "assets:precompile"
+run bundle exec rails assets:precompile
 
-echo "Deploying to ${HOST}:${DEPLOY_PATH} (branch: ${BRANCH})"
+if [[ -f "${APP_ROOT}/start.sh" ]]; then
+  step "ensure start.sh is executable"
+  run chmod 750 "${APP_ROOT}/start.sh"
+fi
 
-ssh "${HOST}" bash -s -- "${DEPLOY_PATH}" "${SERVICE}" "${BRANCH}" "${RUN_SEED}" "${CHECK_ONLY}" <<<"${REMOTE_SCRIPT}"
+if [[ "${SKIP_RESTART}" -eq 0 ]]; then
+  step "restart ${SYSTEMD_UNIT}"
+  if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files "${SYSTEMD_UNIT}.service" >/dev/null 2>&1; then
+    run systemctl --user restart "${SYSTEMD_UNIT}"
+    run systemctl --user --no-pager status "${SYSTEMD_UNIT}"
+  else
+    echo "user systemd unit ${SYSTEMD_UNIT}.service not found; restart the app process manually." >&2
+    exit 1
+  fi
+
+  step "health check ${HEALTH_URL}"
+  if [[ "${DRY_RUN}" -eq 1 ]]; then
+    run health_check "${HEALTH_URL}"
+  else
+    for attempt in 1 2 3 4 5; do
+      if health_check "${HEALTH_URL}" >/dev/null; then
+        echo "health check OK"
+        break
+      fi
+      if [[ "${attempt}" -eq 5 ]]; then
+        echo "health check failed after restart: ${HEALTH_URL}" >&2
+        echo "check: journalctl --user -u ${SYSTEMD_UNIT} -n 50 --no-pager" >&2
+        exit 1
+      fi
+      sleep 2
+    done
+  fi
+fi
+
+step "deploy finished"
