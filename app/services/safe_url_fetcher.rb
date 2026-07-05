@@ -45,37 +45,34 @@ class SafeUrlFetcher
     @readability_client = readability_client
   end
 
-  def fetch(url, max_chars: 12_000)
+  def fetch(url, max_bytes: 6_000, include_full_text: false)
     uri = parse_public_http_url!(url)
     reject_pdf_url!(uri)
 
-    readability_result = fetch_via_readability(uri, max_chars: max_chars)
+    readability_result = fetch_via_readability(uri, max_bytes: max_bytes, include_full_text: include_full_text)
     return readability_result if readability_result
 
-    fetch_response(uri, max_chars: max_chars)
+    fetch_response(uri, max_bytes: max_bytes, include_full_text: include_full_text)
   end
 
   private
 
-  def fetch_via_readability(uri, max_chars:)
+  def fetch_via_readability(uri, max_bytes:, include_full_text: false)
     client = @readability_client || default_readability_client
     return nil unless client.configured?
 
     payload = client.extract(uri.to_s)
-    text = readability_text(payload)
-    return nil if text.blank?
+    full_text = readability_text(payload)
+    return nil if full_text.blank?
 
-    truncated = false
-    if text.bytesize > max_chars
-      text = truncate_text(text, max_chars)
-      truncated = true
-    end
+    preview_text, truncated = limit_text_bytes(full_text, max_bytes)
 
     {
       url: payload["url"].presence || uri.to_s,
       status: 200,
       title: payload["title"],
-      text: text,
+      text: preview_text,
+      full_text: include_full_text ? full_text : nil,
       excerpt: payload["excerpt"],
       byline: payload["byline"],
       site_name: payload["siteName"],
@@ -94,19 +91,22 @@ class SafeUrlFetcher
     payload["textContent"].to_s.presence || markdown_to_text(payload["content"].to_s).squish.presence
   end
 
-  def fetch_response(uri, max_chars:)
+  def fetch_response(uri, max_bytes:, include_full_text: false)
     response = follow_redirects(uri)
     reject_pdf_response!(response)
-    body, truncated = read_limited_body(response)
+    body, body_truncated = read_limited_body(response)
     content_type = response["content-type"].to_s
+    full_text = extract_text(body, content_type)
+    preview_text, text_truncated = limit_text_bytes(full_text, max_bytes)
 
     {
       url: response.uri.to_s,
       status: response.code.to_i,
       content_type: content_type,
       title: extract_title(body),
-      text: extract_text(body, content_type, max_chars: max_chars),
-      truncated: truncated || nil
+      text: preview_text,
+      full_text: include_full_text ? full_text : nil,
+      truncated: (body_truncated || text_truncated) || nil
     }.compact
   end
 
@@ -240,7 +240,7 @@ class SafeUrlFetcher
     decode_entities(heading[1]).squish.presence if heading
   end
 
-  def extract_text(body, content_type, max_chars:)
+  def extract_text(body, content_type)
     text = if markdown_content?(content_type, body)
              markdown_to_text(body)
            elsif html_content?(content_type, body)
@@ -249,8 +249,13 @@ class SafeUrlFetcher
              body.to_s
            end
 
-    text = text.squish
-    truncate_text(text, max_chars)
+    text.squish
+  end
+
+  def limit_text_bytes(text, max_bytes)
+    return [text, false] if text.bytesize <= max_bytes
+
+    [truncate_text(text, max_bytes), true]
   end
 
   # Byte-based truncation that never leaves a broken multibyte tail (scrub

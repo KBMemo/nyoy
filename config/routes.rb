@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
   resources :chats do
+    member do
+      post :cancel
+      patch :web_tool_limits, action: :update_web_tool_limits
+    end
     resources :messages, only: [ :create ]
   end
   resources :models, only: [ :index, :show ] do

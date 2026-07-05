@@ -12,6 +12,21 @@ class ChatResponseJobTest < ActiveJob::TestCase
     )
   end
 
+  test "reports cancellation without re-raising" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "続きをお願い")
+
+    stub_chat_complete_to_raise(ChatResponseControl::Cancelled.new) do
+      assert_nothing_raised do
+        ChatResponseJob.perform_now(@chat.id)
+      end
+    end
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.chat_cancelled?
+    assert_equal "idle", @chat.reload.response_state
+  end
+
   test "reports llm failures without re-raising" do
     @chat.messages.create!(role: :user, content: "続きをお願い")
     stub_chat_complete_to_raise(@error) do
@@ -36,6 +51,19 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
     assert_equal "Hello world", state.text_for(first)
     assert_equal "Next", state.text_for(second)
+  end
+
+  test "stream state accumulates thinking text per assistant message" do
+    state = ChatResponseJob::StreamState.new
+    first = Message.new(id: 1)
+    second = Message.new(id: 2)
+
+    state.append_thinking_for(first, "考え")
+    state.append_thinking_for(first, "中")
+    state.append_thinking_for(second, "別")
+
+    assert_equal "考え中", state.thinking_for(first)
+    assert_equal "別", state.thinking_for(second)
   end
 
   private

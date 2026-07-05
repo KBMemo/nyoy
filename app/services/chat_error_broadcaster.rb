@@ -42,7 +42,7 @@ class ChatErrorBroadcaster
         partial: "messages/form",
         locals: {
           chat: @chat,
-          message: @chat.messages.build,
+          message: Message.new,
           form_url: Rails.application.routes.url_helpers.chat_messages_path(@chat)
         }
       )

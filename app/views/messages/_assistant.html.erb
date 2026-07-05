@@ -14,6 +14,14 @@
       </dl>
     <% end %>
   </div>
+  <div id="message_<%= assistant.id %>_thinking_section" class="nyoy-chat-message-thinking-section<%= " hidden" if assistant.thinking_text.blank? %>">
+    <% if assistant.thinking_text.present? %>
+      <details class="nyoy-chat-message-thinking-details" open>
+        <summary class="nyoy-chat-message-thinking-summary">思考</summary>
+        <pre id="message_<%= assistant.id %>_thinking" class="nyoy-chat-message-thinking" data-controller="thinking-auto-scroll"><%= assistant.thinking_text %></pre>
+      </details>
+    <% end %>
+  </div>
   <div id="message_<%= assistant.id %>_content" class="nyoy-chat-message-content nyoy-chat-markdown"><%= render_chat_markdown(assistant.content) %></div>
   <div class="nyoy-chat-message-meta"><%= l(assistant.created_at, format: :short) if assistant.created_at %></div>
 </div>

@@ -7,10 +7,13 @@ class ChatToolsTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
     ChatTools::Registry.reset_client!
+    @original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
   end
 
   teardown do
     ChatTools::Registry.reset_client!
+    Rails.cache = @original_cache if defined?(@original_cache)
   end
 
   test "tool names match openapi mapping" do
@@ -20,6 +23,7 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_equal "update_memo", ChatTools::UpdateMemo.new.name
     assert_equal "web_search", ChatTools::WebSearch.new.name
     assert_equal "fetch_url", ChatTools::FetchUrl.new.name
+    assert_equal "search_fetched_page", ChatTools::SearchFetchedPage.new.name
     assert_equal "analyze_image", ChatTools::AnalyzeImage.new(chat: Chat.new).name
     assert_equal "list_albums", ChatTools::ListAlbums.new.name
     assert_equal "get_media", ChatTools::GetMedia.new.name
@@ -68,24 +72,30 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_equal 1, first["results"].size
     assert_equal ["https://example.com/doc.pdf"], first["skipped_pdf_urls"]
     assert_equal 2, calls.size
-    assert_match(/最大 2 回/, third[:error])
+    assert_match(/TOOL_LIMIT_REACHED/, third)
+    assert_match(/SEARCH_LIMIT_EXCEEDED/, third)
+    assert_match(/最大 2 回/, third)
   ensure
     ChatTools::Registry.define_singleton_method(:searxng_client, original_searxng_client) if defined?(original_searxng_client)
   end
 
-  test "fetch_url returns page text" do
+  test "fetch_url returns page preview json" do
     calls = []
     fake_fetcher = Object.new
-    fake_fetcher.define_singleton_method(:fetch) do |url|
-      calls << url
-      { url: url, status: 200, title: "Example", text: "Hello" }
+    fake_fetcher.define_singleton_method(:fetch) do |url, **kwargs|
+      calls << { url: url, kwargs: kwargs }
+      { url: url, status: 200, title: "Example", text: "Hello", full_text: "Hello world" }
     end
     ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
 
-    result = ChatTools::FetchUrl.new.execute(url: "https://example.com")
+    result = JSON.parse(ChatTools::FetchUrl.new.execute(url: "https://example.com"))
 
-    assert_equal "https://example.com", calls.first
-    assert_equal "Hello", result[:text]
+    assert_equal "https://example.com", calls.first[:url]
+    assert_equal 6_000, calls.first[:kwargs][:max_bytes]
+    assert_equal true, calls.first[:kwargs][:include_full_text]
+    assert_equal "Hello", result["content_preview"]
+    assert result["page_id"].present?
+    assert_equal true, result["ok"]
   ensure
     ChatTools::Registry.reset_client!
   end
@@ -93,9 +103,9 @@ class ChatToolsTest < ActiveSupport::TestCase
   test "fetch_url rejects pdf and limits calls per turn" do
     calls = []
     fake_fetcher = Object.new
-    fake_fetcher.define_singleton_method(:fetch) do |url|
+    fake_fetcher.define_singleton_method(:fetch) do |url, **|
       calls << url
-      { url: url, status: 200, text: "ok" }
+      { url: url, status: 200, text: "ok", full_text: "ok" }
     end
     ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
 
@@ -103,17 +113,67 @@ class ChatToolsTest < ActiveSupport::TestCase
     tool = ChatTools::FetchUrl.new(budget: budget)
 
     pdf = tool.execute(url: "https://example.com/a.pdf")
-    first = tool.execute(url: "https://example.com/1")
-    second = tool.execute(url: "https://example.com/2")
+    first = JSON.parse(tool.execute(url: "https://example.com/1"))
+    second = JSON.parse(tool.execute(url: "https://example.com/2"))
     third = tool.execute(url: "https://example.com/3")
 
-    assert_match(/PDF/, pdf[:error])
-    assert_equal "ok", first[:text]
-    assert_equal "ok", second[:text]
-    assert_match(/最大 2 回/, third[:error])
+    assert_match(/TOOL_ERROR/, pdf)
+    assert_match(/PDF_BLOCKED/, pdf)
+    assert_match(/PDF/, pdf)
+    assert_equal "ok", first["content_preview"]
+    assert_equal "ok", second["content_preview"]
+    assert_match(/TOOL_LIMIT_REACHED/, third)
+    assert_match(/FETCH_LIMIT_EXCEEDED/, third)
+    assert_match(/最大 2 回/, third)
     assert_equal 2, calls.size
   ensure
     ChatTools::Registry.reset_client!
+  end
+
+  test "fetch_url rejects duplicate url without calling fetcher again" do
+    calls = []
+    fake_fetcher = Object.new
+    fake_fetcher.define_singleton_method(:fetch) do |url, **|
+      calls << url
+      { url: url, status: 200, text: "ok", full_text: "ok" }
+    end
+    ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
+
+    budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
+    tool = ChatTools::FetchUrl.new(budget: budget)
+
+    first = JSON.parse(tool.execute(url: "https://example.com/page"))
+    duplicate = tool.execute(url: "https://example.com/page")
+
+    assert_equal "ok", first["content_preview"]
+    assert_match(/TOOL_ERROR/, duplicate)
+    assert_match(/URL_ALREADY_FETCHED/, duplicate)
+    assert_equal 1, calls.size
+  ensure
+    ChatTools::Registry.reset_client!
+  end
+
+  test "search_fetched_page returns matching excerpts from cache" do
+    page_id = ChatTools::FetchedPageCache.store(
+      url: "https://example.com/article",
+      title: "Article",
+      text: "前半の本文です。試合開始時間は19時00分です。後半の本文です。"
+    )
+
+    result = JSON.parse(ChatTools::SearchFetchedPage.new.execute(page_id: page_id, query: "試合開始"))
+
+    assert_equal true, result["ok"]
+    assert_equal 1, result["matches"].size
+    assert_includes result["matches"].first["excerpt"], "試合開始時間"
+  ensure
+    Rails.cache.clear
+  end
+
+  test "search_fetched_page reports missing cache" do
+    result = ChatTools::SearchFetchedPage.new.execute(page_id: "missing", query: "query")
+
+    assert_match(/TOOL_ERROR/, result)
+    assert_match(/PAGE_NOT_FOUND/, result)
   end
 
   test "analyze_image returns vision analysis" do

@@ -41,6 +41,21 @@ class Chat < ApplicationRecord
     true
   end
 
+  def responding?
+    response_state == ChatResponseControl::STATES[:running]
+  end
+
+  def complete(&block)
+    wrapped = if block
+      proc do |chunk|
+        ChatResponseControl.check!(id) if response_state == ChatResponseControl::STATES[:running]
+        block.call(chunk)
+      end
+    end
+
+    super(&wrapped)
+  end
+
 
   def to_llm
     build_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -73,6 +88,7 @@ class Chat < ApplicationRecord
     end
     ChatLlamaCache.apply!(@chat, chat: self)
     setup_persistence_callbacks
+    ChatResponseControl.install_checks!(@chat, id) if response_state == ChatResponseControl::STATES[:running]
 
     @context_build_elapsed_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - build_started_at) * 1000).round
     @chat

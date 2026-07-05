@@ -1,0 +1,7 @@
+<% message = local_assigns[:message] || local_assigns[:chat_cancelled] %>
+<div id="message_<%= message.id %>" class="nyoy-chat-message nyoy-chat-message-cancelled">
+  <div class="kb-alert kb-alert-warning">
+    <p class="font-medium">応答を中止しました</p>
+    <p class="mt-1 text-sm"><%= message.chat_cancelled_message %></p>
+  </div>
+</div>

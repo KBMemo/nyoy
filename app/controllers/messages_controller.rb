@@ -22,6 +22,7 @@ class MessagesController < ApplicationController
     @message.attachments.attach(uploads) if uploads.any?
     TsuzuraMediaUploader.archive_attachments!(@message.attachments) if @message.attachments.attached?
 
+    ChatResponseControl.mark_running!(@chat)
     ChatResponseJob.perform_later(@chat.id)
 
     respond_to do |format|

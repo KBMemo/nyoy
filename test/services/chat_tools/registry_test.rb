@@ -42,6 +42,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_not ChatTools::Registry.web_tools_available?
     assert_not_includes ChatTools::Registry.tool_classes, ChatTools::WebSearch
     assert_includes ChatTools::Registry.tool_classes, ChatTools::FetchUrl
+    assert_includes ChatTools::Registry.tool_classes, ChatTools::SearchFetchedPage
   end
 
   test "vision tools available when vision llama is enabled" do
@@ -57,12 +58,30 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_not_includes ChatTools::Registry.tool_classes, ChatTools::AnalyzeImage
   end
 
+  test "apply uses calls one to limit parallel tool calls" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    captured = {}
+    llm_chat = Object.new
+    llm_chat.define_singleton_method(:with_tools) do |*tools, **kwargs|
+      captured[:tools] = tools
+      captured[:calls] = kwargs[:calls]
+      llm_chat
+    end
+    llm_chat.define_singleton_method(:with_instructions) { |*, **| llm_chat }
+
+    ChatTools::Registry.apply!(llm_chat, chat: chat)
+
+    assert captured[:tools].present?
+    assert_equal :one, captured[:calls]
+  end
+
   test "apply registers analyze_image for chat with attachments context" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
     instances = ChatTools::Registry.tool_instances(chat)
     tool_names = instances.map { |tool| tool.name }
 
     assert_includes tool_names, "analyze_image"
+    assert_includes tool_names, "search_fetched_page"
     assert_includes tool_names, "list_albums"
     assert_includes tool_names, "get_media"
   end

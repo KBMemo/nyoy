@@ -23,7 +23,7 @@ module ChatTools
       payload = client.search(q: q, limit: limit)
       filter_pdf_results(payload)
     rescue SearxngClient::Error => e
-      { error: e.message }
+      ToolResponse.error(tool: "web_search", message: e.message)
     end
 
     private

@@ -22,12 +22,21 @@ class Message < ApplicationRecord
     role.to_s == "assistant" && content.to_s.start_with?(ChatErrorBroadcaster::ERROR_PREFIX)
   end
 
+  def chat_cancelled?
+    role.to_s == "assistant" && content.to_s.start_with?(ChatCancellationBroadcaster::CANCELLED_PREFIX)
+  end
+
   def chat_error_message
     content.to_s.delete_prefix(ChatErrorBroadcaster::ERROR_PREFIX)
   end
 
+  def chat_cancelled_message
+    content.to_s.delete_prefix(ChatCancellationBroadcaster::CANCELLED_PREFIX)
+  end
+
   def to_partial_path
     return "messages/chat_error" if chat_error?
+    return "messages/chat_cancelled" if chat_cancelled?
 
     super
   end
@@ -37,6 +46,15 @@ class Message < ApplicationRecord
       "chat_#{chat_id}",
       target: "message_#{id}_content",
       html: ChatMarkdownRenderer.render(text || content)
+    )
+  end
+
+  def broadcast_rendered_thinking!(text)
+    broadcast_replace_to(
+      "chat_#{chat_id}",
+      target: "message_#{id}_thinking_section",
+      partial: "messages/thinking_section",
+      locals: { message: self, text: text }
     )
   end
 

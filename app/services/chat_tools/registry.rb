@@ -34,16 +34,21 @@ module ChatTools
     TEXT
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      web_search（SearXNG）で Web 検索、fetch_url で HTML/テキスト本文を取得できます。
+      web_search（SearXNG）で Web 検索、fetch_url で HTML/テキスト本文の短いプレビューを取得できます。
+      fetch_url は content_preview のみ返し、truncated: true のときは search_fetched_page(page_id, query) で続きを探します。
       web_search / fetch_url の1回の応答あたりの上限は接続設定（SearXNG）に従います。
+      ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
+      CODE: URL_ALREADY_FETCHED / FETCH_LIMIT_EXCEEDED / SEARCH_LIMIT_EXCEEDED は再試行禁止です。
       検索はクエリを絞って少ない回数で済ませ、本文取得は必要な HTML ページだけに限定してください。
       PDF は取得対象外です（検索結果の PDF はスキップされます）。PDF 以外の HTML を選んでください。
       fetch_url は公開 Web の http/https URL のみ取得できます。
     TEXT
 
     FETCH_URL_INSTRUCTIONS = <<~TEXT.squish
-      fetch_url で公開 Web ページの本文を取得できます。http/https の HTML/テキストのみ。PDF は不可。
+      fetch_url で公開 Web ページの短いプレビューを取得できます。http/https の HTML/テキストのみ。PDF は不可。
+      truncated: true のときは fetch_url を再実行せず search_fetched_page を使ってください。
       1回の応答あたりの上限は接続設定に従います。HTML ページは readability-js-server で本文抽出します。
+      [TOOL_LIMIT_REACHED] / [TOOL_ERROR] が返り CODE に URL_ALREADY_FETCHED や FETCH_LIMIT_EXCEEDED がある場合は fetch_url を再試行せず、既得の情報で回答してください。
     TEXT
 
     VISION_TOOLS_INSTRUCTIONS = <<~TEXT.squish
@@ -62,7 +67,8 @@ module ChatTools
 
     WEB_TOOL_CLASSES = [
       WebSearch,
-      FetchUrl
+      FetchUrl,
+      SearchFetchedPage
     ].freeze
 
     VISION_TOOL_CLASSES = [
@@ -113,6 +119,7 @@ module ChatTools
       classes << RecallMemos if rag_tool_available?
       classes << WebSearch if web_tools_available?
       classes << FetchUrl
+      classes << SearchFetchedPage
       classes.concat(VISION_TOOL_CLASSES) if vision_tools_available?
       classes.concat(MEDIA_TOOL_CLASSES) if media_tools_available?
       classes
@@ -158,7 +165,7 @@ module ChatTools
       instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
       instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
 
-      llm_chat.with_tools(*tools)
+      llm_chat.with_tools(*tools, calls: :one)
               .with_instructions(instructions.compact.join(" "), append: true)
     end
 

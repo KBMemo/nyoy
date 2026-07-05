@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_04_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -55,9 +55,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_04_140000) do
     t.bigint "context_summary_until_message_id"
     t.datetime "created_at", null: false
     t.bigint "model_id"
+    t.string "response_state", default: "idle", null: false
     t.datetime "updated_at", null: false
     t.index ["context_summary_until_message_id"], name: "index_chats_on_context_summary_until_message_id"
     t.index ["model_id"], name: "index_chats_on_model_id"
+    t.index ["response_state"], name: "index_chats_on_response_state"
   end
 
   create_table "image_generations", force: :cascade do |t|

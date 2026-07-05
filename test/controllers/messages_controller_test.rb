@@ -18,6 +18,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
 
     message = @chat.messages.where(role: :user).order(:id).last
     assert_equal "こんにちは", message.content
+    assert @chat.reload.responding?
   end
 
   test "create accepts image attachment without text" do

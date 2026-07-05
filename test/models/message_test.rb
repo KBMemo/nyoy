@@ -34,6 +34,21 @@ class MessageTest < ActiveSupport::TestCase
     assert_includes broadcasts.first[:html], "<strong>太字</strong>"
   end
 
+  test "broadcast_rendered_thinking replaces thinking section" do
+    message = @chat.messages.create!(role: :assistant, content: "回答")
+    broadcasts = []
+    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
+      broadcasts << kwargs
+    end
+
+    message.broadcast_rendered_thinking!("考え中")
+
+    assert_equal 1, broadcasts.size
+    assert_equal "message_#{message.id}_thinking_section", broadcasts.first[:target]
+    assert_equal "messages/thinking_section", broadcasts.first[:partial]
+    assert_equal "考え中", broadcasts.first[:locals][:text]
+  end
+
   test "to_llm adds optional analyze_image notice for attachments" do
     png = Base64.decode64(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="

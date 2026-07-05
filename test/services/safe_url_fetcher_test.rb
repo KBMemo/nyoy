@@ -118,6 +118,27 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_includes result[:text], "学校案内"
   end
 
+  test "include_full_text keeps full body out of preview text" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:configured?) { true }
+    fake_client.define_singleton_method(:extract) do |url|
+      {
+        "url" => url,
+        "title" => "Long",
+        "textContent" => "あ" * 500
+      }
+    end
+
+    fetcher = SafeUrlFetcher.new(readability_client: fake_client)
+    fetcher.define_singleton_method(:perform_get) { raise "should not fetch HTML directly" }
+
+    result = fetcher.fetch("https://example.com/long", max_bytes: 100, include_full_text: true)
+
+    assert result[:truncated]
+    assert_operator result[:text].bytesize, :<=, 100
+    assert_operator result[:full_text].bytesize, :>, 100
+  end
+
   test "falls back to direct fetch when readability fails" do
     fake_client = Object.new
     fake_client.define_singleton_method(:configured?) { true }
@@ -225,7 +246,7 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
       )
     end
 
-    result = fetcher.fetch("https://example.com/page.html", max_chars: 100)
+    result = fetcher.fetch("https://example.com/page.html", max_bytes: 100)
 
     assert result[:text].valid_encoding?
     assert_operator result[:text].bytesize, :<=, 100
