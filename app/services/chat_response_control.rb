@@ -29,10 +29,10 @@ class ChatResponseControl
     end
 
     def check!(chat_id)
-      chat = Chat.find(chat_id)
-      raise Cancelled if chat.response_state == STATES[:cancelled]
+      state = Chat.where(id: chat_id).pick(:response_state)
+      raise Cancelled if state == STATES[:cancelled]
 
-      chat
+      state
     end
   end
 end

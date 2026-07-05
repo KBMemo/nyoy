@@ -3,6 +3,7 @@
     <%= render "messages/form",
       chat: @chat,
       message: @chat.messages.build,
-      form_url: chat_messages_path(@chat) %>
+      form_url: chat_messages_path(@chat),
+      autofocus: true %>
   <% end %>
 <% end %>

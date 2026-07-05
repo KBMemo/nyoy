@@ -27,6 +27,63 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "idle", @chat.reload.response_state
   end
 
+  test "cancelled before streaming still creates a cancellation message" do
+    @chat.update!(response_state: "cancelled")
+    @chat.messages.create!(role: :user, content: "やっぱり中止")
+
+    assert_nothing_raised do
+      ChatResponseJob.perform_now(@chat.id)
+    end
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.chat_cancelled?
+    assert_equal "idle", @chat.reload.response_state
+  end
+
+  test "logs the underlying error before surfacing a friendly message" do
+    @chat.messages.create!(role: :user, content: "続きをお願い")
+
+    logged = []
+    original_logger = Rails.logger
+    Rails.logger = Class.new do
+      define_method(:error) { |msg| logged << msg.to_s }
+      def method_missing(*) = nil
+      def respond_to_missing?(*) = true
+    end.new
+
+    begin
+      stub_chat_complete_to_raise(NoMethodError.new("undefined method 'foo'")) do
+        assert_nothing_raised do
+          ChatResponseJob.perform_now(@chat.id)
+        end
+      end
+    ensure
+      Rails.logger = original_logger
+    end
+
+    assert(logged.any? { |line| line.include?("NoMethodError") }, "expected the real error to be logged")
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.chat_error?
+  end
+
+  test "keeps the partial answer and marks it cancelled when interrupted mid-stream" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "長い説明をお願い")
+
+    stub_chat_complete_streaming_then_cancel(content: "途中までの回答") do
+      assert_nothing_raised do
+        ChatResponseJob.perform_now(@chat.id)
+      end
+    end
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.cancelled?, "partial answer should be flagged as cancelled"
+    assert_equal "途中までの回答", message.content
+    refute message.chat_cancelled?, "should stay a normal assistant bubble, not a cancel notice"
+    assert_equal "idle", @chat.reload.response_state
+  end
+
   test "reports llm failures without re-raising" do
     @chat.messages.create!(role: :user, content: "続きをお願い")
     stub_chat_complete_to_raise(@error) do
@@ -66,11 +123,69 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "別", state.thinking_for(second)
   end
 
+  test "broadcast_content debounces rapid updates and flush forces the final one" do
+    state = ChatResponseJob::StreamState.new
+    message = RecordingMessage.new(1)
+
+    state.append_for(message, "a")
+    state.broadcast_content(message)
+    state.append_for(message, "b")
+    state.broadcast_content(message)
+
+    assert_equal [ "a" ], message.content_broadcasts, "second update within the interval is coalesced"
+
+    state.flush(message)
+
+    assert_equal [ "a", "ab" ], message.content_broadcasts, "flush emits the latest accumulated text"
+  end
+
+  test "broadcast helpers skip empty buffers" do
+    state = ChatResponseJob::StreamState.new
+    message = RecordingMessage.new(1)
+
+    state.flush(message)
+
+    assert_empty message.content_broadcasts
+    assert_empty message.thinking_broadcasts
+  end
+
   private
+
+  class RecordingMessage
+    attr_reader :id, :content_broadcasts, :thinking_broadcasts
+
+    def initialize(id)
+      @id = id
+      @content_broadcasts = []
+      @thinking_broadcasts = []
+    end
+
+    def broadcast_rendered_content!(text)
+      @content_broadcasts << text.dup
+    end
+
+    def broadcast_rendered_thinking!(text)
+      @thinking_broadcasts << text.dup
+    end
+  end
 
   def stub_chat_complete_to_raise(error)
     original = Chat.instance_method(:complete)
     Chat.define_method(:complete) { |*, **| raise error }
+
+    yield
+  ensure
+    Chat.define_method(:complete, original)
+  end
+
+  def stub_chat_complete_streaming_then_cancel(content:)
+    original = Chat.instance_method(:complete)
+    Chat.define_method(:complete) do |*, **, &block|
+      messages.create!(role: :assistant, content: "")
+      chunk = Struct.new(:content, :thinking).new(content, nil)
+      block&.call(chunk)
+      raise ChatResponseControl::Cancelled
+    end
 
     yield
   ensure

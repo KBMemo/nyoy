@@ -23,5 +23,8 @@
     <% end %>
   </div>
   <div id="message_<%= assistant.id %>_content" class="nyoy-chat-message-content nyoy-chat-markdown"><%= render_chat_markdown(assistant.content) %></div>
+  <% if assistant.cancelled? %>
+    <p class="nyoy-chat-message-cancelled-note">応答を中止しました（以下は途中までの回答です）</p>
+  <% end %>
   <div class="nyoy-chat-message-meta"><%= l(assistant.created_at, format: :short) if assistant.created_at %></div>
 </div>

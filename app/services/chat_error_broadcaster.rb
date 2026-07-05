@@ -50,21 +50,29 @@ class ChatErrorBroadcaster
   end
 
   def friendly_message
-    message = @error.message.to_s
-
     if context_length_error?
       <<~TEXT.strip
         会話が長すぎます（コンテキスト上限を超えました）。新しいチャットを始めるか、過去のメッセージを減らしてください。
 
-        #{message}
+        #{@error.message}
       TEXT
-    else
+    elsif llm_error?
+      # Provider/HTTP errors carry useful, user-facing detail (rate limits,
+      # bad request reasons, etc.), so surface the raw message.
       <<~TEXT.strip
         応答の取得に失敗しました。
 
-        #{message}
+        #{@error.message}
       TEXT
+    else
+      # Unexpected internal errors (bugs) should not leak their raw message to
+      # the UI; the full error is already written to the log by ChatResponseJob.
+      "応答の取得に失敗しました。しばらくしてからもう一度お試しください。"
     end
+  end
+
+  def llm_error?
+    @error.is_a?(RubyLLM::Error)
   end
 
   def context_length_error?

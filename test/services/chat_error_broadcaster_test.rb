@@ -33,6 +33,16 @@ class ChatErrorBroadcasterTest < ActiveSupport::TestCase
     assert @chat.messages.where(role: :assistant).last.chat_error?
   end
 
+  test "hides raw message for unexpected internal errors" do
+    error = NoMethodError.new("undefined method 'foo' for nil")
+
+    message = ChatErrorBroadcaster.fail!(@chat, error)
+
+    assert message.chat_error?
+    refute_includes message.chat_error_message, "undefined method"
+    assert_includes message.chat_error_message, "もう一度お試しください"
+  end
+
   test "renders chat error partial" do
     message = @chat.messages.create!(
       role: :assistant,

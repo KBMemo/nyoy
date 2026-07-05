@@ -828,6 +828,13 @@
   color: var(--kb-text-muted);
 }
 
+.nyoy-chat-message-cancelled-note {
+  margin-top: var(--kb-space-2);
+  font-size: var(--kb-font-size-xs);
+  font-weight: 600;
+  color: var(--kb-color-warning, #b45309);
+}
+
 .nyoy-card-open {
   align-items: center;
   border-radius: var(--kb-radius-sm);

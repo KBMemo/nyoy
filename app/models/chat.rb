@@ -7,6 +7,11 @@ class Chat < ApplicationRecord
   # /props etc.), in ms. Read by ChatResponseJob to attribute TTFT to prework.
   attr_reader :context_build_elapsed_ms
 
+  # How often, at most, to poll the DB for a cancellation request while
+  # streaming. Streaming emits many chunks per second, so an unthrottled check
+  # would issue a query per chunk.
+  CANCELLATION_CHECK_INTERVAL = 0.5
+
   def self.message_counts_for(chats)
     ids = Array(chats).map(&:id)
     return {} if ids.empty?
@@ -46,24 +51,15 @@ class Chat < ApplicationRecord
   end
 
   def complete(&block)
-    wrapped = if block
-      proc do |chunk|
-        ChatResponseControl.check!(id) if response_state == ChatResponseControl::STATES[:running]
-        block.call(chunk)
-      end
-    end
-
-    super(&wrapped)
+    super(&(block && cancellation_aware_block(&block)))
   end
-
 
   def to_llm
     build_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     self.context = ChatModelCatalog.context_for(model_association)
-    @chat = nil
 
     model_record = model_association
-    @chat ||= (context || RubyLLM).chat(
+    @chat = (context || RubyLLM).chat(
       model: model_record.model_id,
       provider: model_record.provider.to_sym,
       assume_model_exists: assume_model_exists || false
@@ -95,6 +91,22 @@ class Chat < ApplicationRecord
   end
 
   private
+
+  # Wraps the streaming block so cancellation is polled at most every
+  # CANCELLATION_CHECK_INTERVAL seconds instead of on every chunk.
+  def cancellation_aware_block(&block)
+    return block unless response_state == ChatResponseControl::STATES[:running]
+
+    last_checked_at = 0.0
+    proc do |chunk|
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      if now - last_checked_at >= CANCELLATION_CHECK_INTERVAL
+        last_checked_at = now
+        ChatResponseControl.check!(id)
+      end
+      block.call(chunk)
+    end
+  end
 
   def inject_conversation_summary!(llm_chat, summary)
     return if summary.blank?
