@@ -1,0 +1,15 @@
+[Unit]
+Description=Nyoy Rails app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/sites/nyoy
+ExecStart=%h/sites/nyoy/start.sh
+ExecReload=/bin/kill -USR1 $MAINPID
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

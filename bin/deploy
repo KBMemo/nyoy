@@ -25,7 +25,7 @@ Options:
 Environment overrides:
   NYOY_DEPLOY_HOST       SSH host (default: bowmore)
   NYOY_DEPLOY_PATH       Remote path under $HOME (default: sites/nyoy)
-  NYOY_SYSTEMD_SERVICE   systemd unit name (default: nyoy)
+  NYOY_SYSTEMD_SERVICE   user systemd unit name (default: nyoy; uses systemctl --user)
   NYOY_DEPLOY_BRANCH     Git branch to deploy (default: main)
 EOF
 }
@@ -119,11 +119,11 @@ echo "== Precompiling assets =="
 bundle exec rails assets:precompile
 
 echo "== Restarting ${SERVICE} =="
-if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files "${SERVICE}.service" >/dev/null 2>&1; then
-  sudo systemctl restart "${SERVICE}"
-  sudo systemctl --no-pager status "${SERVICE}"
+if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files "${SERVICE}.service" >/dev/null 2>&1; then
+  systemctl --user restart "${SERVICE}"
+  systemctl --user --no-pager status "${SERVICE}"
 else
-  echo "systemd unit ${SERVICE}.service not found; restart the app process manually." >&2
+  echo "user systemd unit ${SERVICE}.service not found; restart the app process manually." >&2
 fi
 
 echo "== Deploy finished =="

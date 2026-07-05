@@ -22,7 +22,7 @@ PostgreSQL・SearXNG・readability は既に bowmore 上で動作している前
 | デプロイ先 | `bowmore:~/sites/nyoy` |
 | デプロイユーザー | `kensei` |
 | 待受ポート | `3009`（`.env.production` の `PORT`） |
-| systemd ユニット | `nyoy.service` |
+| systemd ユニット | `~/.config/systemd/user/nyoy.service`（`systemctl --user`） |
 | 公開 URL | `https://nyoy.kbmemo.net` |
 
 ## 1. bowmore 側の事前準備
@@ -202,43 +202,58 @@ mkdir -p storage tmp/pids log
 chmod 755 storage
 ```
 
-## 3. systemd ユニット
+## 3. systemd ユーザーユニット
 
-`/etc/systemd/system/nyoy.service` を作成します。
+システム全体（`/etc/systemd/system/`）ではなく、**ユーザー `kensei` の systemd**（`~/.config/systemd/user/`）に登録します。`sudo` は不要です。
+
+リポジトリの `config/systemd/user/nyoy.service` をコピーします。
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp ~/sites/nyoy/config/systemd/user/nyoy.service ~/.config/systemd/user/nyoy.service
+```
+
+ユニットの例（`%h` はホームディレクトリ）:
 
 ```ini
 [Unit]
 Description=Nyoy Rails app
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-User=kensei
-WorkingDirectory=/home/kensei/sites/nyoy
-EnvironmentFile=/home/kensei/sites/nyoy/.env.production
-Environment=RAILS_ENV=production
-ExecStart=/home/kensei/sites/nyoy/start.sh
+WorkingDirectory=%h/sites/nyoy
+ExecStart=%h/sites/nyoy/start.sh
 ExecReload=/bin/kill -USR1 $MAINPID
 Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 ```
 
-rbenv を使わない場合は `ExecStart` を `which bundle` のパスに差し替えてください。
+環境変数は `start.sh` → `scripts/production_env.sh` 経由で読み込みます（`.env.production` を直接ユニットに書く必要はありません）。
+
+ログインセッションなしでも起動し続けるには linger を有効にします（初回のみ）。
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable nyoy
-sudo systemctl start nyoy
-sudo systemctl status nyoy
+loginctl enable-linger "${USER}"
+```
+
+有効化・起動:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable nyoy
+systemctl --user start nyoy
+systemctl --user status nyoy
 ```
 
 ログ確認:
 
 ```bash
-journalctl -u nyoy -f
+journalctl --user -u nyoy -f
 ```
 
 ## 4. nginx リバースプロキシ
@@ -318,10 +333,11 @@ bin/deploy
 | `no password supplied` | `.env.production` に `DB_USERNAME` / `DB_PASSWORD` があるか。bowmore の credentials が `database:` ではなく `db:` 形式だと `config/database.yml` から読めない |
 | `127.0.1.1` に接続している | `bowmore.artif.org` が `/etc/hosts` で 127.0.1.1 に解決されている（正常）。`DB_HOST=127.0.0.1` で明示可 |
 | `key must be 16 bytes` | `.env.production` の `RAILS_MASTER_KEY` が `config/master.key` と一致しているか（改行・欠損なし） |
-| 502 Bad Gateway | `systemctl status nyoy`、ポート `PORT` と nginx の `proxy_pass` が一致しているか |
+| 502 Bad Gateway | `systemctl --user status nyoy`、ポート `PORT` と nginx の `proxy_pass` が一致しているか |
 | DB 接続エラー | credentials の `database.username/password`、`pg_hba.conf`、DB 存在 |
 | アセット 404 | `RAILS_ENV=production bundle exec rails assets:precompile` を再実行 |
-| ジョブが動かない | `.env.production` に `SOLID_QUEUE_IN_PUMA=true`、`journalctl -u nyoy` で Solid Queue ログ |
+| ジョブが動かない | `.env.production` に `SOLID_QUEUE_IN_PUMA=true`、`journalctl --user -u nyoy` で Solid Queue ログ |
+| ログアウト後に停止する | `loginctl enable-linger "${USER}"` を実行しているか |
 | pgvector エラー | `nyoy_production` で `CREATE EXTENSION vector;` |
 | 画像が保存されない | `storage/` の書き込み権限、ディスク容量 |
 
