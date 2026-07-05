@@ -291,6 +291,25 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_equal "plain text", result[:text]
   end
 
+  test "limits concurrent fetches to configured maximum" do
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    fetcher.define_singleton_method(:concurrent_fetch_limit) { 1 }
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      sleep 0.05
+      SafeUrlFetcherTest.fake_http_response(200, "ok", uri: uri, content_type: "text/plain")
+    end
+
+    SafeUrlFetcher.active_fetches = 0
+    threads = Array.new(2) do |index|
+      Thread.new { fetcher.fetch("https://example.com/page#{index}") }
+    end
+    threads.each(&:join)
+
+    assert_operator SafeUrlFetcher.active_fetches, :<=, 1
+  end
+
   def self.fake_http_response(code, body, uri:, content_type: nil, location: nil)
     klass = case code.to_i
             when 200..299 then Net::HTTPOK

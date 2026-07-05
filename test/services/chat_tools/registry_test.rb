@@ -65,6 +65,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     llm_chat.define_singleton_method(:with_tools) do |*tools, **kwargs|
       captured[:tools] = tools
       captured[:calls] = kwargs[:calls]
+      captured[:concurrency] = kwargs[:concurrency]
       llm_chat
     end
     llm_chat.define_singleton_method(:with_instructions) { |*, **| llm_chat }
@@ -73,6 +74,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
 
     assert captured[:tools].present?
     assert_equal :one, captured[:calls]
+    assert_equal false, captured[:concurrency]
   end
 
   test "apply registers analyze_image for chat with attachments context" do

@@ -79,6 +79,10 @@
           input#service_connection_searxng_settings_concurrent_searches.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][concurrent_searches]" value=searx.concurrent_searches min=1 max=3 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 1。
         div
+          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_concurrent_fetches" fetch_url 同時取得数
+          input#service_connection_searxng_settings_concurrent_fetches.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][concurrent_fetches]" value=searx.concurrent_fetches min=1 max=3 step=1
+          p.mt-1.text-sm.kb-text-muted 推奨 1。Readability / HTTP 取得の並行数。
+        div
           label class="#{kb_label} mb-1" for="service_connection_searxng_settings_retry_count" リトライ回数
           input#service_connection_searxng_settings_retry_count.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][retry_count]" value=searx.retry_count min=0 max=2 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 0〜1。
@@ -89,7 +93,7 @@
         div
           label class="#{kb_label} mb-1" for="service_connection_searxng_settings_max_fetches_per_turn" fetch_url 上限（応答あたり）
           input#service_connection_searxng_settings_max_fetches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][max_fetches_per_turn]" value=searx.max_fetches_per_turn min=1 max=10 step=1
-          p.mt-1.text-sm.kb-text-muted 推奨 3。最大 10。PDF は取得対象外。
+          p.mt-1.text-sm.kb-text-muted 推奨 3。fetch_url は結果を見てから1件ずつ実行されます。
         div class="sm:col-span-2"
           label class="#{kb_label} mb-1" for="service_connection_searxng_settings_engines" 検索エンジン
           input#service_connection_searxng_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searxng_settings][engines]" value=searx.engines placeholder="duckduckgo,wikipedia"

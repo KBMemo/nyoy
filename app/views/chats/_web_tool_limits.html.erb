@@ -23,6 +23,7 @@
           max: SearxngSettings::RANGES["max_fetches_per_turn"].end,
           step: 1,
           class: kb_field_input_classes %>
+        <p class="mt-1 text-sm kb-text-muted">fetch_url は同時に複数実行されず、結果を受け取ってから1件ずつ取得します。</p>
       </div>
       <div class="sm:col-span-2">
         <%= form.submit "上限を更新", class: kb_btn_secondary_sm %>

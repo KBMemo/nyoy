@@ -33,6 +33,22 @@ class SafeUrlFetcher
 
   BLOCKED_HOST_SUFFIXES = %w[.local .internal .localhost .localdomain].freeze
 
+  @fetch_mutex = Mutex.new
+  @active_fetches = 0
+  @fetch_condition = ConditionVariable.new
+
+  class << self
+    attr_reader :fetch_mutex, :fetch_condition
+
+    def active_fetches
+      @active_fetches
+    end
+
+    def active_fetches=(value)
+      @active_fetches = value
+    end
+  end
+
   def initialize(
     open_timeout: DEFAULT_OPEN_TIMEOUT,
     read_timeout: DEFAULT_READ_TIMEOUT,
@@ -46,6 +62,14 @@ class SafeUrlFetcher
   end
 
   def fetch(url, max_bytes: 6_000, include_full_text: false)
+    with_concurrency_limit(concurrent_fetch_limit) do
+      fetch_without_concurrency_limit(url, max_bytes: max_bytes, include_full_text: include_full_text)
+    end
+  end
+
+  private
+
+  def fetch_without_concurrency_limit(url, max_bytes:, include_full_text:)
     uri = parse_public_http_url!(url)
     reject_pdf_url!(uri)
 
@@ -55,7 +79,25 @@ class SafeUrlFetcher
     fetch_response(uri, max_bytes: max_bytes, include_full_text: include_full_text)
   end
 
-  private
+  def concurrent_fetch_limit
+    SearxngSettings.load.concurrent_fetches
+  end
+
+  def with_concurrency_limit(limit)
+    self.class.fetch_mutex.synchronize do
+      while self.class.active_fetches >= limit
+        self.class.fetch_condition.wait(self.class.fetch_mutex)
+      end
+      self.class.active_fetches += 1
+    end
+
+    yield
+  ensure
+    self.class.fetch_mutex.synchronize do
+      self.class.active_fetches -= 1
+      self.class.fetch_condition.signal
+    end
+  end
 
   def fetch_via_readability(uri, max_bytes:, include_full_text: false)
     client = @readability_client || default_readability_client

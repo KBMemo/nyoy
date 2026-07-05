@@ -30,13 +30,14 @@ module ChatTools
       過去の自分のメモ → recall_memos（関連知識を意味検索）。一覧探索は search_memos、本文は get_memo。
       添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
       画像が添付されていても、質問がテキストだけで答えられるなら analyze_image は使わない。
-      複数のツールが必要なら順序よく組み合わせてよいが、同じ種類のツールを何度も繰り返さない。
+      複数のツールが必要なら順序よく組み合わせてよい。同じ URL や同じクエリを無駄に繰り返さない。
+      ツールは一度に1つずつ呼び、結果を受け取ってから次を判断する（同時に複数の呼び出しを並べない）。
     TEXT
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       web_search（SearXNG）で Web 検索、fetch_url で HTML/テキスト本文の短いプレビューを取得できます。
       fetch_url は content_preview のみ返し、truncated: true のときは search_fetched_page(page_id, query) で続きを探します。
-      web_search / fetch_url の1回の応答あたりの上限は接続設定（SearXNG）に従います。
+      fetch_url は一度に1件の URL だけ指定します（複数 URL を同時に並べない）。結果を受け取ってから、必要なら次の URL を fetch_url で取得できます。
       ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
       CODE: URL_ALREADY_FETCHED / FETCH_LIMIT_EXCEEDED / SEARCH_LIMIT_EXCEEDED は再試行禁止です。
       検索はクエリを絞って少ない回数で済ませ、本文取得は必要な HTML ページだけに限定してください。
@@ -47,7 +48,7 @@ module ChatTools
     FETCH_URL_INSTRUCTIONS = <<~TEXT.squish
       fetch_url で公開 Web ページの短いプレビューを取得できます。http/https の HTML/テキストのみ。PDF は不可。
       truncated: true のときは fetch_url を再実行せず search_fetched_page を使ってください。
-      1回の応答あたりの上限は接続設定に従います。HTML ページは readability-js-server で本文抽出します。
+      fetch_url は一度に1件の URL だけ指定します。結果を受け取ってから、必要なら次の URL を取得できます（同時に複数を並べない）。HTML ページは readability-js-server で本文抽出します。
       [TOOL_LIMIT_REACHED] / [TOOL_ERROR] が返り CODE に URL_ALREADY_FETCHED や FETCH_LIMIT_EXCEEDED がある場合は fetch_url を再試行せず、既得の情報で回答してください。
     TEXT
 
@@ -165,7 +166,7 @@ module ChatTools
       instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
       instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
 
-      llm_chat.with_tools(*tools, calls: :one)
+      llm_chat.with_tools(*tools, calls: :one, concurrency: false)
               .with_instructions(instructions.compact.join(" "), append: true)
     end
 
