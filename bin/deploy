@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+HOST="${NYOY_DEPLOY_HOST:-bowmore}"
+DEPLOY_PATH="${NYOY_DEPLOY_PATH:-sites/nyoy}"
+SERVICE="${NYOY_SYSTEMD_SERVICE:-nyoy}"
+BRANCH="${NYOY_DEPLOY_BRANCH:-main}"
+RUN_SEED=false
+CHECK_ONLY=false
+
+usage() {
+  cat <<'EOF'
+Usage: bin/deploy [options]
+
+Deploy Nyoy to bowmore (default: kensei@bowmore:~/sites/nyoy, Puma :3009, https://nyoy.kbmemo.net).
+
+Options:
+  --check       SSH connectivity and deploy path only
+  --seed        Run db:seed after db:prepare
+  --no-seed     Skip db:seed (default)
+  -h, --help    Show this help
+
+Environment overrides:
+  NYOY_DEPLOY_HOST       SSH host (default: bowmore)
+  NYOY_DEPLOY_PATH       Remote path under $HOME (default: sites/nyoy)
+  NYOY_SYSTEMD_SERVICE   systemd unit name (default: nyoy)
+  NYOY_DEPLOY_BRANCH     Git branch to deploy (default: main)
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check)
+      CHECK_ONLY=true
+      shift
+      ;;
+    --seed)
+      RUN_SEED=true
+      shift
+      ;;
+    --no-seed)
+      RUN_SEED=false
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+REMOTE_SCRIPT=$(cat <<'REMOTE'
+set -euo pipefail
+
+DEPLOY_PATH="$1"
+SERVICE="$2"
+BRANCH="$3"
+RUN_SEED="$4"
+CHECK_ONLY="$5"
+
+cd "${HOME}/${DEPLOY_PATH}"
+
+if [[ "${CHECK_ONLY}" == "true" ]]; then
+  echo "== Deploy path: ${PWD}"
+  echo "== Git remote:"
+  git remote -v
+  echo "== Current branch: $(git branch --show-current)"
+  if [[ -f scripts/production_env.sh ]]; then
+    # shellcheck source=scripts/production_env.sh
+    source scripts/production_env.sh
+  fi
+  echo "== Ruby: $(ruby -v 2>/dev/null || echo 'not found')"
+  echo "== Node: $(node -v 2>/dev/null || echo 'not found')"
+  exit 0
+fi
+
+if [[ ! -f scripts/production_env.sh ]]; then
+  echo "scripts/production_env.sh is missing on the server." >&2
+  exit 1
+fi
+
+# shellcheck source=scripts/production_env.sh
+source scripts/production_env.sh
+
+if [[ ! -f config/master.key ]]; then
+  echo "config/master.key is missing on the server." >&2
+  exit 1
+fi
+
+echo "== Updating code (${BRANCH}) =="
+git fetch origin
+git checkout "${BRANCH}"
+git pull --ff-only origin "${BRANCH}"
+
+echo "== Installing Ruby dependencies =="
+bundle config set --local deployment 'true'
+bundle config set --local without 'development test'
+bundle install
+
+echo "== Installing Node dependencies =="
+npm ci
+
+echo "== Preparing database =="
+bundle exec rails db:prepare
+
+if [[ "${RUN_SEED}" == "true" ]]; then
+  echo "== Seeding database =="
+  bundle exec rails db:seed
+fi
+
+echo "== Precompiling assets =="
+bundle exec rails assets:precompile
+
+echo "== Restarting ${SERVICE} =="
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files "${SERVICE}.service" >/dev/null 2>&1; then
+  sudo systemctl restart "${SERVICE}"
+  sudo systemctl --no-pager status "${SERVICE}"
+else
+  echo "systemd unit ${SERVICE}.service not found; restart the app process manually." >&2
+fi
+
+echo "== Deploy finished =="
+REMOTE
+)
+
+echo "Deploying to ${HOST}:${DEPLOY_PATH} (branch: ${BRANCH})"
+
+ssh "${HOST}" bash -s -- "${DEPLOY_PATH}" "${SERVICE}" "${BRANCH}" "${RUN_SEED}" "${CHECK_ONLY}" <<<"${REMOTE_SCRIPT}"
