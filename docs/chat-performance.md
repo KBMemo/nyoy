@@ -141,7 +141,17 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 計測上は主因ではない。必要になったら検討。
 
-### 4.6 再計測チェックリスト
+### 4.6 OpenAI 接続設定の整理
+
+| 項目 | 内容 |
+|------|------|
+| 狙い | ローカル llama-server 互換用のダミー API キーと、実 OpenAI API キーの扱いを分離する |
+| 現状 | `.env.example` は llama-server 互換 API 用に `OPENAI_API_KEY=local` を示している。一方、OpenAI 組み込み接続の seed は `OPENAI_API_KEY` が present なら OpenAI 接続を有効化する |
+| リスク | `.env.example` をコピーして seed すると、実 OpenAI 接続が token `local` で有効化され、ChatGPT モデル選択が出るが API 呼び出しは失敗する |
+| 案 | 実 OpenAI 用の env 名を分ける、または `sk-` など実キーらしい値のときだけ OpenAI 接続を自動有効化する |
+| 併せて検討 | UI では OpenAI 接続の有効化に DB `api_token` が必須だが、実行時・モデル取得時は env fallback も見る。env-only 運用を許すなら validation と UI 表示も揃える |
+
+### 4.7 再計測チェックリスト
 
 施策後やモデル差し替え後に確認する項目:
 
@@ -177,5 +187,6 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | アイドルウォームアップ（5 分 ping） | **廃止**（サーバ常駐は §4.4） |
 | `reasoning_effort` | **検討案件**（§4.1） |
 | ツール往復・slot 競合・サーバ常駐 | **検討案件**（§4.2–4.4） |
+| OpenAI 接続設定整理 | **検討案件**（§4.6） |
 
 アプリ側で効く「キャッシュが効かない／毎ターン重い前処理」系は完了。追加の体感改善は **生成側（reasoning）と運用・インフラ** が中心。
