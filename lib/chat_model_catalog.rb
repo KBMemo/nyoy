@@ -29,9 +29,7 @@ module ChatModelCatalog
   end
 
   def display_name(connection, model_id)
-    return connection.name unless connection.openai?
-
-    "#{connection.name} — #{model_id}"
+    model_id
   end
 
   def model_ids

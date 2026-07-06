@@ -29,7 +29,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     get new_chat_path
 
     assert Model.exists?(provider: "openai", model_id: "gpt-oss")
-    assert_select "select[name='chat[model]'] option", text: /GPT-OSS/
+    assert_select "select[name='chat[model]'] option", text: "gpt-oss"
   end
 
   test "create enqueues chat response job with selected model" do
@@ -211,7 +211,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "#message_#{message.id} .nyoy-chat-message-stat", minimum: 3
-    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "GPT-OSS"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "gpt-oss"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "12.3秒"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "4.6秒"
   end
