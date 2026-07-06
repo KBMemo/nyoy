@@ -460,6 +460,103 @@
   width: auto;
 }
 
+.nyoy-dialog {
+  background: transparent;
+  border: 0;
+  color: var(--kb-text-primary);
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  width: min(96vw, 40rem);
+}
+
+.nyoy-dialog::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+
+.nyoy-dialog-panel {
+  background-color: var(--kb-bg-surface);
+  border: 1px solid var(--kb-border);
+  border-radius: var(--kb-radius-lg);
+  box-shadow: var(--kb-shadow-md, 0 16px 48px rgb(0 0 0 / 18%));
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  overflow: hidden;
+}
+
+.nyoy-dialog-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--kb-border);
+  display: flex;
+  gap: var(--kb-space-3);
+  justify-content: space-between;
+  padding: var(--kb-space-4);
+}
+
+.nyoy-dialog-title {
+  font-size: var(--kb-font-size-base);
+  font-weight: 600;
+  margin: 0;
+}
+
+.nyoy-dialog-description {
+  color: var(--kb-text-secondary);
+  font-size: var(--kb-font-size-sm);
+  margin: var(--kb-space-1) 0 0;
+}
+
+.nyoy-dialog-body {
+  overflow: auto;
+  padding: var(--kb-space-4);
+}
+
+.nyoy-dialog-section + .nyoy-dialog-section {
+  border-top: 1px solid var(--kb-border);
+  padding-top: var(--kb-space-4);
+}
+
+.nyoy-dialog-section-title {
+  font-size: var(--kb-font-size-sm);
+  font-weight: 600;
+  margin: 0;
+}
+
+.nyoy-dialog-section-description {
+  color: var(--kb-text-secondary);
+  font-size: var(--kb-font-size-sm);
+  margin: var(--kb-space-1) 0 0;
+}
+
+.nyoy-chat-settings-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--kb-radius-sm);
+  color: var(--kb-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: var(--kb-space-1);
+}
+
+.nyoy-chat-settings-btn:hover {
+  background: var(--kb-bg-muted, rgb(0 0 0 / 5%));
+  color: var(--kb-text-secondary);
+}
+
+.nyoy-chat-settings-btn:focus-visible {
+  outline: 2px solid var(--kb-focus-ring, currentColor);
+  outline-offset: 2px;
+}
+
+[data-lucide] {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
 .nyoy-refined-grid,
 .nyoy-draft-grid {
   display: grid;

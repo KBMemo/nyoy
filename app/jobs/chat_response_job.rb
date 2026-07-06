@@ -23,21 +23,29 @@ class ChatResponseJob < ApplicationJob
 
       # A tool round starts a fresh assistant message; flush the previous one
       # so its final streamed text is not left half-rendered.
-      stream_state.flush(previous) if previous && previous.id != message.id
+      if previous && previous.id != message.id
+        stream_state.flush(previous)
+        persist_streamed_state!(previous, stream_state)
+        broadcast_assistant_message!(previous, stream_state: stream_state)
+      end
 
-      if chunk.thinking&.text.present?
-        stream_state.append_thinking_for(message, chunk.thinking.text)
+      thinking_text = chunk.thinking&.text
+      if streamable_text?(thinking_text)
+        stream_state.append_thinking_for(message, thinking_text)
         stream_state.broadcast_thinking(message)
       end
 
-      next unless chunk.content.present?
+      next unless streamable_text?(chunk.content)
 
       stream_state.append_for(message, chunk.content)
       stream_state.broadcast_content(message)
     end
 
+    message = current_assistant_message(chat, message) if message
     stream_state.flush(message) if message
+    persist_streamed_state!(message, stream_state) if message
     persist_assistant_timing(chat, timer)
+    broadcast_assistant_message!(message, stream_state: stream_state) if message
   rescue ChatResponseControl::Cancelled
     finalize_cancellation(chat, message, stream_state)
   rescue StandardError => e
@@ -60,11 +68,15 @@ class ChatResponseJob < ApplicationJob
     partial = message && stream_state.text_for(message)
 
     if message && partial.present?
-      message.update!(
+      thinking = stream_state.thinking_for(message).presence
+      message.update_columns(
         content: partial,
-        thinking_text: stream_state.thinking_for(message).presence,
-        cancelled: true
+        thinking_text: thinking,
+        cancelled: true,
+        updated_at: Time.current
       )
+      message.assign_attributes(content: partial, thinking_text: thinking, cancelled: true)
+      broadcast_assistant_message!(message, stream_state: stream_state)
     else
       ChatCancellationBroadcaster.call(chat)
     end
@@ -80,13 +92,50 @@ class ChatResponseJob < ApplicationJob
     Message.find(latest_id)
   end
 
+  def persist_streamed_state!(message, stream_state)
+    return unless message
+
+    content = stream_state.text_for(message)
+    thinking = stream_state.thinking_for(message)
+
+    attrs = {}
+    attrs[:content] = content if streamable_text?(content)
+    attrs[:thinking_text] = thinking if streamable_text?(thinking)
+    return if attrs.empty?
+
+    message.update_columns(attrs.merge(updated_at: Time.current))
+    message.assign_attributes(attrs)
+  end
+
+  def broadcast_assistant_message!(message, stream_state: nil)
+    return unless message
+
+    message.reload
+    content = stream_state&.text_for(message)
+    content = message.content unless streamable_text?(content)
+    thinking = stream_state&.thinking_for(message)
+    thinking = message.thinking_text unless streamable_text?(thinking)
+
+    message.broadcast_rendered_content!(content) if streamable_text?(content)
+    message.broadcast_rendered_thinking!(thinking) if streamable_text?(thinking)
+    message.broadcast_refresh!(content: content, thinking_text: thinking)
+  end
+
+  # Newline-only chunks are blank? in Rails but must still be streamed and saved.
+  def streamable_text?(text)
+    !text.nil? && text != ""
+  end
+
   def persist_assistant_timing(chat, timer)
     assistant_message = chat.messages.where(role: :assistant).order(:id).last
     return unless assistant_message
 
-    assistant_message.update!(
-      timer.message_timing_attributes(context_build_elapsed_ms: chat.context_build_elapsed_ms)
-    )
+    attrs = timer.message_timing_attributes(context_build_elapsed_ms: chat.context_build_elapsed_ms)
+    return if attrs.empty?
+
+    # Timing-only writes must not re-render the whole message bubble; that would
+    # replace streamed markdown with a stale DB snapshot and look truncated.
+    assistant_message.update_columns(attrs.merge(updated_at: Time.current))
   end
 
   def broadcast_form_reset(chat)

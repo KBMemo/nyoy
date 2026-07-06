@@ -19,11 +19,18 @@ module ChatLlamaCache
     params[:id_slot] = slot_id unless slot_id.nil?
     return llm_chat if params.empty?
 
-    llm_chat.with_params(**params)
+    existing = llm_chat.instance_variable_get(:@params) || {}
+    llm_chat.with_params(**existing.merge(params))
   end
 
   def enabled?(chat = nil)
+    return false if openai_chat?(chat)
+
     cache_prompt? || slot_count_for(chat).to_i.positive?
+  end
+
+  def openai_chat?(chat)
+    chat&.model_association&.metadata&.dig("connection_key") == "openai"
   end
 
   def cache_prompt?

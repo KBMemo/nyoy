@@ -58,6 +58,22 @@ class Message < ApplicationRecord
     )
   end
 
+  # Explicit full-bubble refresh used when a streaming turn finishes. While the
+  # chat is responding?, after_update_commit is suppressed so ActionCable cannot
+  # deliver a stale full replace after partial stream updates.
+  def broadcast_refresh!(content: nil, thinking_text: nil)
+    locals = message_locals
+    locals[:content] = content unless content.nil?
+    locals[:thinking_text] = thinking_text unless thinking_text.nil?
+
+    broadcast_replace_to(
+      "chat_#{chat_id}",
+      target: "message_#{id}",
+      partial: to_partial_path,
+      locals: locals
+    )
+  end
+
   private
 
   def broadcast_message_created
@@ -70,12 +86,9 @@ class Message < ApplicationRecord
   end
 
   def broadcast_message_updated
-    broadcast_replace_to(
-      "chat_#{chat_id}",
-      target: "message_#{id}",
-      partial: to_partial_path,
-      locals: message_locals
-    )
+    return if assistant_message? && ChatResponseControl.responding?(chat_id)
+
+    broadcast_refresh!
   end
 
   def broadcast_message_removed
@@ -84,6 +97,10 @@ class Message < ApplicationRecord
 
   def message_locals
     { message: self, assistant: self, user: self, system: self, tool: self }
+  end
+
+  def assistant_message?
+    role.to_s == "assistant"
   end
 
   def user_message_with_attachments?

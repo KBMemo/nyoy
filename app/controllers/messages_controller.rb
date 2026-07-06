@@ -15,12 +15,14 @@ class MessagesController < ApplicationController
       return render_form_error(e.message)
     end
 
-    @message = @chat.messages.create!(
-      role: :user,
-      content: content.presence || ChatImageAttachments::PLACEHOLDER
-    )
-    @message.attachments.attach(uploads) if uploads.any?
-    TsuzuraMediaUploader.archive_attachments!(@message.attachments) if @message.attachments.attached?
+    Message.suppressing_turbo_broadcasts do
+      @message = @chat.messages.create!(
+        role: :user,
+        content: content.presence || ChatImageAttachments::PLACEHOLDER
+      )
+      @message.attachments.attach(uploads) if uploads.any?
+      TsuzuraMediaUploader.archive_attachments!(@message.attachments) if @message.attachments.attached?
+    end
 
     ChatResponseControl.mark_running!(@chat)
     ChatResponseJob.perform_later(@chat.id)

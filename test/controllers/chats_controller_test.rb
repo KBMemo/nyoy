@@ -110,30 +110,70 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".nyoy-chat-message-cancelled", text: /応答を中止しました/
   end
 
-  test "show renders web tool limit form when searxng is enabled" do
+  test "show renders chat settings dialog with model and web tool fields when searxng is enabled" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
     service_connections(:searxng).update!(enabled: true)
 
     get chat_path(chat)
 
     assert_response :success
-    assert_select "input[name='max_searches_per_turn']"
-    assert_select "input[name='max_fetches_per_turn']"
+    assert_select "dialog#chat_settings_dialog"
+    assert_select "button[aria-label='チャット設定'] i[data-lucide=settings]"
+    assert_select "dialog#chat_settings_dialog input[name='temperature']"
+    assert_select "dialog#chat_settings_dialog input[name='top_p']"
+    assert_select "dialog#chat_settings_dialog input[name='max_searches_per_turn']"
+    assert_select "dialog#chat_settings_dialog input[name='max_fetches_per_turn']"
+    assert_select "section h2", text: "Web ツール上限", count: 0
   end
 
-  test "update_web_tool_limits persists searxng settings" do
+  test "update_chat_settings persists llm params and searxng settings" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
     connection = service_connections(:searxng)
+    connection.update!(enabled: true)
 
-    patch web_tool_limits_chat_path(chat), params: {
+    patch chat_settings_chat_path(chat), params: {
+      temperature: 0.8,
+      top_p: 0.9,
+      max_tokens: 2048,
+      top_k: 40,
+      repeat_penalty: 1.1,
+      min_p: 0.05,
       max_searches_per_turn: 4,
       max_fetches_per_turn: 6
     }
 
     assert_redirected_to chat_path(chat)
+    assert_equal(
+      {
+        "temperature" => 0.8,
+        "top_p" => 0.9,
+        "max_tokens" => 2048,
+        "top_k" => 40,
+        "repeat_penalty" => 1.1,
+        "min_p" => 0.05
+      },
+      chat.reload.llm_params
+    )
     settings = connection.reload.searxng_settings
     assert_equal 4, settings.max_searches_per_turn
     assert_equal 6, settings.max_fetches_per_turn
+  end
+
+  test "update_chat_settings persists llm params without searxng" do
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    service_connections(:searxng).update!(enabled: false)
+
+    patch chat_settings_chat_path(chat), params: {
+      temperature: 0.6,
+      top_p: "",
+      max_tokens: "",
+      top_k: "",
+      repeat_penalty: "",
+      min_p: ""
+    }
+
+    assert_redirected_to chat_path(chat)
+    assert_equal({ "temperature" => 0.6 }, chat.reload.llm_params)
   end
 
   test "cancel marks running chat as cancelled" do

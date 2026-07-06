@@ -4,6 +4,7 @@ class ServiceConnection < ApplicationRecord
   BUILTIN_KEYS = %w[
     llama_cpp
     gpt_oss
+    openai
     vision_llama
     embeddings
     sd_cpp
@@ -14,12 +15,13 @@ class ServiceConnection < ApplicationRecord
     readability
   ].freeze
 
-  CHAT_BUILTIN_KEYS = %w[llama_cpp gpt_oss].freeze
+  CHAT_BUILTIN_KEYS = %w[llama_cpp gpt_oss openai].freeze
   CUSTOM_LLM_KEY_FORMAT = /\Allm_[a-z0-9_]+\z/
 
   KEY_LABELS = {
     "llama_cpp" => "llama-server（テキスト LLM）",
     "gpt_oss" => "llama-server（GPT-OSS）",
+    "openai" => "OpenAI（ChatGPT）",
     "vision_llama" => "llama-server（画像理解）",
     "embeddings" => "埋め込み API",
     "sd_cpp" => "sd.cpp サーバー",
@@ -35,6 +37,7 @@ class ServiceConnection < ApplicationRecord
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validate :key_must_be_allowed
   validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
+  validates :api_token, presence: true, if: :openai_chat_enabled?
   validates :server_model, presence: true, if: :custom_llm?
 
   scope :enabled, -> { where(enabled: true) }
@@ -57,6 +60,14 @@ class ServiceConnection < ApplicationRecord
 
   def searxng?
     key.to_s == "searxng"
+  end
+
+  def openai?
+    key.to_s == "openai"
+  end
+
+  def openai_chat_enabled?
+    openai? && enabled?
   end
 
   def searxng_settings

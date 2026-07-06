@@ -82,6 +82,7 @@ class Chat < ApplicationRecord
     if ChatMemoRagInjector.inject_mode?
       ChatMemoRagInjector.apply!(@chat, query: latest_user_query(context.messages), chat: self)
     end
+    ChatLlmSettings.apply!(@chat, chat: self)
     ChatLlamaCache.apply!(@chat, chat: self)
     setup_persistence_callbacks
     ChatResponseControl.install_checks!(@chat, id) if response_state == ChatResponseControl::STATES[:running]

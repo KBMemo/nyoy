@@ -34,5 +34,9 @@ class ChatResponseControl
 
       state
     end
+
+    def responding?(chat_id)
+      Chat.where(id: chat_id).pick(:response_state) == STATES[:running]
+    end
   end
 end

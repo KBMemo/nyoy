@@ -43,6 +43,16 @@
       dd = "#{searx.max_fetches_per_turn} 回 / 応答"
       dt.font-medium.kb-text-secondary 検索エンジン
       dd.nyoy-monospace = searx.engines
+    - if @service_connection.openai?
+      - chat_models = Array(@service_connection.settings&.dig("chat_models")).compact_blank
+      dt.font-medium.kb-text-secondary Chat モデル
+      dd
+        - if chat_models.any?
+          ul.list-disc.pl-5
+            - chat_models.each do |model_id|
+              li.nyoy-monospace = model_id
+        - else
+          span.kb-text-muted 「モデル取得」で OpenAI から同期してください
   - if @service_connection.notes.present?
     div
       h2 class=kb_section_title メモ

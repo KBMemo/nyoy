@@ -110,6 +110,27 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "Next", state.text_for(second)
   end
 
+  test "stream state preserves newline-only chunks" do
+    state = ChatResponseJob::StreamState.new
+    message = Message.new(id: 1)
+
+    state.append_for(message, "1行目")
+    state.append_for(message, "\n")
+    state.append_for(message, "2行目")
+
+    assert_equal "1行目\n2行目", state.text_for(message)
+  end
+
+  test "streamable_text keeps whitespace-only chunks that present? would drop" do
+    job = ChatResponseJob.new
+
+    refute "\n".present?
+    assert job.send(:streamable_text?, "\n")
+    assert job.send(:streamable_text?, " ")
+    refute job.send(:streamable_text?, nil)
+    refute job.send(:streamable_text?, "")
+  end
+
   test "stream state accumulates thinking text per assistant message" do
     state = ChatResponseJob::StreamState.new
     first = Message.new(id: 1)
@@ -147,6 +168,67 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
     assert_empty message.content_broadcasts
     assert_empty message.thinking_broadcasts
+  end
+
+  test "persist_streamed_state saves accumulated text when db lags behind stream" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "短")
+    state = ChatResponseJob::StreamState.new
+    state.append_for(message, "い本文")
+
+    job.send(:persist_streamed_state!, message, state)
+
+    assert_equal "い本文", message.reload.content
+  end
+
+  test "persist_streamed_state preserves newlines from streamed chunks" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "")
+    state = ChatResponseJob::StreamState.new
+    state.append_for(message, "1行目")
+    state.append_for(message, "\n")
+    state.append_for(message, "2行目")
+
+    job.send(:persist_streamed_state!, message, state)
+
+    assert_equal "1行目\n2行目", message.reload.content
+  end
+
+  test "persist_assistant_timing writes timing columns without callbacks" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "完了")
+    timer = ChatResponseTimer.new
+    timer.instance_variable_set(:@first_chunk_elapsed_ms, 120)
+
+    job.send(:persist_assistant_timing, @chat, timer)
+
+    message.reload
+    assert_equal 120, message.first_chunk_elapsed_ms
+    assert_equal "完了", message.content
+  end
+
+  test "broadcast_assistant_message uses stream text when db content is still empty" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "")
+    state = ChatResponseJob::StreamState.new
+    state.append_for(message, "1行目")
+    state.append_for(message, "\n")
+    state.append_for(message, "2行目")
+
+    content_broadcasts = []
+    refresh_broadcasts = []
+    message.define_singleton_method(:broadcast_rendered_content!) do |text|
+      content_broadcasts << text
+    end
+    message.define_singleton_method(:broadcast_refresh!) do |**kwargs|
+      refresh_broadcasts << kwargs
+    end
+    message.define_singleton_method(:broadcast_rendered_thinking!) { |*| }
+
+    job.send(:broadcast_assistant_message!, message, stream_state: state)
+
+    assert_equal [ "1行目\n2行目" ], content_broadcasts
+    assert_equal "1行目\n2行目", refresh_broadcasts.first[:content]
   end
 
   private

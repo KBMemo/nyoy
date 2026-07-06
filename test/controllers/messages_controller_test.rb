@@ -13,8 +13,12 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_enqueued_with(job: ChatResponseJob, args: [@chat.id]) do
       post chat_messages_path(@chat), params: {
         message: { content: "こんにちは" }
-      }
+      }, as: :turbo_stream
     end
+
+    assert_response :success
+    assert_select "turbo-stream[action='append'][target='messages']"
+    assert_select "turbo-stream[action='replace'][target='new_message']"
 
     message = @chat.messages.where(role: :user).order(:id).last
     assert_equal "こんにちは", message.content

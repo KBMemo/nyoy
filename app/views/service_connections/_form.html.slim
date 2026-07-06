@@ -61,6 +61,8 @@
       = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
       - if service_connection.key == "searxng"
         p.mt-1.text-sm.kb-text-muted SearXNG の認証トークン。空欄のまま更新すると既存のトークンは保持されます。
+      - elsif service_connection.openai?
+        p.mt-1.text-sm.kb-text-muted OpenAI API キー（sk-...）。有効化するには必須です。空欄のまま更新すると既存のキーは保持されます。
       - else
         p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 

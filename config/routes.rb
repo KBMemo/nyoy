@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   resources :chats do
     member do
       post :cancel
-      patch :web_tool_limits, action: :update_web_tool_limits
+      patch :chat_settings, action: :update_chat_settings
     end
     resources :messages, only: [ :create ]
   end

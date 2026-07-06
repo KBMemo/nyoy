@@ -121,9 +121,25 @@ class ServiceConnectionsController < ApplicationController
   end
 
   def sync_server_model!(models)
+    if @service_connection.openai?
+      sync_openai_chat_models!(models)
+      return
+    end
+
     return if models.blank?
     return if @service_connection.server_model.present? && models.include?(@service_connection.server_model)
 
     @service_connection.update!(server_model: models.first)
+  end
+
+  def sync_openai_chat_models!(models)
+    chat_models = OpenaiChatModels.filter(models)
+    return if chat_models.empty?
+
+    settings = (@service_connection.settings || {}).merge("chat_models" => chat_models)
+    attrs = { settings: settings }
+    attrs[:server_model] = @service_connection.server_model.presence || chat_models.first
+    @service_connection.update!(attrs)
+    ChatModelCatalog.seed!
   end
 end

@@ -19,6 +19,46 @@ class MessageTest < ActiveSupport::TestCase
     assert_equal "失敗しました", message.chat_error_message
   end
 
+  test "broadcast_refresh replaces the full assistant bubble" do
+    message = @chat.messages.create!(role: :assistant, content: "**done**")
+    broadcasts = []
+    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
+      broadcasts << kwargs
+    end
+
+    message.broadcast_refresh!
+
+    assert_equal 1, broadcasts.size
+    assert_equal "message_#{message.id}", broadcasts.first[:target]
+    assert_equal "messages/assistant", broadcasts.first[:partial]
+  end
+
+  test "broadcast_refresh can override streamed body and thinking text" do
+    message = @chat.messages.create!(role: :assistant, content: "")
+    broadcasts = []
+    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
+      broadcasts << kwargs
+    end
+
+    message.broadcast_refresh!(content: "1行目\n2行目", thinking_text: "考え")
+
+    assert_equal "1行目\n2行目", broadcasts.first[:locals][:content]
+    assert_equal "考え", broadcasts.first[:locals][:thinking_text]
+  end
+
+  test "broadcast_message_updated is suppressed while chat is responding" do
+    @chat.update!(response_state: "running")
+    message = @chat.messages.create!(role: :assistant, content: "途中")
+    broadcasts = []
+    message.define_singleton_method(:broadcast_replace_to) { |*, **| broadcasts << true }
+
+    message.update!(content: "更新")
+
+    assert_empty broadcasts
+  ensure
+    @chat.update!(response_state: "idle")
+  end
+
   test "broadcast_rendered_content replaces content with markdown html" do
     message = @chat.messages.create!(role: :assistant, content: "**done**")
     broadcasts = []

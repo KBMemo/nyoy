@@ -18,6 +18,33 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
     context = ChatModelCatalog.context_for(model)
 
     assert_equal "http://balvenie:10010/v1", context.config.openai_api_base
+    assert_equal "local", context.config.openai_api_key
+  end
+
+  test "context_for uses openai api key from connection store" do
+    connection = service_connections(:openai)
+    connection.update!(enabled: true, api_token: "sk-test-key", server_model: "gpt-4o-mini", settings: { "chat_models" => %w[gpt-4o-mini] })
+    ChatModelCatalog.seed!
+
+    model = Model.find_by!(provider: "openai", model_id: "gpt-4o-mini")
+    context = ChatModelCatalog.context_for(model)
+
+    assert_equal "https://api.openai.com/v1", context.config.openai_api_base
+    assert_equal "sk-test-key", context.config.openai_api_key
+  end
+
+  test "definitions include multiple openai chat models" do
+    connection = service_connections(:openai)
+    connection.update!(
+      enabled: true,
+      api_token: "sk-test-key",
+      settings: { "chat_models" => %w[gpt-4o gpt-4o-mini] }
+    )
+
+    definitions = ChatModelCatalog.definitions
+
+    assert_includes definitions.map(&:model_id), "gpt-4o"
+    assert_includes definitions.map(&:model_id), "gpt-4o-mini"
   end
 
   test "default_model follows app setting connection key" do

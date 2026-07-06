@@ -1,0 +1,124 @@
+<% connection = local_assigns.fetch(:searxng_connection, @searxng_connection) %>
+<% web_settings = local_assigns.fetch(:web_tool_settings, @web_tool_settings) %>
+<% llm_settings = local_assigns.fetch(:chat_llm_settings, @chat_llm_settings) %>
+<dialog id="chat_settings_dialog" class="nyoy-dialog" data-dialog-target="panel" data-action="click->dialog#backdropClose">
+  <div class="nyoy-dialog-panel" role="document">
+    <header class="nyoy-dialog-header">
+      <div>
+        <h2 class="nyoy-dialog-title">チャット設定</h2>
+        <p class="nyoy-dialog-description">
+          このチャットのモデル応答パラメータと Web ツール上限を設定します。空欄の項目はサーバー既定値を使います。
+        </p>
+      </div>
+      <button type="button" class="kb-chrome-btn-secondary kb-btn-sm" data-action="dialog#close" aria-label="閉じる">閉じる</button>
+    </header>
+
+    <div class="nyoy-dialog-body">
+      <%= form_with url: chat_settings_chat_path(chat), method: :patch, class: "space-y-6" do |form| %>
+        <section class="nyoy-dialog-section">
+          <h3 class="nyoy-dialog-section-title">モデルパラメータ</h3>
+          <p class="nyoy-dialog-section-description">このチャット専用のサンプリング設定です。</p>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <%= form.label :temperature, "temperature", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :temperature,
+                value: llm_settings.temperature,
+                min: ChatLlmSettings::RANGES["temperature"].begin,
+                max: ChatLlmSettings::RANGES["temperature"].end,
+                step: 0.05,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+            <div>
+              <%= form.label :top_p, "top_p", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :top_p,
+                value: llm_settings.top_p,
+                min: ChatLlmSettings::RANGES["top_p"].begin,
+                max: ChatLlmSettings::RANGES["top_p"].end,
+                step: 0.05,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+            <div>
+              <%= form.label :max_tokens, "max_tokens", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :max_tokens,
+                value: llm_settings.max_tokens,
+                min: ChatLlmSettings::RANGES["max_tokens"].begin,
+                max: ChatLlmSettings::RANGES["max_tokens"].end,
+                step: 1,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+            <div>
+              <%= form.label :top_k, "top_k", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :top_k,
+                value: llm_settings.top_k,
+                min: ChatLlmSettings::RANGES["top_k"].begin,
+                max: ChatLlmSettings::RANGES["top_k"].end,
+                step: 1,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+            <div>
+              <%= form.label :repeat_penalty, "repeat_penalty", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :repeat_penalty,
+                value: llm_settings.repeat_penalty,
+                min: ChatLlmSettings::RANGES["repeat_penalty"].begin,
+                max: ChatLlmSettings::RANGES["repeat_penalty"].end,
+                step: 0.05,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+            <div>
+              <%= form.label :min_p, "min_p", class: "#{kb_label} mb-1" %>
+              <%= form.number_field :min_p,
+                value: llm_settings.min_p,
+                min: ChatLlmSettings::RANGES["min_p"].begin,
+                max: ChatLlmSettings::RANGES["min_p"].end,
+                step: 0.05,
+                class: kb_field_input_classes,
+                placeholder: "既定" %>
+            </div>
+          </div>
+        </section>
+
+        <% if connection&.enabled? %>
+          <section class="nyoy-dialog-section">
+            <h3 class="nyoy-dialog-section-title">Web ツール上限</h3>
+            <p class="nyoy-dialog-section-description">
+              応答 1 回あたりの <code>web_search</code> / <code>fetch_url</code> 呼び出し上限です（SearXNG 接続設定に保存されます）。
+            </p>
+
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <%= form.label :max_searches_per_turn, "web_search 上限", class: "#{kb_label} mb-1" %>
+                <%= form.number_field :max_searches_per_turn,
+                  value: web_settings.max_searches_per_turn,
+                  min: SearxngSettings::RANGES["max_searches_per_turn"].begin,
+                  max: SearxngSettings::RANGES["max_searches_per_turn"].end,
+                  step: 1,
+                  class: kb_field_input_classes %>
+              </div>
+              <div>
+                <%= form.label :max_fetches_per_turn, "fetch_url 上限", class: "#{kb_label} mb-1" %>
+                <%= form.number_field :max_fetches_per_turn,
+                  value: web_settings.max_fetches_per_turn,
+                  min: SearxngSettings::RANGES["max_fetches_per_turn"].begin,
+                  max: SearxngSettings::RANGES["max_fetches_per_turn"].end,
+                  step: 1,
+                  class: kb_field_input_classes %>
+                <p class="mt-1 text-sm kb-text-muted">fetch_url は同時に複数実行されず、結果を受け取ってから1件ずつ取得します。</p>
+              </div>
+            </div>
+          </section>
+        <% end %>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <%= form.submit "設定を更新", class: kb_btn_secondary_sm %>
+          <button type="button" class="<%= kb_btn_secondary_sm %>" data-action="dialog#close">キャンセル</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</dialog>

@@ -1,0 +1,5 @@
+<div id="messages" class="nyoy-chat-messages space-y-3">
+  <% chat.messages.order(:id).each do |message| %>
+    <%= render message %>
+  <% end %>
+</div>

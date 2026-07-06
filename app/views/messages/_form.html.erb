@@ -31,7 +31,12 @@
   </div>
 
   <div>
-    <%= form.label :content, "メッセージ", class: "#{kb_label} mb-1" %>
+    <div class="mb-1 flex items-center justify-between gap-2">
+      <%= form.label :content, "メッセージ", class: kb_label %>
+      <button type="button" class="nyoy-chat-settings-btn" data-action="dialog#open" aria-label="チャット設定" title="チャット設定">
+        <i class="h-4 w-4" data-lucide="settings" aria-hidden="true"></i>
+      </button>
+    </div>
     <%= form.text_area :content, rows: 3, class: kb_field_input_classes, placeholder: "メッセージを入力...（画像のみでも送信できます）", autofocus: local_assigns.fetch(:autofocus, false) %>
   </div>
 

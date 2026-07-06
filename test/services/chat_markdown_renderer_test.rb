@@ -38,4 +38,12 @@ class ChatMarkdownRendererTest < ActiveSupport::TestCase
     assert_equal "", ChatMarkdownRenderer.render("")
     assert_equal "", ChatMarkdownRenderer.render(nil)
   end
+
+  test "preserves single newlines as line breaks" do
+    html = ChatMarkdownRenderer.render("1行目\n2行目")
+
+    assert_includes html, "<br>"
+    assert_includes html, "1行目"
+    assert_includes html, "2行目"
+  end
 end

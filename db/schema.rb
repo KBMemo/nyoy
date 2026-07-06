@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_170001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_235232) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -54,6 +54,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_170001) do
     t.text "context_summary"
     t.bigint "context_summary_until_message_id"
     t.datetime "created_at", null: false
+    t.jsonb "llm_params", default: {}, null: false
     t.bigint "model_id"
     t.string "response_state", default: "idle", null: false
     t.datetime "updated_at", null: false

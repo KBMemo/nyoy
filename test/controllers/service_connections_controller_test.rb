@@ -77,6 +77,26 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, settings.max_fetches_per_turn
   end
 
+  test "refresh models syncs openai chat model list" do
+    connection = service_connections(:openai)
+    connection.update!(enabled: true, api_token: "sk-test", server_model: nil)
+    fake_result = ServiceConnectionModelFetcher::Result.new(
+      ok: true,
+      models: %w[gpt-4o gpt-4o-mini],
+      message: "モデル 2 件を取得しました"
+    )
+
+    with_fake_model_fetcher(fake_result) do
+      post refresh_models_service_connection_path(connection)
+    end
+
+    connection.reload
+    assert_redirected_to service_connection_path(connection)
+    assert_equal %w[gpt-4o gpt-4o-mini], connection.settings["chat_models"]
+    assert_equal "gpt-4o", connection.server_model
+    assert Model.exists?(provider: "openai", model_id: "gpt-4o")
+  end
+
   test "refresh models updates server model from api" do
     connection = service_connections(:gpt_oss)
     connection.update!(server_model: "old-model")

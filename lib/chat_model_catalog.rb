@@ -6,17 +6,32 @@ module ChatModelCatalog
   module_function
 
   def definitions
-    ServiceConnection.chat_backends.enabled.ordered.filter_map do |connection|
-      model_id = connection.server_model.presence || NyoyConnectionStore.server_model(connection.key)
-      next if model_id.blank?
-
-      ModelDefinition.new(
-        model_id: model_id,
-        name: connection.name,
-        api_base: connection.base_url,
-        connection_key: connection.key
-      )
+    ServiceConnection.chat_backends.enabled.ordered.flat_map do |connection|
+      model_ids_for(connection).filter_map do |model_id|
+        ModelDefinition.new(
+          model_id: model_id,
+          name: display_name(connection, model_id),
+          api_base: connection.base_url,
+          connection_key: connection.key
+        )
+      end
     end
+  end
+
+  def model_ids_for(connection)
+    if connection.openai?
+      Array(connection.settings&.dig("chat_models")).compact_blank.presence ||
+        [ connection.server_model ].compact_blank
+    else
+      model_id = connection.server_model.presence || NyoyConnectionStore.server_model(connection.key)
+      model_id.present? ? [ model_id ] : []
+    end
+  end
+
+  def display_name(connection, model_id)
+    return connection.name unless connection.openai?
+
+    "#{connection.name} — #{model_id}"
   end
 
   def model_ids
@@ -37,13 +52,14 @@ module ChatModelCatalog
 
   def seed!
     definitions.each do |definition|
+      connection = ServiceConnection.find_by(key: definition.connection_key)
       record = Model.find_or_initialize_by(provider: "openai", model_id: definition.model_id)
       record.assign_attributes(
         name: definition.name,
-        family: "local",
-        context_window: 8192,
-        capabilities: ["chat"],
-        modalities: { "input" => ["text"], "output" => ["text"] },
+        family: connection&.openai? ? "openai" : "local",
+        context_window: connection&.openai? ? 128_000 : 8192,
+        capabilities: [ "chat" ],
+        modalities: { "input" => [ "text" ], "output" => [ "text" ] },
         metadata: {
           "api_base" => definition.api_base,
           "connection_key" => definition.connection_key
@@ -63,9 +79,15 @@ module ChatModelCatalog
     api_base = api_base.presence || NyoyConnectionStore.url(:llama_cpp)
     normalized = api_base.sub(%r{/\z}, "")
 
+    api_key = if connection_key == "openai"
+                NyoyConnectionStore.api_token(:openai).presence || RubyLLM.config.openai_api_key
+              else
+                RubyLLM.config.openai_api_key
+              end
+
     config = RubyLLM::Configuration.new
     config.openai_api_base = "#{normalized}/v1"
-    config.openai_api_key = RubyLLM.config.openai_api_key
+    config.openai_api_key = api_key
     config.openai_use_system_role = RubyLLM.config.openai_use_system_role
     config.request_timeout = RubyLLM.config.request_timeout
     config.use_new_acts_as = RubyLLM.config.use_new_acts_as

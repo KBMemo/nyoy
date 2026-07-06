@@ -1,7 +1,7 @@
 class ChatsController < ApplicationController
-  before_action :set_chat, only: %i[show destroy cancel update_web_tool_limits]
+  before_action :set_chat, only: %i[show destroy cancel update_chat_settings]
   before_action :load_chat_models, only: %i[new create]
-  before_action :load_web_tool_settings, only: %i[show update_web_tool_limits]
+  before_action :load_chat_settings, only: %i[show update_chat_settings]
 
   def index
     @chats = Chat.includes(:model).order(created_at: :desc)
@@ -34,12 +34,14 @@ class ChatsController < ApplicationController
 
     model = selected_chat_model(params.dig(:chat, :model))
     @chat = Chat.create!(model: model)
-    message = @chat.messages.create!(
-      role: :user,
-      content: prompt.presence || ChatImageAttachments::PLACEHOLDER
-    )
-    message.attachments.attach(uploads) if uploads.any?
-    TsuzuraMediaUploader.archive_attachments!(message.attachments) if message.attachments.attached?
+    Message.suppressing_turbo_broadcasts do
+      message = @chat.messages.create!(
+        role: :user,
+        content: prompt.presence || ChatImageAttachments::PLACEHOLDER
+      )
+      message.attachments.attach(uploads) if uploads.any?
+      TsuzuraMediaUploader.archive_attachments!(message.attachments) if message.attachments.attached?
+    end
     ChatResponseControl.mark_running!(@chat)
     ChatResponseJob.perform_later(@chat.id)
 
@@ -64,24 +66,20 @@ class ChatsController < ApplicationController
     end
   end
 
-  def update_web_tool_limits
-    connection = @searxng_connection
-    unless connection
-      redirect_to @chat, alert: "SearXNG 接続が未設定です。"
-      return
+  def update_chat_settings
+    @chat.update!(llm_params: ChatLlmSettings.normalize(chat_llm_settings_params))
+
+    if @searxng_connection&.enabled?
+      settings = @searxng_connection.searxng_settings.to_h.merge(web_tool_settings_params)
+      @searxng_connection.assign_searxng_settings(settings)
+
+      unless @searxng_connection.save
+        redirect_to @chat, alert: @searxng_connection.errors.full_messages.to_sentence
+        return
+      end
     end
 
-    settings = connection.searxng_settings.to_h.merge(
-      "max_searches_per_turn" => params[:max_searches_per_turn],
-      "max_fetches_per_turn" => params[:max_fetches_per_turn]
-    )
-    connection.assign_searxng_settings(settings)
-
-    if connection.save
-      redirect_to @chat, notice: "Web ツール上限を更新しました。"
-    else
-      redirect_to @chat, alert: connection.errors.full_messages.to_sentence
-    end
+    redirect_to @chat, notice: "チャット設定を更新しました。"
   end
 
   private
@@ -90,9 +88,18 @@ class ChatsController < ApplicationController
     @chat = Chat.find(params[:id])
   end
 
-  def load_web_tool_settings
+  def load_chat_settings
     @searxng_connection = ServiceConnection.find_by(key: "searxng")
     @web_tool_settings = @searxng_connection&.searxng_settings || SearxngSettings.load
+    @chat_llm_settings = ChatLlmSettings.from(@chat.llm_params)
+  end
+
+  def chat_llm_settings_params
+    params.permit(:temperature, :top_p, :max_tokens, :top_k, :repeat_penalty, :min_p)
+  end
+
+  def web_tool_settings_params
+    params.permit(:max_searches_per_turn, :max_fetches_per_turn).to_h
   end
 
   def load_chat_models

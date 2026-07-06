@@ -3,6 +3,42 @@
 require "test_helper"
 
 class ServiceConnectionModelFetcherTest < ActiveSupport::TestCase
+  test "fetches openai api models with bearer token and filters chat models" do
+    connection = service_connections(:openai)
+    connection.update!(api_token: "sk-test")
+    fetcher = ServiceConnectionModelFetcher.new(connection)
+    requested = []
+    fetcher.define_singleton_method(:perform_get) do |uri, headers: {}, **|
+      requested << [uri.to_s, headers["Authorization"]]
+      {
+        status: 200,
+        body: {
+          data: [
+            { id: "gpt-4o" },
+            { id: "whisper-1" },
+            { id: "gpt-4o-mini" }
+          ]
+        }.to_json
+      }
+    end
+
+    result = fetcher.call
+
+    assert result.ok
+    assert_equal [["https://api.openai.com/v1/models", "Bearer sk-test"]], requested
+    assert_equal %w[gpt-4o gpt-4o-mini], result.models
+  end
+
+  test "reports missing openai api key" do
+    connection = service_connections(:openai)
+    connection.update!(api_token: nil)
+
+    result = ServiceConnectionModelFetcher.new(connection).call
+
+    assert_not result.ok
+    assert_match(/API キー/, result.message)
+  end
+
   test "fetches openai compatible model ids" do
     connection = service_connections(:gpt_oss)
     fetcher = ServiceConnectionModelFetcher.new(connection)

@@ -32,6 +32,14 @@ class ChatResponseControlTest < ActiveSupport::TestCase
     end
   end
 
+  test "responding reads current state from the database" do
+    ChatResponseControl.mark_running!(@chat)
+    assert ChatResponseControl.responding?(@chat.id)
+
+    ChatResponseControl.finish!(@chat)
+    refute ChatResponseControl.responding?(@chat.id)
+  end
+
   test "install_checks callback accepts tool_call argument" do
     ChatResponseControl.mark_running!(@chat)
     llm_chat = @chat.to_llm

@@ -53,6 +53,16 @@ module ServiceConnectionSeeds
         notes: "チャット画面の GPT-OSS 用"
       },
       {
+        key: "openai",
+        name: "OpenAI（ChatGPT）",
+        base_url: config.openai_url,
+        server_model: config.openai_chat_model,
+        api_token: config.openai_api_key,
+        enabled: config.openai_api_key.present?,
+        notes: "OpenAI API（ChatGPT）。API キーを設定し「モデル取得」で利用可能モデルを同期してください。",
+        settings: { "chat_models" => [] }
+      },
+      {
         key: "vision_llama",
         name: "Qwen2.5-VL",
         base_url: config.vision_llama_cpp_url,

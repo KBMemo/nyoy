@@ -54,6 +54,9 @@ Rails.application.config.x.nyoy.tap do |config|
   config.style_plan_connection_key = ENV.fetch("STYLE_PLAN_CONNECTION_KEY", "llama_cpp")
   # UI（設定 → 既定モデル）未設定時のフォールバック。DB の app_settings が優先される。
   config.default_chat_connection_key = ENV.fetch("DEFAULT_CHAT_CONNECTION_KEY", "llama_cpp")
+  config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
+  config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+  config.openai_api_key = ENV["OPENAI_API_KEY"]
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }

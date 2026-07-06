@@ -10,6 +10,7 @@ class ServiceConnectionModelFetcher
   Result = Data.define(:ok, :models, :message)
 
   OPENAI_COMPAT_KEYS = %w[llama_cpp gpt_oss vision_llama embeddings].freeze
+  OPENAI_API_KEYS = %w[openai].freeze
 
   def initialize(connection)
     @connection = connection
@@ -26,13 +27,31 @@ class ServiceConnectionModelFetcher
   private
 
   def fetch_models
-    if @connection.custom_llm? || OPENAI_COMPAT_KEYS.include?(@connection.key)
+    if @connection.openai?
+      fetch_openai_api_models
+    elsif @connection.custom_llm? || OPENAI_COMPAT_KEYS.include?(@connection.key)
       fetch_openai_compatible_models
     elsif @connection.key == "sd_switchd"
       fetch_sd_switchd_models
     else
       raise Error, "この接続種別はモデル取得に対応していません"
     end
+  end
+
+  def fetch_openai_api_models
+    token = @connection.api_token.presence || NyoyConnectionStore.api_token(:openai)
+    raise Error, "OpenAI API キーが未設定です" if token.blank?
+
+    response = perform_get(
+      URI("#{normalized_base_url}/v1/models"),
+      headers: { "Authorization" => "Bearer #{token}" }
+    )
+    raise Error, http_error_message(response, "モデル一覧") unless response[:status] == 200
+
+    payload = JSON.parse(response[:body])
+    OpenaiChatModels.filter(model_ids_from(payload))
+  rescue JSON::ParserError
+    raise Error, "モデル一覧の応答が JSON ではありません"
   end
 
   def fetch_openai_compatible_models
