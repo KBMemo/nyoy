@@ -3,6 +3,11 @@
 require "test_helper"
 
 class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
+  setup do
+    NyoyConnectionStore.clear_cache!
+    ChatTools::Registry.reset_client!
+  end
+
   test "searxng client uses url updated in service connection" do
     connection = service_connections(:searxng)
     connection.update!(base_url: "http://updated-searx:8080", api_token: "fresh_token")

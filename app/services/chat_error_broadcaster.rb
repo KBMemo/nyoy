@@ -35,18 +35,7 @@ class ChatErrorBroadcaster
   end
 
   def reset_form!
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "chat_#{@chat.id}",
-      target: "new_message",
-      html: MessagesController.render(
-        partial: "messages/form",
-        locals: {
-          chat: @chat,
-          message: Message.new,
-          form_url: Rails.application.routes.url_helpers.chat_messages_path(@chat)
-        }
-      )
-    )
+    ChatUiBroadcaster.form_updated(@chat)
   end
 
   def friendly_message

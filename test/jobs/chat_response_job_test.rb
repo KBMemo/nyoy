@@ -207,6 +207,19 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "完了", message.content
   end
 
+  test "current_assistant_message ignores newer tool call messages" do
+    job = ChatResponseJob.new
+    answer = @chat.messages.create!(role: :assistant, content: "回答")
+    tool_call = @chat.messages.create!(role: :assistant, content: "")
+    tool_call.tool_calls_association.create!(
+      tool_call_id: "call_test",
+      name: "fetch_url",
+      arguments: { "url" => "https://example.com" }
+    )
+
+    assert_equal answer, job.send(:current_assistant_message, @chat, nil)
+  end
+
   test "broadcast_assistant_message uses stream text when db content is still empty" do
     job = ChatResponseJob.new
     message = @chat.messages.create!(role: :assistant, content: "")
@@ -217,8 +230,8 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
     content_broadcasts = []
     refresh_broadcasts = []
-    message.define_singleton_method(:broadcast_rendered_content!) do |text|
-      content_broadcasts << text
+    message.define_singleton_method(:broadcast_rendered_content!) do |text, seq: nil|
+      content_broadcasts << [ text, seq ]
     end
     message.define_singleton_method(:broadcast_refresh!) do |**kwargs|
       refresh_broadcasts << kwargs
@@ -227,8 +240,11 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
     job.send(:broadcast_assistant_message!, message, stream_state: state)
 
-    assert_equal [ "1行目\n2行目" ], content_broadcasts
+    assert_equal "1行目\n2行目", content_broadcasts.first.first
+    assert content_broadcasts.first.second
     assert_equal "1行目\n2行目", refresh_broadcasts.first[:content]
+    assert refresh_broadcasts.first[:seq]
+    assert_operator refresh_broadcasts.first[:seq], :>, content_broadcasts.first.second
   end
 
   private
@@ -242,11 +258,11 @@ class ChatResponseJobTest < ActiveJob::TestCase
       @thinking_broadcasts = []
     end
 
-    def broadcast_rendered_content!(text)
+    def broadcast_rendered_content!(text, seq: nil)
       @content_broadcasts << text.dup
     end
 
-    def broadcast_rendered_thinking!(text)
+    def broadcast_rendered_thinking!(text, seq: nil)
       @thinking_broadcasts << text.dup
     end
   end

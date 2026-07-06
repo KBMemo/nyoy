@@ -1,4 +1,4 @@
-<div id="messages" class="nyoy-chat-messages space-y-3">
+<div id="messages" class="nyoy-chat-messages space-y-3" data-controller="chat-stream" data-chat-stream-chat-id-value="<%= chat.id %>">
   <% chat.messages.order(:id).each do |message| %>
     <%= render message %>
   <% end %>

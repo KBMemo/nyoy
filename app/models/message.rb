@@ -41,58 +41,52 @@ class Message < ApplicationRecord
     super
   end
 
-  def broadcast_rendered_content!(text = nil)
-    broadcast_replace_to(
-      "chat_#{chat_id}",
-      target: "message_#{id}_content",
-      html: ChatMarkdownRenderer.render(text || content)
-    )
+  def tool_call_message?
+    return false unless respond_to?(:tool_calls_association)
+
+    tool_calls_association.exists?
   end
 
-  def broadcast_rendered_thinking!(text)
-    broadcast_replace_to(
-      "chat_#{chat_id}",
-      target: "message_#{id}_thinking_section",
-      partial: "messages/thinking_section",
-      locals: { message: self, text: text }
-    )
+  def broadcast_rendered_content!(text = nil, seq: nil)
+    ChatUiBroadcaster.assistant_content(self, text || content, seq: seq)
+  end
+
+  def broadcast_rendered_thinking!(text, seq: nil)
+    ChatUiBroadcaster.assistant_thinking(self, text, seq: seq)
   end
 
   # Explicit full-bubble refresh used when a streaming turn finishes. While the
   # chat is responding?, after_update_commit is suppressed so ActionCable cannot
   # deliver a stale full replace after partial stream updates.
-  def broadcast_refresh!(content: nil, thinking_text: nil)
-    locals = message_locals
-    locals[:content] = content unless content.nil?
-    locals[:thinking_text] = thinking_text unless thinking_text.nil?
-
-    broadcast_replace_to(
-      "chat_#{chat_id}",
-      target: "message_#{id}",
-      partial: to_partial_path,
-      locals: locals
+  def broadcast_refresh!(content: nil, thinking_text: nil, seq: nil)
+    ChatUiBroadcaster.assistant_finalized(
+      self,
+      content: content || self.content,
+      thinking_text: thinking_text || self.thinking_text,
+      seq: seq
     )
   end
 
   private
 
   def broadcast_message_created
-    broadcast_append_to(
-      "chat_#{chat_id}",
-      target: "messages",
-      partial: to_partial_path,
-      locals: message_locals
-    )
+    return if broadcasts_suppressed?
+    return if stream_managed_assistant?
+
+    ChatUiBroadcaster.message_upsert(self)
   end
 
   def broadcast_message_updated
-    return if assistant_message? && ChatResponseControl.responding?(chat_id)
+    return if broadcasts_suppressed?
+    return if stream_managed_assistant? && ChatResponseControl.responding?(chat_id)
 
-    broadcast_refresh!
+    ChatUiBroadcaster.message_upsert(self)
   end
 
   def broadcast_message_removed
-    broadcast_remove_to("chat_#{chat_id}")
+    return if broadcasts_suppressed?
+
+    ChatUiBroadcaster.message_removed(self)
   end
 
   def message_locals
@@ -101,6 +95,14 @@ class Message < ApplicationRecord
 
   def assistant_message?
     role.to_s == "assistant"
+  end
+
+  def stream_managed_assistant?
+    assistant_message? && !tool_call_message? && !chat_error? && !chat_cancelled?
+  end
+
+  def broadcasts_suppressed?
+    self.class.respond_to?(:suppressed_turbo_broadcasts?) && self.class.suppressed_turbo_broadcasts?
   end
 
   def user_message_with_attachments?

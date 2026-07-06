@@ -21,72 +21,81 @@ class MessageTest < ActiveSupport::TestCase
 
   test "broadcast_refresh replaces the full assistant bubble" do
     message = @chat.messages.create!(role: :assistant, content: "**done**")
-    broadcasts = []
-    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
-      broadcasts << kwargs
+
+    with_chat_ui_capture(:assistant_finalized) do |broadcasts|
+      message.broadcast_refresh!
+
+      assert_equal 1, broadcasts.size
+      assert_equal message, broadcasts.first.first.first
+      assert_equal "**done**", broadcasts.first.second[:content]
     end
-
-    message.broadcast_refresh!
-
-    assert_equal 1, broadcasts.size
-    assert_equal "message_#{message.id}", broadcasts.first[:target]
-    assert_equal "messages/assistant", broadcasts.first[:partial]
   end
 
   test "broadcast_refresh can override streamed body and thinking text" do
     message = @chat.messages.create!(role: :assistant, content: "")
-    broadcasts = []
-    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
-      broadcasts << kwargs
+
+    with_chat_ui_capture(:assistant_finalized) do |broadcasts|
+      message.broadcast_refresh!(content: "1行目\n2行目", thinking_text: "考え")
+
+      assert_equal "1行目\n2行目", broadcasts.first.second[:content]
+      assert_equal "考え", broadcasts.first.second[:thinking_text]
     end
-
-    message.broadcast_refresh!(content: "1行目\n2行目", thinking_text: "考え")
-
-    assert_equal "1行目\n2行目", broadcasts.first[:locals][:content]
-    assert_equal "考え", broadcasts.first[:locals][:thinking_text]
   end
 
   test "broadcast_message_updated is suppressed while chat is responding" do
     @chat.update!(response_state: "running")
     message = @chat.messages.create!(role: :assistant, content: "途中")
-    broadcasts = []
-    message.define_singleton_method(:broadcast_replace_to) { |*, **| broadcasts << true }
 
-    message.update!(content: "更新")
+    with_chat_ui_capture(:message_upsert) do |broadcasts|
+      message.update!(content: "更新")
 
-    assert_empty broadcasts
+      assert_empty broadcasts
+    end
+  ensure
+    @chat.update!(response_state: "idle")
+  end
+
+  test "tool call assistant update is upserted while chat is responding" do
+    @chat.update!(response_state: "running")
+    message = @chat.messages.create!(role: :assistant, content: "")
+    message.tool_calls_association.create!(
+      tool_call_id: "call_test",
+      name: "fetch_url",
+      arguments: { "url" => "https://example.com" }
+    )
+
+    with_chat_ui_capture(:message_upsert) do |broadcasts|
+      message.update!(content: "")
+
+      assert_equal 1, broadcasts.size
+      assert_equal message, broadcasts.first.first.first
+    end
   ensure
     @chat.update!(response_state: "idle")
   end
 
   test "broadcast_rendered_content replaces content with markdown html" do
     message = @chat.messages.create!(role: :assistant, content: "**done**")
-    broadcasts = []
-    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
-      broadcasts << kwargs
+
+    with_chat_ui_capture(:assistant_content) do |broadcasts|
+      message.broadcast_rendered_content!("### 見出し\n\n**太字**")
+
+      assert_equal 1, broadcasts.size
+      assert_equal message, broadcasts.first.first.first
+      assert_equal "### 見出し\n\n**太字**", broadcasts.first.first.second
     end
-
-    message.broadcast_rendered_content!("### 見出し\n\n**太字**")
-
-    assert_equal 1, broadcasts.size
-    assert_equal "message_#{message.id}_content", broadcasts.first[:target]
-    assert_includes broadcasts.first[:html], "<h3"
-    assert_includes broadcasts.first[:html], "<strong>太字</strong>"
   end
 
   test "broadcast_rendered_thinking replaces thinking section" do
     message = @chat.messages.create!(role: :assistant, content: "回答")
-    broadcasts = []
-    message.define_singleton_method(:broadcast_replace_to) do |*, **kwargs|
-      broadcasts << kwargs
+
+    with_chat_ui_capture(:assistant_thinking) do |broadcasts|
+      message.broadcast_rendered_thinking!("考え中")
+
+      assert_equal 1, broadcasts.size
+      assert_equal message, broadcasts.first.first.first
+      assert_equal "考え中", broadcasts.first.first.second
     end
-
-    message.broadcast_rendered_thinking!("考え中")
-
-    assert_equal 1, broadcasts.size
-    assert_equal "message_#{message.id}_thinking_section", broadcasts.first[:target]
-    assert_equal "messages/thinking_section", broadcasts.first[:partial]
-    assert_equal "考え中", broadcasts.first[:locals][:text]
   end
 
   test "to_llm adds optional analyze_image notice for attachments" do
@@ -106,5 +115,19 @@ class MessageTest < ActiveSupport::TestCase
     assert_includes llm_message.content, "1 枚添付"
     assert_includes llm_message.content, "必要なときだけ"
     assert_includes llm_message.content, "web_search"
+  end
+
+  private
+
+  def with_chat_ui_capture(method_name)
+    calls = []
+    original = ChatUiBroadcaster.method(method_name)
+    ChatUiBroadcaster.singleton_class.define_method(method_name) do |*args, **kwargs|
+      calls << [ args, kwargs ]
+    end
+
+    yield calls
+  ensure
+    ChatUiBroadcaster.singleton_class.define_method(method_name, original)
   end
 end

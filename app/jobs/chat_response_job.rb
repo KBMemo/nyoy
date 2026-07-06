@@ -17,8 +17,20 @@ class ChatResponseJob < ApplicationJob
     chat.complete do |chunk|
       timer.observe_chunk!(chunk)
 
+      thinking_text = chunk.thinking&.text
+      content_text = chunk.content
+      unless streamable_text?(thinking_text) || streamable_text?(content_text)
+        if tool_call_chunk?(chunk) && message
+          stream_state.flush(message)
+          persist_streamed_state!(message, stream_state)
+          broadcast_assistant_message!(message, stream_state: stream_state)
+          message = nil
+        end
+        next
+      end
+
       previous = message
-      message = current_assistant_message(chat, previous)
+      message ||= current_assistant_message(chat, previous)
       next unless message
 
       # A tool round starts a fresh assistant message; flush the previous one
@@ -29,15 +41,14 @@ class ChatResponseJob < ApplicationJob
         broadcast_assistant_message!(previous, stream_state: stream_state)
       end
 
-      thinking_text = chunk.thinking&.text
       if streamable_text?(thinking_text)
         stream_state.append_thinking_for(message, thinking_text)
         stream_state.broadcast_thinking(message)
       end
 
-      next unless streamable_text?(chunk.content)
+      next unless streamable_text?(content_text)
 
-      stream_state.append_for(message, chunk.content)
+      stream_state.append_for(message, content_text)
       stream_state.broadcast_content(message)
     end
 
@@ -85,11 +96,19 @@ class ChatResponseJob < ApplicationJob
   # Resolves the assistant message being streamed with a lightweight id lookup,
   # reusing the cached record until a new assistant message appears (tool round).
   def current_assistant_message(chat, cached)
-    latest_id = chat.messages.where(role: :assistant).order(id: :desc).limit(1).pick(:id)
-    return cached if latest_id.nil?
-    return cached if cached && cached.id == latest_id
+    latest = latest_streamable_assistant_message(chat)
+    return cached if latest.nil?
+    return cached if cached && cached.id == latest.id
 
-    Message.find(latest_id)
+    latest
+  end
+
+  def latest_streamable_assistant_message(chat)
+    chat.messages
+      .where(role: :assistant)
+      .reorder(id: :desc)
+      .limit(5)
+      .detect { |candidate| !candidate.tool_call_message? }
   end
 
   def persist_streamed_state!(message, stream_state)
@@ -111,19 +130,28 @@ class ChatResponseJob < ApplicationJob
     return unless message
 
     message.reload
+    if message.tool_call_message?
+      ChatUiBroadcaster.message_upsert(message)
+      return
+    end
+
     content = stream_state&.text_for(message)
     content = message.content unless streamable_text?(content)
     thinking = stream_state&.thinking_for(message)
     thinking = message.thinking_text unless streamable_text?(thinking)
 
-    message.broadcast_rendered_content!(content) if streamable_text?(content)
-    message.broadcast_rendered_thinking!(thinking) if streamable_text?(thinking)
-    message.broadcast_refresh!(content: content, thinking_text: thinking)
+    message.broadcast_rendered_content!(content, seq: stream_state&.next_sequence(message)) if streamable_text?(content)
+    message.broadcast_rendered_thinking!(thinking, seq: stream_state&.next_sequence(message)) if streamable_text?(thinking)
+    message.broadcast_refresh!(content: content, thinking_text: thinking, seq: stream_state&.next_sequence(message))
   end
 
   # Newline-only chunks are blank? in Rails but must still be streamed and saved.
   def streamable_text?(text)
     !text.nil? && text != ""
+  end
+
+  def tool_call_chunk?(chunk)
+    chunk.respond_to?(:tool_call?) && chunk.tool_call?
   end
 
   def persist_assistant_timing(chat, timer)
@@ -139,19 +167,7 @@ class ChatResponseJob < ApplicationJob
   end
 
   def broadcast_form_reset(chat)
-    chat.reload
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "chat_#{chat.id}",
-      target: "new_message",
-      html: MessagesController.render(
-        partial: "messages/form",
-        locals: {
-          chat: chat,
-          message: Message.new,
-          form_url: Rails.application.routes.url_helpers.chat_messages_path(chat)
-        }
-      )
-    )
+    ChatUiBroadcaster.form_updated(chat)
   end
 
   class StreamState
@@ -167,6 +183,7 @@ class ChatResponseJob < ApplicationJob
       @current_thinking_message_id = nil
       @content_broadcast_at = {}
       @thinking_broadcast_at = {}
+      @sequence_by_message_id = Hash.new(0)
     end
 
     def append_for(message, chunk)
@@ -200,7 +217,7 @@ class ChatResponseJob < ApplicationJob
       return unless due?(@content_broadcast_at, message.id, force)
 
       @content_broadcast_at[message.id] = now
-      message.broadcast_rendered_content!(text_for(message))
+      message.broadcast_rendered_content!(text_for(message), seq: next_sequence(message))
     end
 
     def broadcast_thinking(message, force: false)
@@ -208,7 +225,7 @@ class ChatResponseJob < ApplicationJob
       return unless due?(@thinking_broadcast_at, message.id, force)
 
       @thinking_broadcast_at[message.id] = now
-      message.broadcast_rendered_thinking!(thinking_for(message))
+      message.broadcast_rendered_thinking!(thinking_for(message), seq: next_sequence(message))
     end
 
     # Emit the final state for a message, bypassing the debounce interval.
@@ -217,6 +234,10 @@ class ChatResponseJob < ApplicationJob
 
       broadcast_content(message, force: true)
       broadcast_thinking(message, force: true)
+    end
+
+    def next_sequence(message)
+      @sequence_by_message_id[message.id] += 1
     end
 
     private
