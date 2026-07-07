@@ -59,7 +59,7 @@
         dd
           ul.list-disc.pl-5
             - image_generation.rag_source_chunks.each do |chunk|
-              li = link_to chunk.title, chunk, class: "kb-chrome-link"
+              li = link_to chunk.title, chunk, class: "kb-chrome-link", data: { turbo_frame: "_top" }
       - image_generation.loras_for_api.each do |entry|
         dt LoRA
         dd = "#{entry['path']} (#{entry['multiplier']})"
