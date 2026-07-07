@@ -16,6 +16,17 @@ class PromptKnowledgeChunkTest < ActiveSupport::TestCase
     assert_equal Rails.application.config.x.nyoy.embedding_dimensions, chunk.embedding.length
   end
 
+  test "accepts emphasis kind without style_ref" do
+    chunk = PromptKnowledgeChunk.new(
+      title: "強調構文",
+      body: RagKnowledgeSeeds::EMPHASIS_SYNTAX_GUIDANCE,
+      kind: "emphasis"
+    )
+
+    assert chunk.valid?, chunk.errors.full_messages.to_sentence
+    assert_equal "強調構文", chunk.kind_label
+  end
+
   test "requires style_ref for style kind" do
     chunk = PromptKnowledgeChunk.new(title: "Test", body: "body", kind: "style")
 

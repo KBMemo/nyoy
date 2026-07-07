@@ -40,6 +40,11 @@ ChatModelSeeds.seed!
     body: RagKnowledgeSeeds::CHOJUGIGA_NEGATIVE_GUIDANCE
   },
   {
+    title: "括弧を使った強調構文の使い方",
+    kind: "emphasis",
+    body: RagKnowledgeSeeds::EMPHASIS_SYNTAX_GUIDANCE
+  },
+  {
     title: "水彩静物画の構図とタッチ",
     kind: "style",
     style_ref: "watercolor_still_life",

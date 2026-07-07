@@ -5,12 +5,13 @@ class PromptKnowledgeChunk < ApplicationRecord
   SOURCE_MEMO = "memo"
   SOURCES = [SOURCE_PROMPT, SOURCE_MEMO].freeze
 
-  KINDS = %w[style model lora negative composition camera lighting inpaint memo].freeze
+  KINDS = %w[style model lora negative emphasis composition camera lighting inpaint memo].freeze
   KIND_LABELS = {
     "style" => "画風",
     "model" => "モデル",
     "lora" => "LoRA",
     "negative" => "ネガティブ",
+    "emphasis" => "強調構文",
     "composition" => "構図",
     "camera" => "カメラ",
     "lighting" => "照明",
