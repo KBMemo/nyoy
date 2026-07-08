@@ -99,7 +99,7 @@ flowchart TB
 create_table :sd_model_profiles do |t|
   t.string  :key, null: false            # 内部キー
   t.string  :name, null: false           # 表示名
-  t.string  :family, null: false         # sd15 / sdxl / illustrious / pony / flux
+  t.string  :family, null: false         # sd15 / sdxl / pony / illustrious / sd35 / flux
   t.string  :switch_key, null: false     # switchd に渡す名前
   t.string  :base_url                     # ポート運用時のみ（切替式は nil）
   t.jsonb   :default_params, null: false, default: {}
@@ -411,3 +411,55 @@ LoRA `path` を編集可能にする場合、保存前に `/sdapi/v1/loras` の�
 4. **既存データの移行範囲**: 旧 `GenerationPreset` / `PromptPreset` は **seed で作り直すだけ**。本番 DB からの自動移行スクリプトは書かない。
 5. **knowledge の kind**: `kind = style` の chunk は `style_ref`（`prompt_styles.style_id` への明示参照）を必須にする。他 kind は従来どおり指針テキスト。
 6. **aspect_ratio の語彙**: `square` / `portrait` / `landscape` の 3 値で確定。
+
+---
+
+## 12. モデルファミリー (family) の扱い
+
+`sd_model_profiles.family` / `lora_profiles.family` が表す「SD のアーキテクチャ系統」の設計方針。
+
+### 語彙（コード所有の enum）
+
+`SdModelProfile::FAMILIES` に定義する固定 enum で、CRUD 対象にしない。
+
+```text
+sd15 / sdxl / pony / illustrious / sd35 / flux
+```
+
+- 表示名は `SdModelProfile::FAMILY_LABELS`（例: `sd35` → "SD 3.5"）。
+- `LoraProfile::FAMILIES` / `FAMILY_LABELS` は `SdModelProfile` の定義を再利用する。
+- family は「技術タクソノミー（めったに増えない）」であり、増える時はコード側の検証も伴うため、**DB CRUD ではなくコード enum で管理する**。
+
+### family が効く 2 箇所
+
+1. **系統別 default_params** — `SdModelProfile::FAMILY_DEFAULT_PARAMS` が family ごとの生成パラメータ基準（width/height/steps/cfg_scale/sampler_name）を持つ。
+   `SdModelProfile#resolved_default_params` は `family_default_params.deep_merge(default_params)` を返し、`SdPromptStyleResolver` はこれをパラメータ基底に使う。
+   - つまり **family が既定値を供給し、個別モデルの `default_params` はそこからの逸脱分だけ**を持てばよい。
+   - `PromptStyle#family` は既定モデルの family を返す。
+
+2. **family 別 RAG ガイダンス** — `StylePlanPrompts::FAMILY_GUIDANCE` が family ごとの subject_prompt の書き方指針（タグ列挙系 vs 自然文系など）を持つ。
+   `StylePlanGenerator` は各スタイル行に `[family]` を付与し、対象 family のガイダンスをプラン生成プロンプトへ注入する。SD 3.5 / Flux は自然文寄り、SDXL / Pony / Illustrious はタグ列挙寄り、といった差をここで吸収する。
+
+### 設計判断: family の CRUD は持たない（現状維持）
+
+- family 一覧・ガイダンスは「作法」寄りでコードに置く（`§2` の原則3と同じ思想）。
+- 系統から外れたい個別モデルは `default_params` の上書きで対応できる逃げ道が既にある。
+- UI 編集可能にすると誤設定で生成品質・作法を壊すリスクがあるため、当面 enum を維持する。
+  将来どうしても運用中に系統別パラメータを触りたくなったら、`FAMILY_DEFAULT_PARAMS` のみを軽量に外部化する段階拡張に留める（一覧・ガイダンスはコードのまま）。
+
+### 新しい family を追加する手順
+
+コードの 3 箇所を更新するだけ。
+
+1. `SdModelProfile::FAMILIES` に値を追加（表示順の位置に挿入）。
+2. `SdModelProfile::FAMILY_LABELS` に表示名を追加。
+3. `SdModelProfile::FAMILY_DEFAULT_PARAMS` に系統別の基準パラメータを追加。
+4. （任意）`StylePlanPrompts::FAMILY_GUIDANCE` に書き方指針を追加。
+
+既存モデルへ family 由来の既定を反映するだけなら full `db:seed` は不要で、能力レイヤのみ再 seed する:
+
+```bash
+bin/rails runner 'require_relative "lib/capability_seeds"; CapabilitySeeds.seed_models!'
+```
+
+> full `db:seed` は service_connections / prompt_styles / render_presets / チャットモデル / RAG チャンクも upsert 上書きするため、それらの UI 編集を巻き戻したくない場合は上記の限定 seed を使う。

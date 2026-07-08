@@ -46,6 +46,30 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     assert_includes captured[:messages].last[:content], "chojugiga_emaki"
   end
 
+  test "includes family annotation and family guidance in the prompt" do
+    captured = {}
+    client = FakeClient.new(
+      response: llama_response(
+        style_id: "chojugiga_emaki",
+        subject_prompt: "rabbit and frog",
+        negative_extra: "",
+        aspect_ratio: "square"
+      ),
+      captured: captured
+    )
+
+    StylePlanGenerator.new(
+      flow: :memo,
+      client: client,
+      retriever: FakeRetriever.new(chunks: [])
+    ).call("ウサギとカエル")
+
+    content = captured[:messages].last[:content]
+    assert_includes content, "chojugiga_emaki [illustrious]"
+    assert_includes content, "Family guidance"
+    assert_includes content, StylePlanPrompts::FAMILY_GUIDANCE["illustrious"]
+  end
+
   test "uses StylePlanModelCatalog client when connection_key is given" do
     captured = {}
     client = FakeClient.new(

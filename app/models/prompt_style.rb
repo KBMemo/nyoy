@@ -65,6 +65,12 @@ class PromptStyle < ApplicationRecord
     default_style_model&.sd_model_profile
   end
 
+  # Architecture family (sd15/sdxl/pony/illustrious/sd35/flux) of the default
+  # model, used to steer family-specific prompt guidance and params.
+  def family
+    default_model&.family
+  end
+
   def style_model_for(model_key)
     return default_style_model if model_key.blank?
 

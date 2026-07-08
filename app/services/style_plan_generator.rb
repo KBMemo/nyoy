@@ -53,7 +53,7 @@ class StylePlanGenerator
   private
 
   def available_styles(forced_style_id)
-    scope = PromptStyle.enabled.ordered
+    scope = PromptStyle.enabled.ordered.includes(prompt_style_models: :sd_model_profile)
     forced_style_id.present? ? scope.where(style_id: forced_style_id) : scope
   end
 
@@ -82,8 +82,11 @@ class StylePlanGenerator
         #{query}
 
         Fixed style (do not change):
-        - #{style.style_id}: #{style.name}
+        - #{style.style_id} [#{style.family}]: #{style.name}
         #{("- #{style.description}" if style.description.present?)}
+
+        Family guidance:
+        #{family_guidance_section(styles)}
 
         Retrieved knowledge:
         #{chunk_section(chunks)}
@@ -100,6 +103,9 @@ class StylePlanGenerator
       Available styles (choose one style_id):
       #{styles_section(styles)}
 
+      Family guidance (apply the entry matching the chosen style's family):
+      #{family_guidance_section(styles)}
+
       Retrieved knowledge:
       #{chunk_section(chunks)}
 
@@ -110,11 +116,15 @@ class StylePlanGenerator
   def styles_section(styles)
     styles.map do |style|
       aliases = Array(style.aliases).join(", ")
-      line = "- #{style.style_id}: #{style.name}"
+      line = "- #{style.style_id} [#{style.family}]: #{style.name}"
       line += " — #{style.description}" if style.description.present?
       line += " (aliases: #{aliases})" if aliases.present?
       line
     end.join("\n")
+  end
+
+  def family_guidance_section(styles)
+    StylePlanPrompts.family_guidance_section(styles.map(&:family))
   end
 
   def chunk_section(chunks)

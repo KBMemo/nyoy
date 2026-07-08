@@ -4,22 +4,15 @@
 # The model list previously lived only in SDCPP_DEFAULT_MODELS; it now becomes
 # DB-backed here.
 module CapabilitySeeds
-  SD15_PARAMS = {
-    "width" => 512, "height" => 512, "steps" => 20,
-    "cfg_scale" => 7.0, "sampler_name" => "euler_a"
-  }.freeze
-
-  XL_PARAMS = {
-    "width" => 768, "height" => 768, "steps" => 24,
-    "cfg_scale" => 6.0, "sampler_name" => "euler_a"
-  }.freeze
-
+  # Generation params are now derived from the model family
+  # (SdModelProfile::FAMILY_DEFAULT_PARAMS). Only set default_params here for a
+  # model that must deviate from its family baseline.
   MODELS = [
-    { key: "flat2d", name: "Flat2D", family: "sd15", default_params: SD15_PARAMS },
-    { key: "anythingv5", name: "Anything V5", family: "sd15", default_params: SD15_PARAMS },
-    { key: "dreamshaper8", name: "DreamShaper 8", family: "sd15", default_params: SD15_PARAMS },
-    { key: "pony-v6", name: "Pony Diffusion V6 XL", family: "pony", default_params: XL_PARAMS },
-    { key: "illustrious_pencil-XL", name: "Illustrious Pencil XL", family: "illustrious", default_params: XL_PARAMS }
+    { key: "flat2d", name: "Flat2D", family: "sd15" },
+    { key: "anythingv5", name: "Anything V5", family: "sd15" },
+    { key: "dreamshaper8", name: "DreamShaper 8", family: "sd15" },
+    { key: "pony-v6", name: "Pony Diffusion V6 XL", family: "pony" },
+    { key: "illustrious_pencil-XL", name: "Illustrious Pencil XL", family: "illustrious" }
   ].freeze
 
   LORAS = [
@@ -50,7 +43,7 @@ module CapabilitySeeds
         name: attrs[:name],
         family: attrs[:family],
         switch_key: attrs[:key],
-        default_params: attrs[:default_params],
+        default_params: attrs[:default_params] || {},
         sort_order: index,
         enabled: true
       )

@@ -34,6 +34,25 @@ class SdModelProfileTest < ActiveSupport::TestCase
     assert profile.errors.key?(:family)
   end
 
+  test "sd35 is an allowed family" do
+    profile = sd_model_profiles(:pony)
+    profile.family = "sd35"
+    assert profile.valid?
+    assert_equal "SD 3.5", profile.family_label
+  end
+
+  test "resolved_default_params falls back to family defaults" do
+    profile = SdModelProfile.new(family: "sd35", default_params: {})
+    assert_equal SdModelProfile::FAMILY_DEFAULT_PARAMS["sd35"], profile.resolved_default_params
+  end
+
+  test "resolved_default_params lets profile override family baseline" do
+    profile = SdModelProfile.new(family: "sd35", default_params: { "steps" => 40 })
+    resolved = profile.resolved_default_params
+    assert_equal 40, resolved["steps"]
+    assert_equal 1024, resolved["width"]
+  end
+
   test "default_params_json round trips" do
     profile = SdModelProfile.new
     profile.default_params_json = '{"steps":20}'

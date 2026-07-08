@@ -22,7 +22,7 @@ class SdPromptStyleResolver
     style_model = pick_style_model(style)
     model = style_model.sd_model_profile
 
-    params = model.default_params.to_h
+    params = model.resolved_default_params
       .deep_merge(style_model.param_overrides.to_h)
       .deep_merge(style.generation_defaults.to_h)
       .deep_merge(aspect_params(style))
