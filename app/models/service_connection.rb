@@ -74,6 +74,17 @@ class ServiceConnection < ApplicationRecord
     SearxngSettings.from(settings)
   end
 
+  def openai_chat_model_settings
+    OpenaiChatModelSettings.from(settings)
+  end
+
+  def assign_openai_chat_model_settings(attrs)
+    return unless openai?
+
+    merged = (settings || {}).merge(OpenaiChatModelSettings.normalize(attrs))
+    self.settings = merged
+  end
+
   def assign_searxng_settings(attrs)
     return unless searxng?
 

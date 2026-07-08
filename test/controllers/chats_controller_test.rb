@@ -20,7 +20,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "textarea[name='chat[prompt]']"
     assert_select "input[type=file][name='chat[attachments]']"
-    assert_select "select[name='chat[model]'] option", minimum: 2
+    assert_select "select[name='chat[model]'] optgroup", minimum: 2
+    assert_select "select[name='chat[model]'] optgroup[label='Gemma Vision'] option", text: "gemma-4-12b-it-vision-mtp"
+    assert_select "select[name='chat[model]'] optgroup[label='GPT-OSS'] option", text: "gpt-oss"
   end
 
   test "new syncs gpt-oss model when it was missing from models table" do

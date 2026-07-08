@@ -44,13 +44,21 @@
       dt.font-medium.kb-text-secondary 検索エンジン
       dd.nyoy-monospace = searx.engines
     - if @service_connection.openai?
-      - chat_models = Array(@service_connection.settings&.dig("chat_models")).compact_blank
+      - chat_settings = @service_connection.openai_chat_model_settings
       dt.font-medium.kb-text-secondary Chat モデル
       dd
-        - if chat_models.any?
-          ul.list-disc.pl-5
-            - chat_models.each do |model_id|
-              li.nyoy-monospace = model_id
+        - if chat_settings.catalog.any?
+          = form_with url: openai_chat_models_service_connection_path(@service_connection), method: :patch, class: "space-y-3" do
+            - chat_settings.grouped_catalog.each do |group_name, model_ids|
+              .space-y-1
+                p.text-xs.font-medium.kb-text-muted = group_name
+                ul.space-y-1.pl-1
+                  - model_ids.each do |model_id|
+                    li
+                      label.flex.items-center.gap-2.text-sm
+                        = check_box_tag "service_connection[openai_chat_models][enabled][#{model_id}]", "1", chat_settings.enabled?(model_id), class: "kb-control-accent"
+                        span.nyoy-monospace = model_id
+            button type="submit" class=kb_btn_secondary_sm Chat モデルを更新
         - else
           span.kb-text-muted 「モデル取得」で OpenAI から同期してください
   - if @service_connection.notes.present?

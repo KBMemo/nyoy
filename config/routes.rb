@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     end
     member do
       post :refresh_models
+      patch :openai_chat_models
     end
   end
   resource :app_settings, only: %i[edit update]

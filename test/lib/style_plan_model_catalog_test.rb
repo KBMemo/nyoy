@@ -29,4 +29,24 @@ class StylePlanModelCatalogTest < ActiveSupport::TestCase
     assert options.any?
     assert_includes options.map(&:last), "llama_cpp"
   end
+
+  test "json_schema_supported is false for gpt_oss" do
+    assert StylePlanModelCatalog.json_schema_supported?("llama_cpp")
+    assert_not StylePlanModelCatalog.json_schema_supported?("gpt_oss")
+  end
+
+  test "client_for passes api token for openai" do
+    connection = service_connections(:openai)
+    connection.update!(
+      enabled: true,
+      api_token: "sk-test-key",
+      server_model: "gpt-4o-mini",
+      settings: { "chat_models_catalog" => %w[gpt-4o-mini], "chat_models" => %w[gpt-4o-mini] }
+    )
+
+    client = StylePlanModelCatalog.client_for(connection_key: "openai")
+
+    assert_equal "gpt-4o-mini", client.instance_variable_get(:@model)
+    assert_equal "sk-test-key", client.instance_variable_get(:@api_token)
+  end
 end

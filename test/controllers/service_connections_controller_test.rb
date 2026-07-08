@@ -92,9 +92,42 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
 
     connection.reload
     assert_redirected_to service_connection_path(connection)
+    assert_equal %w[gpt-4o gpt-4o-mini], connection.settings["chat_models_catalog"]
     assert_equal %w[gpt-4o gpt-4o-mini], connection.settings["chat_models"]
     assert_equal "gpt-4o", connection.server_model
     assert Model.exists?(provider: "openai", model_id: "gpt-4o")
+  end
+
+  test "update openai chat model enabled flags" do
+    connection = service_connections(:openai)
+    connection.update!(
+      enabled: true,
+      api_token: "sk-test",
+      settings: {
+        "chat_models_catalog" => %w[gpt-4o gpt-4o-mini gpt-3.5-turbo],
+        "chat_models" => %w[gpt-4o gpt-4o-mini gpt-3.5-turbo]
+      }
+    )
+    ChatModelCatalog.seed!
+
+    patch openai_chat_models_service_connection_path(connection), params: {
+      service_connection: {
+        openai_chat_models: {
+          enabled: {
+            "gpt-4o" => "1",
+            "gpt-4o-mini" => "0",
+            "gpt-3.5-turbo" => "1"
+          }
+        }
+      }
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    connection.reload
+    assert_equal %w[gpt-3.5-turbo gpt-4o], connection.settings["chat_models"]
+    assert_equal %w[gpt-3.5-turbo gpt-4o gpt-4o-mini], connection.settings["chat_models_catalog"]
+    assert_includes ChatModelCatalog.definitions.map(&:model_id), "gpt-4o"
+    assert_not_includes ChatModelCatalog.definitions.map(&:model_id), "gpt-4o-mini"
   end
 
   test "refresh models updates server model from api" do

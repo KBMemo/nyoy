@@ -161,4 +161,26 @@ class StylePlanGeneratorTest < ActiveSupport::TestCase
     assert_includes plan.negative_extra, "busy background"
     assert_equal "square", plan.aspect_ratio
   end
+
+  test "does not send json schema to gpt_oss connection" do
+    captured = {}
+    client = FakeClient.new(
+      response: llama_response(
+        style_id: "chojugiga_emaki",
+        subject_prompt: "rabbit",
+        negative_extra: "",
+        aspect_ratio: "square"
+      ),
+      captured: captured
+    )
+
+    StylePlanGenerator.new(
+      flow: :memo,
+      connection_key: "gpt_oss",
+      client: client,
+      retriever: FakeRetriever.new(chunks: [])
+    ).call("test")
+
+    assert_nil captured[:response_format]
+  end
 end

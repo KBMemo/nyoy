@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ServiceConnectionsController < ApplicationController
-  before_action :set_service_connection, only: %i[show edit update destroy refresh_models]
+  before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models]
 
   def index
     @service_connections = ServiceConnection.ordered
@@ -75,10 +75,35 @@ class ServiceConnectionsController < ApplicationController
     end
   end
 
+  def openai_chat_models
+    unless @service_connection.openai?
+      redirect_to @service_connection, alert: "この接続種別では Chat モデルを設定できません。"
+      return
+    end
+
+    enabled = openai_chat_models_enabled_params
+    @service_connection.assign_openai_chat_model_settings(
+      catalog: @service_connection.openai_chat_model_settings.catalog,
+      enabled: enabled
+    )
+
+    if @service_connection.save
+      redirect_to @service_connection, notice: "Chat モデルを更新しました。"
+    else
+      redirect_to @service_connection, alert: @service_connection.errors.full_messages.to_sentence
+    end
+  end
+
   private
 
   def set_service_connection
     @service_connection = ServiceConnection.find(params[:id])
+  end
+
+  def openai_chat_models_enabled_params
+    params.require(:service_connection)
+      .permit(openai_chat_models: { enabled: {} })
+      .dig(:openai_chat_models, :enabled)
   end
 
   def service_connection_params
@@ -136,9 +161,12 @@ class ServiceConnectionsController < ApplicationController
     chat_models = OpenaiChatModels.filter(models)
     return if chat_models.empty?
 
-    settings = (@service_connection.settings || {}).merge("chat_models" => chat_models)
+    settings = (@service_connection.settings || {}).merge(
+      OpenaiChatModelSettings.merge_catalog(@service_connection.settings, chat_models)
+    )
     attrs = { settings: settings }
-    attrs[:server_model] = @service_connection.server_model.presence || chat_models.first
+    enabled = OpenaiChatModelSettings.from(settings).enabled
+    attrs[:server_model] = @service_connection.server_model.presence || enabled.first
     @service_connection.update!(attrs)
     ChatModelCatalog.seed!
   end

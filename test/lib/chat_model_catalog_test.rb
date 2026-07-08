@@ -58,4 +58,35 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
   ensure
     AppSetting.delete_all
   end
+
+  test "grouped_model_options groups models by connection name" do
+    ChatModelCatalog.seed!
+
+    groups = ChatModelCatalog.grouped_model_options
+    labels = groups.map(&:first)
+
+    assert_includes labels, "Gemma Vision"
+    assert_includes labels, "GPT-OSS"
+
+    gemma_options = groups.find { |label, _| label == "Gemma Vision" }.last
+    gpt_oss_options = groups.find { |label, _| label == "GPT-OSS" }.last
+
+    assert_equal [ "gemma-4-12b-it-vision-mtp" ], gemma_options.map(&:first)
+    assert_equal [ "gpt-oss" ], gpt_oss_options.map(&:first)
+  end
+
+  test "grouped_model_options groups multiple openai models under one connection" do
+    connection = service_connections(:openai)
+    connection.update!(
+      enabled: true,
+      api_token: "sk-test-key",
+      settings: { "chat_models" => %w[gpt-4o gpt-4o-mini] }
+    )
+    ChatModelCatalog.seed!
+
+    groups = ChatModelCatalog.grouped_model_options
+    openai_group = groups.find { |label, _| label == "OpenAI（ChatGPT）" }
+
+    assert_equal %w[gpt-4o gpt-4o-mini], openai_group.last.map(&:first)
+  end
 end

@@ -36,6 +36,21 @@ module ChatModelCatalog
     definitions.map(&:model_id)
   end
 
+  # Returns option groups for chat model select: [[connection_name, [[model_name, id], ...]], ...]
+  def grouped_model_options
+    seed! if ServiceConnection.chat_backends.enabled.any?
+
+    ServiceConnection.chat_backends.enabled.ordered.filter_map do |connection|
+      model_ids = model_ids_for(connection)
+      next if model_ids.empty?
+
+      models = Model.where(provider: "openai", model_id: model_ids).order(:name)
+      next if models.empty?
+
+      [ connection.name, models.map { |record| [ record.name, record.id ] } ]
+    end
+  end
+
   def default_connection_key
     AppSetting.default_chat_connection_key.presence || definitions.first&.connection_key
   end

@@ -103,6 +103,7 @@ class ChatsController < ApplicationController
   end
 
   def load_chat_models
+    @chat_model_groups = ChatModelCatalog.grouped_model_options
     @chat_models = available_chat_models
   end
 

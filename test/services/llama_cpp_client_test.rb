@@ -82,4 +82,35 @@ class LlamaCppClientTest < ActiveSupport::TestCase
 
     assert_equal "猫が写っています", LlamaCppClient.message_text(response)
   end
+
+  test "stores api token for authenticated backends" do
+    client = LlamaCppClient.new(base_url: "http://llama.test:8080", api_token: "sk-test")
+
+    assert_equal "sk-test", client.instance_variable_get(:@api_token)
+  end
+
+  test "enables ssl for https base urls" do
+    ssl_enabled = nil
+    response = Struct.new(:body).new('{"choices":[{"message":{"content":"{}"}}]}')
+    def response.is_a?(klass)
+      klass == Net::HTTPSuccess
+    end
+
+    fake_http = Object.new
+    fake_http.define_singleton_method(:open_timeout=) { |_| }
+    fake_http.define_singleton_method(:read_timeout=) { |_| }
+    fake_http.define_singleton_method(:use_ssl=) { |value| ssl_enabled = value }
+    fake_http.define_singleton_method(:request) { |_| response }
+
+    original_new = Net::HTTP.method(:new)
+    Net::HTTP.define_singleton_method(:new) { |*| fake_http }
+
+    LlamaCppClient.new(base_url: "https://api.openai.com", api_token: "sk-test").chat(
+      messages: [{ role: "user", content: "hi" }]
+    )
+
+    assert_equal true, ssl_enabled
+  ensure
+    Net::HTTP.define_singleton_method(:new, original_new)
+  end
 end

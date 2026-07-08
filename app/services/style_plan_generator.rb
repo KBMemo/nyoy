@@ -16,8 +16,8 @@ class StylePlanGenerator
 
   def initialize(flow:, client: nil, connection_key: nil, retriever: PromptKnowledgeRetriever.new)
     @flow = flow
-    @connection_key = connection_key
-    @client = client || StylePlanModelCatalog.client_for(connection_key: connection_key)
+    @connection_key = connection_key.presence || StylePlanModelCatalog.default_connection_key
+    @client = client || StylePlanModelCatalog.client_for(connection_key: @connection_key)
     @retriever = retriever
   end
 
@@ -59,6 +59,7 @@ class StylePlanGenerator
 
   def response_format(styles)
     return unless Rails.application.config.x.nyoy.llama_json_schema
+    return unless StylePlanModelCatalog.json_schema_supported?(@connection_key)
 
     StylePlanJsonSchema.build(style_ids: styles.map(&:style_id))
   end

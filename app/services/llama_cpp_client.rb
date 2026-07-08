@@ -9,10 +9,12 @@ class LlamaCppClient
 
   def initialize(
     base_url: NyoyConnectionStore.url(:llama_cpp),
-    model: NyoyConnectionStore.server_model(:llama_cpp)
+    model: NyoyConnectionStore.server_model(:llama_cpp),
+    api_token: nil
   )
     @base_url = base_url.sub(%r{/\z}, "")
     @model = model
+    @api_token = api_token
   end
 
   def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil, read_timeout: nil)
@@ -138,16 +140,19 @@ class LlamaCppClient
       req.body = JSON.generate(payload)
     end
     req["Accept"] = "application/json"
+    req["Authorization"] = "Bearer #{@api_token}" if @api_token.present?
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.open_timeout = 5
     http.read_timeout = read_timeout || (payload ? Rails.application.config.x.nyoy.llama_read_timeout : 5)
+    http.use_ssl = uri.scheme == "https"
 
     res = http.request(req)
-    json = res.body.to_s.present? ? JSON.parse(res.body) : {}
+    body = res.body.to_s
+    json = body.present? ? JSON.parse(body) : {}
 
     unless res.is_a?(Net::HTTPSuccess)
-      raise Error, json["error"]&.dig("message") || json["error"].presence || res.body.presence || "HTTP #{res.code}"
+      raise Error, json["error"]&.dig("message") || json["error"].presence || body.presence || "HTTP #{res.code}"
     end
 
     json
@@ -156,6 +161,9 @@ class LlamaCppClient
   rescue Net::ReadTimeout, Timeout::Error
     raise Error, "llama.cpp read timeout (#{http.read_timeout}s)"
   rescue JSON::ParserError
-    raise Error, "llama.cpp の応答が JSON ではありません"
+    snippet = body.to_s.strip
+    snippet = "#{snippet[0, 120]}..." if snippet.length > 120
+    detail = snippet.present? ? "（#{snippet}）" : ""
+    raise Error, "llama.cpp の応答が JSON ではありません#{detail}"
   end
 end

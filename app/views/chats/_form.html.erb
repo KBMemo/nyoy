@@ -32,11 +32,11 @@
     <p class="mt-2 text-sm kb-text-muted" data-source-image-preview-target="hint">プレビューは画像選択後に表示されます。</p>
   </div>
 
-  <% if @chat_models.any? %>
+  <% if @chat_model_groups.any? %>
     <div>
       <%= form.label :model, "モデル", class: "#{kb_label} mb-1" %>
       <%= form.select :model,
-          options_from_collection_for_select(@chat_models, :id, :name, @selected_model || default_chat_model_id),
+          grouped_options_for_select(@chat_model_groups, @selected_model || default_chat_model_id),
           {},
           class: kb_field_input_classes %>
     </div>
