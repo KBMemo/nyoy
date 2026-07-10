@@ -1,0 +1,304 @@
+= kbmemo エコシステム — Nyoy MCP を前提とした構成
+
+如意（Nyoy）の MCP サーバー公開（Phase 6）を受け、3 アプリ（徒然・葛籠・如意）と外部クライアント（Cursor 等）の
+**責務分界と連携経路**を再定義する。
+
+* 徒然リポジトリ: link:https://gitea.artif.org/Artif.org/kbmemo_site[kbmemo_site]（`~/work/kbmemo/site`）
+* 如意リポジトリ: 本リポジトリ（`~/work/localai/nyoy`）
+* MCP 運用詳細: link:../mcp-server.md[docs/mcp-server.md]
+* 徒然 Chat エージェント: `site/docs/architecture/chat-agent-roadmap.adoc`
+
+== 1. 前提（2026-07 時点）
+
+如意は次を **実装済み** とする。
+
+* **Chat UI** — `ChatTools::Registry` によるツール付きチャット（`ruby_llm`）
+* **MCP サーバー** — 同一 `ChatTools::*` を HTTP（`/mcp`）と stdio（`bin/mcp-stdio`）で再公開
+* **SD パイプライン** — MCP 拡張ツール（`generate_image` / `refine_image` / `list_prompt_styles`）
+* **接続管理** — `ServiceConnection` + `NyoyConnectionStore`（llama / SearXNG / 徒然 API / 葛籠 / sd.cpp 等）
+
+徒然は **in-app Chat::Agent**（intent ルーティング・pgroonga/pgvector RAG）を Phase 0–2 / 5a–5b まで実装済み。
+Web / URL / Vision / 画像生成ツールは **徒然内未実装**（Router は名前のみ返す）。
+
+== 2. 設計原則（更新）
+
+[cols="1,3"]
+|===
+|原則 |内容
+
+|正本の分離
+|メモは徒然、バイナリは葛籠。如意は AI 処理とオーケストレーションに専念する（従来どおり）。
+
+|ツールの単一実装
+|**重い・横断的なツールは如意 `ChatTools::*` に1か所だけ実装**する。Chat UI と MCP は `Mcp::ToolBridge` で共有（従来どおり）。
+
+|徒然はメモ体験と in-process RAG
+|徒然 DB 上の pgroonga + pgvector RAG は **アカウントスコープ・低遅延**のため徒然 `Chat::Agent` に残す。Nyoy の `recall_memos`（export 取込 RAG）とはデータ経路が異なる。
+
+|外部エージェントは Nyoy MCP
+|Cursor 等は **徒然にツールを複製せず**、Nyoy MCP（本番 `https://nyoy.kbmemo.net/mcp`）へ接続する。
+
+|API 契約で疎結合
+|徒然 ↔ 如意は OpenAPI（`docs/openapi/kbmemo-v1.yaml`）と MCP。徒然の検索エンジン差し替えは HTTP 形状を維持すれば如意側は不変。
+|===
+
+== 3. 目標アーキテクチャ
+
+```mermaid
+flowchart TB
+  subgraph clients [クライアント]
+    U1[ブラウザ — 徒然 UI]
+    U2[ブラウザ — 如意 UI]
+    U3[Cursor / MCP クライアント]
+  end
+
+  subgraph tsuredure [徒然 site]
+    T_UI[メモ編集 / Agent Chat UI]
+    T_AGENT[Chat::Agent<br/>intent / router / escalation]
+    T_RAG[Chat::Tools::RagSearch<br/>pgroonga + pgvector]
+    T_API[GET/POST /api/v1/memos ...]
+  end
+
+  subgraph nyoy [如意]
+    N_CHAT[Chat UI + ChatResponseJob]
+    N_MCP[MCP /mcp + bin/mcp-stdio]
+    N_TOOLS[ChatTools::* + ExtensionTools]
+    N_CONN[ServiceConnection]
+  end
+
+  subgraph external [外部サービス]
+    L[llama.cpp 群]
+    SD[sd.cpp]
+    SX[SearXNG]
+    RD[readability]
+  end
+
+  subgraph tsuzura [葛籠]
+    Z_API[media API]
+  end
+
+  U1 --> T_UI --> T_AGENT
+  T_AGENT --> T_RAG
+  T_AGENT --> L
+  T_API --> T_RAG
+
+  U2 --> N_CHAT --> N_TOOLS
+  U3 --> N_MCP --> N_TOOLS
+
+  N_TOOLS --> N_CONN
+  N_CONN --> T_API
+  N_CONN --> Z_API
+  N_CONN --> L & SD & SX & RD
+```
+
+=== 3.1 3 層の役割
+
+[cols="1,2,2"]
+|===
+|層 |担当アプリ |やること / やらないこと
+
+|体験・正本
+|徒然
+|メモ CRUD、権限、pgroonga、in-app Agent UI、**同一 DB 上の RAG**。Web 検索・SD・Vision ツールは **実装しない**（Nyoy MCP へ委譲）。
+
+|AI ハブ・ツール
+|如意
+|マルチモデル Chat、ツール実装の正本、MCP 公開、SD、プロンプトナレッジ RAG、徒然 API / 葛籠 API の呼び出し。
+
+|メディア正本
+|葛籠
+|バイナリ保管。如意 MCP の `list_albums` / `get_media` / `analyze_image`（`tsuzura_media_id`）経由で参照。
+|===
+
+== 4. Nyoy MCP 公開ツールとデータ経路
+
+`ServiceConnection` の有効状態で動的に変わる（link:../mcp-server.md[一覧]）。
+
+[cols="2,2,2"]
+|===
+|MCP ツール |データ・処理の正本 |主な利用者
+
+|`search_memos` / `get_memo` / `create_memo` / `update_memo`
+|徒然 `/api/v1`（HTTP）
+|Cursor、如意 Chat
+
+|`recall_memos`
+|如意 DB（徒然 `export` 取込 + pgvector）
+|Cursor、如意 Chat（`MEMO_RAG_MODE=tool` 時）
+
+|`web_search` / `fetch_url` / `search_fetched_page`
+|SearXNG / readability / 如意プロセス内キャッシュ
+|Cursor、如意 Chat
+
+|`analyze_image`
+|vision llama + 葛籠 or チャット添付
+|Cursor、如意 Chat
+
+|`list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`
+|如意 SD パイプライン（sd.cpp）
+|Cursor
+
+|`list_albums` / `get_media`
+|葛籠 API
+|Cursor、如意 Chat
+|===
+
+=== 4.1 徒然 RAG と Nyoy `recall_memos` の使い分け
+
+[cols="1,2,2"]
+|===
+| |徒然 `Chat::Tools::RagSearch` |Nyoy `recall_memos`
+
+|データ源
+|徒然 DB **直接**（最新）
+|徒然 `export` の **取込コピー**（`bin/rails kbmemo:rag:ingest`）
+
+|検索
+|pgroonga（lexical）+ pgvector（semantic）RRF
+|pgvector + キーワード（Nyoy 側パイプライン）
+
+|スコープ
+|`MemoPolicy`（ログインユーザー）
+|MCP トークン単位（個人利用想定・単一トークン）
+
+|向き
+|徒然 **in-app** Agent Chat（`/agent_chat`）
+|Cursor、如意 Chat、バッチ取込ベースの横断参照
+|===
+
+両方を維持する。徒然 in-app では **鮮度と権限**を優先し、Cursor 開発では **Nyoy MCP 一式**を使う。
+
+== 5. クライアント別の推奨構成
+
+=== 5.1 Cursor（徒然 Workspace）
+
+徒然リポジトリの `.cursor/mcp.json` で Nyoy MCP（HTTP 本番）に接続する。
+雛形: 徒然 `docs/architecture/nyoy-mcp.adoc`、如意 `docs/examples/cursor-mcp-http.json`。
+
+* メモ検索・保存 → `search_memos` / `get_memo` / `create_memo`
+* Web 調査 → `web_search` / `fetch_url`
+* 画像生成 → `generate_image` → `refine_image`
+* **徒然コード内に同等ツールを増やさない**
+
+=== 5.2 徒然 in-app Agent（`/agent_chat`）
+
+現行パイプラインを維持しつつ、未実装ツールフェーズの方針を変更する。
+
+[source,text]
+----
+User → IntentClassifier → Router → [実装済みツールのみ] → LLM → Escalation
+----
+
+* **実装済み（徒然内）**: `rag_search` / `memo_search`（pgroonga 系）
+* **Nyoy MCP に委譲（徒然では実装しない）**: `fetch_url`, `web_search`, `image_analysis`, `image_generation`
+* **UI で案内**: Router が未実装ツールを返したとき、pending 表示に加え「如意 MCP / 如意 Chat UI を利用」と示す（任意）
+
+将来オプション: `Chat::NyoyMcpClient` で MCP `tools/call` を in-app から呼ぶ（HTTP 往復・認証が増えるため **後追い**）。
+
+=== 5.3 如意 Chat UI
+
+従来どおり `ChatTools::Registry` + ローカル LLM。MCP とは別入口だが **ツール実装は同一**。
+
+=== 5.4 メモ編集 AI パネル（執筆特化）
+
+intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特化。変更なし。
+
+== 6. 徒然 chat-agent-roadmap のフェーズ見直し
+
+`site/docs/architecture/chat-agent-roadmap.adoc` の Phase 3–7 を次のように **再定義**する。
+
+[cols="1,1,3"]
+|===
+|旧 Phase |新方針 |内容
+
+|3 URL 要約
+|**委譲**
+|徒然に `Chat::Tools::FetchUrl` を実装しない。Nyoy MCP `fetch_url` / `search_fetched_page` を使用。
+
+|4 Web 検索
+|**委譲**
+|徒然に `Chat::Tools::WebSearch` を実装しない。Nyoy MCP `web_search` を使用。
+
+|5a/5b RAG
+|**徒然で継続**
+|in-app Agent 用。変更なし。
+
+|6 Vision
+|**委譲**
+|Nyoy MCP `analyze_image`（`tsuzura_media_id` または如意 Chat 添付経路）。
+
+|7 画像生成
+|**委譲**
+|Nyoy MCP `generate_image` → `refine_image` → `get_image_generation`。
+
+|8 会話永続化
+|**徒然で継続**
+|in-app Agent の履歴 DB 化。Nyoy Chat の `chats`/`messages` とは別系統。
+|===
+
+徒然の新規マイルストーン:
+
+* **Phase MCP**（ドキュメント・Cursor 設定）— 完了方向。`.cursor/mcp.json.example` + 本ドキュメント。
+* **Phase 9（任意）** — `Chat::NyoyMcpClient` で in-app Agent から Nyoy MCP ツールを呼ぶ。
+
+== 7. 認証・設定
+
+[cols="1,3"]
+|===
+|項目 |方針
+
+|Nyoy MCP
+|`MCP_API_TOKEN`（Bearer）。本番は `nyoy.kbmemo.net` の `.env.production`。`config/deploy.yml` `env.secret` 登録済み。
+
+|徒然 API（ツール内）
+|既存 `KBMEMO_API_TOKEN` / `clip_api_token` 流用（Nyoy `ServiceConnection` `kbmemo`）
+
+|Cursor ローカル設定
+|`.cursor/mcp.json` は git 管理外。`.cursor/mcp.json.example` を正本。
+
+|徒然 in-app
+|ログインセッション + `Account`。MCP トークンは不要。
+|===
+
+== 8. 如意リポジトリ内の実装マップ
+
+[cols="2,3"]
+|===
+|コンポーネント |パス
+
+|MCP HTTP
+|`app/controllers/mcp_controller.rb` — `POST/GET/DELETE /mcp`
+
+|MCP stdio
+|`bin/mcp-stdio`
+
+|Chat → MCP 変換
+|`app/services/mcp/tool_bridge.rb`
+
+|SD MCP ツール
+|`app/services/mcp/extension_tools.rb`
+
+|ツール統合
+|`app/services/mcp/tool_catalog.rb` + `server_builder.rb`
+
+|Chat ツール正本
+|`app/services/chat_tools/*` + `registry.rb`
+
+|運用手順
+|link:../mcp-server.md[docs/mcp-server.md]
+|===
+
+== 9. 未決・今後
+
+* **in-app からの MCP 呼び出し** — 必要になったら `Chat::NyoyMcpClient`（徒然）を検討。優先度は低い。
+* **MCP 認可の細分化** — 当面は API キー 1 本。マルチユーザー時はトークン per account。
+* **徒然 `export/deletions`** — Nyoy `recall_memos` の鮮度向上。徒然側実装待ち。
+* **ラフ案プレビュー** — MCP `generate_image` 後の選択は Nyoy UI（`show_path`）。MCP だけで完結させるかは将来検討。
+
+== 10. 関連ドキュメント
+
+* link:../mcp-server.md[如意 MCP 運用（mcp-server.md）]
+* link:../ecosystem-roadmap.md[エコシステム ロードマップ]
+* link:../tsuredure-api-requirements.md[徒然 API 要件]
+* 徒然 `docs/architecture/chat-agent-roadmap.adoc`
+* 徒然 `docs/architecture/nyoy-mcp.adoc`（Cursor セットアップ要約）

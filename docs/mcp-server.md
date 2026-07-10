@@ -123,5 +123,6 @@ MCP_API_TOKEN=your-token bin/mcp-list-tools
 
 ## 関連
 
+- [エコシステム構成（Nyoy MCP 前提）](./architecture/nyoy-mcp.adoc)
 - [エコシステム ロードマップ](./ecosystem-roadmap.md)
 - [徒然 API 要件](./tsuredure-api-requirements.md)

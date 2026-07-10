@@ -214,7 +214,7 @@ MCP Server ┘
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
 | **2** | Chat への画像理解統合 | **完了** |
 | **5** | 葛籠連携 | **完了**（Client + Chat + 生成メモ保存 + Bearer バイナリ GET） |
-| **6** | MCP サーバー公開 | **着手**（HTTP + stdio、Chat ツール再公開） |
+| **6** | MCP サーバー公開 | **完了**（HTTP + stdio、Chat/SD ツール。構成は link:architecture/nyoy-mcp.adoc[nyoy-mcp.adoc]） |
 
 ```mermaid
 gantt
@@ -296,5 +296,6 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [徒然リポジトリ](https://gitea.artif.org/Artif.org/kbmemo_site)
 - [プロンプト設計 再構築案](./prompt-architecture-redesign.md)
 - [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
-- [Nyoy MCP サーバー](./mcp-server.md)
+- [Nyoy MCP アーキテクチャ](./architecture/nyoy-mcp.adoc)
+- [Nyoy MCP 運用](./mcp-server.md)
 - [README](../README.md)
