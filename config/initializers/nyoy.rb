@@ -57,6 +57,9 @@ Rails.application.config.x.nyoy.tap do |config|
   config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
   config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
   config.openai_api_key = ENV["OPENAI_API_KEY"]
+  config.mcp_api_token = ENV["MCP_API_TOKEN"]
+  # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
+  config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
   config.sd_model_loras = {
     "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
   }

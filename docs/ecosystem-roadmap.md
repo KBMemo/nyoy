@@ -82,7 +82,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | 徒然連携 | `TsurezureClient` + `ChatTools::*` | **運用中**（本番確認済み） |
 | Web 検索 / URL 取得 | `web_search` / `fetch_url` | **実装済み** |
 | メモ RAG | export 取込 + pgvector + `recall_memos`（既定）/ 自動注入 | **実装済み** |
-| MCP サーバー | — | **未実装** |
+| MCP サーバー | `/mcp` + `bin/mcp-stdio` | **Phase 6 着手**（Chat ツール再公開） |
 | 葛籠連携 | `TsuzuraClient` + Chat アーカイブ + メディアツール | **Phase 5a 完了** |
 
 ### 2.3 接続管理（ServiceConnection）
@@ -144,7 +144,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | **SearXNG** | **接続済み**（`web_search`） |
 | **readability-js-server** | **接続済み**（`fetch_url`） |
 | 葛籠（media.kbmemo.net） | `TsuzuraClient` + Chat ツール + 生成メモ保存 | **Phase 5 完了** |
-| MCP | **未実装** |
+| MCP | **HTTP + stdio**（`ChatTools::*` 再公開、[mcp-server.md](./mcp-server.md)） |
 
 ---
 
@@ -165,7 +165,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | メモ RAG | export 取込 + `recall_memos` / 注入切替 | **完了**（Groonga は徒然側） |
 | Chat 高速化（cache / 計測） | prompt cache・ツール化 RAG・TTFT | **完了**（検討案件は [chat-performance.md](./chat-performance.md)） |
 | 画像理解 | Chat 添付 + `analyze_image` ツール | **完了** |
-| MCP 公開 | `ChatTools::*` の再公開 | **未着手** |
+| MCP 公開 | `ChatTools::*` の再公開 | **着手**（HTTP `/mcp` + `bin/mcp-stdio`） |
 
 ### 3.3 徒然側（site Workspace）との連携
 
@@ -183,14 +183,18 @@ Chat UI ──┐
 MCP Server ┘
 ```
 
-### 3.5 MCP サーバー化（将来）
+### 3.5 MCP サーバー
 
-| ツール | 由来 |
-|--------|------|
-| `web_search` / `fetch_url` | 実装済み |
-| `search_memos` / `create_memo` / … | 徒然 API |
-| `analyze_image` | `VisionChatService` |
-| `generate_image` 等 | SD パイプライン（将来） |
+`Mcp::ToolBridge` が `ChatTools::*` を MCP ツールとして再公開。詳細は [mcp-server.md](./mcp-server.md)。
+
+| ツール | 由来 | MCP |
+|--------|------|-----|
+| `web_search` / `fetch_url` / `search_fetched_page` | SearXNG / readability | **公開済** |
+| `search_memos` / `get_memo` / `create_memo` / `update_memo` | 徒然 API | **公開済** |
+| `recall_memos` | メモ RAG | **公開済** |
+| `list_albums` / `get_media` | 葛籠 API | **公開済** |
+| `analyze_image` | `VisionChatService` | **公開済** |
+| `generate_image` 等 | SD パイプライン | **公開済**（draft → refine まで MCP 化） |
 
 ---
 
@@ -210,7 +214,7 @@ MCP Server ┘
 | **3d** | 要約キャッシュ・トークン予算・RAG ステータス | **完了** |
 | **2** | Chat への画像理解統合 | **完了** |
 | **5** | 葛籠連携 | **完了**（Client + Chat + 生成メモ保存 + Bearer バイナリ GET） |
-| **6** | MCP サーバー公開 | 未着手 |
+| **6** | MCP サーバー公開 | **着手**（HTTP + stdio、Chat ツール再公開） |
 
 ```mermaid
 gantt
@@ -220,11 +224,9 @@ gantt
   徒然 API + Client           :done, p4, 2026-07, 1M
   Web 検索 + URL 取得          :done, p1, 2026-07, 1M
   メモ RAG + コンテキスト管理   :done, p3, 2026-07, 1M
+  葛籠連携                     :done, p5, 2026-07, 1M
   section 次
-  葛籠連携                     :active, p5, 2026-07, 1M
-  section 将来
-  葛籠連携                     :p5, after p2, 1M
-  MCP サーバー公開             :p6, after p5, 1M
+  MCP サーバー公開             :active, p6, 2026-07, 1M
 ```
 
 ---
@@ -245,9 +247,17 @@ gantt
 
 ## 6. 次の作業
 
-### 推奨（Phase 6）
+### 推奨（Phase 6 残）
 
-- MCP サーバーで `ChatTools::*` を再公開
+- Cursor 実機接続確認（`bin/mcp-list-tools` / `docs/examples/cursor-mcp-*.json`）
+
+### 完了（Phase 6）
+
+- HTTP `/mcp`（Streamable HTTP、Bearer 認証）
+- `bin/mcp-stdio`（stdio トランスポート）
+- `Mcp::ToolBridge` による `ChatTools::*` 再公開
+- `Mcp::ExtensionTools`（`list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`）
+- 本番 `MCP_API_TOKEN`（`config/deploy.yml` `env.secret`）
 
 ### 完了（Phase 5）
 
@@ -286,4 +296,5 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [徒然リポジトリ](https://gitea.artif.org/Artif.org/kbmemo_site)
 - [プロンプト設計 再構築案](./prompt-architecture-redesign.md)
 - [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
+- [Nyoy MCP サーバー](./mcp-server.md)
 - [README](../README.md)

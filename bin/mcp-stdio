@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config/environment"
+
+unless Mcp.enabled?
+  warn "Nyoy MCP is disabled. Set MCP_API_TOKEN to enable."
+  exit 1
+end
+
+$stdout.sync = true
+$stderr.sync = true
+
+server = Mcp::ServerBuilder.build
+transport = MCP::Server::Transports::StdioTransport.new(server)
+transport.open

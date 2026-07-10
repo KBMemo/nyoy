@@ -4,7 +4,7 @@ module ChatTools
   class AnalyzeImage < RubyLLM::Tool
     description "添付画像または葛籠メディア ID の視覚的内容を vision LLM で解析する。写っているもの・文字・見た目が回答に必要なときだけ使う（添付があっても自動では呼ばない）。"
 
-    def initialize(chat:)
+    def initialize(chat: nil)
       @chat = chat
     end
 
@@ -62,6 +62,8 @@ module ChatTools
     end
 
     def find_attachment(index)
+      return nil unless @chat
+
       attachments = ChatImageAttachments.recent_attachments(@chat)
       attachments[index.to_i]
     end

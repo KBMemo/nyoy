@@ -74,3 +74,5 @@ gem "ruby_llm"
 
 gem "kramdown", "~> 2.5"
 gem "kramdown-parser-gfm", "~> 1.1"
+
+gem "mcp", "~> 0.23.0"

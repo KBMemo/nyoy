@@ -1,0 +1,127 @@
+# Nyoy MCP サーバー
+
+如意（Nyoy）の Chat ツール（`ChatTools::*`）を [Model Context Protocol](https://modelcontextprotocol.io/) 経由で外部クライアント（Cursor 等）から利用する。
+
+Chat UI と MCP は同じツール実装を共有する（`Mcp::ToolBridge` が `ChatTools::Registry` を橋渡し）。
+
+---
+
+## 有効化
+
+`MCP_API_TOKEN` を設定すると MCP が有効になる。未設定時は HTTP `/mcp` は 404、`bin/mcp-stdio` は終了コード 1。
+
+```bash
+export MCP_API_TOKEN="your-secret-token"
+```
+
+認可は当面 **Bearer トークン 1 本**（個人利用想定）。HTTP トランスポートのみリクエストごとに検証する。stdio はローカルプロセス起動を信頼する。
+
+---
+
+## トランスポート
+
+| 方式 | エントリ | 用途 |
+|------|----------|------|
+| Streamable HTTP | `GET/POST/DELETE /mcp` | リモートまたはローカル HTTP |
+| stdio | `bin/mcp-stdio` | Cursor 等が子プロセスとして起動 |
+
+公開ツールは `ServiceConnection` の有効状態に応じて動的（Chat と同じ）。
+
+| ツール | 条件 |
+|--------|------|
+| `web_search` | `searxng` 有効 |
+| `fetch_url` / `search_fetched_page` | 常時 |
+| `search_memos` / `get_memo` / `create_memo` / `update_memo` | `kbmemo` 有効 |
+| `recall_memos` | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
+| `list_albums` / `get_media` | `tsuzura` 有効 |
+| `analyze_image` | `vision_llama` 有効（MCP では `tsuzura_media_id` 指定） |
+| `list_prompt_styles` | `sd_cpp` 有効 |
+| `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング） |
+
+---
+
+## Cursor 設定例
+
+### stdio（推奨・ローカル開発）
+
+`.cursor/mcp.json` または Cursor Settings → MCP:
+
+```json
+{
+  "mcpServers": {
+    "nyoy": {
+      "command": "/home/kensei/work/localai/nyoy/bin/mcp-stdio",
+      "env": {
+        "MCP_API_TOKEN": "your-secret-token",
+        "RAILS_ENV": "development"
+      }
+    }
+  }
+}
+```
+
+`command` は絶対パスにする。雛形は [examples/cursor-mcp-stdio.json](./examples/cursor-mcp-stdio.json)。
+
+### Streamable HTTP
+
+Nyoy を起動したうえで:
+
+```json
+{
+  "mcpServers": {
+    "nyoy": {
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-token",
+        "Accept": "application/json"
+      }
+    }
+  }
+}
+```
+
+本番（`nyoy.kbmemo.net`）では HTTPS URL に差し替える。雛形は [examples/cursor-mcp-http.json](./examples/cursor-mcp-http.json)。
+
+---
+
+## 実装構成
+
+```
+Chat UI ──┐
+          ├── ChatTools::* ── ServiceConnection / 徒然 API / 葛籠 API
+MCP ──────┘   ↑
+              Mcp::ToolBridge（ChatTools → MCP::Tool）
+              Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / get_image_generation）
+```
+
+| ファイル | 役割 |
+|----------|------|
+| `app/controllers/mcp_controller.rb` | HTTP エンドポイント・認証 |
+| `app/services/mcp/tool_bridge.rb` | ツール変換・実行委譲 |
+| `app/services/mcp/extension_tools.rb` | SD パイプライン用 MCP ツール |
+| `app/services/mcp/tool_catalog.rb` | Chat + Extension ツール統合 |
+| `bin/mcp-stdio` | stdio トランスポート |
+
+本番では `MCP_API_TOKEN` を Kamal secrets（`.kamal/secrets`）に追加する（`config/deploy.yml` の `env.secret` に登録済み）。
+
+```bash
+# ローカルで公開ツール名を確認
+MCP_API_TOKEN=your-token bin/mcp-list-tools
+```
+
+---
+
+## 制約・注意
+
+- **Web 予算**: `web_search` / `fetch_url` はリクエスト（stdio）または HTTP リクエスト単位で `WebToolBudget` を共有する。
+- **fetch キャッシュ**: `search_fetched_page` はプロセス内メモリの `FetchedPageCache` に依存。マルチプロセス Puma では HTTP リクエスト間で共有されない。
+- **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
+- **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。ラフ案のプレビューは Nyoy UI（`show_path`）。
+- **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。
+
+---
+
+## 関連
+
+- [エコシステム ロードマップ](./ecosystem-roadmap.md)
+- [徒然 API 要件](./tsuredure-api-requirements.md)

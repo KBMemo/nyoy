@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nyoy": {
+      "url": "https://nyoy.kbmemo.net/mcp",
+      "headers": {
+        "Authorization": "Bearer change-me",
+        "Accept": "application/json"
+      }
+    }
+  }
+}

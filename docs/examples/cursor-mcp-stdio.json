@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nyoy": {
+      "command": "/home/kensei/work/localai/nyoy/bin/mcp-stdio",
+      "env": {
+        "MCP_API_TOKEN": "change-me",
+        "RAILS_ENV": "development"
+      }
+    }
+  }
+}
