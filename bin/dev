@@ -17,5 +17,16 @@ def load_env_file(path)
 end
 
 load_env_file(File.join(APP_ROOT, "env.development"))
+# turedure (3000) / tsuzura (3008) と被らない既定ポート。env.development で上書き可。
+ENV["PORT"] ||= "3009"
+ENV["VITE_RUBY_PORT"] ||= "3040"
+
+# 接続は DB 優先のため、env.development の URL / トークンを起動時に反映する。
+sync_ok = system(
+  { "BUNDLE_GEMFILE" => File.join(APP_ROOT, "Gemfile") },
+  "bundle", "exec", "rails", "runner", "ServiceConnectionSeeds.sync_from_env!",
+  chdir: APP_ROOT
+)
+abort("service connections の同期に失敗しました（DB 接続を確認してください）") unless sync_ok
 
 exec("bundle", "exec", "foreman", "start", "-f", "Procfile.dev", *ARGV, chdir: APP_ROOT)

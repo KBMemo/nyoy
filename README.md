@@ -77,7 +77,7 @@ bin/rails db:seed
 bin/dev
 ```
 
-`http://localhost:3000` を開きます。
+`http://localhost:3009` を開きます（`bin/dev` の既定。`env.development` の `PORT` で変更可）。
 
 ## 環境変数
 

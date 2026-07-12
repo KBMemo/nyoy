@@ -205,6 +205,11 @@ class TsuzuraClient
               end
     raise Error.new(message, status: response.code.to_i, code: error.is_a?(Hash) ? error["code"] : nil)
   rescue JSON::ParserError
-    raise Error, "葛籠 API の応答が JSON ではありません（HTTP #{response.code}）"
+    snippet = body.to_s.strip[0, 120].presence
+    detail = snippet ? " — #{snippet}" : ""
+    raise Error.new(
+      "葛籠 API の応答が JSON ではありません（HTTP #{response.code}、#{@api_root}）#{detail}",
+      status: response.code.to_i
+    )
   end
 end

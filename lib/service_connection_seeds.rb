@@ -8,6 +8,12 @@ module ServiceConnectionSeeds
     NyoyConnectionStore.clear_cache!
   end
 
+  # bin/dev 起動時: env.development → DB。1件の検証失敗で全体を止めない。
+  def sync_from_env!
+    definitions.each_with_index { |definition, index| sync_definition(definition, index) }
+    NyoyConnectionStore.clear_cache!
+  end
+
   def seed_missing!
     missing = definitions.reject { |definition| ServiceConnection.exists?(key: definition.fetch(:key)) }
     upsert_definitions!(missing)
@@ -16,22 +22,41 @@ module ServiceConnectionSeeds
 
   def upsert_definitions!(definitions)
     definitions.each_with_index do |definition, index|
-      record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
-      attributes = {
-        name: definition.fetch(:name),
-        base_url: definition.fetch(:base_url),
-        server_model: definition[:server_model],
-        enabled: definition.fetch(:enabled, true),
-        sort_order: definition.fetch(:sort_order, index),
-        notes: definition[:notes]
-      }
-      attributes[:api_token] = definition[:api_token] if definition[:api_token].present?
-      if definition[:settings].present? && (record.new_record? || record.settings.blank?)
-        attributes[:settings] = definition[:settings]
-      end
-      record.assign_attributes(attributes)
-      record.save!
+      upsert_definition!(definition, index)
     end
+  end
+
+  def sync_definition(definition, index)
+    record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
+    record.assign_attributes(definition_attributes(definition, record, index))
+    return if record.save
+
+    warn "ServiceConnectionSeeds: #{definition.fetch(:key)} を env から同期できませんでした " \
+         "(#{record.errors.full_messages.join(', ')})"
+  end
+
+  def upsert_definition!(definition, index)
+    record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
+    attributes = definition_attributes(definition, record, index)
+    record.assign_attributes(attributes)
+    record.save!
+    record
+  end
+
+  def definition_attributes(definition, record, index)
+    attributes = {
+      name: definition.fetch(:name),
+      base_url: definition.fetch(:base_url),
+      server_model: definition[:server_model],
+      enabled: definition.fetch(:enabled, true),
+      sort_order: definition.fetch(:sort_order, index),
+      notes: definition[:notes]
+    }
+    attributes[:api_token] = definition[:api_token] if definition[:api_token].present?
+    if definition[:settings].present? && (record.new_record? || record.settings.blank?)
+      attributes[:settings] = definition[:settings]
+    end
+    attributes
   end
 
   def definitions
