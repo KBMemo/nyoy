@@ -253,6 +253,7 @@ module Mcp
         error_message: generation.error_message,
         draft_count: draft_count,
         draft_indices: (0...draft_count).to_a,
+        draft_urls: draft_urls_for(generation),
         selected_draft_index: generation.selected_draft_index,
         refined_count: generation.refined_images.attachments.size,
         in_progress: generation.in_progress?,
@@ -260,6 +261,17 @@ module Mcp
         refineable: generation.refineable?,
         completed: generation.status == "completed"
       }.compact
+    end
+
+    def draft_urls_for(generation)
+      return [] unless generation.drafts.attached?
+
+      url_options = Rails.application.config.action_mailer.default_url_options || {}
+      generation.drafts.attachments.filter_map do |attachment|
+        Rails.application.routes.url_helpers.rails_blob_url(attachment, **url_options)
+      rescue StandardError
+        nil
+      end
     end
   end
 end
