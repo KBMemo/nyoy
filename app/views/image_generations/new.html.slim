@@ -5,7 +5,8 @@
   h1 class=kb_page_title 画像を生成
   p.mt-1.text-sm.kb-text-secondary 日本語プロンプトとスタイルから、モデル・LoRA・生成パラメータを自動決定します。ラフ案を選んで img2img で仕上げるか、パラメータを直接指定して生成するかを選びます。
 
-= form_with model: @image_generation, class: "space-y-4", data: { controller: "image-generation-form image-generation-flow", image_generation_form_translate_url_value: translate_prompt_image_generations_path, image_generation_flow_active_section_value: active_section } do |form|
+= form_with model: @image_generation, class: "space-y-4", data: { controller: "image-generation-form image-generation-flow", image_generation_form_translate_url_value: translate_prompt_image_generations_path, image_generation_form_direct_generate_url_value: generate_prompt_direct_image_generations_path, image_generation_flow_active_section_value: active_section } do |form|
+  = hidden_field_tag :section, active_section
   - if @image_generation.errors.any?
     .kb-alert.kb-alert-danger
       ul.list-disc.pl-5
@@ -17,11 +18,18 @@
       button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-img2img-tab type="button" role="tab" data-section="draft" data-image-generation-flow-target="tab" data-action="image-generation-flow#selectSection" aria-selected=(active_section == "draft" ? "true" : "false") class=("nyoy-img2img-tab-active" if active_section == "draft") ラフ→仕上げ
       button.kb-chrome-btn-secondary.kb-btn-sm.nyoy-img2img-tab type="button" role="tab" data-section="direct" data-image-generation-flow-target="tab" data-action="image-generation-flow#selectSection" aria-selected=(active_section == "direct" ? "true" : "false") class=("nyoy-img2img-tab-active" if active_section == "direct") パラメータ指定
 
+    .mt-4.space-y-4
+      div data-image-generation-flow-shared=""
+        = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
+        = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている", data: { image_generation_form_target: "japanesePrompt" }
+      div data-image-generation-flow-shared=""
+        = render "shared/style_plan_connection_select", form: form
+
     .mt-4.space-y-4 data-section="draft" data-image-generation-flow-target="panel" hidden=(active_section != "draft")
       = render "form_body", form: form, include_draft: true
 
     .mt-4.space-y-4 data-section="direct" data-image-generation-flow-target="panel" hidden=(active_section != "direct")
-      = render "form_body", form: form, include_draft: false
+      = render "form_body_direct", form: form
 
   .flex.flex-wrap.items-center.gap-3
     = form.submit "ラフを生成", class: kb_btn_primary_sm, disabled: @prompt_styles.empty?, data: { image_generation_flow_target: "submitButton" }

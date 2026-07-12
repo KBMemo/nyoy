@@ -16,6 +16,47 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "日本語プロンプトを入力してください", response.parsed_body["error"]
   end
 
+  test "generate_prompt_direct returns error when japanese prompt is blank" do
+    post generate_prompt_direct_image_generations_path,
+      params: { japanese_prompt: "  ", sd_model_profile_id: sd_model_profiles(:pony).id }.to_json,
+      headers: @headers
+
+    assert_response :unprocessable_entity
+    assert_equal "日本語プロンプトを入力してください", response.parsed_body["error"]
+  end
+
+  test "generate_prompt_direct returns error when model is missing" do
+    post generate_prompt_direct_image_generations_path,
+      params: { japanese_prompt: "テスト" }.to_json,
+      headers: @headers
+
+    assert_response :unprocessable_entity
+    assert_equal "画像生成モデルを選択してください", response.parsed_body["error"]
+  end
+
+  test "generate_prompt_direct returns prompt pair from direct generator" do
+    profile = sd_model_profiles(:pony)
+    generator = Object.new
+    generator.define_singleton_method(:generate) do |japanese_prompt, sd_model_profile:, sd_prompt_template: nil|
+      { prompt: "1girl, masterpiece", negative_prompt: "low quality", sd_prompt_template_id: 1 }
+    end
+
+    original = DirectPromptGenerator.method(:new)
+    DirectPromptGenerator.define_singleton_method(:new) { |**| generator }
+
+    post generate_prompt_direct_image_generations_path,
+      params: { japanese_prompt: "少女", sd_model_profile_id: profile.id }.to_json,
+      headers: @headers
+
+    assert_response :success
+    body = response.parsed_body
+    assert_equal "1girl, masterpiece", body["prompt"]
+    assert_equal "low quality", body["negative_prompt"]
+    assert_equal 1, body["sd_prompt_template_id"]
+  ensure
+    DirectPromptGenerator.singleton_class.send(:define_method, :new, original)
+  end
+
   test "create stores aspect_ratio and enqueues job" do
     assert_enqueued_with(job: GenerateImageJob) do
       post image_generations_path, params: {
@@ -150,6 +191,16 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_select "button.nyoy-img2img-tab[data-section='draft']", text: "ラフ→仕上げ"
     assert_select "button.nyoy-img2img-tab[data-section='direct']", text: "パラメータ指定"
     assert_select "h2", text: "ラフ生成"
+  end
+
+  test "new direct section shows model and template selects" do
+    get new_image_generation_path(section: "direct")
+
+    assert_response :success
+    assert_select "select[name='sd_model_profile_id']"
+    assert_select "select[name='sd_prompt_template_id']"
+    assert_select "h2", text: "実行パラメータ"
+    assert_select "h2", text: "Hires / 拡大"
   end
 
   private

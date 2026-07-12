@@ -1,12 +1,6 @@
 - form = local_assigns.fetch(:form)
 - include_draft = local_assigns.fetch(:include_draft)
 
-div
-  = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
-  = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている", data: { image_generation_form_target: "japanesePrompt" }
-
-= render "shared/style_plan_connection_select", form: form
-
 - if @prompt_styles.any?
   div
     = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"
@@ -26,8 +20,8 @@ div data-controller="prompt-token-count" data-prompt-token-count-count-url-value
     = form.label :prompt, "SD プロンプト (任意・上書き)", class: kb_label
     span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@image_generation.prompt)
   .flex.flex-wrap.items-center.gap-2.mb-1
-    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
-    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" data-image-generation-form-flow-param="draft" 翻訳挿入
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" data-image-generation-form-flow-param="draft" 翻訳置換
   = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { prompt_token_count_target: "field", image_generation_form_target: "sdPrompt", action: "input->prompt-token-count#update input->image-generation-form#sdPromptInput" }
   p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
 
@@ -36,8 +30,8 @@ div data-controller="prompt-token-count" data-prompt-token-count-count-url-value
     = form.label :negative_prompt, "ネガティブプロンプト (任意・上書き)", class: kb_label
     span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@image_generation.negative_prompt)
   .flex.flex-wrap.items-center.gap-2.mb-1
-    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
-    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" data-image-generation-form-flow-param="draft" 翻訳挿入
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" data-image-generation-form-flow-param="draft" 翻訳置換
   = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { prompt_token_count_target: "field", image_generation_form_target: "negativePrompt", action: "input->prompt-token-count#update input->image-generation-form#negativePromptInput" }
   p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="negativeTranslateStatus"
 
@@ -68,6 +62,6 @@ div
     - if include_draft
       | 仕上げ生成時に使う img2img / Hires 設定です。
     - else
-      | ラフ案を経由せず生成する場合のパラメータたたき台です（バックエンド未接続）。
+      | ラフ案を経由せず生成する場合のパラメータです（直接生成バックエンドは Phase 4）。
   .mt-4
     = render "refine_settings_fields", image_generation: @image_generation, refine_presets: @refine_render_presets, form_builder: form, preset_id_field: :refine_render_preset_id

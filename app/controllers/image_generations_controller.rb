@@ -2,7 +2,7 @@
 
 class ImageGenerationsController < ApplicationController
   before_action :set_image_generation, only: %i[show refine destroy]
-  before_action :load_generation_options, only: %i[index new create translate_prompt show refine]
+  before_action :load_generation_options, only: %i[index new create translate_prompt generate_prompt_direct show refine]
 
   def index
     @image_generations = ImageGeneration.recent.limit(20)
@@ -103,6 +103,39 @@ class ImageGenerationsController < ApplicationController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  def generate_prompt_direct
+    japanese_prompt = params[:japanese_prompt].to_s.strip
+    if japanese_prompt.blank?
+      return render json: { error: "日本語プロンプトを入力してください" }, status: :unprocessable_entity
+    end
+
+    profile_id = params[:sd_model_profile_id]
+    if profile_id.blank?
+      return render json: { error: "画像生成モデルを選択してください" }, status: :unprocessable_entity
+    end
+
+    profile = SdModelProfile.find(profile_id)
+    template = SdPromptTemplate.find_by(id: params[:sd_prompt_template_id]) if params[:sd_prompt_template_id].present?
+
+    result = DirectPromptGenerator.new(
+      connection_key: params[:style_plan_connection_key].presence
+    ).generate(
+      japanese_prompt,
+      sd_model_profile: profile,
+      sd_prompt_template: template
+    )
+
+    render json: {
+      prompt: result[:prompt],
+      negative_prompt: result[:negative_prompt],
+      sd_prompt_template_id: result[:sd_prompt_template_id]
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "モデルが見つかりません" }, status: :unprocessable_entity
+  rescue DirectPromptGenerator::Error, SdPromptTemplateResolver::Error => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   private
 
   def set_image_generation
@@ -111,6 +144,8 @@ class ImageGenerationsController < ApplicationController
 
   def load_generation_options
     @prompt_styles = PromptStyle.enabled.ordered
+    @sd_model_profiles = SdModelProfile.enabled.ordered
+    @sd_prompt_templates = SdPromptTemplate.enabled.includes(:sd_model_profile).ordered
     @draft_render_presets = RenderPreset.of_kind("draft").ordered
     @refine_render_presets = RenderPreset.of_kind("refine").ordered
     load_style_plan_connection_options
@@ -161,6 +196,12 @@ class ImageGenerationsController < ApplicationController
       :style_plan_connection_key,
       :aspect_ratio,
       :seed,
+      :width,
+      :height,
+      :steps,
+      :cfg_scale,
+      :sampler_name,
+      :vae_tiling,
       :render_preset_id,
       :refine_render_preset_id,
       :draft_batch_size,

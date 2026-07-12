@@ -37,6 +37,11 @@ export default class extends Controller {
       })
     })
 
+    const sharedFields = this.element.querySelectorAll("[data-image-generation-flow-shared]")
+    sharedFields.forEach((field) => {
+      field.disabled = false
+    })
+
     if (this.hasSubmitButtonTarget) {
       this.submitButtonTarget.value = section === "direct" ? "生成する" : "ラフを生成"
     }
