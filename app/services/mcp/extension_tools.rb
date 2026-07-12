@@ -267,7 +267,7 @@ module Mcp
       return [] unless generation.drafts.attached?
 
       url_options = Rails.application.config.action_mailer.default_url_options || {}
-      generation.drafts.attachments.filter_map do |attachment|
+      generation.drafts.attachments.map do |attachment|
         Rails.application.routes.url_helpers.rails_blob_url(attachment, **url_options)
       rescue StandardError
         nil

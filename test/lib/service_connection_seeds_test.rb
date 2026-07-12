@@ -40,4 +40,30 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
 
     assert_equal 0, ServiceConnectionSeeds.seed_missing!
   end
+
+  test "sync_from_env preserves enabled when env lacks token but DB has one" do
+    service_connections(:openai).update!(api_token: "ui_token", enabled: true)
+    Rails.application.config.x.nyoy.openai_api_key = nil
+
+    ServiceConnectionSeeds.sync_from_env!
+
+    record = service_connections(:openai).reload
+    assert record.enabled?
+    assert_equal "ui_token", record.api_token
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = ENV["OPENAI_API_KEY"]
+  end
+
+  test "sync_from_env updates api token when env provides one" do
+    service_connections(:openai).update!(api_token: "old_token", enabled: false)
+    Rails.application.config.x.nyoy.openai_api_key = "env_token"
+
+    ServiceConnectionSeeds.sync_from_env!
+
+    record = service_connections(:openai).reload
+    assert_equal "env_token", record.api_token
+    assert_not record.enabled?
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = ENV["OPENAI_API_KEY"]
+  end
 end
