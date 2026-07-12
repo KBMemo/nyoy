@@ -142,6 +142,16 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[data-confirm-delete-message-value=?]", "この画像生成を削除しますか？"
   end
 
+  test "new shows draft and direct tabs" do
+    get new_image_generation_path
+
+    assert_response :success
+    assert_select "button.nyoy-img2img-tab", count: 2
+    assert_select "button.nyoy-img2img-tab[data-section='draft']", text: "ラフ→仕上げ"
+    assert_select "button.nyoy-img2img-tab[data-section='direct']", text: "パラメータ指定"
+    assert_select "h2", text: "ラフ生成"
+  end
+
   private
 
   def create_generation_awaiting_selection(draft_count:)

@@ -58,6 +58,7 @@ class ImageGenerationsController < ApplicationController
 
   def new
     @image_generation = build_new_image_generation
+    @active_section = params[:section].presence_in(%w[draft direct]) || "draft"
   end
 
   def create
@@ -68,6 +69,7 @@ class ImageGenerationsController < ApplicationController
       GenerateImageJob.perform_later(@image_generation.id)
       redirect_to @image_generation
     else
+      @active_section = params[:section].presence_in(%w[draft direct]) || "draft"
       render :new, status: :unprocessable_entity
     end
   end

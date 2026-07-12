@@ -1,0 +1,73 @@
+- form = local_assigns.fetch(:form)
+- include_draft = local_assigns.fetch(:include_draft)
+
+div
+  = form.label :japanese_prompt, "日本語プロンプト", class: "#{kb_label} mb-1"
+  = form.text_area :japanese_prompt, rows: 4, required: true, class: kb_field_input_classes, placeholder: "例: 鳥獣戯画風のウサギとカエルが相撲をとっている", data: { image_generation_form_target: "japanesePrompt" }
+
+= render "shared/style_plan_connection_select", form: form
+
+- if @prompt_styles.any?
+  div
+    = form.label :style_id, "スタイル", class: "#{kb_label} mb-1"
+    = form.select :style_id, @prompt_styles.map { |s| [s.name, s.style_id] }, { include_blank: "おまかせ（自動選択）" }, class: kb_field_input_classes, data: { image_generation_form_target: "styleId" }
+    p.mt-1.text-sm.kb-text-muted スタイルがモデル・LoRA を決めます。
+- else
+  .kb-alert.kb-alert-warning
+    p スタイルが未登録です。seed でスタイルを作成してください。
+
+div
+  = form.label :aspect_ratio, "画像サイズ", class: "#{kb_label} mb-1"
+  = form.select :aspect_ratio, options_for_select([["おまかせ（自動）", ""]] + ImageGeneration.aspect_ratio_options, @image_generation.aspect_ratio), {}, class: kb_field_input_classes, data: { image_generation_form_target: "aspectRatio" }
+  p.mt-1.text-sm.kb-text-muted スタイルの aspect_presets から解像度を決めます。未指定時は LLM が選びます。
+
+div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+  .nyoy-prompt-heading.mb-1
+    = form.label :prompt, "SD プロンプト (任意・上書き)", class: kb_label
+    span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@image_generation.prompt)
+  .flex.flex-wrap.items-center.gap-2.mb-1
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceSdPromptButton" data-action="image-generation-form#generateSdPrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+  = form.text_area :prompt, rows: 3, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { prompt_token_count_target: "field", image_generation_form_target: "sdPrompt", action: "input->prompt-token-count#update input->image-generation-form#sdPromptInput" }
+  p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="translateStatus"
+
+div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
+  .nyoy-prompt-heading.mb-1
+    = form.label :negative_prompt, "ネガティブプロンプト (任意・上書き)", class: kb_label
+    span.text-sm.kb-text-muted.nyoy-prompt-token-count data-prompt-token-count-target="badge" = nyoy_sd_prompt_token_badge(@image_generation.negative_prompt)
+  .flex.flex-wrap.items-center.gap-2.mb-1
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="insertNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="insert" 翻訳挿入
+    button.kb-chrome-btn-secondary.kb-btn-sm type="button" data-image-generation-form-target="replaceNegativePromptButton" data-action="image-generation-form#generateNegativePrompt" data-image-generation-form-mode-param="replace" 翻訳置換
+  = form.text_area :negative_prompt, rows: 2, class: "#{kb_field_input_classes} nyoy-monospace", placeholder: "空欄なら生成時に LLM が決定します", data: { prompt_token_count_target: "field", image_generation_form_target: "negativePrompt", action: "input->prompt-token-count#update input->image-generation-form#negativePromptInput" }
+  p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="negativeTranslateStatus"
+
+div
+  = form.label :seed, "Seed (空欄でランダム)", class: "#{kb_label} mb-1"
+  = form.number_field :seed, min: -1, class: kb_field_input_classes
+
+- if include_draft
+  .kb-card.p-4
+    .flex.flex-wrap.items-baseline.gap-x-3.gap-y-1
+      h2 class=kb_section_title ラフ生成
+      p.text-sm.kb-text-muted まず複数のラフ案を生成し、気に入った案を img2img で仕上げます。ラフは設定解像度の約 2/3 で生成します。
+    .nyoy-field-grid.mt-4
+      - if @draft_render_presets.any?
+        div
+          = form.label :render_preset_id, "案出しプリセット", class: "#{kb_label} mb-1"
+          = form.collection_select :render_preset_id, @draft_render_presets, :id, :name, {}, class: kb_field_input_classes
+      div
+        = form.label :draft_batch_size, "ラフ枚数", class: "#{kb_label} mb-1"
+        = form.select :draft_batch_size, options_for_select([[2, 2], [3, 3], [4, 4]], @image_generation.draft_batch_size || 4), {}, class: kb_field_input_classes
+      div
+        = form.label :draft_steps, "ラフ Steps (任意)", class: "#{kb_label} mb-1"
+        = form.number_field :draft_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら #{[@image_generation.steps || 22, 18].min} まで"
+
+.kb-card.p-4
+  h2 class=kb_section_title 本番仕上げ
+  p.mt-2.text-sm.kb-text-muted
+    - if include_draft
+      | 仕上げ生成時に使う img2img / Hires 設定です。
+    - else
+      | ラフ案を経由せず生成する場合のパラメータたたき台です（バックエンド未接続）。
+  .mt-4
+    = render "refine_settings_fields", image_generation: @image_generation, refine_presets: @refine_render_presets, form_builder: form, preset_id_field: :refine_render_preset_id
