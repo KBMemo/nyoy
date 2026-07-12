@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Parameter-tab direct generation: model/family-specific prompt generation template
-# (system prompt body). JSON contract and resolver live in DirectPromptGenerator (Phase 2).
+# (system prompt body). Resolved by SdPromptTemplateResolver for DirectPromptGenerator.
 class SdPromptTemplate < ApplicationRecord
   FAMILIES = SdModelProfile::FAMILIES
   FAMILY_LABELS = SdModelProfile::FAMILY_LABELS
