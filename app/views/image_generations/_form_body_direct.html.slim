@@ -3,7 +3,7 @@
 - if @sd_model_profiles.any?
   div
     = label_tag :sd_model_profile_id, "画像生成モデル", class: "#{kb_label} mb-1"
-    = select_tag :sd_model_profile_id, options_from_collection_for_select(@sd_model_profiles, :id, :name, params[:sd_model_profile_id]), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId" } }
+    = select_tag :sd_model_profile_id, options_from_collection_for_select(@sd_model_profiles, :id, :name, @image_generation.sd_model_profile_id), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId" } }
     p.mt-1.text-sm.kb-text-muted SdModelProfile を直接指定します。スタイルは使いません。
 - else
   .kb-alert.kb-alert-warning
@@ -12,7 +12,7 @@
 div
   = label_tag :sd_prompt_template_id, "生成テンプレート（任意）", class: "#{kb_label} mb-1"
   - template_options = @sd_prompt_templates.map { |template| ["#{template.name}（#{template.scope_label}）", template.id] }
-  = select_tag :sd_prompt_template_id, options_for_select(template_options, params[:sd_prompt_template_id]), { include_blank: "既定を自動選択", class: kb_field_input_classes, data: { image_generation_form_target: "sdPromptTemplateId" } }
+  = select_tag :sd_prompt_template_id, options_for_select(template_options, @image_generation.sd_prompt_template_id), { include_blank: "既定を自動選択", class: kb_field_input_classes, data: { image_generation_form_target: "sdPromptTemplateId" } }
   p.mt-1.text-sm.kb-text-muted 未指定時はモデル専用 → ファミリ → グローバル既定の順で解決します。
 
 div data-controller="prompt-token-count" data-prompt-token-count-count-url-value=sd_prompt_token_count_path
@@ -41,7 +41,7 @@ div
 
 .kb-card.p-4
   h2 class=kb_section_title 実行パラメータ
-  p.mt-2.text-sm.kb-text-muted txt2img の解像度・サンプリング設定です。送信時の直接生成は Phase 4 で接続予定です。
+  p.mt-2.text-sm.kb-text-muted txt2img の解像度・サンプリング設定です。
   .nyoy-field-grid.mt-4
     div
       = form.label :width, "Width", class: "#{kb_label} mb-1"

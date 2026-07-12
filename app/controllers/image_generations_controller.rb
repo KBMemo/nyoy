@@ -58,18 +58,19 @@ class ImageGenerationsController < ApplicationController
 
   def new
     @image_generation = build_new_image_generation
-    @active_section = params[:section].presence_in(%w[draft direct]) || "draft"
+    @active_section = params[:section].presence_in(%w[draft direct]) || @image_generation.generation_flow
   end
 
   def create
     @image_generation = ImageGeneration.new(image_generation_params)
-    apply_render_presets!(@image_generation)
+    apply_flow_from_section!
+    apply_render_presets!(@image_generation) unless @image_generation.direct_flow?
 
     if @image_generation.save
       GenerateImageJob.perform_later(@image_generation.id)
       redirect_to @image_generation
     else
-      @active_section = params[:section].presence_in(%w[draft direct]) || "draft"
+      @active_section = params[:section].presence_in(%w[draft direct]) || @image_generation.generation_flow
       render :new, status: :unprocessable_entity
     end
   end
@@ -132,7 +133,7 @@ class ImageGenerationsController < ApplicationController
     }
   rescue ActiveRecord::RecordNotFound
     render json: { error: "モデルが見つかりません" }, status: :unprocessable_entity
-  rescue DirectPromptGenerator::Error, SdPromptTemplateResolver::Error => e
+  rescue DirectPromptGenerator::Error, SdPromptTemplateResolver::Error, LlamaCppClient::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
@@ -185,6 +186,18 @@ class ImageGenerationsController < ApplicationController
   def apply_render_presets!(generation)
     RenderPreset.find_by(id: generation.render_preset_id)&.apply_draft_to(generation)
     RenderPreset.find_by(id: generation.refine_render_preset_id)&.apply_refine_to(generation)
+  end
+
+  def apply_flow_from_section!
+    section = params[:section].presence_in(%w[draft direct]) || "draft"
+    section = "direct" if section == "draft" && params[:sd_model_profile_id].present?
+    @image_generation.generation_flow = section
+    return unless @image_generation.direct_flow?
+
+    @image_generation.sd_model_profile_id = params[:sd_model_profile_id]
+    @image_generation.sd_prompt_template_id = params[:sd_prompt_template_id].presence
+    @image_generation.loras = "[]" if @image_generation.loras.blank?
+    @image_generation.enable_hires = false
   end
 
   def image_generation_params

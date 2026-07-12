@@ -155,7 +155,7 @@ export default class extends Controller {
       })
     })
 
-    const payload = await response.json()
+    const payload = await this.parseJsonResponse(response)
     if (!response.ok) {
       throw new Error(payload.error || "プロンプトの生成に失敗しました")
     }
@@ -187,12 +187,23 @@ export default class extends Controller {
       })
     })
 
-    const payload = await response.json()
+    const payload = await this.parseJsonResponse(response)
     if (!response.ok) {
       throw new Error(payload.error || "プロンプトの生成に失敗しました")
     }
 
     return payload
+  }
+
+  async parseJsonResponse(response) {
+    const text = await response.text()
+    if (!text.trim()) return {}
+
+    try {
+      return JSON.parse(text)
+    } catch (_error) {
+      throw new Error(text.trim() || "サーバーから不正な応答を受け取りました")
+    }
   }
 
   setTranslating(active, flow = "draft") {

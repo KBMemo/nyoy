@@ -7,11 +7,11 @@ class GenerateImageJob < ApplicationJob
     generation = ImageGeneration.find(image_generation_id)
     generation.update!(started_at: Time.current, status: "preparing")
 
-    prepare_prompt(generation)
-    switch_model(generation)
-    generate_drafts(generation)
-
-    generation.update!(status: "awaiting_selection")
+    if generation.direct_flow?
+      generate_direct(generation)
+    else
+      generate_draft_flow(generation)
+    end
   rescue StandardError => e
     stamp_open_phases!(generation)
     generation&.update!(status: "failed", error_message: e.message, finished_at: Time.current)
@@ -19,6 +19,106 @@ class GenerateImageJob < ApplicationJob
   end
 
   private
+
+  def generate_draft_flow(generation)
+    prepare_prompt(generation)
+    switch_model(generation)
+    generate_drafts(generation)
+
+    generation.update!(status: "awaiting_selection")
+  end
+
+  def generate_direct(generation)
+    prepare_direct_prompt(generation)
+    persist_direct_resolved!(generation)
+    switch_model(generation)
+    generate_direct_image(generation)
+
+    generation.update!(status: "completed", image_finished_at: Time.current, finished_at: Time.current)
+  end
+
+  def prepare_direct_prompt(generation)
+    if generation.prompt.present?
+      generation.update!(
+        resolved_negative_prompt: generation.negative_prompt.presence || generation.resolved_negative_prompt
+      )
+      return
+    end
+
+    generation.update!(status: "generating_prompt", prompt_started_at: Time.current)
+
+    profile = generation.sd_model_profile
+    raise "sd_model_profile required" if profile.blank?
+
+    template = generation.sd_prompt_template.presence ||
+      SdPromptTemplateResolver.for(sd_model_profile: profile)
+
+    result = DirectPromptGenerator.new(connection_key: generation.style_plan_connection_key).generate(
+      generation.japanese_prompt,
+      sd_model_profile: profile,
+      sd_prompt_template: template
+    )
+
+    generation.update!(
+      prompt: result[:prompt],
+      negative_prompt: generation.negative_prompt.presence || result[:negative_prompt],
+      resolved_negative_prompt: result[:negative_prompt],
+      sd_prompt_template_id: result[:sd_prompt_template_id],
+      prompt_finished_at: Time.current
+    )
+  end
+
+  def persist_direct_resolved!(generation)
+    profile = generation.sd_model_profile
+    raise "sd_model_profile required" if profile.blank?
+
+    params = profile.resolved_default_params.merge(
+      "width" => generation.width,
+      "height" => generation.height,
+      "steps" => generation.steps,
+      "cfg_scale" => generation.cfg_scale,
+      "sampler_name" => generation.sampler_name,
+      "vae_tiling" => generation.vae_tiling,
+      "switch_key" => profile.switch_key
+    )
+
+    generation.update!(
+      sd_model: profile.key,
+      resolved_params: params,
+      resolved_loras: [],
+      resolved_negative_prompt: generation.resolved_negative_prompt,
+      width: params["width"],
+      height: params["height"],
+      steps: params["steps"],
+      cfg_scale: params["cfg_scale"],
+      sampler_name: params["sampler_name"] || generation.sampler_name
+    )
+  end
+
+  def generate_direct_image(generation)
+    generation.update!(status: "refining", image_started_at: Time.current)
+
+    params = generation.resolved_params
+    png_data = SdCppClient.new.txt2img(
+      prompt: generation.prompt,
+      negative_prompt: generation.resolved_negative_prompt,
+      width: generation.width,
+      height: generation.height,
+      steps: generation.steps,
+      cfg_scale: generation.cfg_scale,
+      seed: generation.seed || -1,
+      sampler_name: params["sampler_name"] || generation.sampler_name,
+      vae_tiling: params["vae_tiling"].nil? ? generation.vae_tiling : params["vae_tiling"],
+      lora: generation.loras_for_api
+    )
+
+    generation.refined_images.attach(
+      io: StringIO.new(png_data),
+      filename: "direct-#{generation.id}-1.png",
+      content_type: "image/png",
+      metadata: { direct: true, sequence: 1 }
+    )
+  end
 
   def prepare_prompt(generation)
     if generation.prompt.present? && generation.style_id.present?
@@ -91,7 +191,9 @@ class GenerateImageJob < ApplicationJob
   end
 
   def switch_model(generation)
-    switch_key = generation.resolved_params["switch_key"].presence || generation.sd_model
+    switch_key = generation.resolved_params.to_h["switch_key"].presence ||
+      generation.sd_model_profile&.switch_key.presence ||
+      generation.sd_model.presence
     SdModelSwitcher.new.switch(switch_key)
   end
 

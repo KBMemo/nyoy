@@ -32,7 +32,10 @@ class SdCppSwitchClient
   end
 
   def switch(model, lora: nil)
-    payload = { model: model }
+    switch_key = model.presence
+    raise Error, "モデル切替キーが未設定です" if switch_key.blank?
+
+    payload = { model: switch_key }
     payload[:lora] = lora if lora.present?
     post_json("/v1/switch", payload)
   end
@@ -75,12 +78,17 @@ class SdCppSwitchClient
     http.read_timeout = 120
 
     res = http.request(req)
-    json = JSON.parse(res.body)
+    body = res.body.to_s
+    json = body.present? ? JSON.parse(body) : {}
 
     unless res.is_a?(Net::HTTPSuccess) && json["ok"]
-      raise Error, json["error"] || res.body
+      raise Error, json["error"] || body.presence || "HTTP #{res.code}"
     end
 
     json
+  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, SocketError => e
+    raise Error, "sd-switchd に接続できませんでした（#{e.message}）"
+  rescue JSON::ParserError
+    raise Error, body.presence || "invalid response from sd-switchd"
   end
 end

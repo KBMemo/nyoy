@@ -339,7 +339,7 @@ Stimulus: `image-generation-form` を拡張し、パラメータタブでは `ge
 | **1.1** | 命名リネーム | `translation_skills` → `sd_prompt_templates`（完了） |
 | **2** | LLM 契約 | `DirectPromptJsonSchema`, `SdPromptTemplateResolver`, `DirectPromptGenerator`, tests（完了） |
 | **3** | 生成 API + UI | `generate_prompt_direct`, パラメータタブフォーム, Stimulus（完了） |
-| **4** | 直接生成 | `generation_flow`, `GenerateImageJob#generate_direct`, status panel |
+| **4** | 直接生成 | `generation_flow`, `GenerateImageJob#generate_direct`, status panel（完了） |
 | **5** | MCP / 徒然 Agent Chat | `generate_image` の direct オプション（任意・後追い） |
 
 各 Phase 末で `bin/rails test` と UI から 1 件生成の手動確認。

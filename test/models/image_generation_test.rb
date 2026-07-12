@@ -15,6 +15,27 @@ class ImageGenerationTest < ActiveSupport::TestCase
     assert generation.valid?
   end
 
+  test "direct flow requires sd model profile and accepts japanese only" do
+    generation = ImageGeneration.new(
+      generation_flow: "direct",
+      japanese_prompt: "テスト",
+      sd_model_profile: sd_model_profiles(:pony),
+      loras: "[]"
+    )
+    assert generation.valid?
+    assert generation.direct_flow?
+  end
+
+  test "direct flow rejects missing sd model profile" do
+    generation = ImageGeneration.new(
+      generation_flow: "direct",
+      japanese_prompt: "テスト",
+      loras: "[]"
+    )
+    assert_not generation.valid?
+    assert generation.errors.key?(:sd_model_profile)
+  end
+
   test "accepts sd prompt only with sd model for legacy flow" do
     generation = ImageGeneration.new(
       prompt: "chojugiga, rabbit, frog",

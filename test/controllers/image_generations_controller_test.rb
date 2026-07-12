@@ -57,6 +57,55 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     DirectPromptGenerator.singleton_class.send(:define_method, :new, original)
   end
 
+  test "create infers direct flow when model profile is sent on draft section" do
+    profile = sd_model_profiles(:pony)
+
+    post image_generations_path, params: {
+      section: "draft",
+      sd_model_profile_id: profile.id,
+      image_generation: {
+        japanese_prompt: "少女の肖像",
+        prompt: "1girl, masterpiece",
+        negative_prompt: "low quality",
+        width: 768,
+        height: 768,
+        steps: 24,
+        cfg_scale: 6.0,
+        sampler_name: "euler_a"
+      }
+    }
+
+    generation = ImageGeneration.order(:id).last
+    assert_equal "direct", generation.generation_flow
+    assert_equal profile, generation.sd_model_profile
+  end
+
+  test "create direct flow enqueues job with sd model profile" do
+    profile = sd_model_profiles(:pony)
+
+    assert_enqueued_with(job: GenerateImageJob) do
+      post image_generations_path, params: {
+        section: "direct",
+        sd_model_profile_id: profile.id,
+        image_generation: {
+          japanese_prompt: "少女の肖像",
+          prompt: "1girl, masterpiece",
+          negative_prompt: "low quality",
+          width: 768,
+          height: 768,
+          steps: 24,
+          cfg_scale: 6.0,
+          sampler_name: "euler_a"
+        }
+      }
+    end
+
+    generation = ImageGeneration.order(:id).last
+    assert_equal "direct", generation.generation_flow
+    assert_equal profile, generation.sd_model_profile
+    assert_redirected_to image_generation_path(generation)
+  end
+
   test "create stores aspect_ratio and enqueues job" do
     assert_enqueued_with(job: GenerateImageJob) do
       post image_generations_path, params: {

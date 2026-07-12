@@ -6,24 +6,28 @@ class ImageGeneration < ApplicationRecord
 
   belongs_to :render_preset, optional: true
   belongs_to :refine_render_preset, class_name: "RenderPreset", optional: true
+  belongs_to :sd_model_profile, optional: true
+  belongs_to :sd_prompt_template, optional: true
 
   has_one_attached :image
   has_many_attached :drafts
   has_many_attached :refined_images
 
   STATUSES = %w[
-    pending preparing translating drafting awaiting_selection refining completed failed
+    pending preparing translating generating_prompt drafting awaiting_selection refining completed failed
   ].freeze
   STATUS_LABELS = {
     "pending" => "待機中",
     "preparing" => "準備中",
     "translating" => "翻訳中",
+    "generating_prompt" => "プロンプト生成中",
     "drafting" => "ラフ生成中",
     "awaiting_selection" => "案選択待ち",
     "refining" => "仕上げ中",
     "completed" => "完了",
     "failed" => "失敗"
   }.freeze
+  GENERATION_FLOWS = %w[draft direct].freeze
   HIRES_UPSCALERS = %w[Latent Latent\ (nearest-exact) Lanczos Nearest].freeze
   ASPECT_RATIOS = StylePlanJsonSchema::ASPECT_RATIOS
   ASPECT_RATIO_LABELS = {
@@ -33,22 +37,24 @@ class ImageGeneration < ApplicationRecord
   }.freeze
   DRAFT_SIZE_SCALE = 2.0 / 3.0
 
-  validates :sd_model, presence: true, unless: :style_flow?
+  validates :sd_model, presence: true, unless: -> { style_flow? || direct_flow? }
   validate :prompt_source_present
   validates :status, inclusion: { in: STATUSES }
+  validates :generation_flow, inclusion: { in: GENERATION_FLOWS }
+  validates :sd_model_profile, presence: true, if: :direct_flow?
   validates :width, :height, numericality: { only_integer: true, greater_than: 0 }
   validates :steps, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :cfg_scale, numericality: { greater_than: 0, less_than_or_equal_to: 30 }
   validates :sampler_name, presence: true
-  validates :loras, presence: true, unless: :style_flow?
-  validates :draft_batch_size, numericality: { only_integer: true, in: 2..4 }
-  validates :refine_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
+  validates :loras, presence: true, unless: -> { style_flow? || direct_flow? }
+  validates :draft_batch_size, numericality: { only_integer: true, in: 2..4 }, unless: :direct_flow?
+  validates :refine_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }, unless: :direct_flow?
   validates :draft_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
   validates :refine_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
-  validates :hires_scale, numericality: { greater_than: 1.0, less_than_or_equal_to: 4.0 }
-  validates :hires_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }
+  validates :hires_scale, numericality: { greater_than: 1.0, less_than_or_equal_to: 4.0 }, unless: :direct_flow?
+  validates :hires_denoising_strength, numericality: { greater_than: 0, less_than_or_equal_to: 1 }, unless: :direct_flow?
   validates :hires_steps, allow_nil: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
-  validates :hires_upscaler, inclusion: { in: HIRES_UPSCALERS }
+  validates :hires_upscaler, inclusion: { in: HIRES_UPSCALERS }, unless: :direct_flow?
   validates :aspect_ratio, inclusion: { in: ASPECT_RATIOS }, allow_blank: true
 
   scope :recent, -> { order(created_at: :desc) }
@@ -68,7 +74,7 @@ class ImageGeneration < ApplicationRecord
   end
 
   def in_progress?
-    status.in?(%w[pending preparing translating drafting refining])
+    status.in?(%w[pending preparing translating generating_prompt drafting refining])
   end
 
   def finished?
@@ -80,6 +86,7 @@ class ImageGeneration < ApplicationRecord
   end
 
   def refineable?
+    return false if direct_flow?
     return false if in_progress?
     return false unless drafts.attached?
 
@@ -125,6 +132,8 @@ class ImageGeneration < ApplicationRecord
   def refined_image_label(attachment)
     sequence = attachment.metadata["sequence"] || refined_image_attachments.size
     draft_index = attachment.metadata["draft_index"]
+    return "生成結果 #{sequence}" if attachment.metadata["direct"]
+
     label = "仕上がり #{sequence}"
     label += " · ラフ案 #{draft_index.to_i + 1}" unless draft_index.nil?
     label
@@ -207,12 +216,29 @@ class ImageGeneration < ApplicationRecord
       hires_upscaler: hires_upscaler,
       hires_scale: hires_scale,
       hires_steps: hires_steps,
-      hires_denoising_strength: hires_denoising_strength
+      hires_denoising_strength: hires_denoising_strength,
+      generation_flow: generation_flow,
+      sd_model_profile_id: sd_model_profile_id,
+      sd_prompt_template_id: sd_prompt_template_id
     )
   end
 
   def status_label
+    return "生成中" if direct_flow? && status == "refining"
+
     STATUS_LABELS.fetch(status, status)
+  end
+
+  def direct_flow?
+    generation_flow == "direct"
+  end
+
+  def draft_flow?
+    !direct_flow?
+  end
+
+  def model_label
+    sd_model_profile&.name || sd_model.presence || "—"
   end
 
   def display_summary
@@ -237,6 +263,8 @@ class ImageGeneration < ApplicationRecord
   end
 
   def style_flow?
+    return false if direct_flow?
+
     style_id.present? || japanese_prompt.present?
   end
 

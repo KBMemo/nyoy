@@ -56,6 +56,46 @@ class GenerateImageJobTest < ActiveJob::TestCase
     assert_equal 2, generation.drafts.count
     assert_not generation.image.attached?
   end
+
+  test "generates direct image and completes without drafts" do
+    profile = sd_model_profiles(:pony)
+    generation = ImageGeneration.create!(
+      generation_flow: "direct",
+      japanese_prompt: "少女の肖像",
+      prompt: "1girl, masterpiece",
+      negative_prompt: "low quality",
+      sd_model_profile: profile,
+      loras: "[]",
+      width: 768,
+      height: 768,
+      steps: 24,
+      cfg_scale: 6.0,
+      sampler_name: "euler_a"
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    client = Class.new do
+      def txt2img(**kwargs)
+        raise "unexpected width" unless kwargs[:width] == 768
+
+        "direct-png"
+      end
+    end
+
+    with_generation_stubs(switcher:, client:) do
+      GenerateImageJob.perform_now(generation.id)
+    end
+
+    generation.reload
+    assert_equal "completed", generation.status
+    assert_equal "pony-v6", generation.sd_model
+    assert_equal 1, generation.refined_images.count
+    assert_not generation.drafts.attached?
+    assert generation.refined_images.first.metadata["direct"]
+  end
 end
 
 class RefineImageJobTest < ActiveJob::TestCase

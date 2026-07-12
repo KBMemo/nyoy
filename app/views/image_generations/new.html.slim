@@ -5,7 +5,7 @@
   h1 class=kb_page_title 画像を生成
   p.mt-1.text-sm.kb-text-secondary 日本語プロンプトとスタイルから、モデル・LoRA・生成パラメータを自動決定します。ラフ案を選んで img2img で仕上げるか、パラメータを直接指定して生成するかを選びます。
 
-= form_with model: @image_generation, class: "space-y-4", data: { controller: "image-generation-form image-generation-flow", image_generation_form_translate_url_value: translate_prompt_image_generations_path, image_generation_form_direct_generate_url_value: generate_prompt_direct_image_generations_path, image_generation_flow_active_section_value: active_section } do |form|
+= form_with model: @image_generation, class: "space-y-4", data: { controller: "image-generation-form image-generation-flow", image_generation_form_translate_url_value: translate_prompt_image_generations_path, image_generation_form_direct_generate_url_value: generate_prompt_direct_image_generations_path, image_generation_flow_active_section_value: active_section, image_generation_flow_draft_submit_disabled_value: @prompt_styles.empty? } do |form|
   = hidden_field_tag :section, active_section
   - if @image_generation.errors.any?
     .kb-alert.kb-alert-danger
@@ -32,5 +32,5 @@
       = render "form_body_direct", form: form
 
   .flex.flex-wrap.items-center.gap-3
-    = form.submit "ラフを生成", class: kb_btn_primary_sm, disabled: @prompt_styles.empty?, data: { image_generation_flow_target: "submitButton" }
+    = form.submit "ラフを生成", class: kb_btn_primary_sm, data: { image_generation_flow_target: "submitButton" }
     = link_to "戻る", image_generations_path, class: "kb-chrome-link text-sm"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_12_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -72,6 +72,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
     t.boolean "enable_hires", default: true, null: false
     t.text "error_message"
     t.datetime "finished_at"
+    t.string "generation_flow", default: "draft", null: false
     t.integer "height", default: 512, null: false
     t.float "hires_denoising_strength", default: 0.35, null: false
     t.float "hires_scale", default: 1.5, null: false
@@ -96,6 +97,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
     t.jsonb "resolved_params", default: {}, null: false
     t.string "sampler_name", default: "euler_a", null: false
     t.string "sd_model"
+    t.bigint "sd_model_profile_id"
+    t.bigint "sd_prompt_template_id"
     t.integer "seed"
     t.integer "selected_draft_index"
     t.datetime "started_at"
@@ -107,8 +110,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
     t.boolean "vae_tiling", default: false, null: false
     t.integer "width", default: 512, null: false
     t.index ["aspect_ratio"], name: "index_image_generations_on_aspect_ratio"
+    t.index ["generation_flow"], name: "index_image_generations_on_generation_flow"
     t.index ["refine_render_preset_id"], name: "index_image_generations_on_refine_render_preset_id"
     t.index ["render_preset_id"], name: "index_image_generations_on_render_preset_id"
+    t.index ["sd_model_profile_id"], name: "index_image_generations_on_sd_model_profile_id"
+    t.index ["sd_prompt_template_id"], name: "index_image_generations_on_sd_prompt_template_id"
     t.index ["style_id"], name: "index_image_generations_on_style_id"
   end
 
@@ -393,6 +399,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
   add_foreign_key "chats", "models"
   add_foreign_key "image_generations", "render_presets"
   add_foreign_key "image_generations", "render_presets", column: "refine_render_preset_id"
+  add_foreign_key "image_generations", "sd_model_profiles"
+  add_foreign_key "image_generations", "sd_prompt_templates"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"

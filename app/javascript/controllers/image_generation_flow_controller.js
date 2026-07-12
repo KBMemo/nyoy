@@ -3,7 +3,8 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["tab", "panel", "submitButton"]
   static values = {
-    activeSection: { type: String, default: "draft" }
+    activeSection: { type: String, default: "draft" },
+    draftSubmitDisabled: { type: Boolean, default: false }
   }
 
   connect() {
@@ -44,6 +45,10 @@ export default class extends Controller {
 
     if (this.hasSubmitButtonTarget) {
       this.submitButtonTarget.value = section === "direct" ? "生成する" : "ラフを生成"
+      this.submitButtonTarget.disabled = section === "draft" && this.draftSubmitDisabledValue
     }
+
+    const sectionInput = this.element.querySelector('input[name="section"]')
+    if (sectionInput) sectionInput.value = section
   }
 }

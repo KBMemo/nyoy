@@ -5,10 +5,14 @@
       h1 class=kb_page_title 生成結果
       p.mt-1.text-sm.kb-text-secondary
         span class="nyoy-status nyoy-status-#{image_generation.status}" = image_generation.status_label
-        - if image_generation.sd_model.present?
+        - if image_generation.direct_flow?
+          |  · #{image_generation.model_label}
+        - elsif image_generation.sd_model.present?
           |  · #{image_generation.sd_model}
         - if image_generation.style_label.present?
           |  · スタイル: #{image_generation.style_label}
+        - if image_generation.direct_flow? && image_generation.sd_prompt_template
+          |  · テンプレート: #{image_generation.sd_prompt_template.name}
         - if image_generation.aspect_ratio.present?
           |  · サイズ: #{image_generation.aspect_ratio_label}
         - if image_generation.render_preset
@@ -34,18 +38,24 @@
     dl.mt-2.nyoy-settings-list
       dt サイズ
       dd = "#{image_generation.width}×#{image_generation.height}"
-      dt ラフサイズ
-      dd = "#{image_generation.draft_width}×#{image_generation.draft_height}（仕上げ img2img もこの解像度）"
-      dt ラフ枚数 / Steps
-      dd = "#{image_generation.draft_batch_size} 枚 / #{image_generation.draft_steps_for_api}"
-      dt 仕上げ Steps / 強度
-      dd = "#{image_generation.refine_steps_for_api} / #{image_generation.refine_denoising_strength}"
-      dt Hires
-      dd
-        - if image_generation.enable_hires?
-          | ON · #{image_generation.hires_upscaler} · #{image_generation.hires_scale}x → #{image_generation.hires_target_width}×#{image_generation.hires_target_height}
-        - else
-          | OFF
+      - unless image_generation.direct_flow?
+        dt ラフサイズ
+        dd = "#{image_generation.draft_width}×#{image_generation.draft_height}（仕上げ img2img もこの解像度）"
+        dt ラフ枚数 / Steps
+        dd = "#{image_generation.draft_batch_size} 枚 / #{image_generation.draft_steps_for_api}"
+        dt 仕上げ Steps / 強度
+        dd = "#{image_generation.refine_steps_for_api} / #{image_generation.refine_denoising_strength}"
+        dt Hires
+        dd
+          - if image_generation.enable_hires?
+            | ON · #{image_generation.hires_upscaler} · #{image_generation.hires_scale}x → #{image_generation.hires_target_width}×#{image_generation.hires_target_height}
+          - else
+            | OFF
+      - else
+        dt フロー
+        dd パラメータ指定（直接 txt2img）
+        dt Steps
+        dd = image_generation.steps
       dt CFG
       dd = image_generation.cfg_scale
       dt Seed
@@ -70,14 +80,18 @@
 
     - if image_generation.in_progress?
       p.mt-4.text-sm.kb-text-muted
-        - if image_generation.status == "drafting"
+        - if image_generation.direct_flow? && image_generation.status == "generating_prompt"
+          | プロンプトを生成中です… 状態は自動更新されます。
+        - elsif image_generation.direct_flow? && image_generation.status == "refining"
+          | 画像を生成中です… 状態は自動更新されます。
+        - elsif image_generation.status == "drafting"
           | ラフ案を生成中です… 状態は自動更新されます。
         - elsif image_generation.status == "refining"
           | 選択した案を img2img で仕上げ、続けて Hires で拡大しています… 状態は自動更新されます。
         - else
           | 生成中です… 状態は自動更新されます。
 
-    - if image_generation.drafts.attached?
+    - if image_generation.drafts.attached? && image_generation.draft_flow?
       - if image_generation.refineable?
         h2.mt-6 class=kb_section_title ラフ案
         p.mt-2.text-sm.kb-text-secondary
@@ -105,7 +119,7 @@
             = render "image_generations/draft_card", image_generation: image_generation, draft: draft, index: index, refineable: false, refining: image_generation.status == "refining" && index == image_generation.selected_draft_index, selected: index == image_generation.selected_draft_index
 
     - if image_generation.refined_images.attached?
-      h2.mt-6 class=kb_section_title 仕上がり
+      h2.mt-6 class=kb_section_title = image_generation.direct_flow? ? "生成結果" : "仕上がり"
       p.mt-2.text-sm.kb-text-secondary 新しい順に表示します。クリックで実寸表示、保存もできます。
       .nyoy-refined-grid.mt-2
         - image_generation.refined_image_attachments.each do |attachment|
@@ -120,7 +134,7 @@
         = render "shared/save_to_kbmemo_button", attachment: image_generation.image_attachment, class: "kb-chrome-link text-sm", label: "徒然に保存"
 
   .flex.flex-wrap.items-center.gap-3.mt-6
-    = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
+    = link_to "同じ設定で再生成", new_image_generation_path(copy_from: image_generation.id, section: image_generation.direct_flow? ? "direct" : "draft"), class: kb_btn_primary_sm, data: { turbo_frame: "_top" }
     - if image_generation.latest_refined_attachment
       = link_to "Img2Imgで変換", new_img2img_generation_path(from_image_generation: image_generation.id, attachment_id: image_generation.latest_refined_attachment.id), class: kb_btn_secondary_sm, data: { turbo_frame: "_top" }
     - elsif image_generation.drafts.attached?

@@ -13,6 +13,15 @@ class SdModelSwitcherTest < ActiveSupport::TestCase
     end
   end
 
+  test "does not call switch with blank model" do
+    client = FakeClient.new(configured: true, calls: [])
+    switcher = SdModelSwitcher.new(client: client)
+
+    error = assert_raises(SdModelSwitcher::Error) { switcher.switch(nil) }
+    assert_equal "モデル切替キーが未設定です", error.message
+    assert_empty client.calls
+  end
+
   test "passes default lora when switching illustrious_pencil-XL" do
     client = FakeClient.new(configured: true, calls: [])
     switcher = SdModelSwitcher.new(client: client)
