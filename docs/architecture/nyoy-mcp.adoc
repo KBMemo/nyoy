@@ -290,10 +290,11 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 
 == 9. 未決・今後
 
-* **in-app からの MCP 呼び出し** — 必要になったら `Chat::NyoyMcpClient`（徒然）を検討。優先度は低い。
+* **in-app からの MCP 呼び出し** — Phase 9 完了（徒然 `Chat::NyoyMcpClient`）。詳細は徒然 `chat-agent-roadmap.adoc`。
 * **MCP 認可の細分化** — 当面は API キー 1 本。マルチユーザー時はトークン per account。
 * **徒然 `export/deletions`** — Nyoy `recall_memos` の鮮度向上。徒然側実装待ち。
-* **ラフ案プレビュー** — MCP `generate_image` 後の選択は Nyoy UI（`show_path`）。MCP だけで完結させるかは将来検討。
+* **ラフ案プレビュー** — MCP `get_image_generation` の `draft_urls` で徒然 Agent Chat に表示（2026-07 対応）。
+* **仕上げ（refine）** — **課題（未接続）**。Nyoy MCP の `refine_image` は公開済みだが、徒然 `/agent_chat` は `awaiting_selection` で止まる。ラフ案選択〜`completed` までの in-app フローは徒然 `chat-agent-roadmap.adoc` §12 を参照。当面は Nyoy UI（`show_path`）で手動選択。
 
 == 10. 関連ドキュメント
 

@@ -283,6 +283,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 
 ### 徒然（site）側
 
+- **Agent Chat 画像仕上げ（refine）** — ラフ案生成は動作。ドラフト 1〜4 選択後の `refine_image`〜`completed` は **未実装**（徒然 `chat-agent-roadmap.adoc` §12）
 - API 書込 `body_format: markdown` → AsciiDoc 変換（Pandoc、**未実装**）
 - PGroonga 全文検索（`Memo.search_text` 差し替え — **インストール OK**、[手順](./tsuredure-pgroonga-search.md)）
 - `export/deletions` エンドポイント
