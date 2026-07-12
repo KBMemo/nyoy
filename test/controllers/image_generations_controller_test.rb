@@ -200,7 +200,7 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name='sd_model_profile_id']"
     assert_select "select[name='sd_prompt_template_id']"
     assert_select "h2", text: "実行パラメータ"
-    assert_select "h2", text: "Hires / 拡大"
+    assert_select "h2", text: "Hires / 拡大", count: 0
   end
 
   private

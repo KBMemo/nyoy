@@ -62,24 +62,3 @@ div
       label.flex.items-center.gap-2.text-sm.pb-2
         = form.check_box :vae_tiling, class: "kb-control-accent"
         span VAE Tiling
-
-.kb-card.p-4
-  h2 class=kb_section_title Hires / 拡大
-  p.mt-2.text-sm.kb-text-muted 任意の高解像度化（txt2img Hires）です。
-  .mt-4.space-y-4
-    label.flex.items-center.gap-2
-      = form.check_box :enable_hires, class: "kb-control-accent"
-      span.text-sm Hires で拡大する
-    .grid.gap-4.sm:grid-cols-2
-      div
-        = form.label :hires_upscaler, "Upscaler", class: "#{kb_label} mb-1"
-        = form.select :hires_upscaler, options_for_select(ImageGeneration::HIRES_UPSCALERS, @image_generation.hires_upscaler), {}, class: kb_field_input_classes
-      div
-        = form.label :hires_scale, "拡大率", class: "#{kb_label} mb-1"
-        = form.number_field :hires_scale, min: 1.1, max: 4.0, step: 0.1, class: kb_field_input_classes
-      div
-        = form.label :hires_denoising_strength, "Hires 強度", class: "#{kb_label} mb-1"
-        = form.number_field :hires_denoising_strength, min: 0.1, max: 1.0, step: 0.05, class: kb_field_input_classes
-      div
-        = form.label :hires_steps, "Hires Steps (任意)", class: "#{kb_label} mb-1"
-        = form.number_field :hires_steps, min: 1, max: 150, step: 1, class: kb_field_input_classes, placeholder: "空欄なら Steps"
