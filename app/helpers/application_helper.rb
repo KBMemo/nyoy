@@ -29,6 +29,7 @@ module ApplicationHelper
     prompt_knowledge_chunks
     prompt_styles
     sd_model_profiles
+    sd_prompt_templates
     lora_profiles
     service_connections
     app_settings
@@ -61,6 +62,7 @@ module ApplicationHelper
       ["ナレッジ", "prompt_knowledge_chunks", prompt_knowledge_chunks_path],
       ["スタイル", "prompt_styles", prompt_styles_path],
       ["モデル", "sd_model_profiles", sd_model_profiles_path],
+      ["生成テンプレート", "sd_prompt_templates", sd_prompt_templates_path],
       ["LoRA", "lora_profiles", lora_profiles_path],
       ["接続", "service_connections", service_connections_path],
       ["既定モデル", "app_settings", edit_app_settings_path]

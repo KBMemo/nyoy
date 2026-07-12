@@ -1,0 +1,30 @@
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title プロンプト生成テンプレート
+  = link_to "新規登録", new_sd_prompt_template_path, class: kb_btn_primary_sm
+
+p.text-sm.kb-text-secondary
+  | パラメータ指定タブ向けの日本語→SD 最適化プロンプト生成指針（システムプロンプト）です。
+  | モデル専用・ファミリ既定・グローバル既定の順で解決されます（Phase 2）。
+
+- if @sd_prompt_templates.any?
+  section.nyoy-card-list.mt-4
+    - @sd_prompt_templates.each do |template|
+      article.kb-card.p-4
+        .flex.flex-wrap.items-center.justify-between.gap-2
+          h2.text-base.font-semibold
+            = link_to template.name, template, class: "kb-text-primary no-underline"
+          .flex.flex-wrap.items-center.gap-2
+            span.kb-badge.kb-badge-muted = template.scope_label
+            - unless template.enabled?
+              span.kb-badge.kb-badge-muted 無効
+        - if template.sd_model_profile.present?
+          p.mt-2.text-sm.kb-text-secondary
+            | モデル:
+            span.nyoy-monospace.ml-1 = template.sd_model_profile.name
+        p.mt-2.text-sm.kb-text-secondary = truncate(template.body, length: 160)
+        - if template.notes.present?
+          p.mt-2.text-sm.kb-text-muted = truncate(template.notes, length: 120)
+        .mt-3
+          = link_to "編集", edit_sd_prompt_template_path(template), class: "kb-chrome-link text-sm"
+- else
+  p.mt-4.text-sm.kb-text-muted プロンプト生成テンプレートが未登録です。

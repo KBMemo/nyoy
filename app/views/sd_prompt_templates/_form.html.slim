@@ -1,0 +1,49 @@
+- content_for :title, title
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: sd_prompt_template, class: "space-y-4 max-w-3xl" do |form|
+  - if sd_prompt_template.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - sd_prompt_template.errors.full_messages.each do |message|
+          li = message
+
+  div
+    = form.label :name, "名前", class: "#{kb_label} mb-1"
+    = form.text_field :name, required: true, class: kb_field_input_classes, placeholder: "SD 3.5 向け"
+    p.mt-1.text-sm.kb-text-muted 例: SD 3.5 向け、Pony XL 向け、日本語 → SD 3.5 最適化プロンプト
+
+  div
+    = form.label :sd_model_profile_id, "モデル専用（任意）", class: "#{kb_label} mb-1"
+    = form.collection_select :sd_model_profile_id, @sd_model_profiles, :id, :name, { include_blank: "—" }, class: kb_field_input_classes
+    p.mt-1.text-sm.kb-text-muted 指定するとこのモデル向けテンプレートになります。ファミリ既定とは同時に指定できません。
+
+  div
+    = form.label :family, "ファミリ既定（任意）", class: "#{kb_label} mb-1"
+    = form.select :family, SdPromptTemplate::FAMILY_LABELS.map { |key, label| [label, key] }, { include_blank: "—" }, class: kb_field_input_classes
+    p.mt-1.text-sm.kb-text-muted モデル未指定時のファミリ別既定。両方空ならグローバル既定です。
+
+  div
+    = form.label :body, "システムプロンプト", class: "#{kb_label} mb-1"
+    = form.text_area :body, required: true, rows: 14, class: "#{kb_field_input_classes} font-mono text-sm"
+    p.mt-1.text-sm.kb-text-muted
+      | モデル/family 固有のプロンプト生成作法を書きます。JSON 契約（prompt / negative_prompt）は Phase 2 でコード側に固定されます。
+
+  div
+    = form.label :sort_order, "表示順", class: "#{kb_label} mb-1"
+    = form.number_field :sort_order, min: 0, step: 1, class: kb_field_input_classes
+    p.mt-1.text-sm.kb-text-muted 解決時は sort_order 昇順で先頭の enabled テンプレートを使います。
+
+  div
+    = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+    = form.text_area :notes, rows: 3, class: kb_field_input_classes
+
+  label.flex.items-center.gap-2.text-sm
+    = form.check_box :enabled, class: "kb-control-accent"
+    span 有効
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(sd_prompt_template.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", sd_prompt_template.persisted? ? sd_prompt_template_path(sd_prompt_template) : sd_prompt_templates_path, class: "kb-chrome-link text-sm"

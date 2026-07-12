@@ -27,7 +27,19 @@
     pre.mt-2.text-sm.whitespace-pre-wrap = @sd_model_profile.notes
   p.mt-4.text-xs.kb-text-muted 更新 #{l(@sd_model_profile.updated_at, format: :long)}
 
+- model_templates = @sd_model_profile.sd_prompt_templates.ordered
+- if model_templates.any?
+  section.mt-6
+    h2 class=kb_section_title 生成テンプレート（モデル専用）
+    ul.mt-2.space-y-1.text-sm
+      - model_templates.each do |template|
+        li
+          = link_to template.name, template, class: "kb-chrome-link"
+          - unless template.enabled?
+            span.kb-badge.kb-badge-muted.ml-2 無効
+
 .flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "生成テンプレートを追加", new_sd_prompt_template_path(sd_model_profile_id: @sd_model_profile.id), class: "kb-chrome-link text-sm"
   = link_to "編集", edit_sd_model_profile_path(@sd_model_profile), class: kb_btn_primary_sm
   = button_to "削除", @sd_model_profile, method: :delete, class: kb_btn_secondary_sm, form: { data: { controller: "confirm-delete", confirm_delete_message_value: "削除しますか？" } }
   = link_to "一覧へ", sd_model_profiles_path, class: "kb-chrome-link text-sm"

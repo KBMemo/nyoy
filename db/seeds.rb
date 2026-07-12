@@ -4,9 +4,12 @@ require_relative "../lib/rag_knowledge_seeds"
 require_relative "../lib/capability_seeds"
 require_relative "../lib/prompt_style_seeds"
 require_relative "../lib/render_preset_seeds"
+require_relative "../lib/sd_prompt_template_seeds"
 
 # Phase 1: capability layer (sd_model_profiles / lora_profiles).
 CapabilitySeeds.seed!
+# Parameter-tab: family-level prompt generation templates.
+SdPromptTemplateSeeds.seed!
 # Phase 2: style layer (prompt_styles / prompt_style_models / prompt_style_loras).
 PromptStyleSeeds.seed!
 # Phase 3: render layer (render_presets).

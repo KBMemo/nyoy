@@ -36,6 +36,7 @@ Rails.application.routes.draw do
   end
   resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles
+  resources :sd_prompt_templates
   resources :lora_profiles
   resources :prompt_styles
   resources :image_generations, only: %i[index show new create destroy] do

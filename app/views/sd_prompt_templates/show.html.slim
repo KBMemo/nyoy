@@ -1,0 +1,29 @@
+.mb-6
+  .flex.flex-wrap.items-center.justify-between.gap-3
+    h1 class=kb_page_title = @sd_prompt_template.name
+    .flex.flex-wrap.items-center.gap-2
+      span.kb-badge.kb-badge-muted = @sd_prompt_template.scope_label
+      - unless @sd_prompt_template.enabled?
+        span.kb-badge.kb-badge-muted 無効
+
+.kb-card.p-4
+  dl.nyoy-settings-list
+    - if @sd_prompt_template.sd_model_profile.present?
+      dt モデル
+      dd
+        = link_to @sd_prompt_template.sd_model_profile.name, @sd_prompt_template.sd_model_profile, class: "kb-chrome-link"
+    dt 表示順
+    dd = @sd_prompt_template.sort_order
+    dt 状態
+    dd = @sd_prompt_template.enabled? ? "有効" : "無効"
+  h2.mt-6 class=kb_section_title システムプロンプト
+  pre.mt-2.text-sm.whitespace-pre-wrap = @sd_prompt_template.body
+  - if @sd_prompt_template.notes.present?
+    h2.mt-6 class=kb_section_title メモ
+    pre.mt-2.text-sm.whitespace-pre-wrap = @sd_prompt_template.notes
+  p.mt-4.text-xs.kb-text-muted 更新 #{l(@sd_prompt_template.updated_at, format: :long)}
+
+.flex.flex-wrap.items-center.gap-3.mt-6
+  = link_to "編集", edit_sd_prompt_template_path(@sd_prompt_template), class: kb_btn_primary_sm
+  = button_to "削除", @sd_prompt_template, method: :delete, class: kb_btn_secondary_sm, form: { data: { controller: "confirm-delete", confirm_delete_message_value: "削除しますか？" } }
+  = link_to "一覧へ", sd_prompt_templates_path, class: "kb-chrome-link text-sm"

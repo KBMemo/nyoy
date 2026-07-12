@@ -26,6 +26,7 @@ class SdModelProfile < ApplicationRecord
   }.freeze
 
   has_many :prompt_style_models, dependent: :restrict_with_error
+  has_many :sd_prompt_templates, dependent: :destroy
 
   validates :key, :name, :family, :switch_key, presence: true
   validates :key, uniqueness: true

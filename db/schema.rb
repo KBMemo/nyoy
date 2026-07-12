@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_235232) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_12_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -344,6 +344,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_235232) do
     t.index ["switch_key"], name: "index_sd_model_profiles_on_switch_key"
   end
 
+  create_table "sd_prompt_templates", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "family"
+    t.string "name", null: false
+    t.text "notes"
+    t.bigint "sd_model_profile_id"
+    t.integer "sort_order", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled", "sort_order"], name: "index_sd_prompt_templates_on_enabled_and_sort_order"
+    t.index ["family"], name: "index_sd_prompt_templates_on_family"
+    t.index ["sd_model_profile_id"], name: "index_sd_prompt_templates_on_sd_model_profile_id"
+  end
+
   create_table "service_connections", force: :cascade do |t|
     t.string "api_token"
     t.string "base_url", null: false
@@ -385,5 +400,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_235232) do
   add_foreign_key "prompt_style_loras", "prompt_styles"
   add_foreign_key "prompt_style_models", "prompt_styles"
   add_foreign_key "prompt_style_models", "sd_model_profiles"
+  add_foreign_key "sd_prompt_templates", "sd_model_profiles"
   add_foreign_key "tool_calls", "messages"
 end

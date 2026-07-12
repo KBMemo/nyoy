@@ -1,0 +1,13 @@
+pony_family:
+  name: Pony XL 向け
+  body: Generate Pony XL tags with score_9 when appropriate.
+  family: pony
+  enabled: true
+  sort_order: 0
+
+global_default:
+  name: グローバル既定
+  body: Generate English SD prompts from Japanese descriptions.
+  family:
+  enabled: true
+  sort_order: 99
