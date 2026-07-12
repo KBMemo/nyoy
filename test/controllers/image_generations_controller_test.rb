@@ -57,6 +57,24 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     DirectPromptGenerator.singleton_class.send(:define_method, :new, original)
   end
 
+  test "samplers returns sampler list for model profile" do
+    profile = sd_model_profiles(:pony)
+    original = SdSamplerResolver.method(:for)
+    SdSamplerResolver.define_singleton_method(:for) do |**_|
+      { samplers: %w[euler_a dpmpp2m], default: "euler_a", source: "live" }
+    end
+
+    get samplers_image_generations_path, params: { sd_model_profile_id: profile.id }, headers: @headers
+
+    assert_response :success
+    body = response.parsed_body
+    assert_equal %w[euler_a dpmpp2m], body["samplers"]
+    assert_equal "euler_a", body["default"]
+    assert_equal "live", body["source"]
+  ensure
+    SdSamplerResolver.define_singleton_method(:for, original)
+  end
+
   test "create infers direct flow when model profile is sent on draft section" do
     profile = sd_model_profiles(:pony)
 

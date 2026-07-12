@@ -23,11 +23,14 @@ export default class extends Controller {
     "directInsertNegativePromptButton",
     "directReplaceNegativePromptButton",
     "directTranslateStatus",
-    "directNegativeTranslateStatus"
+    "directNegativeTranslateStatus",
+    "directSamplerName",
+    "directSamplerStatus"
   ]
   static values = {
     translateUrl: String,
-    directGenerateUrl: String
+    directGenerateUrl: String,
+    samplersUrl: String
   }
 
   connect() {
@@ -35,6 +38,96 @@ export default class extends Controller {
     this.updateReplaceButtonVisibility("direct")
     this.updateNegativeReplaceButtonVisibility("draft")
     this.updateNegativeReplaceButtonVisibility("direct")
+    this.loadDirectSamplers()
+  }
+
+  sdModelProfileChanged() {
+    this.loadDirectSamplers()
+  }
+
+  async loadDirectSamplers() {
+    if (!this.hasDirectSamplerNameTarget) return
+
+    const profileId = this.sdModelProfileId
+    if (!profileId) {
+      this.updateSamplerSelect([], null)
+      this.showSamplerStatus("モデルを選択するとサンプラー一覧を読み込みます")
+      return
+    }
+
+    if (!this.hasSamplersUrlValue || !this.samplersUrlValue) {
+      this.showSamplerStatus("")
+      return
+    }
+
+    this.setSamplerLoading(true)
+    this.showSamplerStatus("サンプラー一覧を読み込み中…")
+
+    try {
+      const url = new URL(this.samplersUrlValue, window.location.origin)
+      url.searchParams.set("sd_model_profile_id", profileId)
+
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      })
+      const payload = await this.parseJsonResponse(response)
+      if (!response.ok) {
+        throw new Error(payload.error || "サンプラー一覧の取得に失敗しました")
+      }
+
+      this.updateSamplerSelect(payload.samplers || [], payload.default)
+      const sourceLabel = payload.source === "live" ? "読み込み済み" : "系統既定"
+      this.showSamplerStatus(sourceLabel)
+    } catch (error) {
+      this.showSamplerStatus(error.message, true)
+    } finally {
+      this.setSamplerLoading(false)
+    }
+  }
+
+  updateSamplerSelect(samplers, selected) {
+    const select = this.directSamplerNameTarget
+    const current = select.value
+    const nextValue = selected || current
+
+    select.replaceChildren()
+    if (!samplers.length) {
+      const option = document.createElement("option")
+      option.value = ""
+      option.textContent = "モデルを選択してください"
+      select.appendChild(option)
+      select.disabled = true
+      return
+    }
+
+    samplers.forEach((name) => {
+      const option = document.createElement("option")
+      option.value = name
+      option.textContent = name
+      select.appendChild(option)
+    })
+
+    select.disabled = false
+    if (nextValue && samplers.includes(nextValue)) {
+      select.value = nextValue
+    }
+  }
+
+  setSamplerLoading(active) {
+    if (!this.hasDirectSamplerNameTarget) return
+
+    this.directSamplerNameTarget.disabled = active
+    if (this.hasSdModelProfileIdTarget) {
+      this.sdModelProfileIdTarget.disabled = active
+    }
+  }
+
+  showSamplerStatus(message, isError = false) {
+    if (!this.hasDirectSamplerStatusTarget) return
+
+    this.directSamplerStatusTarget.textContent = message
+    this.directSamplerStatusTarget.classList.toggle("kb-text-muted", !isError)
+    this.directSamplerStatusTarget.classList.toggle("text-red-600", isError)
   }
 
   sdPromptInput() {

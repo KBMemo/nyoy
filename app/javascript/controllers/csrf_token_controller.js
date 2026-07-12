@@ -7,6 +7,16 @@ import { Controller } from "@hotwired/stimulus"
 // session) whenever such a form connects.
 export default class extends Controller {
   connect() {
+    this.sync()
+    this.submitHandler = () => this.sync()
+    this.element.addEventListener("submit", this.submitHandler)
+  }
+
+  disconnect() {
+    this.element.removeEventListener("submit", this.submitHandler)
+  }
+
+  sync() {
     const token = document.querySelector('meta[name="csrf-token"]')?.content
     if (!token) return
 

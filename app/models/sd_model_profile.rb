@@ -13,6 +13,15 @@ class SdModelProfile < ApplicationRecord
     "flux" => "Flux"
   }.freeze
 
+  FAMILY_SAMPLERS = {
+    "sd15" => %w[euler_a euler lcm dpmpp2m dpmpp2m_sde ddim],
+    "sdxl" => %w[euler_a euler dpmpp2m dpmpp2m_sde dpmpp2m_sde_gpu dpmpp3m_sde ddim],
+    "pony" => %w[euler_a euler dpmpp2m dpmpp2m_sde dpmpp2m_sde_gpu dpmpp3m_sde ddim],
+    "illustrious" => %w[euler_a euler dpmpp2m dpmpp2m_sde dpmpp2m_sde_gpu dpmpp3m_sde ddim],
+    "sd35" => %w[euler euler_a dpmpp2m],
+    "flux" => %w[euler euler_a]
+  }.freeze
+
   # Base generation params per architecture family. A profile's own
   # default_params (if any) is deep-merged on top of these, so family provides
   # sensible defaults while individual models can still override.
@@ -46,6 +55,20 @@ class SdModelProfile < ApplicationRecord
   # Family base params with this profile's own overrides applied on top.
   def resolved_default_params
     family_default_params.deep_merge(default_params.to_h)
+  end
+
+  def family_sampler_names
+    FAMILY_SAMPLERS.fetch(family, %w[euler_a euler])
+  end
+
+  def default_sampler_name
+    resolved_default_params["sampler_name"].presence || family_sampler_names.first
+  end
+
+  def sampler_name_options(current: nil)
+    names = family_sampler_names.dup
+    names << current if current.present? && !names.include?(current)
+    names
   end
 
   def linked_to_styles?

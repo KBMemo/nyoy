@@ -47,6 +47,7 @@ Rails.application.routes.draw do
     collection do
       post :translate_prompt
       post :generate_prompt_direct
+      get :samplers
     end
   end
   resources :img2img_generations, only: %i[index show new create destroy] do

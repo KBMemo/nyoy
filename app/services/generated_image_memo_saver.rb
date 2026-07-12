@@ -80,9 +80,13 @@ class GeneratedImageMemoSaver
       append_body: fragment,
       body_format: "asciidoc"
     )
-    updated.merge("appended_media_ids" => [media_id])
+    merged = updated.merge("appended_media_ids" => [media_id])
+    merged["url"] = TsurezureMemoUrl.absolute(merged)
+    merged
   rescue TsurezureClient::Error => e
-    memo.merge("media_append_error" => e.message, "appended_media_ids" => [media_id])
+    fallback = memo.merge("media_append_error" => e.message, "appended_media_ids" => [media_id])
+    fallback["url"] = TsurezureMemoUrl.absolute(fallback)
+    fallback
   end
 
   def tsurezure_client

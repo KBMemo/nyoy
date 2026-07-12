@@ -2,7 +2,7 @@
 
 class ImageGenerationsController < ApplicationController
   before_action :set_image_generation, only: %i[show refine destroy]
-  before_action :load_generation_options, only: %i[index new create translate_prompt generate_prompt_direct show refine]
+  before_action :load_generation_options, only: %i[index new create translate_prompt generate_prompt_direct samplers show refine]
 
   def index
     @image_generations = ImageGeneration.recent.limit(20)
@@ -59,6 +59,7 @@ class ImageGenerationsController < ApplicationController
   def new
     @image_generation = build_new_image_generation
     @active_section = params[:section].presence_in(%w[draft direct]) || @image_generation.generation_flow
+    load_direct_sampler_options
   end
 
   def create
@@ -71,6 +72,7 @@ class ImageGenerationsController < ApplicationController
       redirect_to @image_generation
     else
       @active_section = params[:section].presence_in(%w[draft direct]) || @image_generation.generation_flow
+      load_direct_sampler_options
       render :new, status: :unprocessable_entity
     end
   end
@@ -137,6 +139,15 @@ class ImageGenerationsController < ApplicationController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  def samplers
+    profile = SdModelProfile.find(params[:sd_model_profile_id])
+    result = SdSamplerResolver.for(sd_model_profile: profile)
+
+    render json: result
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "モデルが見つかりません" }, status: :unprocessable_entity
+  end
+
   private
 
   def set_image_generation
@@ -150,6 +161,11 @@ class ImageGenerationsController < ApplicationController
     @draft_render_presets = RenderPreset.of_kind("draft").ordered
     @refine_render_presets = RenderPreset.of_kind("refine").ordered
     load_style_plan_connection_options
+  end
+
+  def load_direct_sampler_options
+    profile = @image_generation&.sd_model_profile
+    @direct_sampler_options = profile ? profile.sampler_name_options(current: @image_generation.sampler_name) : []
   end
 
   def build_new_image_generation

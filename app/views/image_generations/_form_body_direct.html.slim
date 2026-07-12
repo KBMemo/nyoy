@@ -3,7 +3,7 @@
 - if @sd_model_profiles.any?
   div
     = label_tag :sd_model_profile_id, "画像生成モデル", class: "#{kb_label} mb-1"
-    = select_tag :sd_model_profile_id, options_from_collection_for_select(@sd_model_profiles, :id, :name, @image_generation.sd_model_profile_id), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId" } }
+    = select_tag :sd_model_profile_id, options_from_collection_for_select(@sd_model_profiles, :id, :name, @image_generation.sd_model_profile_id), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId", action: "change->image-generation-form#sdModelProfileChanged" } }
     p.mt-1.text-sm.kb-text-muted SdModelProfile を直接指定します。スタイルは使いません。
 - else
   .kb-alert.kb-alert-warning
@@ -57,7 +57,8 @@ div
       = form.number_field :cfg_scale, min: 1, max: 30, step: 0.5, class: kb_field_input_classes
     div
       = form.label :sampler_name, "Sampler", class: "#{kb_label} mb-1"
-      = form.text_field :sampler_name, class: kb_field_input_classes
+      = form.select :sampler_name, options_for_select(@direct_sampler_options, @image_generation.sampler_name), { include_blank: (@direct_sampler_options.empty? ? "モデルを選択してください" : false) }, { class: kb_field_input_classes, disabled: @direct_sampler_options.empty?, data: { image_generation_form_target: "directSamplerName" } }
+      p.mt-1.text-sm.kb-text-muted data-image-generation-form-target="directSamplerStatus"
     div.flex.items-end
       label.flex.items-center.gap-2.text-sm.pb-2
         = form.check_box :vae_tiling, class: "kb-control-accent"
