@@ -24,7 +24,8 @@ module StylePlanPrompts
     "pony" => "Pony: Danbooru-style tags; quality/score tags like 'score_9, score_8_up' help.",
     "illustrious" => "Illustrious: Danbooru/e621-style tags; booru tags are followed strongly.",
     "sd35" => "SD 3.5: write subject_prompt as a natural-language descriptive sentence (T5 text encoder) covering subject, action, setting, and lighting; plain tag lists are weaker. Keep negatives minimal.",
-    "flux" => "Flux: prefer natural-language descriptive prompts; keep negatives minimal."
+    "flux" => "Flux: prefer natural-language descriptive prompts; keep negatives minimal.",
+    "krea2" => "Krea2: write subject_prompt as clear natural English covering subject, action, setting, and lighting; avoid long tag dumps. Keep negatives minimal."
   }.freeze
 
   MEMO_SYSTEM = <<~TEXT.squish

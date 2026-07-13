@@ -5,6 +5,13 @@ pony_family:
   enabled: true
   sort_order: 0
 
+krea2_family:
+  name: Krea2 向け
+  body: Generate natural English descriptions for Krea2 from Japanese descriptions.
+  family: krea2
+  enabled: true
+  sort_order: 6
+
 global_default:
   name: グローバル既定
   body: Generate English SD prompts from Japanese descriptions.

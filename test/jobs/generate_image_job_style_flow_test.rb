@@ -37,9 +37,13 @@ class GenerateImageJobStyleFlowTest < ActiveJob::TestCase
 
     captured = {}
     client = Class.new do
-      define_method(:txt2img) do |**kwargs|
+      define_method(:txt2img_all) do |**kwargs|
         kwargs.each { |k, v| captured[k] = v }
-        %w[draft-a draft-b]
+        SdCppGenerationInfo::GenerationResult.new(
+          images: %w[draft-a draft-b],
+          seed: nil,
+          seeds: []
+        )
       end
     end
 
@@ -85,9 +89,13 @@ class GenerateImageJobStyleFlowTest < ActiveJob::TestCase
     switcher = Class.new { def switch(*) = true }
     captured = {}
     client = Class.new do
-      define_method(:txt2img) do |**kwargs|
+      define_method(:txt2img_all) do |**kwargs|
         kwargs.each { |k, v| captured[k] = v }
-        %w[draft-a draft-b]
+        SdCppGenerationInfo::GenerationResult.new(
+          images: %w[draft-a draft-b],
+          seed: nil,
+          seeds: []
+        )
       end
     end
 
@@ -128,7 +136,15 @@ class GenerateImageJobStyleFlowTest < ActiveJob::TestCase
     planner.define_singleton_method(:call) { |*_, **_| plan }
 
     switcher = Class.new { def switch(*) = true }
-    client = Class.new { def txt2img(**_) = %w[a b] }
+    client = Class.new do
+      define_method(:txt2img_all) do |**_|
+        SdCppGenerationInfo::GenerationResult.new(
+          images: %w[a b],
+          seed: nil,
+          seeds: []
+        )
+      end
+    end
 
     originals = { StylePlanGenerator => StylePlanGenerator.method(:new) }
     StylePlanGenerator.define_singleton_method(:new) { |**_| planner }

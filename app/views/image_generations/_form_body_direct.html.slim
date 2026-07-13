@@ -3,7 +3,8 @@
 - if @sd_model_profiles.any?
   div
     = label_tag :sd_model_profile_id, "画像生成モデル", class: "#{kb_label} mb-1"
-    = select_tag :sd_model_profile_id, options_from_collection_for_select(@sd_model_profiles, :id, :name, @image_generation.sd_model_profile_id), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId", action: "change->image-generation-form#sdModelProfileChanged" } }
+    - profile_options = @sd_model_profiles.map { |profile| [profile.name, profile.id, { "data-cfg-scale-min" => profile.cfg_scale_min }] }
+    = select_tag :sd_model_profile_id, options_for_select(profile_options, @image_generation.sd_model_profile_id), { include_blank: "選択してください", required: true, class: kb_field_input_classes, data: { image_generation_form_target: "sdModelProfileId", action: "change->image-generation-form#sdModelProfileChanged" } }
     p.mt-1.text-sm.kb-text-muted SdModelProfile を直接指定します。スタイルは使いません。
 - else
   .kb-alert.kb-alert-warning
@@ -54,7 +55,8 @@ div
       = form.number_field :steps, min: 1, max: 150, step: 1, class: kb_field_input_classes
     div
       = form.label :cfg_scale, "CFG Scale", class: "#{kb_label} mb-1"
-      = form.number_field :cfg_scale, min: 1, max: 30, step: 0.5, class: kb_field_input_classes
+      - direct_cfg_min = @image_generation.sd_model_profile&.cfg_scale_min || 1
+      = form.number_field :cfg_scale, min: direct_cfg_min, max: 30, step: 0.5, class: kb_field_input_classes, data: { image_generation_form_target: "directCfgScale" }
     div
       = form.label :sampler_name, "Sampler", class: "#{kb_label} mb-1"
       = form.select :sampler_name, options_for_select(@direct_sampler_options, @image_generation.sampler_name), { include_blank: (@direct_sampler_options.empty? ? "モデルを選択してください" : false) }, { class: kb_field_input_classes, disabled: @direct_sampler_options.empty?, data: { image_generation_form_target: "directSamplerName" } }

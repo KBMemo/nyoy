@@ -99,7 +99,7 @@ class GenerateImageJob < ApplicationJob
     generation.update!(status: "refining", image_started_at: Time.current)
 
     params = generation.resolved_params
-    png_data = SdCppClient.new.txt2img(
+    result = SdCppClient.new.txt2img_all(
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       width: generation.width,
@@ -111,9 +111,10 @@ class GenerateImageJob < ApplicationJob
       vae_tiling: params["vae_tiling"].nil? ? generation.vae_tiling : params["vae_tiling"],
       lora: generation.loras_for_api
     )
+    generation.record_actual_seed!(result.seed)
 
     generation.refined_images.attach(
-      io: StringIO.new(png_data),
+      io: StringIO.new(result.images.first),
       filename: "direct-#{generation.id}-1.png",
       content_type: "image/png",
       metadata: { direct: true, sequence: 1 }
@@ -201,7 +202,7 @@ class GenerateImageJob < ApplicationJob
     generation.update!(status: "drafting", image_started_at: Time.current)
 
     params = generation.resolved_params
-    png_list = SdCppClient.new.txt2img(
+    result = SdCppClient.new.txt2img_all(
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       width: generation.draft_width,
@@ -214,9 +215,10 @@ class GenerateImageJob < ApplicationJob
       lora: generation.loras_for_api,
       batch_size: generation.draft_batch_size
     )
+    generation.record_actual_seed!(result.seed)
 
     generation.drafts.purge
-    Array(png_list).each_with_index do |png_data, index|
+    result.images.each_with_index do |png_data, index|
       generation.drafts.attach(
         io: StringIO.new(png_data),
         filename: "draft-#{generation.id}-#{index}.png",

@@ -41,9 +41,26 @@ class SdModelProfileTest < ActiveSupport::TestCase
     assert_equal "SD 3.5", profile.family_label
   end
 
+  test "krea2 is an allowed family" do
+    profile = sd_model_profiles(:pony)
+    profile.family = "krea2"
+    assert profile.valid?
+    assert_equal "Krea2", profile.family_label
+  end
+
   test "resolved_default_params falls back to family defaults" do
     profile = SdModelProfile.new(family: "sd35", default_params: {})
     assert_equal SdModelProfile::FAMILY_DEFAULT_PARAMS["sd35"], profile.resolved_default_params
+  end
+
+  test "resolved_default_params uses krea2 family baseline" do
+    profile = SdModelProfile.new(family: "krea2", default_params: {})
+    assert_equal SdModelProfile::FAMILY_DEFAULT_PARAMS["krea2"], profile.resolved_default_params
+  end
+
+  test "cfg_scale_min allows zero for krea2" do
+    assert_in_delta 0.0, sd_model_profiles(:krea2).cfg_scale_min
+    assert_in_delta 1.0, sd_model_profiles(:pony).cfg_scale_min
   end
 
   test "resolved_default_params lets profile override family baseline" do

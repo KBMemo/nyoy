@@ -130,6 +130,7 @@ seed でファミリ別のたたき台（Pony タグ列、Flux 自然文、SD 3.
 | sd35 | SD 3.5 向け |
 | pony | Pony XL 向け |
 | flux | Flux 向け |
+| krea2 | Krea2 向け |
 | — | グローバル既定 |
 
 ### 4.3 CRUD

@@ -30,7 +30,7 @@ class RefineImageJob < ApplicationJob
   end
 
   def refine_image(generation, draft)
-    SdCppClient.new.img2img(
+    result = SdCppClient.new.img2img_result(
       prompt: generation.prompt,
       negative_prompt: generation.resolved_negative_prompt,
       init_image: draft.download,
@@ -44,6 +44,8 @@ class RefineImageJob < ApplicationJob
       denoising_strength: generation.refine_denoising_strength,
       lora: generation.loras_for_api
     )
+    generation.record_actual_seed!(result.seed)
+    result.images.first
   end
 
   def finalize_output(generation, refined_png)

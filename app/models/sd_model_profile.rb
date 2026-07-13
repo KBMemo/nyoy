@@ -3,14 +3,15 @@
 # Capability layer: a Stable Diffusion model that sd.cpp / switchd can serve.
 # Holds only the definition; prompt/look concerns live in PromptStyle.
 class SdModelProfile < ApplicationRecord
-  FAMILIES = %w[sd15 sdxl pony illustrious sd35 flux].freeze
+  FAMILIES = %w[sd15 sdxl pony illustrious sd35 flux krea2].freeze
   FAMILY_LABELS = {
     "sd15" => "SD 1.5",
     "sdxl" => "SDXL",
     "pony" => "Pony",
     "illustrious" => "Illustrious",
     "sd35" => "SD 3.5",
-    "flux" => "Flux"
+    "flux" => "Flux",
+    "krea2" => "Krea2"
   }.freeze
 
   FAMILY_SAMPLERS = {
@@ -19,7 +20,12 @@ class SdModelProfile < ApplicationRecord
     "pony" => %w[euler_a euler dpmpp2m dpmpp2m_sde dpmpp2m_sde_gpu dpmpp3m_sde ddim],
     "illustrious" => %w[euler_a euler dpmpp2m dpmpp2m_sde dpmpp2m_sde_gpu dpmpp3m_sde ddim],
     "sd35" => %w[euler euler_a dpmpp2m],
-    "flux" => %w[euler euler_a]
+    "flux" => %w[euler euler_a],
+    "krea2" => %w[euler euler_a]
+  }.freeze
+
+  FAMILY_CFG_SCALE_MIN = {
+    "krea2" => 0.0
   }.freeze
 
   # Base generation params per architecture family. A profile's own
@@ -31,7 +37,8 @@ class SdModelProfile < ApplicationRecord
     "pony"        => { "width" => 768, "height" => 768, "steps" => 24, "cfg_scale" => 6.0, "sampler_name" => "euler_a" },
     "illustrious" => { "width" => 768, "height" => 768, "steps" => 24, "cfg_scale" => 6.0, "sampler_name" => "euler_a" },
     "sd35"        => { "width" => 1024, "height" => 1024, "steps" => 28, "cfg_scale" => 4.5, "sampler_name" => "euler" },
-    "flux"        => { "width" => 1024, "height" => 1024, "steps" => 20, "cfg_scale" => 1.0, "sampler_name" => "euler" }
+    "flux"        => { "width" => 1024, "height" => 1024, "steps" => 20, "cfg_scale" => 1.0, "sampler_name" => "euler" },
+    "krea2"       => { "width" => 1024, "height" => 1024, "steps" => 28, "cfg_scale" => 4.5, "sampler_name" => "euler" }
   }.freeze
 
   has_many :prompt_style_models, dependent: :restrict_with_error
@@ -63,6 +70,10 @@ class SdModelProfile < ApplicationRecord
 
   def default_sampler_name
     resolved_default_params["sampler_name"].presence || family_sampler_names.first
+  end
+
+  def cfg_scale_min
+    FAMILY_CFG_SCALE_MIN.fetch(family, 1.0)
   end
 
   def sampler_name_options(current: nil)

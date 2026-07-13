@@ -25,7 +25,8 @@ export default class extends Controller {
     "directTranslateStatus",
     "directNegativeTranslateStatus",
     "directSamplerName",
-    "directSamplerStatus"
+    "directSamplerStatus",
+    "directCfgScale"
   ]
   static values = {
     translateUrl: String,
@@ -38,11 +39,32 @@ export default class extends Controller {
     this.updateReplaceButtonVisibility("direct")
     this.updateNegativeReplaceButtonVisibility("draft")
     this.updateNegativeReplaceButtonVisibility("direct")
+    this.updateDirectCfgScaleMin()
     this.loadDirectSamplers()
   }
 
   sdModelProfileChanged() {
+    this.updateDirectCfgScaleMin()
     this.loadDirectSamplers()
+  }
+
+  updateDirectCfgScaleMin() {
+    if (!this.hasDirectCfgScaleTarget) return
+
+    this.directCfgScaleTarget.min = String(this.selectedProfileCfgScaleMin())
+  }
+
+  selectedProfileCfgScaleMin() {
+    if (!this.hasSdModelProfileIdTarget) return 1
+
+    const option = this.sdModelProfileIdTarget.selectedOptions[0]
+    if (!option) return 1
+
+    const raw = option.dataset.cfgScaleMin
+    if (raw === undefined || raw === "") return 1
+
+    const min = Number(raw)
+    return Number.isFinite(min) ? min : 1
   }
 
   async loadDirectSamplers() {

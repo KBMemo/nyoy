@@ -40,6 +40,22 @@ class SdCppClientTest < ActiveSupport::TestCase
     assert_equal "b", images.last
   end
 
+  test "txt2img_all returns generation result with seed from info" do
+    client = SdCppClient.new(base_url: "http://example.test")
+
+    client.define_singleton_method(:post_json) do |_path, _payload|
+      {
+        "images" => [Base64.strict_encode64("png")],
+        "info" => '{"seed": 25, "all_seeds": [25]}'
+      }
+    end
+
+    result = client.txt2img_all(prompt: "test")
+
+    assert_equal "png", result.images.first
+    assert_equal 25, result.seed
+  end
+
   test "img2img payload includes init image and denoising strength" do
     client = SdCppClient.new(base_url: "http://example.test")
     captured = {}

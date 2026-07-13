@@ -12,7 +12,8 @@ module CapabilitySeeds
     { key: "anythingv5", name: "Anything V5", family: "sd15" },
     { key: "dreamshaper8", name: "DreamShaper 8", family: "sd15" },
     { key: "pony-v6", name: "Pony Diffusion V6 XL", family: "pony" },
-    { key: "illustrious_pencil-XL", name: "Illustrious Pencil XL", family: "illustrious" }
+    { key: "illustrious_pencil-XL", name: "Illustrious Pencil XL", family: "illustrious" },
+    { key: "krea2", name: "Krea 2", family: "krea2" }
   ].freeze
 
   LORAS = [

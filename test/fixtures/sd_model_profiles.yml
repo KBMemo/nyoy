@@ -24,3 +24,12 @@ flat2d:
   default_params: { "width": 512, "height": 512, "steps": 20, "cfg_scale": 7.0, "sampler_name": "euler_a" }
   enabled: true
   sort_order: 2
+
+krea2:
+  key: krea2
+  name: Krea 2
+  family: krea2
+  switch_key: krea2
+  default_params: { "width": 1024, "height": 1024, "steps": 28, "cfg_scale": 4.5, "sampler_name": "euler" }
+  enabled: true
+  sort_order: 3

@@ -72,6 +72,17 @@ module SdPromptTemplateSeeds
       BODY
     },
     {
+      name: "Krea2 向け",
+      family: "krea2",
+      sort_order: 6,
+      body: <<~BODY.squish
+        Generate natural English descriptions for Krea2 txt2img from the Japanese description.
+        Krea2 uses a Qwen3-VL text encoder; prefer clear natural-language phrases over long tag dumps.
+        Describe subject, action, setting, lighting, and composition in readable English.
+        For negative_prompt, keep short: low quality, blurry, distorted anatomy, watermark, text, oversaturated.
+      BODY
+    },
+    {
       name: "グローバル既定",
       family: nil,
       sort_order: 99,

@@ -22,7 +22,7 @@ Rails.application.config.x.nyoy.tap do |config|
   config.llama_cache_prompt = ENV.fetch("LLAMA_CACHE_PROMPT", "true") == "true"
   config.default_sd_models = ENV.fetch(
     "SDCPP_DEFAULT_MODELS",
-    "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL"
+    "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL,krea2"
   ).split(",").map(&:strip).reject(&:empty?)
   config.kbmemo_url = ENV.fetch("KBMEMO_URL", "https://kbmemo.net")
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]

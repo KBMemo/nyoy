@@ -3,6 +3,7 @@
 class ImageGeneration < ApplicationRecord
   include GenerationProgressBroadcastable
   include StylePlanConnectable
+  include SdSeedRecordable
 
   belongs_to :render_preset, optional: true
   belongs_to :refine_render_preset, class_name: "RenderPreset", optional: true
@@ -44,7 +45,7 @@ class ImageGeneration < ApplicationRecord
   validates :sd_model_profile, presence: true, if: :direct_flow?
   validates :width, :height, numericality: { only_integer: true, greater_than: 0 }
   validates :steps, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 150 }
-  validates :cfg_scale, numericality: { greater_than: 0, less_than_or_equal_to: 30 }
+  validate :cfg_scale_within_bounds
   validates :sampler_name, presence: true
   validates :loras, presence: true, unless: -> { style_flow? || direct_flow? }
   validates :draft_batch_size, numericality: { only_integer: true, in: 2..4 }, unless: :direct_flow?
@@ -273,6 +274,20 @@ class ImageGeneration < ApplicationRecord
   end
 
   private
+
+  def cfg_scale_within_bounds
+    return if cfg_scale.nil?
+
+    min = cfg_scale_minimum
+    return if cfg_scale >= min && cfg_scale <= 30
+
+    errors.add(:cfg_scale, "は#{min}以上30以下で入力してください")
+  end
+
+  def cfg_scale_minimum
+    profile = sd_model_profile || SdModelProfile.find_by(key: sd_model)
+    profile&.cfg_scale_min || 1.0
+  end
 
   def prompt_source_present
     return if japanese_prompt.present? || prompt.present?

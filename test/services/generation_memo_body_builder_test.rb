@@ -34,8 +34,25 @@ class GenerationMemoBodyBuilderTest < ActiveSupport::TestCase
     assert_includes body, "夕暮れの猫"
     assert_includes body, "cat at sunset"
     assert_includes body, "low quality"
+    assert_includes body, "- モデル: test.safetensors"
     assert_includes body, "/image_generations/#{generation.id}"
     assert_includes body, "テキスト生成（如意）"
+  end
+
+  test "format_model prefers sd_model_profile name for direct flow" do
+    profile = sd_model_profiles(:pony)
+    generation = ImageGeneration.create!(
+      generation_flow: "direct",
+      prompt: "test",
+      sd_model_profile: profile,
+      sd_model: profile.key,
+      loras: "[]",
+      status: "completed"
+    )
+
+    body = GenerationMemoBodyBuilder.build(source: generation, attachment: nil)
+
+    assert_includes body, "- モデル: Pony Diffusion V6 XL"
   end
 
   test "title_for truncates long prompts" do

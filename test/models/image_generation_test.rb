@@ -36,6 +36,41 @@ class ImageGenerationTest < ActiveSupport::TestCase
     assert generation.errors.key?(:sd_model_profile)
   end
 
+  test "direct krea2 flow accepts cfg scale zero" do
+    generation = ImageGeneration.new(
+      generation_flow: "direct",
+      japanese_prompt: "テスト",
+      sd_model_profile: sd_model_profiles(:krea2),
+      cfg_scale: 0,
+      loras: "[]"
+    )
+    assert generation.valid?
+  end
+
+  test "direct krea2 flow rejects negative cfg scale" do
+    generation = ImageGeneration.new(
+      generation_flow: "direct",
+      japanese_prompt: "テスト",
+      sd_model_profile: sd_model_profiles(:krea2),
+      cfg_scale: -0.5,
+      loras: "[]"
+    )
+    assert_not generation.valid?
+    assert generation.errors.key?(:cfg_scale)
+  end
+
+  test "direct pony flow rejects cfg scale zero" do
+    generation = ImageGeneration.new(
+      generation_flow: "direct",
+      japanese_prompt: "テスト",
+      sd_model_profile: sd_model_profiles(:pony),
+      cfg_scale: 0,
+      loras: "[]"
+    )
+    assert_not generation.valid?
+    assert generation.errors.key?(:cfg_scale)
+  end
+
   test "accepts sd prompt only with sd model for legacy flow" do
     generation = ImageGeneration.new(
       prompt: "chojugiga, rabbit, frog",

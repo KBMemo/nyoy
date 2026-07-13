@@ -40,10 +40,14 @@ class GenerateImageJobTest < ActiveJob::TestCase
     end
 
     client = Class.new do
-      def txt2img(**kwargs)
+      define_method(:txt2img_all) do |**kwargs|
         raise "unexpected batch size" unless kwargs[:batch_size] == 2
 
-        %w[draft-a draft-b]
+        SdCppGenerationInfo::GenerationResult.new(
+          images: %w[draft-a draft-b],
+          seed: nil,
+          seeds: []
+        )
       end
     end
 
@@ -78,10 +82,14 @@ class GenerateImageJobTest < ActiveJob::TestCase
     end
 
     client = Class.new do
-      def txt2img(**kwargs)
+      define_method(:txt2img_all) do |**kwargs|
         raise "unexpected width" unless kwargs[:width] == 768
 
-        "direct-png"
+        SdCppGenerationInfo::GenerationResult.new(
+          images: ["direct-png"],
+          seed: nil,
+          seeds: []
+        )
       end
     end
 
@@ -95,6 +103,67 @@ class GenerateImageJobTest < ActiveJob::TestCase
     assert_equal 1, generation.refined_images.count
     assert_not generation.drafts.attached?
     assert generation.refined_images.first.metadata["direct"]
+  end
+
+  test "direct flow records actual seed when random" do
+    profile = sd_model_profiles(:pony)
+    generation = ImageGeneration.create!(
+      generation_flow: "direct",
+      prompt: "1girl, masterpiece",
+      sd_model_profile: profile,
+      loras: "[]",
+      seed: nil
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    generation_result = SdCppGenerationInfo::GenerationResult.new(
+      images: ["direct-png"],
+      seed: 25,
+      seeds: [25]
+    )
+
+    client = Class.new do
+      define_method(:txt2img_all) { |**_| generation_result }
+    end
+
+    with_generation_stubs(switcher:, client:) do
+      GenerateImageJob.perform_now(generation.id)
+    end
+
+    assert_equal 25, generation.reload.seed
+  end
+
+  test "draft flow records actual seed when random" do
+    generation = ImageGeneration.create!(
+      prompt: "chojugiga, rabbit",
+      sd_model: "flat2d",
+      loras: "[]",
+      draft_batch_size: 2,
+      seed: -1
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    generation_result = SdCppGenerationInfo::GenerationResult.new(
+      images: %w[draft-a draft-b],
+      seed: 42,
+      seeds: [42, 43]
+    )
+
+    client = Class.new do
+      define_method(:txt2img_all) { |**_| generation_result }
+    end
+
+    with_generation_stubs(switcher:, client:) do
+      GenerateImageJob.perform_now(generation.id)
+    end
+
+    assert_equal 42, generation.reload.seed
   end
 end
 
@@ -126,9 +195,18 @@ class RefineImageJobTest < ActiveJob::TestCase
 
     calls = []
     client = Class.new do
+      define_method(:img2img_result) do |**kwargs|
+        calls << kwargs
+        SdCppGenerationInfo::GenerationResult.new(
+          images: ["refined-bytes"],
+          seed: nil,
+          seeds: []
+        )
+      end
+
       define_method(:img2img) do |**kwargs|
         calls << kwargs
-        calls.size == 1 ? "refined-bytes" : "final-bytes"
+        "final-bytes"
       end
     end
 
@@ -178,9 +256,13 @@ class RefineImageJobTest < ActiveJob::TestCase
 
     calls = []
     client = Class.new do
-      define_method(:img2img) do |**kwargs|
+      define_method(:img2img_result) do |**kwargs|
         calls << kwargs
-        "refined-bytes"
+        SdCppGenerationInfo::GenerationResult.new(
+          images: ["refined-bytes"],
+          seed: nil,
+          seeds: []
+        )
       end
     end
 
@@ -195,6 +277,48 @@ class RefineImageJobTest < ActiveJob::TestCase
     assert_equal generation.draft_height, calls.first[:height]
     assert_equal 1, generation.reload.refined_images.count
     assert_equal "upscaled-bytes", generation.refined_images.last.download
+  end
+
+  test "records actual seed when random" do
+    generation = ImageGeneration.create!(
+      prompt: "chojugiga, rabbit",
+      sd_model: "flat2d",
+      loras: "[]",
+      width: 512,
+      height: 512,
+      status: "awaiting_selection",
+      selected_draft_index: 0,
+      refine_denoising_strength: 0.4,
+      enable_hires: false,
+      seed: nil
+    )
+    generation.drafts.attach(
+      io: StringIO.new("draft-bytes"),
+      filename: "draft-0.png",
+      content_type: "image/png"
+    )
+
+    switcher = Class.new do
+      def switch(*); true; end
+    end
+
+    generation_result = SdCppGenerationInfo::GenerationResult.new(
+      images: ["refined-bytes"],
+      seed: 25,
+      seeds: [25]
+    )
+
+    client = Class.new do
+      define_method(:img2img_result) { |**_| generation_result }
+    end
+
+    with_image_resizer_stub(return_value: "upscaled-bytes") do
+      with_generation_stubs(switcher:, client:) do
+        RefineImageJob.perform_now(generation.id)
+      end
+    end
+
+    assert_equal 25, generation.reload.seed
   end
 
   test "keeps previous refined images when refining again" do
@@ -221,7 +345,13 @@ class RefineImageJobTest < ActiveJob::TestCase
     end
 
     client = Class.new do
-      define_method(:img2img) { |**_| "second-result" }
+      define_method(:img2img_result) do |**_|
+        SdCppGenerationInfo::GenerationResult.new(
+          images: ["second-result"],
+          seed: nil,
+          seeds: []
+        )
+      end
     end
 
     generation.update!(selected_draft_index: 1)

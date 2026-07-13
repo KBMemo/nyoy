@@ -124,6 +124,30 @@ class ImageGenerationsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to image_generation_path(generation)
   end
 
+  test "create direct krea2 flow accepts cfg scale zero" do
+    profile = sd_model_profiles(:krea2)
+
+    assert_enqueued_with(job: GenerateImageJob) do
+      post image_generations_path, params: {
+        section: "direct",
+        sd_model_profile_id: profile.id,
+        image_generation: {
+          japanese_prompt: "風景",
+          prompt: "landscape, masterpiece",
+          width: 1024,
+          height: 1024,
+          steps: 28,
+          cfg_scale: 0,
+          sampler_name: "euler"
+        }
+      }
+    end
+
+    generation = ImageGeneration.order(:id).last
+    assert_equal 0, generation.cfg_scale
+    assert_equal profile, generation.sd_model_profile
+  end
+
   test "create stores aspect_ratio and enqueues job" do
     assert_enqueued_with(job: GenerateImageJob) do
       post image_generations_path, params: {

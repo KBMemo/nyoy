@@ -51,7 +51,7 @@ class SdCppClient
     hr_steps: nil,
     hr_denoising_strength: nil
   )
-    images = txt2img_all(
+    result = txt2img_all(
       prompt: prompt,
       negative_prompt: negative_prompt,
       width: width,
@@ -70,7 +70,7 @@ class SdCppClient
       hr_denoising_strength: hr_denoising_strength
     )
 
-    batch_size > 1 ? images : images.first
+    batch_size > 1 ? result.images : result.images.first
   end
 
   def txt2img_all(
@@ -113,10 +113,54 @@ class SdCppClient
       hr_denoising_strength: hr_denoising_strength
     )
 
-    decode_images(post_json("/sdapi/v1/txt2img", payload))
+    decode_generation_response(post_json("/sdapi/v1/txt2img", payload))
   end
 
   def img2img(
+    prompt:,
+    init_image:,
+    negative_prompt: "",
+    width: 512,
+    height: 512,
+    steps: 20,
+    cfg_scale: 7.0,
+    seed: -1,
+    sampler_name: nil,
+    vae_tiling: nil,
+    denoising_strength: 0.4,
+    lora: [],
+    enable_hr: nil,
+    hr_upscaler: nil,
+    hr_scale: nil,
+    hr_steps: nil,
+    hr_denoising_strength: nil,
+    hr_resize_x: nil,
+    hr_resize_y: nil
+  )
+    img2img_result(
+      prompt: prompt,
+      init_image: init_image,
+      negative_prompt: negative_prompt,
+      width: width,
+      height: height,
+      steps: steps,
+      cfg_scale: cfg_scale,
+      seed: seed,
+      sampler_name: sampler_name,
+      vae_tiling: vae_tiling,
+      denoising_strength: denoising_strength,
+      lora: lora,
+      enable_hr: enable_hr,
+      hr_upscaler: hr_upscaler,
+      hr_scale: hr_scale,
+      hr_steps: hr_steps,
+      hr_denoising_strength: hr_denoising_strength,
+      hr_resize_x: hr_resize_x,
+      hr_resize_y: hr_resize_y
+    ).images.first
+  end
+
+  def img2img_result(
     prompt:,
     init_image:,
     negative_prompt: "",
@@ -162,7 +206,7 @@ class SdCppClient
       hr_resize_y: hr_resize_y
     )
 
-    decode_images(post_json("/sdapi/v1/img2img", payload)).first
+    decode_generation_response(post_json("/sdapi/v1/img2img", payload))
   end
 
   def inpaint(
@@ -196,10 +240,18 @@ class SdCppClient
     payload[:mask] = Base64.strict_encode64(mask)
     payload[:denoising_strength] = denoising_strength
 
-    decode_images(post_json("/sdapi/v1/img2img", payload)).first
+    decode_generation_response(post_json("/sdapi/v1/img2img", payload)).images.first
   end
 
   private
+
+  def decode_generation_response(json)
+    SdCppGenerationInfo.decode_response(json)
+  end
+
+  def decode_images(json)
+    SdCppGenerationInfo.decode_images(json)
+  end
 
   def build_generation_payload(
     prompt:,
@@ -238,13 +290,6 @@ class SdCppClient
     payload[:hr_resize_x] = hr_resize_x if hr_resize_x
     payload[:hr_resize_y] = hr_resize_y if hr_resize_y
     payload[:denoising_strength] = hr_denoising_strength if hr_denoising_strength && !payload.key?(:denoising_strength)
-  end
-
-  def decode_images(json)
-    images = json.fetch("images", []).map { |image_b64| Base64.decode64(image_b64) }
-    raise Error, "no image returned" if images.empty?
-
-    images
   end
 
   def post_json(path, payload)

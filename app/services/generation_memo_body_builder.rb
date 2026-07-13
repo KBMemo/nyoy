@@ -127,6 +127,7 @@ module GenerationMemoBodyBuilder
     case source
     when ImageGeneration
       lines << "- スタイル: #{source.style_label}" if source.style_label.present?
+      lines << "- モデル: #{format_model(source)}" if format_model(source).present?
       lines << "- サイズ: #{source.width}×#{source.height}"
       lines << "- ラフ: #{source.draft_batch_size} 枚 / #{source.draft_steps_for_api} steps"
       lines << "- 仕上げ: #{source.refine_steps_for_api} steps / 強度 #{source.refine_denoising_strength}"
@@ -136,12 +137,14 @@ module GenerationMemoBodyBuilder
       lines << "- Sampler: #{source.sampler_name}"
     when MemoIllustration
       lines << "- スタイル: #{source.style_label}" if source.style_label.present?
+      lines << "- モデル: #{format_model(source)}" if format_model(source).present?
       lines << "- サイズ: #{source.width}×#{source.height}"
       lines << "- Steps / CFG: #{source.steps} / #{source.cfg_scale}"
       lines << "- Seed: #{format_seed(source.seed)}"
     when Img2imgGeneration
       lines << "- モード: #{source.generation_mode_label}"
       lines << "- スタイル: #{source.style_label}" if source.style_label.present?
+      lines << "- モデル: #{format_model(source)}" if format_model(source).present?
       lines << "- サイズ: #{source.width}×#{source.height}"
       lines << "- Steps / 強度 / CFG: #{source.steps} / #{source.denoising_strength} / #{source.cfg_scale}"
       lines << "- Seed: #{format_seed(source.seed)}"
@@ -166,5 +169,17 @@ module GenerationMemoBodyBuilder
     return "ランダム" if seed.nil? || seed.to_i.negative?
 
     seed.to_s
+  end
+
+  def format_model(source)
+    case source
+    when ImageGeneration
+      label = source.model_label
+    else
+      key = source.try(:sd_model)
+      label = SdModelProfile.find_by(key: key)&.name || key
+    end
+
+    label.presence unless label == "—"
   end
 end
