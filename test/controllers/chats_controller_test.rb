@@ -6,6 +6,7 @@ require "test_helper"
 class ChatsControllerTest < ActionDispatch::IntegrationTest
   setup do
     ChatModelCatalog.seed!
+    LlmSamplingPresetSeeds.seed!
   end
 
   test "index renders chat list" do
@@ -123,6 +124,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "button[aria-label='チャット設定'] i[data-lucide=settings]"
     assert_select "dialog#chat_settings_dialog input[name='temperature']"
     assert_select "dialog#chat_settings_dialog input[name='top_p']"
+    assert_select "dialog#chat_settings_dialog #chat_sampling_preset_select"
+    assert_select "dialog#chat_settings_dialog #chat_sampling_preset_select option[value]", minimum: 2
+    assert_select "dialog#chat_settings_dialog button[data-action='prompt-conversion-settings#applyPreset']"
     assert_select "dialog#chat_settings_dialog input[name='max_searches_per_turn']"
     assert_select "dialog#chat_settings_dialog input[name='max_fetches_per_turn']"
     assert_select "section h2", text: "Web ツール上限", count: 0

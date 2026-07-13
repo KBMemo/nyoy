@@ -123,6 +123,11 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_not_includes ChatTools::Registry.tool_classes, ChatTools::ListAlbums
   end
 
+  test "sampling tools are always available" do
+    assert_includes ChatTools::Registry.tool_classes, ChatTools::ListSamplingPresets
+    assert_includes ChatTools::Registry.tool_classes, ChatTools::ApplySamplingPreset
+  end
+
   test "search_memos returns memos from client" do
     fake_client = Object.new
     calls = []

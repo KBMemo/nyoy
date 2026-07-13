@@ -27,6 +27,8 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_equal "analyze_image", ChatTools::AnalyzeImage.new(chat: Chat.new).name
     assert_equal "list_albums", ChatTools::ListAlbums.new.name
     assert_equal "get_media", ChatTools::GetMedia.new.name
+    assert_equal "list_sampling_presets", ChatTools::ListSamplingPresets.new.name
+    assert_equal "apply_sampling_preset", ChatTools::ApplySamplingPreset.new.name
   end
 
   test "web_search returns results from client" do

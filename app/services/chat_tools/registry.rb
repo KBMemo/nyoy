@@ -59,6 +59,19 @@ module ChatTools
       使うときは prompt に具体的な質問を渡す。
     TEXT
 
+    MEDIA_TOOLS_INSTRUCTIONS = <<~TEXT.squish
+      list_albums / get_media で葛籠（tsuzura）に保存されたメディアを参照できます。
+      Bearer 認証で GET /v1/media/:id/file からバイナリ取得可能です（如意は TsuzuraClient#download_media）。
+      Chat に添付した画像は「Nyoy Chat」アルバムへ自動アーカイブされ、メタデータに tsuzura_media_id が付きます。
+      create_memo / update_memo 実行時に image::media: マクロが自動挿入されます。
+    TEXT
+
+    SAMPLING_TOOLS_INSTRUCTIONS = <<~TEXT.squish
+      list_sampling_presets で推奨サンプリング一覧を取得できる。
+      apply_sampling_preset はユーザーが明示的にサンプリングや温度などの変更を求めたときだけ使い、
+      会話の llm_params をプリセットで上書きする。勝手に変更しない。
+    TEXT
+
     MEMO_TOOL_CLASSES = [
       SearchMemos,
       GetMemo,
@@ -81,12 +94,10 @@ module ChatTools
       GetMedia
     ].freeze
 
-    MEDIA_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      list_albums / get_media で葛籠（tsuzura）に保存されたメディアを参照できます。
-      Bearer 認証で GET /v1/media/:id/file からバイナリ取得可能です（如意は TsuzuraClient#download_media）。
-      Chat に添付した画像は「Nyoy Chat」アルバムへ自動アーカイブされ、メタデータに tsuzura_media_id が付きます。
-      create_memo / update_memo 実行時に image::media: マクロが自動挿入されます。
-    TEXT
+    SAMPLING_TOOL_CLASSES = [
+      ListSamplingPresets,
+      ApplySamplingPreset
+    ].freeze
 
     module_function
 
@@ -123,6 +134,7 @@ module ChatTools
       classes << SearchFetchedPage
       classes.concat(VISION_TOOL_CLASSES) if vision_tools_available?
       classes.concat(MEDIA_TOOL_CLASSES) if media_tools_available?
+      classes.concat(SAMPLING_TOOL_CLASSES)
       classes
     end
 
@@ -130,7 +142,8 @@ module ChatTools
       AnalyzeImage,
       CreateMemo,
       UpdateMemo,
-      RecallMemos
+      RecallMemos,
+      ApplySamplingPreset
     ].freeze
 
     WEB_BUDGET_TOOL_CLASSES = [
@@ -165,6 +178,7 @@ module ChatTools
       end
       instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
       instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
+      instructions << SAMPLING_TOOLS_INSTRUCTIONS
 
       llm_chat.with_tools(*tools, calls: :one, concurrency: false)
               .with_instructions(instructions.compact.join(" "), append: true)

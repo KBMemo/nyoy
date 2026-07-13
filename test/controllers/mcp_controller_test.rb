@@ -53,6 +53,8 @@ class McpControllerTest < ActionDispatch::IntegrationTest
     assert_includes names, "fetch_url"
     assert_includes names, "search_memos"
     assert_includes names, "web_search"
+    assert_includes names, "list_sampling_presets"
+    assert_includes names, "apply_sampling_preset"
     assert_includes names, "generate_image"
     assert_includes names, "list_prompt_styles"
     assert_includes names, "refine_image"

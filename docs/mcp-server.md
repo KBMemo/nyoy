@@ -35,6 +35,7 @@ export MCP_API_TOKEN="your-secret-token"
 | `recall_memos` | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
 | `list_albums` / `get_media` | `tsuzura` 有効 |
 | `analyze_image` | `vision_llama` 有効（MCP では `tsuzura_media_id` 指定） |
+| `list_sampling_presets` / `apply_sampling_preset` | 常時（後者は MCP では `chat_id` 必須） |
 | `list_prompt_styles` | `sd_cpp` 有効 |
 | `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング） |
 

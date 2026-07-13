@@ -92,6 +92,7 @@ class ChatsController < ApplicationController
     @searxng_connection = ServiceConnection.find_by(key: "searxng")
     @web_tool_settings = @searxng_connection&.searxng_settings || SearxngSettings.load
     @chat_llm_settings = ChatLlmSettings.from(@chat.llm_params)
+    @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
   end
 
   def chat_llm_settings_params
