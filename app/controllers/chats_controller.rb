@@ -95,7 +95,7 @@ class ChatsController < ApplicationController
   end
 
   def chat_llm_settings_params
-    params.permit(:temperature, :top_p, :max_tokens, :top_k, :repeat_penalty, :min_p)
+    params.permit(*LlmSamplingParams::KEYS)
   end
 
   def web_tool_settings_params

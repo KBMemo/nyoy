@@ -250,6 +250,18 @@
   color: var(--kb-text-primary);
 }
 
+/* Hide calculator-style steppers when type=number is still used elsewhere. */
+.kb-input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.kb-input[type="number"]::-webkit-outer-spin-button,
+.kb-input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
 .kb-field-input {
   display: block;
   width: 100%;

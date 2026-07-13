@@ -12,10 +12,11 @@ module GenerationMemoBodyBuilder
     lines.concat(prompt_sections(source, attachment))
     lines << ""
     lines.concat(settings_section(source, attachment))
+    lines.concat(timing_section(source))
     lines << ""
     lines << "## 如意"
     lines << "- 種別: #{generation_kind_label(source)}"
-    lines << "- 詳細: #{source_path(source)}"
+    lines << "- 詳細: #{source_detail_link(source)}"
     lines.join("\n")
   end
 
@@ -121,6 +122,49 @@ module GenerationMemoBodyBuilder
     end
   end
 
+  def timing_section(source)
+    return [] unless source.respond_to?(:generation_elapsed_seconds)
+
+    lines = timing_lines(source)
+    return [] if lines.empty?
+
+    ["", "## 生成時間", ""] + lines
+  end
+
+  def timing_lines(source)
+    show_prompt_timing = show_prompt_timing_for(source)
+    lines = []
+
+    if source.image_started_at || (show_prompt_timing && source.prompt_started_at)
+      if show_prompt_timing && source.prompt_started_at
+        lines << "- プロンプト: #{format_duration(source.prompt_elapsed_seconds)}"
+      end
+      if source.image_started_at
+        lines << "- 画像: #{format_duration(source.image_elapsed_seconds)}"
+      end
+    elsif source.started_at
+      lines << "- 合計: #{format_duration(source.generation_elapsed_seconds)}"
+    end
+
+    lines
+  end
+
+  def show_prompt_timing_for(source)
+    !source.is_a?(ImageGeneration)
+  end
+
+  def format_duration(seconds)
+    return "—" if seconds.nil?
+
+    if seconds < 60
+      format("%.1f秒", seconds)
+    else
+      minutes = (seconds / 60).floor
+      remainder = seconds % 60
+      format("%d分%.0f秒", minutes, remainder)
+    end
+  end
+
   def settings_section(source, attachment)
     lines = ["## 設定", ""]
 
@@ -156,6 +200,16 @@ module GenerationMemoBodyBuilder
 
   def source_path(source)
     Rails.application.routes.url_helpers.polymorphic_path(source, only_path: true)
+  end
+
+  def source_url(source)
+    url_options = Rails.application.config.action_mailer.default_url_options || {}
+    Rails.application.routes.url_helpers.polymorphic_url(source, **url_options)
+  end
+
+  def source_detail_link(source)
+    path = source_path(source)
+    "[#{path}](#{source_url(source)})"
   end
 
   def truncate_title(text)

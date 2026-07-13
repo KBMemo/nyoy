@@ -1,0 +1,36 @@
+- content_for :title, @llm_sampling_preset.name
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title = @llm_sampling_preset.name
+  .flex.flex-wrap.items-center.gap-3
+    = link_to "編集", edit_llm_sampling_preset_path(@llm_sampling_preset), class: kb_btn_secondary_sm
+    = link_to "JSON", llm_sampling_preset_path(@llm_sampling_preset, format: :json), class: "kb-chrome-link text-sm"
+
+.kb-card.p-4.space-y-4
+  dl.grid.gap-2.text-sm class="sm:grid-cols-[auto_1fr]"
+    dt.font-medium.kb-text-secondary key
+    dd.nyoy-monospace = @llm_sampling_preset.key
+    dt.font-medium.kb-text-secondary モデル一致
+    dd.nyoy-monospace = @llm_sampling_preset.model_name_match.presence || "—"
+    dt.font-medium.kb-text-secondary 種別
+    dd = @llm_sampling_preset.builtin? ? "組み込み" : "カスタム"
+    dt.font-medium.kb-text-secondary 状態
+    dd = @llm_sampling_preset.enabled? ? "有効" : "無効"
+    dt.font-medium.kb-text-secondary サンプリング
+    dd
+      .flex.flex-wrap.gap-x-3.gap-y-1.font-mono.text-xs
+        - LlmSamplingParams::KEYS.each do |key|
+          span
+            span.kb-text-muted = "#{key}="
+            = @llm_sampling_preset.sampling_params.public_send(key).nil? ? "—" : @llm_sampling_preset.sampling_params.public_send(key)
+        - if @llm_sampling_preset.enable_thinking.present?
+          span
+            span.kb-text-muted enable_thinking=
+            = @llm_sampling_preset.enable_thinking
+  - if @llm_sampling_preset.notes.present?
+    div
+      h2 class=kb_section_title メモ
+      p.mt-2.text-sm.kb-text-secondary.whitespace-pre-wrap = @llm_sampling_preset.notes
+
+.mt-4
+  = link_to "一覧へ戻る", llm_sampling_presets_path, class: "kb-chrome-link text-sm"

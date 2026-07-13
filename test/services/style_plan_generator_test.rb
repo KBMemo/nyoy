@@ -4,9 +4,13 @@ require "test_helper"
 
 class StylePlanGeneratorTest < ActiveSupport::TestCase
   FakeClient = Struct.new(:response, :captured, keyword_init: true) do
-    def chat(messages:, temperature:, max_tokens:, response_format: nil, read_timeout: nil)
+    def chat(messages:, temperature:, max_tokens:, response_format: nil, chat_template_kwargs: nil, sampling: nil, read_timeout: nil, **)
       captured[:messages] = messages if captured
+      captured[:temperature] = temperature if captured
+      captured[:max_tokens] = max_tokens if captured
       captured[:response_format] = response_format if captured
+      captured[:chat_template_kwargs] = chat_template_kwargs if captured
+      captured[:sampling] = sampling if captured
       response
     end
   end

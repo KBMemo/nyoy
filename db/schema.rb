@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_13_212321) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -154,6 +154,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_180000) do
     t.integer "width", default: 768, null: false
     t.index ["status"], name: "index_img2img_generations_on_status"
     t.index ["style_id"], name: "index_img2img_generations_on_style_id"
+  end
+
+  create_table "llm_sampling_presets", force: :cascade do |t|
+    t.boolean "builtin", default: false, null: false
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "key", null: false
+    t.string "model_name_match"
+    t.string "name", null: false
+    t.text "notes"
+    t.jsonb "params", default: {}, null: false
+    t.integer "sort_order", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_llm_sampling_presets_on_key", unique: true
   end
 
   create_table "lora_profiles", force: :cascade do |t|

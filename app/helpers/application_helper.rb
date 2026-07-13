@@ -65,6 +65,7 @@ module ApplicationHelper
       ["生成テンプレート", "sd_prompt_templates", sd_prompt_templates_path],
       ["LoRA", "lora_profiles", lora_profiles_path],
       ["接続", "service_connections", service_connections_path],
+      ["サンプリング", "llm_sampling_presets", llm_sampling_presets_path],
       ["既定モデル", "app_settings", edit_app_settings_path]
     ]
   end

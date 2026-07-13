@@ -4,9 +4,13 @@ require "test_helper"
 
 class DirectPromptGeneratorTest < ActiveSupport::TestCase
   FakeClient = Struct.new(:response, :captured, keyword_init: true) do
-    def chat(messages:, temperature:, max_tokens:, response_format: nil, read_timeout: nil)
+    def chat(messages:, temperature:, max_tokens:, response_format: nil, chat_template_kwargs: nil, sampling: nil, read_timeout: nil, **)
       captured[:messages] = messages if captured
+      captured[:temperature] = temperature if captured
+      captured[:max_tokens] = max_tokens if captured
       captured[:response_format] = response_format if captured
+      captured[:chat_template_kwargs] = chat_template_kwargs if captured
+      captured[:sampling] = sampling if captured
       response
     end
   end
@@ -132,6 +136,40 @@ class DirectPromptGeneratorTest < ActiveSupport::TestCase
 
     assert_includes system, DirectPromptGenerator::SYSTEM_PREFIX
     assert_includes system, template.body
+  end
+
+  test "applies connection prompt conversion settings" do
+    service_connections(:llama_cpp).update!(
+      settings: {
+        "prompt_conversion" => {
+          "json_schema" => "off",
+          "temperature" => 0.15,
+          "top_p" => 0.8,
+          "max_tokens" => 400,
+          "enable_thinking" => "false"
+        }
+      }
+    )
+
+    captured = {}
+    client = FakeClient.new(
+      response: llama_response(prompt: "a", negative_prompt: "b"),
+      captured: captured
+    )
+
+    with_json_schema_enabled do
+      DirectPromptGenerator.new(client: client, connection_key: "llama_cpp").generate(
+        "テスト",
+        sd_model_profile: sd_model_profiles(:pony)
+      )
+    end
+
+    assert_nil captured[:response_format]
+    assert_in_delta 0.15, captured[:temperature]
+    assert_equal 400, captured[:max_tokens]
+    assert_equal({ "enable_thinking" => false }, captured[:chat_template_kwargs])
+    assert_in_delta 0.8, captured[:sampling].top_p
+    assert_includes captured[:messages].last[:content], "Return JSON with keys: prompt, negative_prompt"
   end
 
   private

@@ -35,7 +35,7 @@ class GenerationMemoBodyBuilderTest < ActiveSupport::TestCase
     assert_includes body, "cat at sunset"
     assert_includes body, "low quality"
     assert_includes body, "- モデル: test.safetensors"
-    assert_includes body, "/image_generations/#{generation.id}"
+    assert_includes body, "- 詳細: [/image_generations/#{generation.id}](http://example.com/image_generations/#{generation.id})"
     assert_includes body, "テキスト生成（如意）"
   end
 
@@ -65,5 +65,70 @@ class GenerationMemoBodyBuilderTest < ActiveSupport::TestCase
     generation = ImageGeneration.new
 
     assert_equal %w[nyoy ai-image image-generation], GenerationMemoBodyBuilder.tags_for(generation)
+  end
+
+  test "includes total generation time when only started_at is recorded" do
+    generation = ImageGeneration.new(
+      japanese_prompt: "テスト",
+      prompt: "test",
+      sd_model: "test.safetensors",
+      width: 512,
+      height: 512,
+      steps: 20,
+      cfg_scale: 6.0,
+      sampler_name: "euler_a",
+      loras: "[]",
+      status: "completed",
+      started_at: 90.seconds.ago,
+      finished_at: 30.seconds.ago
+    )
+    generation.save!
+
+    body = GenerationMemoBodyBuilder.build(source: generation, attachment: nil)
+
+    assert_includes body, "## 生成時間"
+    assert_includes body, "- 合計: 1分0秒"
+  end
+
+  test "includes image phase timing for image generation" do
+    generation = ImageGeneration.new(
+      japanese_prompt: "テスト",
+      prompt: "test",
+      sd_model: "test.safetensors",
+      width: 512,
+      height: 512,
+      steps: 20,
+      cfg_scale: 6.0,
+      sampler_name: "euler_a",
+      loras: "[]",
+      status: "completed",
+      started_at: 120.seconds.ago,
+      finished_at: 20.seconds.ago,
+      image_started_at: 80.seconds.ago,
+      image_finished_at: 20.seconds.ago
+    )
+    generation.save!
+
+    body = GenerationMemoBodyBuilder.build(source: generation, attachment: nil)
+
+    assert_includes body, "## 生成時間"
+    assert_includes body, "- 画像: 1分0秒"
+    refute_includes body, "プロンプト:"
+  end
+
+  test "includes prompt and image timing for memo illustration" do
+    illustration = MemoIllustration.create!(
+      body: "本文",
+      status: "completed",
+      prompt_started_at: 50.seconds.ago,
+      prompt_finished_at: 40.seconds.ago,
+      image_started_at: 30.seconds.ago,
+      image_finished_at: 10.seconds.ago
+    )
+
+    body = GenerationMemoBodyBuilder.build(source: illustration, attachment: nil)
+
+    assert_includes body, "- プロンプト: 10.0秒"
+    assert_includes body, "- 画像: 20.0秒"
   end
 end

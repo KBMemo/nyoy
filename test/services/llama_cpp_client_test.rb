@@ -113,4 +113,37 @@ class LlamaCppClientTest < ActiveSupport::TestCase
   ensure
     Net::HTTP.define_singleton_method(:new, original_new)
   end
+
+  test "sends chat_template_kwargs with boolean enable_thinking" do
+    captured_body = nil
+    response = Struct.new(:body).new('{"choices":[{"message":{"content":"{}"}}]}')
+    def response.is_a?(klass)
+      klass == Net::HTTPSuccess
+    end
+
+    fake_http = Object.new
+    fake_http.define_singleton_method(:open_timeout=) { |_| }
+    fake_http.define_singleton_method(:read_timeout=) { |_| }
+    fake_http.define_singleton_method(:use_ssl=) { |_| }
+    fake_http.define_singleton_method(:request) do |req|
+      captured_body = JSON.parse(req.body)
+      response
+    end
+
+    original_new = Net::HTTP.method(:new)
+    Net::HTTP.define_singleton_method(:new) { |*| fake_http }
+
+    LlamaCppClient.new(base_url: "http://llama.test:8080").chat(
+      messages: [{ role: "user", content: "hi" }],
+      chat_template_kwargs: { "enable_thinking" => false },
+      sampling: LlmSamplingParams.from("top_p" => 0.8, "top_k" => 20)
+    )
+
+    assert_equal false, captured_body.dig("chat_template_kwargs", "enable_thinking")
+    assert_equal FalseClass, captured_body.dig("chat_template_kwargs", "enable_thinking").class
+    assert_in_delta 0.8, captured_body["top_p"]
+    assert_equal 20, captured_body["top_k"]
+  ensure
+    Net::HTTP.define_singleton_method(:new, original_new)
+  end
 end

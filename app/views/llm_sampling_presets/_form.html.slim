@@ -1,0 +1,68 @@
+- content_for :title, title
+- sampling = llm_sampling_preset.sampling_params
+- compact_input = "#{kb_field_input_classes} w-full max-w-40"
+
+.mb-6
+  h1 class=kb_page_title = title
+
+= form_with model: llm_sampling_preset, class: "space-y-4 max-w-3xl" do |form|
+  - if llm_sampling_preset.errors.any?
+    .kb-alert.kb-alert-danger
+      ul.list-disc.pl-5
+        - llm_sampling_preset.errors.full_messages.each do |message|
+          li = message
+
+  .kb-card.p-4.space-y-3
+    h2 class=kb_section_title 識別
+    div
+      = form.label :key, "key", class: "#{kb_label} mb-1"
+      - if llm_sampling_preset.builtin?
+        p.nyoy-monospace.text-sm.kb-text-secondary = llm_sampling_preset.key
+        p.mt-1.text-sm.kb-text-muted 組み込みプリセットの key は変更できません。
+      - else
+        = form.text_field :key, required: true, class: "#{compact_input} font-mono text-sm", placeholder: "qwen3_5_9b"
+        p.mt-1.text-sm.kb-text-muted 小文字英数字と _ のみ。
+
+  .kb-card.p-4.space-y-3
+    h2 class=kb_section_title 表示
+    .grid.gap-3 class="sm:grid-cols-2"
+      div
+        = form.label :name, "表示名", class: "#{kb_label} mb-1"
+        = form.text_field :name, required: true, class: compact_input
+      div
+        = form.label :model_name_match, "モデル名マッチ（任意）", class: "#{kb_label} mb-1"
+        = form.text_field :model_name_match, class: "#{compact_input} font-mono text-sm", placeholder: "qwen3"
+        p.mt-1.text-xs.kb-text-muted モデル名の部分一致（エージェント用）
+
+  .kb-card.p-4.space-y-3
+    h2 class=kb_section_title サンプリング
+    .flex.flex-wrap.items-end.gap-x-3.gap-y-2
+      - LlmSamplingParams::KEYS.each do |key|
+        - inputmode = LlmSamplingParams::FLOAT_KEYS.include?(key) ? "decimal" : "numeric"
+        div class="w-16 shrink-0"
+          = form.label key, key, class: "#{kb_label} mb-1 font-mono text-[10px] leading-tight"
+          = form.text_field key, value: sampling.public_send(key), inputmode: inputmode, autocomplete: "off", class: "#{kb_field_input_classes} w-16 max-w-16 font-mono text-xs px-1"
+      div class="w-20 shrink-0"
+        label class="#{kb_label} mb-1 font-mono text-[10px] leading-tight" for="llm_sampling_preset_enable_thinking" enable_thinking
+        select#llm_sampling_preset_enable_thinking class="#{kb_field_input_classes} w-20 max-w-20 font-mono text-xs px-1" name="llm_sampling_preset[enable_thinking]"
+          - [["—", ""], ["オフ", "false"], ["オン", "true"], ["未指定", "unset"]].each do |label, value|
+            option value=value selected=(llm_sampling_preset.enable_thinking.to_s == value) = label
+
+  .kb-card.p-4.space-y-3
+    h2 class=kb_section_title その他
+    .grid.gap-3 class="sm:grid-cols-2"
+      div
+        = form.label :sort_order, "表示順", class: "#{kb_label} mb-1"
+        = form.number_field :sort_order, min: 0, step: 1, class: compact_input
+      label.flex.items-center.gap-2.text-sm.self-end.pb-2
+        = form.check_box :enabled, class: "kb-control-accent"
+        span 有効
+    div
+      = form.label :notes, "メモ", class: "#{kb_label} mb-1"
+      = form.text_area :notes, rows: 2, class: kb_field_input_classes
+
+  .flex.flex-wrap.items-center.gap-3
+    = form.submit(llm_sampling_preset.persisted? ? "更新" : "作成", class: kb_btn_primary_sm)
+    = link_to "キャンセル", llm_sampling_preset.persisted? ? llm_sampling_preset_path(llm_sampling_preset) : llm_sampling_presets_path, class: "kb-chrome-link text-sm"
+    - if llm_sampling_preset.persisted? && !llm_sampling_preset.builtin?
+      = button_to "削除", llm_sampling_preset_path(llm_sampling_preset), method: :delete, class: "kb-chrome-link text-sm text-red-600", form: { data: { turbo_confirm: "削除しますか？" } }

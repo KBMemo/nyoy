@@ -33,14 +33,17 @@ class StylePlanGenerator
     end
 
     chunks = filter_chunks(@retriever.retrieve(text).to_a, styles)
+    settings = conversion_settings
     response = @client.chat(
       messages: [
         { role: "system", content: StylePlanPrompts.system_for(@flow) },
         { role: "user", content: user_prompt(text, styles, chunks) }
       ],
-      temperature: 0.2,
-      max_tokens: MAX_TOKENS,
+      temperature: settings.resolved_temperature,
+      max_tokens: settings.resolved_max_tokens(default: MAX_TOKENS),
       response_format: response_format(styles),
+      chat_template_kwargs: settings.chat_template_kwargs,
+      sampling: settings.sampling,
       read_timeout: Rails.application.config.x.nyoy.llama_read_timeout
     )
 
@@ -58,10 +61,13 @@ class StylePlanGenerator
   end
 
   def response_format(styles)
-    return unless Rails.application.config.x.nyoy.llama_json_schema
-    return unless StylePlanModelCatalog.json_schema_supported?(@connection_key)
+    return unless StylePlanModelCatalog.json_schema_enabled?(@connection_key)
 
     StylePlanJsonSchema.build(style_ids: styles.map(&:style_id))
+  end
+
+  def conversion_settings
+    @conversion_settings ||= StylePlanModelCatalog.prompt_conversion_settings(@connection_key)
   end
 
   def filter_chunks(chunks, styles)

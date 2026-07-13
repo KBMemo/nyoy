@@ -17,7 +17,9 @@ class LlamaCppClient
     @api_token = api_token
   end
 
-  def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil, read_timeout: nil)
+  def chat(messages:, temperature: 0.3, max_tokens: 512, response_format: nil, chat_template_kwargs: nil,
+           sampling: nil, top_p: nil, top_k: nil, min_p: nil, presence_penalty: nil, frequency_penalty: nil,
+           repeat_penalty: nil, read_timeout: nil)
     payload = {
       model: @model,
       messages: messages,
@@ -25,6 +27,18 @@ class LlamaCppClient
       max_tokens: max_tokens
     }
     payload[:response_format] = response_format if response_format.present?
+    payload[:chat_template_kwargs] = chat_template_kwargs if chat_template_kwargs.present?
+
+    sampling_params = normalize_sampling(
+      sampling,
+      top_p: top_p,
+      top_k: top_k,
+      min_p: min_p,
+      presence_penalty: presence_penalty,
+      frequency_penalty: frequency_penalty,
+      repeat_penalty: repeat_penalty
+    )
+    sampling_params.each { |key, value| payload[key] = value }
 
     post_json("/v1/chat/completions", payload, read_timeout: read_timeout)
   end
@@ -123,6 +137,22 @@ class LlamaCppClient
   end
 
   private
+
+  def normalize_sampling(sampling, **explicit)
+    params = {}
+    if sampling.respond_to?(:to_request_params)
+      params.merge!(sampling.to_request_params)
+    elsif sampling.is_a?(Hash)
+      params.merge!(LlmSamplingParams.from(sampling).to_request_params)
+    end
+
+    explicit.each do |key, value|
+      next if value.nil?
+
+      params[key.to_sym] = value
+    end
+    params
+  end
 
   def get_json(path)
     request_json(Net::HTTP::Get, path)

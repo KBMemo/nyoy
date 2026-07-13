@@ -78,6 +78,10 @@ class ServiceConnection < ApplicationRecord
     OpenaiChatModelSettings.from(settings)
   end
 
+  def prompt_conversion_settings
+    PromptConversionSettings.from(settings)
+  end
+
   def assign_openai_chat_model_settings(attrs)
     return unless openai?
 
@@ -89,6 +93,16 @@ class ServiceConnection < ApplicationRecord
     return unless searxng?
 
     self.settings = SearxngSettings.normalize(attrs)
+  end
+
+  def assign_prompt_conversion_settings(attrs)
+    return unless supports_prompt_conversion_settings?
+
+    self.settings = PromptConversionSettings.merge_into(settings, attrs)
+  end
+
+  def supports_prompt_conversion_settings?
+    CHAT_BUILTIN_KEYS.include?(key.to_s) || custom_llm?
   end
 
   def key_label

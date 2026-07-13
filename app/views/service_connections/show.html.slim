@@ -43,6 +43,19 @@
       dd = "#{searx.max_fetches_per_turn} 回 / 応答"
       dt.font-medium.kb-text-secondary 検索エンジン
       dd.nyoy-monospace = searx.engines
+    - if @service_connection.supports_prompt_conversion_settings?
+      - pcs = @service_connection.prompt_conversion_settings
+      dt.font-medium.kb-text-secondary JSON Schema
+      dd = { "auto" => "自動", "on" => "強制オン", "off" => "オフ" }.fetch(pcs.json_schema, pcs.json_schema)
+      dt.font-medium.kb-text-secondary enable_thinking
+      dd = { "false" => "オフ", "true" => "オン", "unset" => "未指定" }.fetch(pcs.enable_thinking, pcs.enable_thinking)
+      dt.font-medium.kb-text-secondary サンプリング
+      dd
+        .flex.flex-wrap.gap-x-3.gap-y-1.font-mono.text-xs
+          - LlmSamplingParams::KEYS.each do |key|
+            span
+              span.kb-text-muted = "#{key}="
+              = pcs.public_send(key).nil? ? "—" : pcs.public_send(key)
     - if @service_connection.openai?
       - chat_settings = @service_connection.openai_chat_model_settings
       dt.font-medium.kb-text-secondary Chat モデル

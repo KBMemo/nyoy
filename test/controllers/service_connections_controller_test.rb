@@ -29,6 +29,58 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "http://balvenie:10022", NyoyConnectionStore.url(:vision_llama)
   end
 
+  test "update prompt conversion settings for chat backend" do
+    connection = service_connections(:llama_cpp)
+
+    patch service_connection_path(connection), params: {
+      service_connection: {
+        name: connection.name,
+        base_url: connection.base_url,
+        server_model: connection.server_model,
+        enabled: true,
+        sort_order: connection.sort_order,
+        prompt_conversion_settings: {
+          json_schema: "off",
+          temperature: "0.15",
+          top_p: "0.8",
+          max_tokens: "700",
+          enable_thinking: "false"
+        }
+      }
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    pcs = connection.reload.prompt_conversion_settings
+    assert_equal "off", pcs.json_schema
+    assert_in_delta 0.15, pcs.temperature
+    assert_in_delta 0.8, pcs.top_p
+    assert_equal 700, pcs.max_tokens
+    assert_equal "false", pcs.enable_thinking
+  end
+
+  test "load_sampling returns props sampling as json" do
+    connection = service_connections(:llama_cpp)
+    original = ServiceConnectionPropsFetcher.instance_method(:call)
+    ServiceConnectionPropsFetcher.define_method(:call) do
+      ServiceConnectionPropsFetcher::Result.new(
+        ok: true,
+        sampling: LlmSamplingParams.from("temperature" => 0.7, "top_p" => 0.8),
+        raw_props: {},
+        message: "ok"
+      )
+    end
+
+    post load_sampling_service_connection_path(connection, format: :json)
+
+    assert_response :success
+    body = response.parsed_body
+    assert body["ok"]
+    assert_in_delta 0.7, body.dig("sampling", "temperature")
+    assert_in_delta 0.8, body.dig("sampling", "top_p")
+  ensure
+    ServiceConnectionPropsFetcher.define_method(:call, original) if defined?(original)
+  end
+
   test "update searxng api token" do
     connection = service_connections(:searxng)
 

@@ -31,9 +31,11 @@ Rails.application.routes.draw do
     end
     member do
       post :refresh_models
+      post :load_sampling
       patch :openai_chat_models
     end
   end
+  resources :llm_sampling_presets
   resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles
   resources :sd_prompt_templates

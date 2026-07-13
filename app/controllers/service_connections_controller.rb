@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class ServiceConnectionsController < ApplicationController
-  before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models]
+  before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models load_sampling]
+  before_action :load_sampling_presets, only: %i[new create edit update]
 
   def index
     @service_connections = ServiceConnection.ordered
@@ -24,6 +25,7 @@ class ServiceConnectionsController < ApplicationController
   def create
     @service_connection = ServiceConnection.new(service_connection_params)
     apply_searxng_settings!(@service_connection)
+    apply_prompt_conversion_settings!(@service_connection)
     @custom_llm = @service_connection.custom_llm?
     @available_keys = ServiceConnection.available_keys unless @custom_llm
 
@@ -47,6 +49,7 @@ class ServiceConnectionsController < ApplicationController
   def update
     @service_connection.assign_attributes(service_connection_params)
     apply_searxng_settings!(@service_connection)
+    apply_prompt_conversion_settings!(@service_connection)
 
     if @service_connection.save
       redirect_to @service_connection, notice: "接続を更新しました。"
@@ -72,6 +75,24 @@ class ServiceConnectionsController < ApplicationController
       redirect_to @service_connection, notice: result.message
     else
       redirect_to @service_connection, alert: result.message
+    end
+  end
+
+  def load_sampling
+    unless @service_connection.supports_prompt_conversion_settings?
+      render json: { ok: false, error: "この接続ではサンプリング取得できません" }, status: :unprocessable_entity
+      return
+    end
+
+    result = ServiceConnectionPropsFetcher.new(@service_connection).call
+    if result.ok
+      render json: {
+        ok: true,
+        message: result.message,
+        sampling: result.sampling.to_h
+      }
+    else
+      render json: { ok: false, error: result.message }, status: :unprocessable_entity
     end
   end
 
@@ -137,6 +158,25 @@ class ServiceConnectionsController < ApplicationController
         :max_fetches_per_turn
       ) : connection.settings
     )
+  end
+
+  def apply_prompt_conversion_settings!(connection)
+    return unless connection.supports_prompt_conversion_settings?
+
+    attrs = params.dig(:service_connection, :prompt_conversion_settings)
+    return if attrs.blank?
+
+    connection.assign_prompt_conversion_settings(
+      attrs.permit(
+        :json_schema,
+        :enable_thinking,
+        *LlmSamplingParams::KEYS
+      )
+    )
+  end
+
+  def load_sampling_presets
+    @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
   end
 
   def load_model_options

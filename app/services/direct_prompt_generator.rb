@@ -36,14 +36,17 @@ class DirectPromptGenerator
     )
     raise Error, "no enabled prompt template for model" if template.nil?
 
+    settings = conversion_settings
     response = @client.chat(
       messages: [
         { role: "system", content: self.class.build_system_prompt(template) },
         { role: "user", content: user_prompt(text) }
       ],
-      temperature: 0.2,
-      max_tokens: MAX_TOKENS,
+      temperature: settings.resolved_temperature,
+      max_tokens: settings.resolved_max_tokens(default: MAX_TOKENS),
       response_format: response_format,
+      chat_template_kwargs: settings.chat_template_kwargs,
+      sampling: settings.sampling,
       read_timeout: Rails.application.config.x.nyoy.llama_read_timeout
     )
 
@@ -66,10 +69,13 @@ class DirectPromptGenerator
   end
 
   def response_format
-    return unless Rails.application.config.x.nyoy.llama_json_schema
-    return unless StylePlanModelCatalog.json_schema_supported?(@connection_key)
+    return unless StylePlanModelCatalog.json_schema_enabled?(@connection_key)
 
     DirectPromptJsonSchema.build
+  end
+
+  def conversion_settings
+    @conversion_settings ||= StylePlanModelCatalog.prompt_conversion_settings(@connection_key)
   end
 
   def parse_result(content)

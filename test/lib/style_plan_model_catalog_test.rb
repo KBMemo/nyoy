@@ -35,6 +35,25 @@ class StylePlanModelCatalogTest < ActiveSupport::TestCase
     assert_not StylePlanModelCatalog.json_schema_supported?("gpt_oss")
   end
 
+  test "json_schema_enabled respects connection prompt_conversion override" do
+    original = Rails.application.config.x.nyoy.llama_json_schema
+    Rails.application.config.x.nyoy.llama_json_schema = true
+
+    assert StylePlanModelCatalog.json_schema_enabled?("llama_cpp")
+
+    service_connections(:llama_cpp).update!(
+      settings: { "prompt_conversion" => { "json_schema" => "off" } }
+    )
+    assert_not StylePlanModelCatalog.json_schema_enabled?("llama_cpp")
+
+    service_connections(:gpt_oss).update!(
+      settings: { "prompt_conversion" => { "json_schema" => "on" } }
+    )
+    assert StylePlanModelCatalog.json_schema_enabled?("gpt_oss")
+  ensure
+    Rails.application.config.x.nyoy.llama_json_schema = original
+  end
+
   test "client_for passes api token for openai" do
     connection = service_connections(:openai)
     connection.update!(

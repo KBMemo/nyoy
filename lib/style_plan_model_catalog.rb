@@ -28,12 +28,29 @@ module StylePlanModelCatalog
     ServiceConnection.find_by(key: connection_key)&.name || connection_key
   end
 
+  def prompt_conversion_settings(connection_key)
+    connection = ServiceConnection.find_by(key: connection_key.to_s)
+    PromptConversionSettings.from(connection&.settings)
+  end
+
   def json_schema_supported?(connection_key)
     key = connection_key.to_s
     return true if JSON_SCHEMA_CONNECTIONS.include?(key)
     return true if key.match?(ServiceConnection::CUSTOM_LLM_KEY_FORMAT)
 
     false
+  end
+
+  def json_schema_enabled?(connection_key)
+    return false unless Rails.application.config.x.nyoy.llama_json_schema
+
+    settings = prompt_conversion_settings(connection_key)
+    case settings.json_schema
+    when "on" then true
+    when "off" then false
+    else
+      json_schema_supported?(connection_key)
+    end
   end
 
   def model_for(connection_key)
