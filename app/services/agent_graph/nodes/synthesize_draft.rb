@@ -2,7 +2,7 @@
 
 module AgentGraph
   module Nodes
-    # Build a draft answer from collected evidence, then hand off to approval.
+    # Build a draft answer from collected evidence, then approve or finalize.
     class SynthesizeDraft
       def call(state:, run:, chat:)
         draft, truncated = AgentGraph::EvidenceSynthesizer.new(chat).call(state)
@@ -19,14 +19,18 @@ module AgentGraph
           )
         end
 
-        AgentGraph::NodeResult.next(
-          "await_approval",
-          updates: {
-            "draft" => draft,
-            "draft_truncated" => truncated,
-            "approval" => nil
-          }
+        next_state = state.merge(
+          "draft" => draft,
+          "draft_truncated" => truncated
         )
+        goto = AgentGraph::ResearchRouting.after_synthesize(next_state)
+        updates = {
+          "draft" => draft,
+          "draft_truncated" => truncated,
+          "approval" => goto == "await_approval" ? nil : "not_required"
+        }
+
+        AgentGraph::NodeResult.next(goto, updates: updates)
       end
     end
   end

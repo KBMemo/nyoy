@@ -2,13 +2,13 @@
 
 module AgentGraph
   module Nodes
-    # Human-in-the-loop gate. First visit interrupts; resume reads approval.
+    # Human-in-the-loop gate for sensitive plans. Resume reads approval.
     class AwaitApproval
       REJECTED_MESSAGE = "調査ドラフトは却下されました。必要なら質問を言い直してください。"
 
       def call(state:, run:, chat:)
         case state["approval"].to_s
-        when "approved"
+        when "approved", "not_required"
           AgentGraph::ApprovalBroadcaster.clear!(chat)
           AgentGraph::NodeResult.next("finalize_answer")
         when "rejected"
@@ -22,17 +22,18 @@ module AgentGraph
             }
           )
         else
-          if truthy_auto_approve?(state)
-            AgentGraph::NodeResult.next(
-              "finalize_answer",
-              updates: {
-                "approval" => "approved"
-              }
-            )
-          else
+          if AgentGraph::ResearchRouting.needs_human_approval?(state)
             AgentGraph::NodeResult.interrupt(
               updates: {
                 "approval" => "pending"
+              }
+            )
+          else
+            # Safety net: non-sensitive / auto_approve should skip HITL.
+            AgentGraph::NodeResult.next(
+              "finalize_answer",
+              updates: {
+                "approval" => AgentGraph::ResearchRouting.auto_approve?(state) ? "approved" : "not_required"
               }
             )
           end
@@ -40,11 +41,6 @@ module AgentGraph
       end
 
       private
-
-      def truthy_auto_approve?(state)
-        value = state["auto_approve"]
-        value == true || value.to_s == "true"
-      end
 
       def create_assistant_message!(chat, content)
         Message.suppressing_turbo_broadcasts do

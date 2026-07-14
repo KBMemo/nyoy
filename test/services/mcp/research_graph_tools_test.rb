@@ -35,10 +35,10 @@ class McpResearchGraphToolsTest < ActiveSupport::TestCase
     end
   end
 
-  test "run_research_graph without auto_approve awaits then resumes" do
+  test "run_research_graph without auto_approve awaits only when sensitive" do
     stub_research_nodes do
       response = Mcp::ResearchGraphTools.run_research_graph_tool.call(
-        question: "出典を調べて",
+        question: "出典を調べて確認してから答えて",
         auto_approve: false
       )
       payload = JSON.parse(response.content.first[:text])
@@ -55,6 +55,20 @@ class McpResearchGraphToolsTest < ActiveSupport::TestCase
 
       assert_equal "completed", done["status"]
       assert_equal payload["draft"], done["final_answer"]
+    end
+  end
+
+  test "run_research_graph without auto_approve still completes when not sensitive" do
+    stub_research_nodes do
+      response = Mcp::ResearchGraphTools.run_research_graph_tool.call(
+        question: "出典を調べて",
+        auto_approve: false
+      )
+      payload = JSON.parse(response.content.first[:text])
+
+      assert_equal "completed", payload["status"]
+      assert payload["final_answer"].present?
+      refute payload["awaiting_approval"]
     end
   end
 

@@ -28,6 +28,28 @@ module AgentGraph
       "synthesize_draft"
     end
 
+    def after_synthesize(state)
+      return "await_approval" if needs_human_approval?(state)
+
+      "finalize_answer"
+    end
+
+    def needs_human_approval?(state)
+      return false if auto_approve?(state)
+
+      sensitive_plan?(state)
+    end
+
+    def sensitive_plan?(state)
+      value = state.dig("plan", "sensitive")
+      value == true || value.to_s == "true"
+    end
+
+    def auto_approve?(state)
+      value = state["auto_approve"]
+      value == true || value.to_s == "true"
+    end
+
     def fetch_targets(state)
       plan_urls = Array(state.dig("plan", "fetch_urls")).map(&:to_s).map(&:strip).reject(&:blank?)
       return plan_urls if plan_urls.any?

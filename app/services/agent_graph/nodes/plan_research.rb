@@ -5,6 +5,25 @@ module AgentGraph
     class PlanResearch
       URL_PATTERN = %r{https?://[^\s<>\]]+}i
 
+      # HITL when the turn implies write/publish/confirm-before-answer.
+      SENSITIVE_PATTERN = Regexp.union(
+        /保存/,
+        /メモに/,
+        /徒然/,
+        /書き込/,
+        /更新して/,
+        /公開/,
+        /投稿/,
+        /送信/,
+        /確認してから/,
+        /承認してから/,
+        /ドラフト(を)?確認/,
+        /\bpublish\b/i,
+        /\bsave\b/i,
+        /update[_ ]?memo/i,
+        /create[_ ]?memo/i
+      )
+
       def call(state:, run:, chat:)
         question = state.fetch("question").to_s
         urls = extract_urls(question)
@@ -13,7 +32,7 @@ module AgentGraph
           "need_web" => web_likely?(question),
           "queries" => [ question.truncate(120) ],
           "fetch_urls" => urls.first(3),
-          "sensitive" => false
+          "sensitive" => sensitive?(question)
         }
 
         AgentGraph::NodeResult.next(
@@ -34,6 +53,10 @@ module AgentGraph
 
       def web_likely?(question)
         question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース|調べ|調査|出典|根拠|検索/)
+      end
+
+      def sensitive?(question)
+        question.match?(SENSITIVE_PATTERN)
       end
 
       def default_budget(state)

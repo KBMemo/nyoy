@@ -2,18 +2,19 @@
 
 LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フロー。
 
-## 現状（R3）
+## 現状（R4）
 
 ```
-plan_research → recall_memos → search_web → fetch_urls → synthesize_draft → await_approval → finalize_answer
+plan_research → recall_memos → search_web → fetch_urls → synthesize_draft
+  → (plan.sensitive ?) await_approval → finalize_answer
 ```
 
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
-- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer` / RubyLLM）。チャットにはまだ書かない
-- `await_approval` は Interrupt → `status=awaiting_approval`。UI で承認 / 却下
-- `auto_approve=true`（MCP 既定）のときは Interrupt をスキップして `finalize_answer` へ
+- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer` / RubyLLM）
+- **条件付き承認**: `plan.sensitive=true` かつ `auto_approve` でないときだけ `await_approval` で Interrupt
+- 非 sensitive: `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
 - 却下: 却下メッセージを出して完了
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
@@ -46,6 +47,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - `need_memo`: 常に true（メモ根拠を優先）
 - `need_web`: 最新・公式・調べ・調査 など
 - `fetch_urls`: 質問文中の `http(s)://...` を抽出
+- `sensitive`: 保存・メモ/徒然・公開・確認してから 等（HITL 対象）
 
 ## 承認 UI
 
@@ -54,5 +56,4 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 ## 次
 
-- `plan.sensitive` での条件付き承認（MCP 以外でも auto 判定）
 - 却下後の再計画ループ

@@ -18,8 +18,9 @@ module Mcp
         name: "run_research_graph",
         description: <<~TEXT.squish,
           Research Graph で調査する（メモ想起→Web 検索→URL 取得→ドラフト合成→回答）。
-          既定は auto_approve=true で承認待ちをスキップして最終回答まで進む。
-          auto_approve=false のときは awaiting_approval で止まり、draft を確認してから resume_research_graph を呼ぶ。
+          plan.sensitive（保存・公開・確認してから 等）のときだけ承認待ちになる。
+          auto_approve=true（既定）なら sensitive でも承認をスキップする。
+          awaiting_approval のときは draft を確認して resume_research_graph を呼ぶ。
         TEXT
         input_schema: {
           type: "object",

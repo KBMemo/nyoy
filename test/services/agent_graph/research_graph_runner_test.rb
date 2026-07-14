@@ -11,21 +11,44 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     @chat.messages.create!(role: :user, content: "調査日：2024年の根拠はどこから来た？")
   end
 
-  test "R2 runs synthesize then awaits approval before finalizing" do
+  test "non-sensitive research finalizes without approval interrupt" do
+    stub_recall(context: "メモ抜粋: 調査日は会話時点で誤って付けた") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(@chat)
+
+        assert run.completed?, -> { "status=#{run.status} error=#{run.error_message}" }
+        refute run.state.dig("plan", "sensitive")
+        assert_equal "not_required", run.state["approval"]
+        assert run.state["final_answer"].present?
+
+        names = run.agent_node_runs.order(:id).pluck(:node_name)
+        assert_includes names, "synthesize_draft"
+        refute_includes names, "await_approval"
+        assert_includes names, "finalize_answer"
+
+        message = @chat.messages.where(role: :assistant).order(:id).last
+        assert message.present?
+        assert_includes message.content, "調査結果"
+      end
+    end
+  end
+
+  test "sensitive plan awaits approval before finalizing" do
+    @chat.messages.destroy_all
+    @chat.messages.create!(role: :user, content: "調査日の根拠を調べて確認してから答えて")
+
     stub_recall(context: "メモ抜粋: 調査日は会話時点で誤って付けた") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
         assert run.awaiting_approval?, -> { "status=#{run.status} error=#{run.error_message}" }
+        assert run.state.dig("plan", "sensitive")
         assert_equal "await_approval", run.current_node
         assert run.state["draft"].present?
         assert_equal "pending", run.state["approval"]
-        assert_includes run.state["draft"], "調査結果"
-        assert_nil run.state["final_answer"]
         refute @chat.messages.where(role: :assistant).exists?
 
         names = run.agent_node_runs.order(:id).pluck(:node_name)
-        assert_includes names, "synthesize_draft"
         assert_includes names, "await_approval"
         refute_includes names, "finalize_answer"
 
@@ -33,32 +56,27 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         assert completed.completed?, -> { completed.error_message }
         assert_equal "approved", completed.state["approval"]
         assert completed.state["final_answer"].present?
-
-        message = @chat.messages.where(role: :assistant).order(:id).last
-        assert message.present?
-        assert_equal message.id, completed.state["assistant_message_id"]
-        assert_includes message.content, "調査結果"
       end
     end
   end
 
-  test "records recall errors and still drafts then awaits approval" do
+  test "records recall errors and still finalizes when not sensitive" do
     stub_recall(error: "rag down") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-        assert run.awaiting_approval?
+        assert run.completed?
         assert_nil run.state["memo_context"]
         assert run.state["errors"].any? { |err| err["code"] == "RECALL_FAILED" }
-        assert run.state["draft"].present?
-
-        AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
         assert @chat.messages.where(role: :assistant).exists?
       end
     end
   end
 
   test "reject ends without publishing the draft" do
+    @chat.messages.destroy_all
+    @chat.messages.create!(role: :user, content: "出典を調べて徒然に保存する前提で確認してから答えて")
+
     stub_recall(context: "メモ") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
@@ -73,7 +91,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "R1 path still searches and fetches before draft approval" do
+  test "R1 path searches and fetches then finalizes when not sensitive" do
     @chat.messages.destroy_all
     @chat.messages.create!(role: :user, content: "最新の Hydrangea Rin 公式情報を調べて")
 
@@ -95,20 +113,18 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
           stub_synthesize_without_llm do
             run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-            assert run.awaiting_approval?, -> { run.error_message }
+            assert run.completed?, -> { run.error_message }
             names = run.agent_node_runs.order(:id).pluck(:node_name)
             assert_includes names, "search_web"
             assert_includes names, "fetch_urls"
             assert_includes names, "synthesize_draft"
+            assert_includes names, "finalize_answer"
+            refute_includes names, "await_approval"
             assert run.state["search_results"].any?
             assert run.state["fetched_pages"].any?
-            assert_includes run.state["draft"], "example.com/rin"
+            assert_includes run.state["final_answer"], "example.com/rin"
             assert run.state.dig("budget", "searches_used").to_i.positive?
             assert run.state.dig("budget", "fetches_used").to_i.positive?
-
-            completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
-            assert completed.completed?
-            assert_includes completed.state["final_answer"], "example.com/rin"
           end
         end
       end
@@ -119,7 +135,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     @chat.messages.destroy_all
     @chat.messages.create!(
       role: :user,
-      content: "このページを確認して https://docs.example.com/page"
+      content: "このページを見て https://docs.example.com/page"
     )
 
     stub_recall(context: nil) do
@@ -135,7 +151,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         stub_synthesize_without_llm do
           run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-          assert run.awaiting_approval?, -> { run.error_message }
+          assert run.completed?, -> { run.error_message }
           names = run.agent_node_runs.order(:id).pluck(:node_name)
           assert_includes names, "fetch_urls"
           refute_includes names, "search_web"
@@ -146,14 +162,19 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "auto_approve skips interrupt and finalizes" do
+  test "auto_approve skips interrupt even when plan is sensitive" do
+    @chat.messages.destroy_all
+    @chat.messages.create!(role: :user, content: "調査して確認してから答えて")
+
     stub_recall(context: "メモ") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat, auto_approve: true)
 
         assert run.completed?, -> { run.error_message }
-        assert_equal "approved", run.state["approval"]
+        assert run.state.dig("plan", "sensitive")
+        assert_equal "not_required", run.state["approval"]
         assert run.state["final_answer"].present?
+        refute_includes run.agent_node_runs.pluck(:node_name), "await_approval"
         assert @chat.messages.where(role: :assistant).exists?
       end
     end
