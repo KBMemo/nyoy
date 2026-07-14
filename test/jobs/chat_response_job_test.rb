@@ -84,6 +84,23 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "idle", @chat.reload.response_state
   end
 
+  test "marks assistant truncated when finish_reason is length" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "調査日は？")
+
+    stub_chat_complete_truncated_by_length(thinking: "途中まで考えた…") do
+      assert_nothing_raised do
+        ChatResponseJob.perform_now(@chat.id)
+      end
+    end
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.truncated?
+    assert_equal "途中まで考えた…", message.thinking_text
+    refute message.chat_error?
+    assert_equal "idle", @chat.reload.response_state
+  end
+
   test "reports llm failures without re-raising" do
     @chat.messages.create!(role: :user, content: "続きをお願い")
     stub_chat_complete_to_raise(@error) do
@@ -283,6 +300,42 @@ class ChatResponseJobTest < ActiveJob::TestCase
       chunk = Struct.new(:content, :thinking).new(content, nil)
       block&.call(chunk)
       raise ChatResponseControl::Cancelled
+    end
+
+    yield
+  ensure
+    Chat.define_method(:complete, original)
+  end
+
+  def stub_chat_complete_truncated_by_length(thinking:, content: nil)
+    original = Chat.instance_method(:complete)
+    Chat.define_method(:complete) do |*, **, &block|
+      messages.create!(role: :assistant, content: "")
+      thinking_chunk = Object.new
+      thinking_chunk.define_singleton_method(:content) { nil }
+      thinking_chunk.define_singleton_method(:thinking) do
+        Struct.new(:text).new(thinking)
+      end
+      thinking_chunk.define_singleton_method(:finish_reason) { nil }
+      thinking_chunk.define_singleton_method(:tool_call?) { false }
+
+      block&.call(thinking_chunk)
+
+      if content
+        content_chunk = Object.new
+        content_chunk.define_singleton_method(:content) { content }
+        content_chunk.define_singleton_method(:thinking) { nil }
+        content_chunk.define_singleton_method(:finish_reason) { nil }
+        content_chunk.define_singleton_method(:tool_call?) { false }
+        block&.call(content_chunk)
+      end
+
+      finish_chunk = Object.new
+      finish_chunk.define_singleton_method(:content) { nil }
+      finish_chunk.define_singleton_method(:thinking) { nil }
+      finish_chunk.define_singleton_method(:finish_reason) { "length" }
+      finish_chunk.define_singleton_method(:tool_call?) { false }
+      block&.call(finish_chunk)
     end
 
     yield

@@ -25,7 +25,7 @@ class ChatErrorBroadcaster
   def remove_blank_assistant!
     assistant = @chat.messages.where(role: :assistant).order(:id).last
     return if assistant.nil?
-    return unless assistant.content.blank?
+    return unless assistant.content.blank? && assistant.thinking_text.blank?
 
     assistant.destroy!
   end
@@ -53,6 +53,8 @@ class ChatErrorBroadcaster
 
         #{@error.message}
       TEXT
+    elsif output_truncated_error?
+      ChatTruncationBroadcaster::MESSAGE
     else
       # Unexpected internal errors (bugs) should not leak their raw message to
       # the UI; the full error is already written to the log by ChatResponseJob.
@@ -68,5 +70,9 @@ class ChatErrorBroadcaster
     return true if @error.is_a?(RubyLLM::ContextLengthExceededError)
 
     @error.message.to_s.match?(/context size|context length|context window|too many tokens|token count exceeds/i)
+  end
+
+  def output_truncated_error?
+    @error.message.to_s.match?(/finish_reason.*length|max_tokens|n_predict|truncated\s*=\s*1/i)
   end
 end

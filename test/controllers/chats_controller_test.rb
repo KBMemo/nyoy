@@ -121,7 +121,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "dialog#chat_settings_dialog"
-    assert_select "button[aria-label='チャット設定'] i[data-lucide=settings]"
+    assert_select "button[aria-label='チャット設定'] svg.nyoy-chat-settings-icon"
     assert_select "dialog#chat_settings_dialog input[name='temperature']"
     assert_select "dialog#chat_settings_dialog input[name='top_p']"
     assert_select "dialog#chat_settings_dialog #chat_sampling_preset_select"

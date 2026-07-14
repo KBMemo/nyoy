@@ -46,4 +46,34 @@ class ChatMarkdownRendererTest < ActiveSupport::TestCase
     assert_includes html, "1行目"
     assert_includes html, "2行目"
   end
+
+  test "renders gfm tables after headings without a blank line" do
+    markdown = <<~MD.strip
+      ### 品種の特徴
+      | 項目 | 内容 |
+      |——|——|
+      | 学名 | Hydrangea macrophylla |
+      続きの説明
+    MD
+
+    html = ChatMarkdownRenderer.render(markdown)
+
+    assert_includes html, "<table>"
+    assert_includes html, "<thead>"
+    assert_includes html, "<th>項目</th>"
+    assert_includes html, "<th>内容</th>"
+    assert_includes html, "<td>学名</td>"
+    assert_includes html, "Hydrangea macrophylla"
+    assert_includes html, "<p>続きの説明</p>"
+    refute_includes html, "| 項目 |"
+  end
+
+  test "normalizes fullwidth pipes in tables" do
+    markdown = "｜A｜B｜\n｜---｜---｜\n｜1｜2｜"
+    html = ChatMarkdownRenderer.render(markdown)
+
+    assert_includes html, "<table>"
+    assert_includes html, "<th>A</th>"
+    assert_includes html, "<td>1</td>"
+  end
 end

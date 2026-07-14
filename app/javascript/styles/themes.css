@@ -563,6 +563,13 @@
   outline-offset: 2px;
 }
 
+.nyoy-chat-settings-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
 [data-lucide] {
   display: inline-block;
   flex-shrink: 0;
@@ -926,13 +933,20 @@
 .nyoy-chat-markdown table {
   border-collapse: collapse;
   margin: 0 0 0.75em;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
 }
 
 .nyoy-chat-markdown th,
 .nyoy-chat-markdown td {
   border: 1px solid var(--kb-border);
   padding: 0.35em 0.5em;
+  text-align: left;
+}
+
+.nyoy-chat-markdown th {
+  background-color: var(--kb-bg-muted);
+  font-weight: 600;
 }
 
 .nyoy-chat-message-meta {
@@ -946,6 +960,10 @@
   font-size: var(--kb-font-size-xs);
   font-weight: 600;
   color: var(--kb-color-warning, #b45309);
+}
+
+.nyoy-chat-message-truncated-note {
+  margin-top: var(--kb-space-2);
 }
 
 .nyoy-card-open {
