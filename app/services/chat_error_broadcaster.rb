@@ -53,6 +53,12 @@ class ChatErrorBroadcaster
 
         #{@error.message}
       TEXT
+    elsif research_graph_error?
+      <<~TEXT.strip
+        調査フローが失敗しました。
+
+        #{@error.message}
+      TEXT
     elsif output_truncated_error?
       ChatTruncationBroadcaster::MESSAGE
     else
@@ -64,6 +70,10 @@ class ChatErrorBroadcaster
 
   def llm_error?
     @error.is_a?(RubyLLM::Error)
+  end
+
+  def research_graph_error?
+    defined?(AgentGraph::Error) && @error.is_a?(AgentGraph::Error)
   end
 
   def context_length_error?

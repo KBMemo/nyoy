@@ -51,7 +51,7 @@ class ChatsController < ApplicationController
 
   def show
     @message = @chat.messages.build
-    @pending_research_run = @chat.agent_runs.awaiting_approval.recent.first
+    @pending_research_run = @chat.agent_runs.pending_decision.recent.first
   end
 
   def destroy

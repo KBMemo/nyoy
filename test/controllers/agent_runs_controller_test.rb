@@ -22,13 +22,15 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "approve enqueues resume job" do
+  test "approve enqueues resume job and clears pending decision" do
     assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
       post approve_chat_agent_run_path(@chat, @run)
     end
 
     assert_redirected_to @chat
     assert @chat.reload.responding?
+    assert_equal "approved", @run.reload.state["approval"]
+    assert_equal 0, @chat.agent_runs.pending_decision.count
   end
 
   test "reject enqueues resume job" do
@@ -37,6 +39,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to @chat
+    assert_equal "rejected", @run.reload.state["approval"]
   end
 
   test "approve rejects when not awaiting approval" do
@@ -48,5 +51,13 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to @chat
     assert_match(/承認待ち/, flash[:alert])
+  end
+
+  test "show omits approval panel after decision is submitted" do
+    post approve_chat_agent_run_path(@chat, @run)
+    get chat_path(@chat)
+
+    assert_response :success
+    assert_select "#research_approval_panel", count: 0
   end
 end

@@ -19,6 +19,13 @@ class AgentRun < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc) }
   scope :awaiting_approval, -> { where(status: "awaiting_approval") }
+  # Still status=awaiting_approval but decision not yet submitted (or blank).
+  scope :pending_decision, -> {
+    awaiting_approval.where(
+      "(state->>'approval') IS NULL OR (state->>'approval') IN (?, ?)",
+      "", "pending"
+    )
+  }
 
   def running?
     status == "running"

@@ -195,6 +195,28 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  test "starting a new run cancels earlier pending approval on the same chat" do
+    stub_recall(context: "メモ") do
+      stub_synthesize_without_llm do
+        first = AgentGraph::ResearchGraphRunner.call(
+          @chat,
+          question: "調査して確認してから答えて"
+        )
+        assert first.awaiting_approval?
+
+        second = AgentGraph::ResearchGraphRunner.call(
+          @chat,
+          question: "出典の根拠は？"
+        )
+
+        assert_equal "cancelled", first.reload.status
+        assert_includes first.error_message, "superseded"
+        assert second.completed?
+        assert_equal 0, @chat.agent_runs.pending_decision.count
+      end
+    end
+  end
+
   private
 
   def stub_recall(context: nil, error: nil)

@@ -43,6 +43,14 @@ class ChatErrorBroadcasterTest < ActiveSupport::TestCase
     assert_includes message.chat_error_message, "もう一度お試しください"
   end
 
+  test "surfaces Research Graph errors with detail" do
+    message = ChatErrorBroadcaster.fail!(@chat, AgentGraph::Error.new("empty draft"))
+
+    assert message.chat_error?
+    assert_includes message.chat_error_message, "調査フローが失敗しました"
+    assert_includes message.chat_error_message, "empty draft"
+  end
+
   test "renders chat error partial" do
     message = @chat.messages.create!(
       role: :assistant,

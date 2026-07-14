@@ -17,7 +17,13 @@ class ChatResponseJob < ApplicationJob
     Nyoy::FinishReasonCapture.reset!
 
     if research_graph_turn?(chat)
-      AgentGraph::ResearchGraphRunner.call(chat)
+      run = AgentGraph::ResearchGraphRunner.call(chat)
+      if run.failed?
+        ChatErrorBroadcaster.fail!(
+          chat,
+          AgentGraph::Error.new(run.error_message.presence || "Research Graph failed")
+        )
+      end
       return
     end
 

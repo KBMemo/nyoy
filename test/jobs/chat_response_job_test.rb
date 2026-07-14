@@ -159,6 +159,34 @@ class ChatResponseJobTest < ActiveJob::TestCase
     AgentGraph::ResearchGraphRunner.define_singleton_method(:call, original) if defined?(original)
   end
 
+  test "surfaces Research Graph failures as chat errors" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "調査の根拠は？")
+
+    original = AgentGraph::ResearchGraphRunner.method(:call)
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat|
+      AgentRun.create!(
+        chat: chat,
+        graph_name: "research",
+        status: "failed",
+        error_message: "empty draft",
+        state: { "question" => "調査の根拠は？" },
+        finished_at: Time.current
+      )
+    end
+
+    assert_nothing_raised do
+      ChatResponseJob.perform_now(@chat.id)
+    end
+
+    message = @chat.messages.where(role: :assistant).order(:id).last
+    assert message.chat_error?
+    assert_includes message.chat_error_message, "調査フローが失敗しました"
+    assert_includes message.chat_error_message, "empty draft"
+  ensure
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call, original) if defined?(original)
+  end
+
   test "reports llm failures without re-raising" do
     @chat.messages.create!(role: :user, content: "続きをお願い")
     stub_chat_complete_to_raise(@error) do

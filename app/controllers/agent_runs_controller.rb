@@ -28,11 +28,20 @@ class AgentRunsController < ApplicationController
       return
     end
 
+    if @agent_run.state["approval"].to_s.in?(%w[approved rejected])
+      redirect_to @chat, alert: "この調査ドラフトはすでに処理中です。"
+      return
+    end
+
     if @chat.responding?
       redirect_to @chat, alert: "別の応答が実行中です。"
       return
     end
 
+    # Persist the decision and clear the panel before the async job so a
+    # redirect to show does not re-render the stale approval UI.
+    @agent_run.merge_state!("approval" => decision)
+    AgentGraph::ApprovalBroadcaster.clear!(@chat)
     ChatResponseControl.mark_running!(@chat)
     AgentGraphResumeJob.perform_later(@agent_run.id, decision)
     redirect_to @chat, notice: notice
