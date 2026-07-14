@@ -73,7 +73,35 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "reject ends without publishing the draft" do
+  test "reject under limit replans instead of ending" do
+    @chat.messages.destroy_all
+    @chat.messages.create!(role: :user, content: "出典を調べて徒然に保存する前提で確認してから答えて")
+
+    stub_recall(context: "メモ") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(@chat)
+        assert run.awaiting_approval?
+        first_draft = run.state["draft"]
+        assert_equal 0, run.state["replan_count"].to_i
+
+        resumed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
+        assert resumed.awaiting_approval?, -> { "status=#{resumed.status} error=#{resumed.error_message}" }
+        assert_equal 1, resumed.state["replan_count"]
+        assert resumed.state["draft"].present?
+        refute_equal first_draft, resumed.state["draft"]
+        assert_includes resumed.state["draft"], "書き直し"
+        assert resumed.state.dig("plan", "revision_hints").present?
+        assert resumed.state.dig("plan", "replan")
+        assert resumed.state["rejection_notes"].one?
+        names = resumed.agent_node_runs.order(:id).pluck(:node_name)
+        assert names.count("plan_research") >= 2
+        assert names.count("await_approval") >= 2
+        refute @chat.messages.where(role: :assistant).exists?
+      end
+    end
+  end
+
+  test "reject at replan limit ends without publishing the draft" do
     @chat.messages.destroy_all
     @chat.messages.create!(role: :user, content: "出典を調べて徒然に保存する前提で確認してから答えて")
 
@@ -82,11 +110,17 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         run = AgentGraph::ResearchGraphRunner.call(@chat)
         assert run.awaiting_approval?
 
+        AgentGraph::Nodes::AwaitApproval::MAX_REPLANS.times do |index|
+          run = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
+          assert run.awaiting_approval?, -> { "replan #{index + 1}: status=#{run.status} error=#{run.error_message}" }
+          assert_equal index + 1, run.state["replan_count"]
+        end
+
         completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
-        assert completed.completed?
+        assert completed.completed?, -> { "status=#{completed.status} error=#{completed.error_message}" }
+        assert_equal AgentGraph::Nodes::AwaitApproval::MAX_REPLANS, completed.state["replan_count"]
         message = @chat.messages.where(role: :assistant).order(:id).last
         assert_includes message.content, "却下"
-        refute_equal run.state["draft"], message.content
       end
     end
   end

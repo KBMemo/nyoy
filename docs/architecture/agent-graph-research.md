@@ -2,11 +2,12 @@
 
 LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フロー。
 
-## 現状（R4）
+## 現状（R5）
 
 ```
 plan_research → recall_memos → search_web → fetch_urls → synthesize_draft
   → (plan.sensitive ?) await_approval → finalize_answer
+                              └ rejected（上限まで）→ plan_research
 ```
 
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
@@ -16,7 +17,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - **条件付き承認**: `plan.sensitive=true` かつ `auto_approve` でないときだけ `await_approval` で Interrupt
 - 非 sensitive: `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
-- 却下: 却下メッセージを出して完了
+- **却下**: `replan_count < 2` なら `plan_research` へ戻る（根拠・budget は保持）。`rejection_notes` と `plan.revision_hints` を Plan / Synthesizer が参照して書き直す。上限超過で終了メッセージ
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
 - `search_web` / `fetch_urls` は既存 `ChatTools::WebSearch` / `FetchUrl` + `WebToolBudget`
 
@@ -40,7 +41,12 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 ## Intent
 
-キーワードヒューリスティック（調査 / 根拠 / 出典 / research 等）。誤判定したら通常 Chat に戻すだけでよい段階。
+スコア付きキーワード判定（LLM なし）。
+
+- **否定優先**: 挨拶・画像生成・「この画像は」などは Graph に入れない
+- **強シグナル 1 つで採用**: 調べて / 出典 / 根拠 / research / 最新情報 等
+- **弱シグナル**: 確認して・公式・ニュース等は単独では不採用。2 つ以上、または URL＋調査フレーミングで採用
+- 誤判定したら通常 Chat tool loop に戻るだけでよい段階
 
 ## Plan ヒューリスティック
 
@@ -56,4 +62,5 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 ## 次
 
-- 却下後の再計画ループ
+- Research 運用磨き（失敗観測、進捗の薄い表示）
+- 2 本目候補: MemoWrite Graph（草案 → 承認 → create/update_memo）— 詳細は `dev_note_tmp.md` 冒頭の再検討

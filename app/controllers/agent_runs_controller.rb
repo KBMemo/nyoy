@@ -9,7 +9,17 @@ class AgentRunsController < ApplicationController
   end
 
   def reject
-    resume!("rejected", notice: "調査ドラフトを却下しました。")
+    remaining = [
+      AgentGraph::Nodes::AwaitApproval::MAX_REPLANS - @agent_run.state["replan_count"].to_i,
+      0
+    ].max
+    notice =
+      if remaining.positive?
+        "調査ドラフトを却下しました。調査をやり直します。"
+      else
+        "調査ドラフトを却下しました。"
+      end
+    resume!("rejected", notice: notice)
   end
 
   private

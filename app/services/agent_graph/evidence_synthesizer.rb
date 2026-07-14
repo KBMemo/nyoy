@@ -22,7 +22,10 @@ module AgentGraph
         memo: state["memo_context"].to_s.presence,
         search_results: Array(state["search_results"]),
         fetched_pages: Array(state["fetched_pages"]),
-        errors: Array(state["errors"])
+        errors: Array(state["errors"]),
+        rejection_notes: Array(state["rejection_notes"]),
+        replan_count: state["replan_count"].to_i,
+        revision_hints: Array(state.dig("plan", "revision_hints"))
       }
     end
 
@@ -44,6 +47,7 @@ module AgentGraph
         あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に日本語で簡潔に答えてください。
         根拠が無い場合はその旨を明記してください。推測で日付や事実を補わないでください。
         Web 根拠がある場合は簡潔に出典 URL を添えてください。
+        却下された前回ドラフトがある場合は、その内容をそのまま繰り返さず、構成・着眼点・根拠の出し方を変えて書き直してください。
       TEXT
 
       llm.with_instructions(system)
@@ -58,6 +62,8 @@ module AgentGraph
     def user_prompt(evidence)
       lines = []
       lines << "質問:\n#{evidence[:question]}\n"
+      append_revision_section!(lines, evidence)
+
       lines << if evidence[:memo].present?
                  "メモ抜粋:\n#{evidence[:memo]}\n"
                else
@@ -95,6 +101,24 @@ module AgentGraph
       lines.join("\n")
     end
 
+    def append_revision_section!(lines, evidence)
+      notes = evidence[:rejection_notes]
+      hints = evidence[:revision_hints]
+      return if notes.blank? && hints.blank?
+
+      lines << "書き直し指示（前回ドラフトは却下済み）:"
+      lines << "- 再計画回数: #{evidence[:replan_count]}" if evidence[:replan_count].positive?
+      hints.each { |hint| lines << "- hint: #{hint}" }
+      notes.last(3).each do |note|
+        preview = note.is_a?(Hash) ? note["draft_preview"] : note.to_s
+        next if preview.blank?
+
+        lines << "- 却下ドラフト#{note.is_a?(Hash) ? note['replan_index'] : ''}: #{preview}"
+      end
+      lines << "- 前回と同じ言い回し・同じ並びの根拠提示を避け、別の構成で答えてください。"
+      lines << ""
+    end
+
     def length_truncated_response?(response)
       raw = response.respond_to?(:raw) ? response.raw : nil
       body = raw.respond_to?(:body) ? raw.body : raw
@@ -107,10 +131,25 @@ module AgentGraph
     def fallback_answer(evidence)
       lines = []
       lines << "### 調査結果（Research Graph）"
+      if evidence[:replan_count].positive? || evidence[:rejection_notes].any?
+        lines << ""
+        lines << "**書き直し**（却下 #{evidence[:rejection_notes].size} 回目を踏まえた再構成）"
+      end
       lines << ""
       lines << "**質問**"
       lines << evidence[:question]
       lines << ""
+
+      if evidence[:rejection_notes].any?
+        lines << "**前回ドラフトで避けた点**"
+        evidence[:rejection_notes].last(2).each do |note|
+          preview = note.is_a?(Hash) ? note["draft_preview"] : note.to_s
+          lines << "- （却下）#{preview.to_s.truncate(160)}" if preview.present?
+        end
+        Array(evidence[:revision_hints]).each { |hint| lines << "- #{hint}" }
+        lines << ""
+      end
+
       if evidence[:memo].present?
         lines << "**関連メモ抜粋**"
         lines << evidence[:memo]

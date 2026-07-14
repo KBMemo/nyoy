@@ -159,7 +159,13 @@ class ChatResponseJob < ApplicationJob
 
   def research_graph_turn?(chat)
     question = chat.messages.where(role: :user).order(:id).last&.content
-    AgentGraph::ResearchIntent.match?(question)
+    decision = AgentGraph::ResearchIntent.decision(question)
+    if decision[:match]
+      Rails.logger.info(
+        "ResearchIntent match chat=#{chat.id} reason=#{decision[:reason]} hits=#{Array(decision[:hits]).first(3).join(",")}"
+      )
+    end
+    decision[:match]
   end
 
   # Resolves the assistant message being streamed with a lightweight id lookup,
