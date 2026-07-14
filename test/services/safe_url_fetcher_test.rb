@@ -248,8 +248,39 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
 
     result = fetcher.fetch("https://example.com/page.html", max_bytes: 100)
 
+    assert_equal Encoding::UTF_8, result[:text].encoding
     assert result[:text].valid_encoding?
     assert_operator result[:text].bytesize, :<=, 100
+  end
+
+  test "readability preview json-serializes japanese binary text" do
+    readability = Object.new
+    readability.define_singleton_method(:configured?) { true }
+    readability.define_singleton_method(:extract) do |_url|
+      text = ("アジサイの特徴。" * 400).b
+      {
+        "url" => "https://beginners.garden/page",
+        "title" => "アジサイ（凛）".b,
+        "textContent" => text,
+        "excerpt" => "抜粋".b,
+        "siteName" => "Beginners Garden".b
+      }
+    end
+    fetcher = SafeUrlFetcher.new(readability_client: readability)
+
+    result = fetcher.fetch("https://beginners.garden/page", max_bytes: 6_000, include_full_text: true)
+
+    assert_equal Encoding::UTF_8, result[:text].encoding
+    assert result[:text].valid_encoding?
+    assert_equal Encoding::UTF_8, result[:title].encoding
+    json = ChatTools::ToolResponse.preview(
+      ok: true,
+      tool: "fetch_url",
+      title: result[:title],
+      content_preview: result[:text]
+    )
+    parsed = JSON.parse(json)
+    assert_includes parsed["title"], "凛"
   end
 
   test "truncates oversized html instead of erroring" do

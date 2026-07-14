@@ -1,6 +1,7 @@
 class ChatsController < ApplicationController
   before_action :set_chat, only: %i[show destroy cancel update_chat_settings]
   before_action :load_chat_models, only: %i[new create]
+  before_action :load_new_chat_sampling, only: %i[new create]
   before_action :load_chat_settings, only: %i[show update_chat_settings]
 
   def index
@@ -33,7 +34,7 @@ class ChatsController < ApplicationController
     end
 
     model = selected_chat_model(params.dig(:chat, :model))
-    @chat = Chat.create!(model: model, llm_params: AppSetting.default_chat_llm_params)
+    @chat = Chat.create!(model: model, llm_params: initial_llm_params)
     Message.suppressing_turbo_broadcasts do
       message = @chat.messages.create!(
         role: :user,
@@ -86,6 +87,26 @@ class ChatsController < ApplicationController
 
   def set_chat
     @chat = Chat.find(params[:id])
+  end
+
+  def load_new_chat_sampling
+    @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
+    model = selected_chat_model(params.dig(:chat, :model).presence || params[:model])
+    defaults = ChatLlmSettings.defaults_for(model: model)
+    submitted = params.dig(:chat)&.permit(*LlmSamplingParams::KEYS)
+    @chat_llm_settings =
+      if submitted.present?
+        ChatLlmSettings.from(ChatLlmSettings.merge_layers(defaults.to_h, submitted))
+      else
+        defaults
+      end
+  end
+
+  def initial_llm_params
+    model = selected_chat_model(params.dig(:chat, :model))
+    defaults = ChatLlmSettings.defaults_for(model: model).to_h
+    submitted = ChatLlmSettings.normalize(params.fetch(:chat, {}).permit(*LlmSamplingParams::KEYS))
+    ChatLlmSettings.merge_layers(defaults, submitted)
   end
 
   def load_chat_settings

@@ -12,7 +12,22 @@ module ChatTools
     module_function
 
     def preview(payload)
-      JSON.generate(payload.compact)
+      JSON.generate(utf8_deep(payload.compact))
+    end
+
+    # Tool payloads often include HTTP-sourced strings tagged as ASCII-8BIT.
+    # JSON.generate raises on incomplete UTF-8 labeled as BINARY.
+    def utf8_deep(value)
+      case value
+      when Hash
+        value.transform_values { |v| utf8_deep(v) }
+      when Array
+        value.map { |v| utf8_deep(v) }
+      when String
+        value.dup.force_encoding(Encoding::UTF_8).scrub("")
+      else
+        value
+      end
     end
 
     def limit_reached(tool:, message:, code: "LIMIT_EXCEEDED", url: nil, exhausted: true)

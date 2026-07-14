@@ -53,7 +53,7 @@ class ReadabilityClient
     http.use_ssl = uri.scheme == "https"
 
     response = http.request(req)
-    body = response.body.to_s
+    body = response.body.to_s.dup.force_encoding(Encoding::UTF_8).scrub("")
     data = body.present? ? JSON.parse(body) : {}
 
     return data if response.is_a?(Net::HTTPSuccess)

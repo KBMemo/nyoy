@@ -14,6 +14,12 @@ class ChatResponseJob < ApplicationJob
     stream_state = StreamState.new
     message = nil
     truncated_by_length = false
+    Nyoy::FinishReasonCapture.reset!
+
+    if research_graph_turn?(chat)
+      AgentGraph::ResearchGraphRunner.call(chat)
+      return
+    end
 
     chat.complete do |chunk|
       truncated_by_length ||= length_finish_reason?(chunk)
@@ -58,8 +64,15 @@ class ChatResponseJob < ApplicationJob
     stream_state.flush(message) if message
     persist_streamed_state!(message, stream_state) if message
     persist_assistant_timing(chat, timer)
-    broadcast_assistant_message!(message, stream_state: stream_state) if message
-    finalize_truncation(chat, message, stream_state) if truncated_by_length
+
+    truncated_by_length ||= Nyoy::FinishReasonCapture.length?
+    truncated_by_length ||= truncated_by_token_budget?(chat, message)
+
+    if truncated_by_length
+      finalize_truncation(chat, message, stream_state)
+    elsif message
+      broadcast_assistant_message!(message, stream_state: stream_state)
+    end
   rescue ChatResponseControl::Cancelled
     finalize_cancellation(chat, message, stream_state)
   rescue StandardError => e
@@ -97,7 +110,8 @@ class ChatResponseJob < ApplicationJob
   end
 
   # llama.cpp / OpenAI finish_reason=length (max_tokens / n_predict hit). Keep the
-  # partial bubble and surface a truncation warning; finish! in ensure ends the turn.
+  # partial bubble, mark it truncated, and always add an error bubble so the turn
+  # cannot look like a normal successful answer.
   def finalize_truncation(chat, message, stream_state)
     has_partial =
       message && (
@@ -116,14 +130,30 @@ class ChatResponseJob < ApplicationJob
       message.update_columns(attrs)
       message.assign_attributes(attrs.except(:updated_at))
       broadcast_assistant_message!(message, stream_state: stream_state)
-    else
-      ChatTruncationBroadcaster.call(chat)
     end
+
+    ChatTruncationBroadcaster.call(chat)
   end
 
   def length_finish_reason?(chunk)
     reason = chunk.respond_to?(:finish_reason) ? chunk.finish_reason.to_s : ""
     reason == "length"
+  end
+
+  def truncated_by_token_budget?(chat, message)
+    return false unless message
+
+    max = ChatLlmSettings.effective_for(chat).max_tokens
+    return false if max.nil?
+
+    message.reload
+    generated = message.output_tokens.to_i + message.thinking_tokens.to_i
+    generated.positive? && generated >= max
+  end
+
+  def research_graph_turn?(chat)
+    question = chat.messages.where(role: :user).order(:id).last&.content
+    AgentGraph::ResearchIntent.match?(question)
   end
 
   # Resolves the assistant message being streamed with a lightweight id lookup,

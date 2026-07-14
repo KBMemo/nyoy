@@ -20,11 +20,30 @@ class ChatLlmSettings
     settings.apply!(llm_chat)
   end
 
+  # App default preset < connection profile sampling < per-chat llm_params.
   def self.effective_for(chat)
-    stored = from(chat.llm_params)
-    return stored unless stored.to_h.empty?
+    from(merge_layers(defaults_for(model: chat.model_association).to_h, chat.llm_params))
+  end
 
-    from(AppSetting.default_chat_llm_params)
+  # Defaults for a model before per-chat overrides (new chat form / seed).
+  def self.defaults_for(model: nil)
+    from(merge_layers(AppSetting.default_chat_llm_params, connection_llm_params_for(model)))
+  end
+
+  def self.connection_llm_params_for(model)
+    key = model&.metadata&.dig("connection_key").to_s.presence
+    return {} if key.blank?
+
+    connection = ServiceConnection.enabled.find_by(key: key)
+    return {} unless connection&.supports_prompt_conversion_settings?
+
+    normalize(connection.prompt_conversion_settings.sampling.to_h_compact)
+  end
+
+  def self.merge_layers(*layers)
+    layers.compact.reduce({}) do |acc, layer|
+      LlmSamplingParams.merge(acc, layer).to_h_compact
+    end
   end
 
   def initialize(hash = nil)

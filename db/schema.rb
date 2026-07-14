@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_14_021000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_14_061000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -41,6 +41,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_021000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agent_checkpoints", force: :cascade do |t|
+    t.bigint "agent_run_id", null: false
+    t.datetime "created_at", null: false
+    t.string "node_name", null: false
+    t.jsonb "state", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_run_id", "created_at"], name: "index_agent_checkpoints_on_agent_run_id_and_created_at"
+    t.index ["agent_run_id"], name: "index_agent_checkpoints_on_agent_run_id"
+  end
+
+  create_table "agent_node_runs", force: :cascade do |t|
+    t.bigint "agent_run_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.jsonb "input_snapshot", default: {}, null: false
+    t.string "node_name", null: false
+    t.jsonb "output_snapshot", default: {}, null: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_run_id", "node_name"], name: "index_agent_node_runs_on_agent_run_id_and_node_name"
+    t.index ["agent_run_id"], name: "index_agent_node_runs_on_agent_run_id"
+  end
+
+  create_table "agent_runs", force: :cascade do |t|
+    t.bigint "chat_id", null: false
+    t.datetime "created_at", null: false
+    t.string "current_node"
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.string "graph_name", default: "research", null: false
+    t.datetime "started_at"
+    t.jsonb "state", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id"], name: "index_agent_runs_on_chat_id"
+    t.index ["graph_name"], name: "index_agent_runs_on_graph_name"
+    t.index ["status"], name: "index_agent_runs_on_status"
   end
 
   create_table "app_settings", force: :cascade do |t|
@@ -412,6 +453,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_021000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_checkpoints", "agent_runs"
+  add_foreign_key "agent_node_runs", "agent_runs"
+  add_foreign_key "agent_runs", "chats"
   add_foreign_key "chats", "models"
   add_foreign_key "image_generations", "render_presets"
   add_foreign_key "image_generations", "render_presets", column: "refine_render_preset_id"

@@ -26,8 +26,9 @@
   </div>
   <div id="message_<%= assistant.id %>_content" class="nyoy-chat-message-content nyoy-chat-markdown"><%= render_chat_markdown(body_text) %></div>
   <% if assistant.truncated? %>
-    <div class="kb-alert kb-alert-warning nyoy-chat-message-truncated-note">
-      生成上限（max_tokens）に達したため応答を打ち切りました。チャット設定で max_tokens を増やすか、質問を短くしてください。
+    <div class="kb-alert kb-alert-danger nyoy-chat-message-truncated-note" role="alert">
+      <strong>応答は途中で打ち切られました。</strong>
+      <%= ChatTruncationAdvice.inline_html_for(assistant.chat) %>
     </div>
   <% end %>
   <% if assistant.cancelled? %>

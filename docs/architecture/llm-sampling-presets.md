@@ -59,7 +59,11 @@ POST /service_connections/:id/load_sampling.json
 
 設定 → 既定モデルの「チャット既定サンプリング」で `LlmSamplingPreset` を選べる（`app_settings.default_llm_sampling_preset_key`）。
 
-- 新規チャット作成時に `llm_params` へシード
-- チャットの `llm_params` が空のときは生成時に同じ既定を適用（`ChatLlmSettings.effective_for`）
+優先順位（後勝ち）:
 
-プロンプト変換のサンプリングは接続ごとの `prompt_conversion` 設定を使う（本項目の対象外）。
+1. アプリ既定プリセット（`AppSetting.default_chat_llm_params`）
+2. 接続プロファイルのサンプリング（モデルの `metadata.connection_key` → `ServiceConnection.settings.prompt_conversion`）
+3. チャット個別の `chats.llm_params`
+
+- 新規チャット作成時・生成時の `ChatLlmSettings.effective_for` / `defaults_for` がこの合成を使う
+- 接続の `enable_thinking` / `json_schema` はチャットへは流さない（プロンプト変換専用）

@@ -107,8 +107,9 @@
     .kb-card.p-4.space-y-4 data-controller="prompt-conversion-settings" data-prompt-conversion-settings-load-url-value=(service_connection.persisted? ? load_sampling_service_connection_path(service_connection, format: :json) : "") data-prompt-conversion-settings-field-prefix-value="service_connection_prompt_conversion_settings"
       .flex.flex-wrap.items-start.justify-between.gap-3
         div
-          h2 class=kb_section_title プロンプト変換
-          p.mt-1.text-sm.kb-text-muted 画像生成のスタイル計画・パラメータ指定（DirectPrompt）でこの接続を使うときの JSON / サンプリングです。
+          h2 class=kb_section_title プロンプト変換 / チャット既定サンプリング
+          p.mt-1.text-sm.kb-text-muted
+            | この接続を使うチャットの既定サンプリングにも流します（チャット個別設定があればそちら優先）。画像生成のスタイル計画・DirectPrompt でも同じサンプリングを使います。
         .flex.flex-wrap.items-center.gap-2
           - if service_connection.persisted?
             button type="button" class=kb_btn_secondary_sm data-action="prompt-conversion-settings#loadFromServer" data-prompt-conversion-settings-target="loadButton" サーバーから読み込む

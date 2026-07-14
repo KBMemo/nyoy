@@ -3,6 +3,11 @@
 require "test_helper"
 
 class ChatLlmSettingsTest < ActiveSupport::TestCase
+  setup do
+    ChatModelCatalog.seed!
+    LlmSamplingPresetSeeds.seed!
+  end
+
   test "blank values are omitted from stored hash" do
     settings = ChatLlmSettings.normalize(
       "temperature" => "",
@@ -49,8 +54,6 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
   end
 
   test "apply! falls back to AppSetting default when chat llm_params blank" do
-    ChatModelCatalog.seed!
-    LlmSamplingPresetSeeds.seed!
     AppSetting.delete_all
     AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"), llm_params: {})
@@ -62,9 +65,7 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     assert_in_delta 0.8, llm_chat.instance_variable_get(:@params)[:top_p]
   end
 
-  test "apply! prefers chat llm_params over AppSetting default" do
-    ChatModelCatalog.seed!
-    LlmSamplingPresetSeeds.seed!
+  test "apply! prefers chat llm_params over defaults for overlapping keys" do
     AppSetting.delete_all
     AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
     chat = Chat.create!(
@@ -76,5 +77,47 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     ChatLlmSettings.apply!(llm_chat, chat: chat)
 
     assert_in_delta 0.2, llm_chat.instance_variable_get(:@temperature)
+    assert_in_delta 0.8, llm_chat.instance_variable_get(:@params)[:top_p]
+  end
+
+  test "connection profile sampling overlays app default for the model" do
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+
+    connection = ServiceConnection.find_by!(key: "gpt_oss")
+    connection.assign_prompt_conversion_settings(
+      connection.prompt_conversion_settings.to_settings_h.merge(
+        "max_tokens" => 4096,
+        "temperature" => 0.4
+      )
+    )
+    connection.save!
+
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assert_equal "gpt_oss", model.metadata["connection_key"]
+
+    defaults = ChatLlmSettings.defaults_for(model: model)
+    assert_equal 4096, defaults.max_tokens
+    assert_in_delta 0.4, defaults.temperature
+
+    chat = Chat.create!(model: model, llm_params: {})
+    effective = ChatLlmSettings.effective_for(chat)
+    assert_equal 4096, effective.max_tokens
+    assert_in_delta 0.4, effective.temperature
+  end
+
+  test "chat llm_params override connection profile values" do
+    connection = ServiceConnection.find_by!(key: "gpt_oss")
+    connection.assign_prompt_conversion_settings(
+      connection.prompt_conversion_settings.to_settings_h.merge("max_tokens" => 1024)
+    )
+    connection.save!
+
+    chat = Chat.create!(
+      model: Model.find_by!(provider: "openai", model_id: "gpt-oss"),
+      llm_params: { "max_tokens" => 8192 }
+    )
+
+    assert_equal 8192, ChatLlmSettings.effective_for(chat).max_tokens
   end
 end

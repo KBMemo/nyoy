@@ -11,6 +11,24 @@ class ChatTools::ToolResponseTest < ActiveSupport::TestCase
     assert_equal "hello", parsed["content_preview"]
   end
 
+  test "preview accepts binary-tagged utf-8 cut mid character" do
+    # Mimics Net::HTTP / readability body: valid UTF-8 bytes as ASCII-8BIT,
+    # truncated mid multibyte sequence (ア = E3 82 A2).
+    broken = "アジサイ".b.byteslice(0, 5)
+
+    payload = ChatTools::ToolResponse.preview(
+      ok: true,
+      tool: "fetch_url",
+      title: "凛".b,
+      content_preview: broken
+    )
+
+    parsed = JSON.parse(payload)
+    assert_equal Encoding::UTF_8, parsed["content_preview"].encoding
+    assert parsed["content_preview"].valid_encoding?
+    assert_equal "凛", parsed["title"]
+  end
+
   test "limit_reached returns structured plain text" do
     message = ChatTools::ToolResponse.limit_reached(
       tool: "fetch_url",

@@ -110,14 +110,14 @@ class SafeUrlFetcher
     preview_text, truncated = limit_text_bytes(full_text, max_bytes)
 
     {
-      url: payload["url"].presence || uri.to_s,
+      url: utf8_string(payload["url"].presence || uri.to_s),
       status: 200,
-      title: payload["title"],
+      title: utf8_string(payload["title"]).presence,
       text: preview_text,
-      full_text: include_full_text ? full_text : nil,
-      excerpt: payload["excerpt"],
-      byline: payload["byline"],
-      site_name: payload["siteName"],
+      full_text: include_full_text ? utf8_string(full_text) : nil,
+      excerpt: utf8_string(payload["excerpt"]).presence,
+      byline: utf8_string(payload["byline"]).presence,
+      site_name: utf8_string(payload["siteName"]).presence,
       extractor: "readability",
       truncated: truncated || nil
     }.compact
@@ -130,7 +130,8 @@ class SafeUrlFetcher
   end
 
   def readability_text(payload)
-    payload["textContent"].to_s.presence || markdown_to_text(payload["content"].to_s).squish.presence
+    utf8_string(payload["textContent"]).presence ||
+      utf8_string(markdown_to_text(payload["content"].to_s).squish).presence
   end
 
   def fetch_response(uri, max_bytes:, include_full_text: false)
@@ -145,9 +146,9 @@ class SafeUrlFetcher
       url: response.uri.to_s,
       status: response.code.to_i,
       content_type: content_type,
-      title: extract_title(body),
+      title: utf8_string(extract_title(body)).presence,
       text: preview_text,
-      full_text: include_full_text ? full_text : nil,
+      full_text: include_full_text ? utf8_string(full_text) : nil,
       truncated: (body_truncated || text_truncated) || nil
     }.compact
   end
@@ -295,17 +296,26 @@ class SafeUrlFetcher
   end
 
   def limit_text_bytes(text, max_bytes)
-    return [text, false] if text.bytesize <= max_bytes
+    utf8 = utf8_string(text)
+    return [utf8, false] if utf8.bytesize <= max_bytes
 
-    [truncate_text(text, max_bytes), true]
+    [truncate_text(utf8, max_bytes), true]
   end
 
-  # Byte-based truncation that never leaves a broken multibyte tail (scrub
-  # drops the incomplete trailing sequence), so returned JSON stays valid UTF-8.
+  # Byte-based truncation that never leaves a broken multibyte tail. HTTP /
+  # readability bodies often arrive as ASCII-8BIT; scrub only works after
+  # force_encoding UTF-8 (BINARY treats every byte as valid).
   def truncate_text(text, max_bytes)
-    return text if text.bytesize <= max_bytes
+    utf8 = utf8_string(text)
+    return utf8 if utf8.bytesize <= max_bytes
 
-    text.byteslice(0, max_bytes).to_s.scrub("")
+    utf8_string(utf8.byteslice(0, max_bytes))
+  end
+
+  def utf8_string(value)
+    return "" if value.nil?
+
+    value.to_s.dup.force_encoding(Encoding::UTF_8).scrub("")
   end
 
   def markdown_content?(content_type, body)

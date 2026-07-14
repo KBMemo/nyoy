@@ -70,7 +70,7 @@ module ChatModelCatalog
       record.assign_attributes(
         name: definition.name,
         family: connection&.openai? ? "openai" : "local",
-        context_window: connection&.openai? ? 128_000 : 8192,
+        context_window: context_window_for(connection),
         capabilities: [ "chat" ],
         modalities: { "input" => [ "text" ], "output" => [ "text" ] },
         metadata: {
@@ -80,6 +80,27 @@ module ChatModelCatalog
       )
       record.save!
     end
+  end
+
+  def context_window_for(connection)
+    return 128_000 if connection&.openai?
+
+    n_ctx = n_ctx_from_props(connection&.base_url)
+    return n_ctx if n_ctx.to_i.positive?
+
+    8192
+  end
+
+  def n_ctx_from_props(base_url)
+    base = base_url.to_s.sub(%r{/\z}, "")
+    return nil if base.blank?
+
+    props = LlamaCppClient.new(base_url: base).props
+    value = props.dig("default_generation_settings", "n_ctx") || props["n_ctx"]
+    count = Integer(value)
+    count.positive? ? count : nil
+  rescue ArgumentError, TypeError, LlamaCppClient::Error
+    nil
   end
 
   def context_for(model_record)

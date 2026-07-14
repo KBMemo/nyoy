@@ -24,6 +24,11 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name='chat[model]'] optgroup", minimum: 2
     assert_select "select[name='chat[model]'] optgroup[label='Gemma Vision'] option", text: "gemma-4-12b-it-vision-mtp"
     assert_select "select[name='chat[model]'] optgroup[label='GPT-OSS'] option", text: "gpt-oss"
+    assert_select "button[aria-label='チャット設定'] svg.nyoy-chat-settings-icon"
+    assert_select "#new_chat_settings_dialog"
+    assert_select "#new_chat_sampling_preset_select"
+    assert_select "input[name='chat[temperature]']"
+    assert_select "input[name='chat[max_tokens]']"
   end
 
   test "new syncs gpt-oss model when it was missing from models table" do
@@ -57,6 +62,41 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     chat = Chat.order(:created_at).last
     assert_in_delta 0.7, chat.llm_params["temperature"]
     assert_in_delta 0.8, chat.llm_params["top_p"]
+  end
+
+  test "create seeds max_tokens from connection profile over app preset" do
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    connection = ServiceConnection.find_by!(key: "gpt_oss")
+    connection.assign_prompt_conversion_settings(
+      connection.prompt_conversion_settings.to_settings_h.merge("max_tokens" => 4096)
+    )
+    connection.save!
+
+    post chats_path, params: { chat: { prompt: "こんにちは", model: model.id } }
+
+    chat = Chat.order(:created_at).last
+    assert_equal 4096, chat.llm_params["max_tokens"]
+  end
+
+  test "create uses sampling params submitted on new chat form" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+
+    post chats_path, params: {
+      chat: {
+        prompt: "こんにちは",
+        model: model.id,
+        temperature: "0.3",
+        max_tokens: "512",
+        top_p: "0.9"
+      }
+    }
+
+    chat = Chat.order(:created_at).last
+    assert_in_delta 0.3, chat.llm_params["temperature"]
+    assert_equal 512, chat.llm_params["max_tokens"]
+    assert_in_delta 0.9, chat.llm_params["top_p"]
   end
 
   test "create enqueues chat response job" do

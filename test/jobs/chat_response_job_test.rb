@@ -86,7 +86,7 @@ class ChatResponseJobTest < ActiveJob::TestCase
 
   test "marks assistant truncated when finish_reason is length" do
     @chat.update!(response_state: "running")
-    @chat.messages.create!(role: :user, content: "調査日は？")
+    @chat.messages.create!(role: :user, content: "普通の挨拶")
 
     stub_chat_complete_truncated_by_length(thinking: "途中まで考えた…") do
       assert_nothing_raised do
@@ -94,11 +94,69 @@ class ChatResponseJobTest < ActiveJob::TestCase
       end
     end
 
-    message = @chat.messages.where(role: :assistant).order(:id).last
-    assert message.truncated?
-    assert_equal "途中まで考えた…", message.thinking_text
-    refute message.chat_error?
+    assistants = @chat.messages.where(role: :assistant).order(:id)
+    partial = assistants.find { |m| !m.chat_error? }
+    error = assistants.find(&:chat_error?)
+
+    assert partial.present?
+    assert partial.truncated?
+    assert_equal "途中まで考えた…", partial.thinking_text
+    assert error.present?
+    assert_includes error.chat_error_message, "打ち切"
     assert_equal "idle", @chat.reload.response_state
+  end
+
+  test "treats thread-local length finish_reason as truncation" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "普通の挨拶")
+
+    original = Chat.instance_method(:complete)
+    Chat.define_method(:complete) do |*, **, &block|
+      messages.create!(role: :assistant, content: "")
+      chunk = Object.new
+      chunk.define_singleton_method(:content) { "途中まで" }
+      chunk.define_singleton_method(:thinking) { nil }
+      chunk.define_singleton_method(:tool_call?) { false }
+      # finish_reason not on chunk — only thread-local (simulates late SSE)
+      Nyoy::FinishReasonCapture.record!("length")
+      block&.call(chunk)
+    end
+
+    assert_nothing_raised { ChatResponseJob.perform_now(@chat.id) }
+
+    assert @chat.messages.where(role: :assistant).any?(&:truncated?)
+    assert @chat.messages.where(role: :assistant).any?(&:chat_error?)
+  ensure
+    Chat.define_method(:complete, original)
+  end
+
+  test "delegates research intent turns to ResearchGraphRunner" do
+    @chat.update!(response_state: "running")
+    @chat.messages.create!(role: :user, content: "調査日の根拠はどこから？")
+
+    called = false
+    original = AgentGraph::ResearchGraphRunner.method(:call)
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat|
+      called = true
+      chat.messages.create!(role: :assistant, content: "graph answer")
+      AgentRun.create!(
+        chat: chat,
+        graph_name: "research",
+        status: "completed",
+        state: { "final_answer" => "graph answer" },
+        finished_at: Time.current
+      )
+    end
+
+    assert_nothing_raised do
+      ChatResponseJob.perform_now(@chat.id)
+    end
+
+    assert called
+    assert_equal "idle", @chat.reload.response_state
+    assert_equal "graph answer", @chat.messages.where(role: :assistant).order(:id).last.content
+  ensure
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call, original) if defined?(original)
   end
 
   test "reports llm failures without re-raising" do

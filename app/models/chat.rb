@@ -3,6 +3,8 @@
 class Chat < ApplicationRecord
   acts_as_chat
 
+  has_many :agent_runs, dependent: :destroy
+
   # Wall-clock time spent building the LLM request in #to_llm (RAG + summary +
   # /props etc.), in ms. Read by ChatResponseJob to attribute TTFT to prework.
   attr_reader :context_build_elapsed_ms
