@@ -4,6 +4,7 @@
 # Blank columns fall back to ENV / config.x.nyoy values.
 class AppSetting < ApplicationRecord
   validate :connection_keys_must_be_available
+  validate :sampling_preset_key_must_be_available
 
   class << self
     def instance
@@ -22,6 +23,17 @@ class AppSetting < ApplicationRecord
         :default_style_plan_connection_key,
         env_fallback: Rails.application.config.x.nyoy.style_plan_connection_key
       )
+    end
+
+    # Normalized chat sampling hash from the selected preset, or {} when unset/invalid.
+    def default_chat_llm_params
+      key = instance.default_llm_sampling_preset_key.to_s.presence
+      return {} if key.blank?
+
+      preset = LlmSamplingPreset.enabled.find_by(key: key)
+      return {} unless preset
+
+      ChatLlmSettings.normalize(preset.sampling_params.to_h)
     end
 
     private
@@ -48,6 +60,14 @@ class AppSetting < ApplicationRecord
     keys = StylePlanModelCatalog.connection_keys
     validate_connection_key(:default_chat_connection_key, keys)
     validate_connection_key(:default_style_plan_connection_key, keys)
+  end
+
+  def sampling_preset_key_must_be_available
+    key = default_llm_sampling_preset_key.to_s.presence
+    return if key.blank?
+    return if LlmSamplingPreset.enabled.exists?(key: key)
+
+    errors.add(:default_llm_sampling_preset_key, "は有効なサンプリングプリセットを選んでください")
   end
 
   def validate_connection_key(attribute, keys)

@@ -47,6 +47,18 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_equal model, chat.model
   end
 
+  test "create seeds llm_params from AppSetting default sampling preset" do
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+
+    post chats_path, params: { chat: { prompt: "こんにちは", model: model.id } }
+
+    chat = Chat.order(:created_at).last
+    assert_in_delta 0.7, chat.llm_params["temperature"]
+    assert_in_delta 0.8, chat.llm_params["top_p"]
+  end
+
   test "create enqueues chat response job" do
     model = Model.find_by!(provider: "openai", model_id: "gemma-4-12b-it-vision-mtp")
 

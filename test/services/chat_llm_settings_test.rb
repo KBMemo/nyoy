@@ -47,4 +47,34 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
       llm_chat.instance_variable_get(:@params)
     )
   end
+
+  test "apply! falls back to AppSetting default when chat llm_params blank" do
+    ChatModelCatalog.seed!
+    LlmSamplingPresetSeeds.seed!
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"), llm_params: {})
+
+    llm_chat = RubyLLM.chat(model: "gpt-oss", provider: :openai, assume_model_exists: true)
+    ChatLlmSettings.apply!(llm_chat, chat: chat)
+
+    assert_in_delta 0.7, llm_chat.instance_variable_get(:@temperature)
+    assert_in_delta 0.8, llm_chat.instance_variable_get(:@params)[:top_p]
+  end
+
+  test "apply! prefers chat llm_params over AppSetting default" do
+    ChatModelCatalog.seed!
+    LlmSamplingPresetSeeds.seed!
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    chat = Chat.create!(
+      model: Model.find_by!(provider: "openai", model_id: "gpt-oss"),
+      llm_params: { "temperature" => 0.2 }
+    )
+
+    llm_chat = RubyLLM.chat(model: "gpt-oss", provider: :openai, assume_model_exists: true)
+    ChatLlmSettings.apply!(llm_chat, chat: chat)
+
+    assert_in_delta 0.2, llm_chat.instance_variable_get(:@temperature)
+  end
 end

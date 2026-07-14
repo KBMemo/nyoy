@@ -3,10 +3,12 @@
 .mb-6
   h1 class=kb_page_title 既定モデル
   p.mt-1.text-sm.kb-text-secondary
-    | チャットと画像生成のプロンプト変換で、フォーム未指定時に使う接続を選びます。
-    | 接続ごとのモデル名は
+    | チャットと画像生成のプロンプト変換で、フォーム未指定時に使う接続と、
+    | チャットの既定サンプリングを選びます。接続ごとのモデル名は
     = link_to "接続設定", service_connections_path, class: "kb-chrome-link"
-    | で変更します。
+    | 、サンプリングプリセットは
+    = link_to "サンプリング", llm_sampling_presets_path, class: "kb-chrome-link"
+    | で管理します。
 
 - if @connection_options.empty?
   .kb-alert.kb-alert-danger
@@ -38,6 +40,18 @@
       p.mt-1.text-sm.kb-text-muted
         | 画像生成・メモ挿絵・img2img の「プロンプト変換モデル」未指定時の接続です。現在の有効値:
         code.nyoy-monospace.ml-1 = AppSetting.default_style_plan_connection_key
+
+    div
+      = form.label :default_llm_sampling_preset_key, "チャット既定サンプリング", class: "#{kb_label} mb-1"
+      = form.select :default_llm_sampling_preset_key,
+          options_from_collection_for_select(@llm_sampling_presets, :key, :name, @app_setting.default_llm_sampling_preset_key),
+          { include_blank: "サーバー既定（未設定）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | 新規チャットの llm_params にシードし、チャット設定が空のときの生成にも使います。
+        - if @app_setting.default_llm_sampling_preset_key.present?
+          |  現在:
+          code.nyoy-monospace.ml-1 = @app_setting.default_llm_sampling_preset_key
 
     div
       = form.submit "保存", class: kb_btn_primary_sm

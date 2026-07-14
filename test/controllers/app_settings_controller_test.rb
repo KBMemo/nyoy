@@ -9,18 +9,22 @@ class AppSettingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "edit renders defaults form" do
+    LlmSamplingPresetSeeds.seed!
     get edit_app_settings_path
 
     assert_response :success
     assert_select "select[name='app_setting[default_chat_connection_key]']"
     assert_select "select[name='app_setting[default_style_plan_connection_key]']"
+    assert_select "select[name='app_setting[default_llm_sampling_preset_key]']"
   end
 
   test "update persists defaults" do
+    LlmSamplingPresetSeeds.seed!
     patch app_settings_path, params: {
       app_setting: {
         default_chat_connection_key: "gpt_oss",
-        default_style_plan_connection_key: "gpt_oss"
+        default_style_plan_connection_key: "gpt_oss",
+        default_llm_sampling_preset_key: "qwen3_5_9b"
       }
     }
 
@@ -28,20 +32,25 @@ class AppSettingsControllerTest < ActionDispatch::IntegrationTest
     setting = AppSetting.instance
     assert_equal "gpt_oss", setting.default_chat_connection_key
     assert_equal "gpt_oss", setting.default_style_plan_connection_key
+    assert_equal "qwen3_5_9b", setting.default_llm_sampling_preset_key
     assert_equal "gpt_oss", AppSetting.default_chat_connection_key
     assert_equal "gpt_oss", StylePlanModelCatalog.default_connection_key
+    assert_in_delta 0.7, AppSetting.default_chat_llm_params["temperature"]
   end
 
   test "update can clear defaults to use env fallback" do
+    LlmSamplingPresetSeeds.seed!
     AppSetting.instance.update!(
       default_chat_connection_key: "gpt_oss",
-      default_style_plan_connection_key: "gpt_oss"
+      default_style_plan_connection_key: "gpt_oss",
+      default_llm_sampling_preset_key: "qwen3_5_9b"
     )
 
     patch app_settings_path, params: {
       app_setting: {
         default_chat_connection_key: "",
-        default_style_plan_connection_key: ""
+        default_style_plan_connection_key: "",
+        default_llm_sampling_preset_key: ""
       }
     }
 
@@ -49,5 +58,7 @@ class AppSettingsControllerTest < ActionDispatch::IntegrationTest
     setting = AppSetting.instance
     assert_nil setting.default_chat_connection_key
     assert_nil setting.default_style_plan_connection_key
+    assert_nil setting.default_llm_sampling_preset_key
+    assert_equal({}, AppSetting.default_chat_llm_params)
   end
 end

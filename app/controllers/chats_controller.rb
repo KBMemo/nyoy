@@ -33,7 +33,7 @@ class ChatsController < ApplicationController
     end
 
     model = selected_chat_model(params.dig(:chat, :model))
-    @chat = Chat.create!(model: model)
+    @chat = Chat.create!(model: model, llm_params: AppSetting.default_chat_llm_params)
     Message.suppressing_turbo_broadcasts do
       message = @chat.messages.create!(
         role: :user,
@@ -91,7 +91,7 @@ class ChatsController < ApplicationController
   def load_chat_settings
     @searxng_connection = ServiceConnection.find_by(key: "searxng")
     @web_tool_settings = @searxng_connection&.searxng_settings || SearxngSettings.load
-    @chat_llm_settings = ChatLlmSettings.from(@chat.llm_params)
+    @chat_llm_settings = ChatLlmSettings.effective_for(@chat)
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
   end
 

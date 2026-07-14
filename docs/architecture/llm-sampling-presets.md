@@ -54,3 +54,12 @@ POST /service_connections/:id/load_sampling.json
 | `apply_sampling_preset` | `preset_key` で会話の `llm_params` を上書き。Chat UI は現在の会話、MCP は `chat_id` 必須 |
 
 チャット設定ダイアログでも同一プリセットをフォームへ流し込み、「設定を更新」で `chats.llm_params` に保存する。
+
+## 既定モデル連携
+
+設定 → 既定モデルの「チャット既定サンプリング」で `LlmSamplingPreset` を選べる（`app_settings.default_llm_sampling_preset_key`）。
+
+- 新規チャット作成時に `llm_params` へシード
+- チャットの `llm_params` が空のときは生成時に同じ既定を適用（`ChatLlmSettings.effective_for`）
+
+プロンプト変換のサンプリングは接続ごとの `prompt_conversion` 設定を使う（本項目の対象外）。

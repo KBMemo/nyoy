@@ -40,4 +40,27 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_not setting.valid?
     assert_includes setting.errors[:default_chat_connection_key], "は有効な接続を選んでください"
   end
+
+  test "default_chat_llm_params resolves enabled sampling preset" do
+    LlmSamplingPresetSeeds.seed!
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+
+    params = AppSetting.default_chat_llm_params
+
+    assert_in_delta 0.7, params["temperature"]
+    assert_in_delta 0.8, params["top_p"]
+    assert_nil params["enable_thinking"]
+  end
+
+  test "default_chat_llm_params is empty when unset" do
+    assert_equal({}, AppSetting.default_chat_llm_params)
+  end
+
+  test "rejects unknown sampling preset keys" do
+    setting = AppSetting.instance
+    setting.default_llm_sampling_preset_key = "missing_preset"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:default_llm_sampling_preset_key], "は有効なサンプリングプリセットを選んでください"
+  end
 end

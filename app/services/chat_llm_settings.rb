@@ -16,8 +16,15 @@ class ChatLlmSettings
   end
 
   def self.apply!(llm_chat, chat:)
-    settings = from(chat.llm_params)
+    settings = effective_for(chat)
     settings.apply!(llm_chat)
+  end
+
+  def self.effective_for(chat)
+    stored = from(chat.llm_params)
+    return stored unless stored.to_h.empty?
+
+    from(AppSetting.default_chat_llm_params)
   end
 
   def initialize(hash = nil)
