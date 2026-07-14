@@ -16,6 +16,8 @@ class SearxngClient
 
   DEFAULT_OPEN_TIMEOUT = 5
   DEFAULT_READ_TIMEOUT = 15
+  # Used when the configured engines return nothing (CAPTCHA / silent Google block).
+  EMPTY_RESULT_FALLBACK_ENGINES = %w[google wikipedia].freeze
 
   @search_mutex = Mutex.new
   @active_searches = 0
@@ -56,26 +58,17 @@ class SearxngClient
 
     settings = resolved_settings
     limit = settings.result_count if limit.nil?
+    capped = clamp_limit(limit, settings)
 
     with_concurrency_limit(settings.concurrent_searches) do
-      with_retry(settings.retry_count) do
-        query = compact_query(
-          q: q,
-          format: "json",
-          categories: categories,
-          engines: settings.engines_param
-        )
-        payload = get_json("/search#{query}")
-        results = collect_results(payload).first(clamp_limit(limit, settings))
-
-        {
-          "query" => payload["query"].presence || q,
-          "number_of_results" => results.size,
-          "results" => results,
-          "engines" => settings.engines_param,
-          "unresponsive_engines" => Array(payload["unresponsive_engines"])
-        }.compact
-      end
+      primary = perform_search(
+        q: q,
+        limit: capped,
+        categories: categories,
+        engines: settings.engines_param,
+        retry_count: settings.retry_count
+      )
+      recover_empty_results(primary, q: q, limit: capped, categories: categories, settings: settings)
     end
   end
 
@@ -83,6 +76,77 @@ class SearxngClient
 
   def resolved_settings
     @settings || SearxngSettings.load
+  end
+
+  def perform_search(q:, limit:, categories:, engines:, retry_count:)
+    with_retry(retry_count) do
+      query = compact_query(
+        q: q,
+        format: "json",
+        categories: categories,
+        engines: engines
+      )
+      payload = get_json("/search#{query}")
+      results = collect_results(payload).first(limit)
+
+      {
+        "query" => payload["query"].presence || q,
+        "number_of_results" => results.size,
+        "results" => results,
+        "engines" => engines.to_s,
+        "unresponsive_engines" => Array(payload["unresponsive_engines"])
+      }.compact
+    end
+  end
+
+  # DDG often returns CAPTCHA (empty + unresponsive). Google may also return empty
+  # without listing itself as unresponsive. Retry without dead engines, then fallback.
+  def recover_empty_results(result, q:, limit:, categories:, settings:)
+    return result if Array(result["results"]).any?
+
+    attempted = [ settings.engines_param ]
+    accumulated_unresponsive = Array(result["unresponsive_engines"])
+
+    remaining = engines_excluding_unresponsive(settings.engine_list, accumulated_unresponsive)
+    if remaining.any? && remaining.join(",") != settings.engines_param
+      attempted << remaining.join(",")
+      retry_result = perform_search(
+        q: q,
+        limit: limit,
+        categories: categories,
+        engines: remaining.join(","),
+        retry_count: 0
+      )
+      accumulated_unresponsive |= Array(retry_result["unresponsive_engines"])
+      return annotate_recovery(retry_result, attempted, accumulated_unresponsive) if Array(retry_result["results"]).any?
+    end
+
+    fallback = EMPTY_RESULT_FALLBACK_ENGINES.join(",")
+    return annotate_recovery(result, attempted, accumulated_unresponsive) if attempted.include?(fallback)
+
+    attempted << fallback
+    fallback_result = perform_search(
+      q: q,
+      limit: limit,
+      categories: categories,
+      engines: fallback,
+      retry_count: 0
+    )
+    accumulated_unresponsive |= Array(fallback_result["unresponsive_engines"])
+    annotate_recovery(fallback_result, attempted, accumulated_unresponsive)
+  end
+
+  def engines_excluding_unresponsive(engines, unresponsive)
+    dead = Array(unresponsive).filter_map { |entry| entry.is_a?(Array) ? entry.first.to_s : entry.to_s }
+    engines.reject { |name| dead.include?(name) }
+  end
+
+  def annotate_recovery(result, attempted, unresponsive)
+    result.merge(
+      "engines" => result["engines"],
+      "unresponsive_engines" => unresponsive,
+      "engines_tried" => attempted
+    ).compact
   end
 
   def clamp_limit(limit, settings)

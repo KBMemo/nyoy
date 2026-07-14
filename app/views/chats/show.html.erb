@@ -25,6 +25,12 @@
 
 <%= render "chats/messages", chat: @chat %>
 
+<div id="research_approval">
+  <% if @pending_research_run %>
+    <%= render "chats/research_approval", chat: @chat, agent_run: @pending_research_run %>
+  <% end %>
+</div>
+
 <div class="kb-card p-4 mt-6" data-controller="dialog">
   <%= render "messages/form", chat: @chat, message: @message, autofocus: true %>
   <%= render "chats/chat_settings_dialog", chat: @chat %>

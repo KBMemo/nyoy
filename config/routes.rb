@@ -7,6 +7,12 @@ Rails.application.routes.draw do
       patch :chat_settings, action: :update_chat_settings
     end
     resources :messages, only: [ :create ]
+    resources :agent_runs, only: [] do
+      member do
+        post :approve
+        post :reject
+      end
+    end
   end
   resources :models, only: [ :index, :show ] do
     collection do

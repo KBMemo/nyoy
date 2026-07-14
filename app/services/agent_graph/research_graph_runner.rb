@@ -6,6 +6,10 @@ module AgentGraph
       new(chat).call
     end
 
+    def self.resume(agent_run, decision:)
+      new(agent_run.chat).resume(agent_run, decision: decision)
+    end
+
     def initialize(chat)
       @chat = chat
     end
@@ -38,6 +42,15 @@ module AgentGraph
 
       Runner.new(run, graph: ResearchGraph.new).call
       run.reload
+    end
+
+    def resume(agent_run, decision:)
+      raise ArgumentError, "agent run must await approval" unless agent_run.awaiting_approval?
+      raise ArgumentError, "decision required" unless %w[approved rejected].include?(decision.to_s)
+
+      agent_run.merge_state!("approval" => decision.to_s)
+      Runner.new(agent_run, graph: ResearchGraph.new).call
+      agent_run.reload
     end
 
     private

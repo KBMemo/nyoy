@@ -3,13 +3,13 @@
 require "test_helper"
 
 class SearxngSettingsTest < ActiveSupport::TestCase
-  test "defaults match captcha-safe policy" do
+  test "defaults include google for CAPTCHA resilience" do
     settings = SearxngSettings.from(nil)
 
     assert_equal 5, settings.result_count
     assert_equal 1, settings.concurrent_searches
     assert_equal 1, settings.concurrent_fetches
-    assert_equal "duckduckgo,wikipedia", settings.engines
+    assert_equal "duckduckgo,google,wikipedia", settings.engines
     assert_equal 1, settings.retry_count
     assert_equal 2, settings.max_searches_per_turn
     assert_equal 3, settings.max_fetches_per_turn

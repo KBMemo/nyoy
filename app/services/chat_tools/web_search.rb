@@ -21,12 +21,30 @@ module ChatTools
       end
 
       payload = client.search(q: q, limit: limit)
-      filter_pdf_results(payload)
+      annotate_empty_results(filter_pdf_results(payload))
     rescue SearxngClient::Error => e
       ToolResponse.error(tool: "web_search", message: e.message)
     end
 
     private
+
+    def annotate_empty_results(payload)
+      return payload if Array(payload["results"]).any?
+
+      reasons = Array(payload["unresponsive_engines"]).filter_map do |entry|
+        next unless entry.is_a?(Array)
+
+        "#{entry[0]}: #{entry[1]}"
+      end
+      warning =
+        if reasons.any?
+          "検索結果が空です（#{reasons.join(', ')}）。別エンジンで再試行済みの場合があります。"
+        else
+          "検索結果が空です。別のクエリか、接続設定の検索エンジンを確認してください。"
+        end
+
+      payload.merge("warning" => warning)
+    end
 
     def filter_pdf_results(payload)
       results = Array(payload["results"])

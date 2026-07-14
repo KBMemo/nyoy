@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class SearxngSettings
+  # Prefer multiple engines: duckduckgo alone often hits CAPTCHA; google backfills.
   DEFAULTS = {
     "result_count" => 5,
     "concurrent_searches" => 1,
     "concurrent_fetches" => 1,
-    "engines" => "duckduckgo,wikipedia",
+    "engines" => "duckduckgo,google,wikipedia",
     "retry_count" => 1,
     "max_searches_per_turn" => 2,
     "max_fetches_per_turn" => 3
@@ -50,6 +51,10 @@ class SearxngSettings
 
   def engines_param
     engines
+  end
+
+  def engine_list
+    engines.split(",").map(&:strip).reject(&:blank?)
   end
 
   def to_h

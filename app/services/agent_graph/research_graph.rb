@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # R1 graph: plan → recall_memos → search_web → fetch_urls → finalize_answer
-  # (nodes are skipped via ResearchRouting when the plan does not need them)
+  # R2 graph: plan → recall_memos → search_web → fetch_urls → synthesize_draft → await_approval → finalize_answer
+  # (evidence nodes are skipped via ResearchRouting when the plan does not need them)
   class ResearchGraph
     NAME = "research"
     START = "plan_research"
@@ -13,6 +13,8 @@ module AgentGraph
         "recall_memos" => Nodes::RecallMemos.new,
         "search_web" => Nodes::SearchWeb.new,
         "fetch_urls" => Nodes::FetchUrls.new,
+        "synthesize_draft" => Nodes::SynthesizeDraft.new,
+        "await_approval" => Nodes::AwaitApproval.new,
         "finalize_answer" => Nodes::FinalizeAnswer.new
       }.freeze
     end

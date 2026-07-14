@@ -98,7 +98,8 @@
           p.mt-1.text-sm.kb-text-muted 推奨 3。fetch_url は結果を見てから1件ずつ実行されます。
         div class="sm:col-span-2"
           label class="#{kb_label} mb-1" for="service_connection_searxng_settings_engines" 検索エンジン
-          input#service_connection_searxng_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searxng_settings][engines]" value=searx.engines placeholder="duckduckgo,wikipedia"
+          input#service_connection_searxng_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searxng_settings][engines]" value=searx.engines placeholder="duckduckgo,google,wikipedia"
+          p.mt-1.text-sm.kb-text-muted SearXNG の engines 名（カンマ区切り）。CAPTCHA 回避のため google を含めると安定しやすいです。
           p.mt-1.text-sm.kb-text-muted カンマ区切り。例: duckduckgo,wikipedia（google は CAPTCHA で空になりやすい）
 
   - if service_connection.supports_prompt_conversion_settings?

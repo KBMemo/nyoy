@@ -9,7 +9,7 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
     assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_plan(
       "need_memo" => false, "need_web" => false, "fetch_urls" => [ "https://example.com" ]
     )
-    assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => false)
+    assert_equal "synthesize_draft", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => false)
   end
 
   test "fetch_targets prefers plan urls over search results" do

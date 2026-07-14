@@ -18,6 +18,7 @@ class AgentRun < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
 
   scope :recent, -> { order(created_at: :desc) }
+  scope :awaiting_approval, -> { where(status: "awaiting_approval") }
 
   def running?
     status == "running"

@@ -8,7 +8,7 @@ module AgentGraph
       def call(state:, run:, chat:)
         urls = AgentGraph::ResearchRouting.fetch_targets(state)
         if urls.empty?
-          return AgentGraph::NodeResult.next("finalize_answer")
+          return AgentGraph::NodeResult.next("synthesize_draft")
         end
 
         budget = ChatTools::WebToolBudget.from_graph_budget(state["budget"])
@@ -36,7 +36,7 @@ module AgentGraph
         end
 
         AgentGraph::NodeResult.next(
-          "finalize_answer",
+          "synthesize_draft",
           updates: {
             "fetched_pages" => pages,
             "budget" => budget.to_graph_budget,

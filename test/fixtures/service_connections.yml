@@ -79,7 +79,7 @@ searxng:
   settings:
     result_count: 5
     concurrent_searches: 1
-    engines: duckduckgo,wikipedia
+    engines: duckduckgo,google,wikipedia
     retry_count: 1
     max_searches_per_turn: 2
     max_fetches_per_turn: 3

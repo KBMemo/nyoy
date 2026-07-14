@@ -99,6 +99,7 @@ module AgentGraph
         current_node: node_name,
         finished_at: nil
       )
+      ApprovalBroadcaster.request!(@run.reload)
     end
 
     def finish_failed!(message)

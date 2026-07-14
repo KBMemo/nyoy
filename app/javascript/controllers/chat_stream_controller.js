@@ -39,6 +39,9 @@ export default class extends Controller {
       case "form_updated":
         this.replaceForm(event)
         break
+      case "approval_panel":
+        this.replaceApprovalPanel(event)
+        break
     }
   }
 
@@ -107,6 +110,13 @@ export default class extends Controller {
     template.innerHTML = event.html.trim()
     const next = template.content.firstElementChild
     if (next) current.replaceWith(next)
+  }
+
+  replaceApprovalPanel(event) {
+    const mount = document.getElementById("research_approval")
+    if (!mount) return
+
+    mount.innerHTML = event.html || ""
   }
 
   acceptStreamingSequence(event, target) {

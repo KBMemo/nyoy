@@ -80,6 +80,44 @@ class SearxngClientTest < ActiveSupport::TestCase
     assert_equal "wikipedia", result["results"].first["engine"]
   end
 
+  test "falls back to alternate engines when primary returns CAPTCHA empty" do
+    settings = SearxngSettings.from(
+      result_count: 3,
+      engines: "duckduckgo,wikipedia",
+      retry_count: 0
+    )
+    client = SearxngClient.new(
+      base_url: "http://bowmore.artif.org:8080",
+      settings: settings
+    )
+    requested = []
+    client.define_singleton_method(:perform_request) do |uri, req|
+      requested << uri.to_s
+      if uri.to_s.include?("engines=google")
+        SearxngClientTest.fake_http_response(200, {
+          query: "ruby",
+          results: [
+            { title: "Ruby", url: "https://ruby-lang.org", content: "lang", engine: "google" }
+          ]
+        }.to_json)
+      else
+        SearxngClientTest.fake_http_response(200, {
+          query: "ruby",
+          results: [],
+          unresponsive_engines: [ [ "duckduckgo", "CAPTCHA" ] ]
+        }.to_json)
+      end
+    end
+
+    result = client.search(q: "ruby")
+
+    assert_equal 1, result["number_of_results"]
+    assert_equal "google", result["results"].first["engine"]
+    assert requested.size >= 2
+    assert result["engines_tried"].present?
+    assert_includes result["unresponsive_engines"].flatten, "CAPTCHA"
+  end
+
   test "retries failed requests up to configured retry count" do
     settings = SearxngSettings.from(result_count: 3, retry_count: 1, engines: "google")
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
@@ -89,7 +127,10 @@ class SearxngClientTest < ActiveSupport::TestCase
       if attempts == 1
         SearxngClientTest.fake_http_response(503, { error: "unavailable" }.to_json)
       else
-        SearxngClientTest.fake_http_response(200, { query: "test", results: [] }.to_json)
+        SearxngClientTest.fake_http_response(200, {
+          query: "test",
+          results: [ { title: "Ok", url: "https://example.com", content: "ok", engine: "google" } ]
+        }.to_json)
       end
     end
     client.define_singleton_method(:backoff_sleep) { |*| }
@@ -98,6 +139,7 @@ class SearxngClientTest < ActiveSupport::TestCase
 
     assert_equal 2, attempts
     assert_equal "test", result["query"]
+    assert_equal 1, result["number_of_results"]
   end
 
   test "does not retry 4xx rate limit responses" do

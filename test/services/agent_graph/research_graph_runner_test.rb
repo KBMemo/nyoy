@@ -3,46 +3,77 @@
 require "test_helper"
 
 class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   setup do
     ChatModelCatalog.seed!
     @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
     @chat.messages.create!(role: :user, content: "調査日：2024年の根拠はどこから来た？")
   end
 
-  test "runs plan → recall → finalize and creates assistant message" do
+  test "R2 runs synthesize then awaits approval before finalizing" do
     stub_recall(context: "メモ抜粋: 調査日は会話時点で誤って付けた") do
-      stub_finalize_without_llm do
+      stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-        assert run.completed?, -> { "status=#{run.status} error=#{run.error_message}" }
-        assert_equal "research", run.graph_name
-        assert run.agent_node_runs.where(status: "completed").exists?
-        assert run.state["plan"]["need_memo"]
-        assert_includes run.state["memo_context"], "調査日"
-        assert run.state["final_answer"].present?
+        assert run.awaiting_approval?, -> { "status=#{run.status} error=#{run.error_message}" }
+        assert_equal "await_approval", run.current_node
+        assert run.state["draft"].present?
+        assert_equal "pending", run.state["approval"]
+        assert_includes run.state["draft"], "調査結果"
+        assert_nil run.state["final_answer"]
+        refute @chat.messages.where(role: :assistant).exists?
+
+        names = run.agent_node_runs.order(:id).pluck(:node_name)
+        assert_includes names, "synthesize_draft"
+        assert_includes names, "await_approval"
+        refute_includes names, "finalize_answer"
+
+        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
+        assert completed.completed?, -> { completed.error_message }
+        assert_equal "approved", completed.state["approval"]
+        assert completed.state["final_answer"].present?
 
         message = @chat.messages.where(role: :assistant).order(:id).last
         assert message.present?
-        assert_equal message.id, run.state["assistant_message_id"]
+        assert_equal message.id, completed.state["assistant_message_id"]
         assert_includes message.content, "調査結果"
       end
     end
   end
 
-  test "records recall errors and still finalizes" do
+  test "records recall errors and still drafts then awaits approval" do
     stub_recall(error: "rag down") do
-      stub_finalize_without_llm do
+      stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-        assert run.completed?
+        assert run.awaiting_approval?
         assert_nil run.state["memo_context"]
         assert run.state["errors"].any? { |err| err["code"] == "RECALL_FAILED" }
+        assert run.state["draft"].present?
+
+        AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
         assert @chat.messages.where(role: :assistant).exists?
       end
     end
   end
 
-  test "R1 runs search_web and fetch_urls when plan needs web" do
+  test "reject ends without publishing the draft" do
+    stub_recall(context: "メモ") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(@chat)
+        assert run.awaiting_approval?
+
+        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
+        assert completed.completed?
+        message = @chat.messages.where(role: :assistant).order(:id).last
+        assert_includes message.content, "却下"
+        refute_equal run.state["draft"], message.content
+      end
+    end
+  end
+
+  test "R1 path still searches and fetches before draft approval" do
     @chat.messages.destroy_all
     @chat.messages.create!(role: :user, content: "最新の Hydrangea Rin 公式情報を調べて")
 
@@ -61,18 +92,23 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
             "content_preview" => "装飾花は八重咲き"
           }
         ) do
-          stub_finalize_without_llm do
+          stub_synthesize_without_llm do
             run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-            assert run.completed?, -> { run.error_message }
+            assert run.awaiting_approval?, -> { run.error_message }
             names = run.agent_node_runs.order(:id).pluck(:node_name)
             assert_includes names, "search_web"
             assert_includes names, "fetch_urls"
+            assert_includes names, "synthesize_draft"
             assert run.state["search_results"].any?
             assert run.state["fetched_pages"].any?
-            assert_includes run.state["final_answer"], "example.com/rin"
+            assert_includes run.state["draft"], "example.com/rin"
             assert run.state.dig("budget", "searches_used").to_i.positive?
             assert run.state.dig("budget", "fetches_used").to_i.positive?
+
+            completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
+            assert completed.completed?
+            assert_includes completed.state["final_answer"], "example.com/rin"
           end
         end
       end
@@ -96,10 +132,10 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
           "content_preview" => "根拠ドキュメント"
         }
       ) do
-        stub_finalize_without_llm do
+        stub_synthesize_without_llm do
           run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-          assert run.completed?, -> { run.error_message }
+          assert run.awaiting_approval?, -> { run.error_message }
           names = run.agent_node_runs.order(:id).pluck(:node_name)
           assert_includes names, "fetch_urls"
           refute_includes names, "search_web"
@@ -150,11 +186,11 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     ChatTools::FetchUrl.define_method(:execute, original)
   end
 
-  def stub_finalize_without_llm
-    original = AgentGraph::Nodes::FinalizeAnswer.instance_method(:llm_synthesize)
-    AgentGraph::Nodes::FinalizeAnswer.define_method(:llm_synthesize) { |*| [ nil, false ] }
+  def stub_synthesize_without_llm
+    original = AgentGraph::EvidenceSynthesizer.instance_method(:llm_synthesize)
+    AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize) { |*| [ nil, false ] }
     yield
   ensure
-    AgentGraph::Nodes::FinalizeAnswer.define_method(:llm_synthesize, original)
+    AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize, original)
   end
 end

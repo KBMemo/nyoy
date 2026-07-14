@@ -11,7 +11,7 @@ module AgentGraph
       return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
 
-      "finalize_answer"
+      "synthesize_draft"
     end
 
     def after_recall(state)
@@ -19,13 +19,13 @@ module AgentGraph
       return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
 
-      "finalize_answer"
+      "synthesize_draft"
     end
 
     def after_search(state)
       return "fetch_urls" if fetch_targets(state).any?
 
-      "finalize_answer"
+      "synthesize_draft"
     end
 
     def fetch_targets(state)
