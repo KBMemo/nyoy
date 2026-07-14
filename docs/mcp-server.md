@@ -38,6 +38,7 @@ export MCP_API_TOKEN="your-secret-token"
 | `list_sampling_presets` / `apply_sampling_preset` | 常時（後者は MCP では `chat_id` 必須） |
 | `list_prompt_styles` | `sd_cpp` 有効 |
 | `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング） |
+| `run_research_graph` / `get_research_graph` / `resume_research_graph` | 常時（Research Graph） |
 
 ---
 
@@ -92,7 +93,8 @@ Chat UI ──┐
           ├── ChatTools::* ── ServiceConnection / 徒然 API / 葛籠 API
 MCP ──────┘   ↑
               Mcp::ToolBridge（ChatTools → MCP::Tool）
-              Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / get_image_generation）
+              Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / …）
+              Mcp::ResearchGraphTools（run_research_graph / get_research_graph / resume_research_graph）
 ```
 
 | ファイル | 役割 |
@@ -100,7 +102,8 @@ MCP ──────┘   ↑
 | `app/controllers/mcp_controller.rb` | HTTP エンドポイント・認証 |
 | `app/services/mcp/tool_bridge.rb` | ツール変換・実行委譲 |
 | `app/services/mcp/extension_tools.rb` | SD パイプライン用 MCP ツール |
-| `app/services/mcp/tool_catalog.rb` | Chat + Extension ツール統合 |
+| `app/services/mcp/research_graph_tools.rb` | Research Graph MCP ツール |
+| `app/services/mcp/tool_catalog.rb` | Chat + Extension + Research ツール統合 |
 | `bin/mcp-stdio` | stdio トランスポート |
 
 本番では `MCP_API_TOKEN` を Kamal secrets（`.kamal/secrets`）に追加する（`config/deploy.yml` の `env.secret` に登録済み）。
@@ -118,6 +121,7 @@ MCP_API_TOKEN=your-token bin/mcp-list-tools
 - **fetch キャッシュ**: `search_fetched_page` はプロセス内メモリの `FetchedPageCache` に依存。マルチプロセス Puma では HTTP リクエスト間で共有されない。
 - **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
 - **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。
+- **調査フロー**: `run_research_graph`（既定 `auto_approve=true`）で最終回答まで。`auto_approve=false` なら `resume_research_graph` が必要。状態は `get_research_graph`。
 - **徒然 Agent Chat（既知の課題）**: 上記のうち **ラフ案生成〜`awaiting_selection` まで** は in-app で動作。**`refine_image` 以降は未接続**（ドラフト 1〜4 の選択 UI・仕上げポーリングなし）。当面は `show_path` の Nyoy UI で手動 refine。詳細は徒然 `docs/architecture/chat-agent-roadmap.adoc` §12。
 - **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。
 

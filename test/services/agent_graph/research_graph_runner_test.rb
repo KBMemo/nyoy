@@ -146,6 +146,34 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  test "auto_approve skips interrupt and finalizes" do
+    stub_recall(context: "メモ") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(@chat, auto_approve: true)
+
+        assert run.completed?, -> { run.error_message }
+        assert_equal "approved", run.state["approval"]
+        assert run.state["final_answer"].present?
+        assert @chat.messages.where(role: :assistant).exists?
+      end
+    end
+  end
+
+  test "call_for_mcp creates a chat when chat_id omitted" do
+    stub_recall(context: "メモ") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call_for_mcp(
+          question: "調査の根拠は？",
+          auto_approve: true
+        )
+
+        assert run.completed?
+        assert run.chat.present?
+        assert_equal "調査の根拠は？", run.state["question"]
+      end
+    end
+  end
+
   private
 
   def stub_recall(context: nil, error: nil)

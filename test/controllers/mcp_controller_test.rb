@@ -58,6 +58,9 @@ class McpControllerTest < ActionDispatch::IntegrationTest
     assert_includes names, "generate_image"
     assert_includes names, "list_prompt_styles"
     assert_includes names, "refine_image"
+    assert_includes names, "run_research_graph"
+    assert_includes names, "get_research_graph"
+    assert_includes names, "resume_research_graph"
   end
 
   test "tools call delegates to chat tool implementation" do

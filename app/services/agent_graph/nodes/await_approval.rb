@@ -22,15 +22,29 @@ module AgentGraph
             }
           )
         else
-          AgentGraph::NodeResult.interrupt(
-            updates: {
-              "approval" => "pending"
-            }
-          )
+          if truthy_auto_approve?(state)
+            AgentGraph::NodeResult.next(
+              "finalize_answer",
+              updates: {
+                "approval" => "approved"
+              }
+            )
+          else
+            AgentGraph::NodeResult.interrupt(
+              updates: {
+                "approval" => "pending"
+              }
+            )
+          end
         end
       end
 
       private
+
+      def truthy_auto_approve?(state)
+        value = state["auto_approve"]
+        value == true || value.to_s == "true"
+      end
 
       def create_assistant_message!(chat, content)
         Message.suppressing_turbo_broadcasts do

@@ -2,22 +2,75 @@
 
 module AgentGraph
   class ResearchGraphRunner
-    def self.call(chat)
-      new(chat).call
+    def self.call(chat, question: nil, auto_approve: false)
+      new(chat, question: question, auto_approve: auto_approve).call
     end
 
     def self.resume(agent_run, decision:)
       new(agent_run.chat).resume(agent_run, decision: decision)
     end
 
-    def initialize(chat)
+    # MCP entry: create or reuse a chat, then run the Research Graph.
+    def self.call_for_mcp(question:, chat_id: nil, auto_approve: true)
+      question = question.to_s.strip
+      raise ArgumentError, "question required" if question.blank?
+
+      chat = resolve_mcp_chat(chat_id, question)
+      call(chat, question: question, auto_approve: auto_approve)
+    end
+
+    def self.summary_for(run)
+      state = run.state || {}
+      {
+        agent_run_id: run.id,
+        chat_id: run.chat_id,
+        graph_name: run.graph_name,
+        status: run.status,
+        current_node: run.current_node,
+        question: state["question"],
+        draft: state["draft"],
+        final_answer: state["final_answer"],
+        approval: state["approval"],
+        assistant_message_id: state["assistant_message_id"],
+        plan: state["plan"],
+        errors: state["errors"],
+        error_message: run.error_message,
+        auto_approve: state["auto_approve"] == true,
+        nodes: run.agent_node_runs.order(:id).pluck(:node_name),
+        chat_path: Rails.application.routes.url_helpers.chat_path(run.chat),
+        awaiting_approval: run.awaiting_approval?,
+        completed: run.completed?,
+        failed: run.failed?
+      }
+    end
+
+    def self.resolve_mcp_chat(chat_id, question)
+      if chat_id.present?
+        chat = Chat.find_by(id: chat_id)
+        raise ArgumentError, "chat not found: #{chat_id}" unless chat
+
+        return chat
+      end
+
+      model = ChatModelCatalog.default_model || Model.order(:id).first
+      raise ArgumentError, "no chat model available" unless model
+
+      chat = Chat.create!(model: model)
+      Message.suppressing_turbo_broadcasts do
+        chat.messages.create!(role: :user, content: question)
+      end
+      chat
+    end
+    private_class_method :resolve_mcp_chat
+
+    def initialize(chat, question: nil, auto_approve: false)
       @chat = chat
+      @question = question.to_s.strip.presence
+      @auto_approve = auto_approve
     end
 
     def call
-      question = latest_user_question
-      raise ArgumentError, "user question required" if question.blank?
-
+      question = ensure_question!
       run = AgentRun.create!(
         chat: @chat,
         graph_name: ResearchGraph::NAME,
@@ -34,6 +87,7 @@ module AgentGraph
           "draft" => nil,
           "final_answer" => nil,
           "approval" => nil,
+          "auto_approve" => @auto_approve == true,
           "budget" => {},
           "errors" => [],
           "next_node" => ResearchGraph::START
@@ -54,6 +108,19 @@ module AgentGraph
     end
 
     private
+
+    def ensure_question!
+      question = @question.presence || latest_user_question
+      raise ArgumentError, "user question required" if question.blank?
+
+      if @question.present? && latest_user_question != @question
+        Message.suppressing_turbo_broadcasts do
+          @chat.messages.create!(role: :user, content: @question)
+        end
+      end
+
+      question
+    end
 
     def latest_user_question
       @chat.messages.where(role: :user).order(:id).last&.content.to_s.strip

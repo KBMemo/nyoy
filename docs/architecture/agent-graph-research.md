@@ -2,7 +2,7 @@
 
 LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フロー。
 
-## 現状（R2）
+## 現状（R3）
 
 ```
 plan_research → recall_memos → search_web → fetch_urls → synthesize_draft → await_approval → finalize_answer
@@ -13,10 +13,21 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
 - `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer` / RubyLLM）。チャットにはまだ書かない
 - `await_approval` は Interrupt → `status=awaiting_approval`。UI で承認 / 却下
-- 承認後: `AgentGraphResumeJob` → `finalize_answer` がアシスタントメッセージを作成
+- `auto_approve=true`（MCP 既定）のときは Interrupt をスキップして `finalize_answer` へ
+- 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
 - 却下: 却下メッセージを出して完了
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
-- `search_web` / `fetch_urls` は既存 `ChatTools::WebSearch` / `FetchUrl` + `WebToolBudget`（state の budget で復元）
+- `search_web` / `fetch_urls` は既存 `ChatTools::WebSearch` / `FetchUrl` + `WebToolBudget`
+
+## MCP
+
+| ツール | 役割 |
+|--------|------|
+| `run_research_graph` | 調査実行（`question` 必須、`chat_id` / `auto_approve` 任意） |
+| `get_research_graph` | `agent_run_id` の状態取得 |
+| `resume_research_graph` | `approved` / `rejected` で再開 |
+
+実装: `Mcp::ResearchGraphTools`（Chat tool loop には載せない）。
 
 ## テーブル
 
@@ -41,8 +52,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - ルート: `POST /chats/:chat_id/agent_runs/:id/approve` / `reject`
 - Cable: `approval_panel` で `#research_approval` を差し替え
 
-## 次（R3+）
+## 次
 
-- MCP `run_research_graph`
-- `plan.sensitive` での条件付き承認（現在は常に Interrupt）
+- `plan.sensitive` での条件付き承認（MCP 以外でも auto 判定）
 - 却下後の再計画ループ

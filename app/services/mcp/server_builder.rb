@@ -10,6 +10,7 @@ module Mcp
       create_memo / update_memo はユーザーが明示的に保存を求めたときだけ使ってください。
       analyze_image は tsuzura_media_id を指定するか、Chat 添付がない場合は画像解析に使えません。
       generate_image は非同期です。get_image_generation で進捗を確認してください。
+      調査フローは run_research_graph（既定 auto_approve=true）。承認が必要なら auto_approve=false のあと resume_research_graph。
     TEXT
 
     class << self
