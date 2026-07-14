@@ -5,21 +5,11 @@ class AgentRunsController < ApplicationController
   before_action :set_agent_run
 
   def approve
-    resume!("approved", notice: "調査ドラフトを承認しました。回答を確定します。")
+    resume!("approved", notice: approve_notice)
   end
 
   def reject
-    remaining = [
-      AgentGraph::Nodes::AwaitApproval::MAX_REPLANS - @agent_run.state["replan_count"].to_i,
-      0
-    ].max
-    notice =
-      if remaining.positive?
-        "調査ドラフトを却下しました。調査をやり直します。"
-      else
-        "調査ドラフトを却下しました。"
-      end
-    resume!("rejected", notice: notice)
+    resume!("rejected", notice: reject_notice)
   end
 
   private
@@ -32,14 +22,40 @@ class AgentRunsController < ApplicationController
     @agent_run = @chat.agent_runs.find(params[:id])
   end
 
+  def approve_notice
+    case @agent_run.graph_name
+    when AgentGraph::MemoWriteGraph::NAME
+      "メモ草案を承認しました。徒然へ保存します。"
+    else
+      "調査ドラフトを承認しました。回答を確定します。"
+    end
+  end
+
+  def reject_notice
+    case @agent_run.graph_name
+    when AgentGraph::MemoWriteGraph::NAME
+      "メモ保存を却下しました。"
+    else
+      remaining = [
+        AgentGraph::Nodes::AwaitApproval::MAX_REPLANS - @agent_run.state["replan_count"].to_i,
+        0
+      ].max
+      if remaining.positive?
+        "調査ドラフトを却下しました。調査をやり直します。"
+      else
+        "調査ドラフトを却下しました。"
+      end
+    end
+  end
+
   def resume!(decision, notice:)
     unless @agent_run.awaiting_approval?
-      redirect_to @chat, alert: "承認待ちの調査実行ではありません。"
+      redirect_to @chat, alert: "承認待ちの実行ではありません。"
       return
     end
 
     if @agent_run.state["approval"].to_s.in?(%w[approved rejected])
-      redirect_to @chat, alert: "この調査ドラフトはすでに処理中です。"
+      redirect_to @chat, alert: "このドラフトはすでに処理中です。"
       return
     end
 

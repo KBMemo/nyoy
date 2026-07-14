@@ -95,6 +95,7 @@ MCP ──────┘   ↑
               Mcp::ToolBridge（ChatTools → MCP::Tool）
               Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / …）
               Mcp::ResearchGraphTools（run_research_graph / get_research_graph / resume_research_graph）
+              Mcp::MemoWriteGraphTools（run_memo_write_graph / get_memo_write_graph / resume_memo_write_graph）
 ```
 
 | ファイル | 役割 |
@@ -103,7 +104,8 @@ MCP ──────┘   ↑
 | `app/services/mcp/tool_bridge.rb` | ツール変換・実行委譲 |
 | `app/services/mcp/extension_tools.rb` | SD パイプライン用 MCP ツール |
 | `app/services/mcp/research_graph_tools.rb` | Research Graph MCP ツール |
-| `app/services/mcp/tool_catalog.rb` | Chat + Extension + Research ツール統合 |
+| `app/services/mcp/memo_write_graph_tools.rb` | MemoWrite Graph MCP ツール |
+| `app/services/mcp/tool_catalog.rb` | Chat + Extension + Graph ツール統合 |
 | `bin/mcp-stdio` | stdio トランスポート |
 
 本番では `MCP_API_TOKEN` を Kamal secrets（`.kamal/secrets`）に追加する（`config/deploy.yml` の `env.secret` に登録済み）。
@@ -122,8 +124,9 @@ MCP_API_TOKEN=your-token bin/mcp-list-tools
 - **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
 - **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。
 - **調査フロー**: `run_research_graph`（既定 `auto_approve=true`）。`plan.sensitive` かつ auto_approve でないときだけ `resume_research_graph` が必要。状態は `get_research_graph`。
+- **メモ新規保存フロー**: `run_memo_write_graph`（既定 `auto_approve=true`）。HITL 時は `resume_memo_write_graph`。状態は `get_memo_write_graph`。Chat UI では常に承認待ち。
 - **徒然 Agent Chat（既知の課題）**: 上記のうち **ラフ案生成〜`awaiting_selection` まで** は in-app で動作。**`refine_image` 以降は未接続**（ドラフト 1〜4 の選択 UI・仕上げポーリングなし）。当面は `show_path` の Nyoy UI で手動 refine。詳細は徒然 `docs/architecture/chat-agent-roadmap.adoc` §12。
-- **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。
+- **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。明示的な「徒然に保存」は MemoWrite Graph が優先。
 
 ---
 

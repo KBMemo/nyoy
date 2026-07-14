@@ -12,6 +12,8 @@ module Mcp
       generate_image は非同期です。get_image_generation で進捗を確認してください。
       調査フローは run_research_graph（既定 auto_approve=true）。
       plan.sensitive のときだけ承認待ちになり、その場合は resume_research_graph で続行。
+      メモ新規保存フローは run_memo_write_graph（既定 auto_approve=true）。
+      承認待ちのときは resume_memo_write_graph で続行。
     TEXT
 
     class << self

@@ -292,10 +292,10 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
   end
 
   def stub_synthesize_without_llm
-    original = AgentGraph::EvidenceSynthesizer.instance_method(:llm_synthesize)
-    AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize) { |*| [ nil, false ] }
+    previous = AgentGraph::EvidenceSynthesizer.force_template
+    AgentGraph::EvidenceSynthesizer.force_template = true
     yield
   ensure
-    AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize, original)
+    AgentGraph::EvidenceSynthesizer.force_template = previous
   end
 end

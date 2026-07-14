@@ -3,17 +3,45 @@
 module AgentGraph
   # Shared draft / answer synthesis from Research Graph evidence.
   # Used by SynthesizeDraft (and tests that stub LLM).
+  #
+  # Prefer AppSetting.research_draft_model (light) when set; on failure fall back
+  # to the chat model and/or the evidence-pack template per AppSetting.
   class EvidenceSynthesizer
+    # Test hook: skip LLM and use the evidence-pack template.
+    class << self
+      attr_accessor :force_template
+    end
+
+    SYNTHESIS_SYSTEM = <<~TEXT.squish
+      あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に日本語で簡潔に答えてください。
+      根拠が無い場合はその旨を明記してください。推測で日付や事実を補わないでください。
+      Web 根拠がある場合は簡潔に出典 URL を添えてください。
+      却下された前回ドラフトがある場合は、その内容をそのまま繰り返さず、構成・着眼点・根拠の出し方を変えて書き直してください。
+    TEXT
+
     def initialize(chat)
       @chat = chat
     end
 
+    # @return [String, Boolean, Hash] draft, truncated?, meta (source / model_id)
     def call(state)
       evidence = evidence_pack(state)
-      llm_answer, truncated = llm_synthesize(evidence)
-      return [ llm_answer, truncated ] if llm_answer.present?
+      if self.class.force_template
+        return [
+          fallback_answer(evidence),
+          false,
+          { "source" => "template", "model_id" => nil }
+        ]
+      end
 
-      [ fallback_answer(evidence), false ]
+      llm_answer, truncated, meta = synthesize_with_fallback(evidence)
+      return [ sanitize_text(llm_answer), truncated, meta ] if llm_answer.present?
+
+      [
+        fallback_answer(evidence),
+        false,
+        { "source" => "template", "model_id" => nil }
+      ]
     end
 
     def evidence_pack(state)
@@ -31,8 +59,42 @@ module AgentGraph
 
     private
 
-    def llm_synthesize(evidence)
-      model = @chat.model_association
+    def synthesize_with_fallback(evidence)
+      candidates(evidence_models).each do |model, source|
+        answer, truncated = ask_model(model, evidence)
+        next if answer.blank?
+
+        return [ answer, truncated, { "source" => source, "model_id" => model.model_id } ]
+      end
+
+      [ nil, false, { "source" => nil, "model_id" => nil } ]
+    end
+
+    def evidence_models
+      main = @chat.model_association
+      light = AppSetting.research_draft_model
+      [ light, main ]
+    end
+
+    # Ordered unique (model, source) pairs for LLM attempts.
+    def candidates(light_and_main)
+      light, main = light_and_main
+      list = []
+
+      if light
+        list << [ light, "light" ]
+      elsif main
+        list << [ main, "main" ]
+      end
+
+      if light && AppSetting.research_draft_fallback == "main" && main && main.id != light.id
+        list << [ main, "main" ]
+      end
+
+      list
+    end
+
+    def ask_model(model, evidence)
       return [ nil, false ] unless model
 
       llm_context = ChatModelCatalog.context_for(model)
@@ -41,22 +103,24 @@ module AgentGraph
         provider: model.provider.to_sym,
         assume_model_exists: true
       )
-      ChatLlmSettings.apply!(llm, chat: @chat)
+      # Use the synthesis model's connection defaults — not the chat's creative overrides.
+      ChatLlmSettings.defaults_for(model: model).apply!(llm)
 
-      system = <<~TEXT.squish
-        あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に日本語で簡潔に答えてください。
-        根拠が無い場合はその旨を明記してください。推測で日付や事実を補わないでください。
-        Web 根拠がある場合は簡潔に出典 URL を添えてください。
-        却下された前回ドラフトがある場合は、その内容をそのまま繰り返さず、構成・着眼点・根拠の出し方を変えて書き直してください。
-      TEXT
-
-      llm.with_instructions(system)
+      llm.with_instructions(SYNTHESIS_SYSTEM)
       response = llm.ask(user_prompt(evidence))
       answer = response.content.to_s.strip.presence
-      [ answer, length_truncated_response?(response) ]
+      [ sanitize_text(answer), length_truncated_response?(response) ]
     rescue StandardError => e
-      Rails.logger.warn("AgentGraph::EvidenceSynthesizer LLM failed: #{e.class}: #{e.message}")
+      Rails.logger.warn(
+        "AgentGraph::EvidenceSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
+      )
       [ nil, false ]
+    end
+
+    def sanitize_text(text)
+      return text if text.blank?
+
+      text.to_s.delete("\u0000")
     end
 
     def user_prompt(evidence)

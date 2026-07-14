@@ -5,7 +5,7 @@ module AgentGraph
     # Build a draft answer from collected evidence, then approve or finalize.
     class SynthesizeDraft
       def call(state:, run:, chat:)
-        draft, truncated = AgentGraph::EvidenceSynthesizer.new(chat).call(state)
+        draft, truncated, meta = AgentGraph::EvidenceSynthesizer.new(chat).call(state)
         if draft.blank?
           return AgentGraph::NodeResult.fail(
             "empty draft",
@@ -27,6 +27,7 @@ module AgentGraph
         updates = {
           "draft" => draft,
           "draft_truncated" => truncated,
+          "draft_synthesis" => meta.stringify_keys,
           "approval" => goto == "await_approval" ? nil : "not_required"
         }
 

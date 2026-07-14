@@ -4,7 +4,7 @@
   h1 class=kb_page_title 既定モデル
   p.mt-1.text-sm.kb-text-secondary
     | チャットと画像生成のプロンプト変換で、フォーム未指定時に使う接続と、
-    | チャットの既定サンプリングを選びます。接続ごとのモデル名は
+    | チャットの既定サンプリング、Research Graph の調査ドラフト用モデルを選びます。接続ごとのモデル名は
     = link_to "接続設定", service_connections_path, class: "kb-chrome-link"
     | 、サンプリングプリセットは
     = link_to "サンプリング", llm_sampling_presets_path, class: "kb-chrome-link"
@@ -52,6 +52,24 @@
         - if @app_setting.default_llm_sampling_preset_key.present?
           |  現在:
           code.nyoy-monospace.ml-1 = @app_setting.default_llm_sampling_preset_key
+
+    div
+      = form.label :research_draft_model_id, "調査ドラフト用モデル", class: "#{kb_label} mb-1"
+      = form.select :research_draft_model_id,
+          grouped_options_for_select(@research_draft_model_options, @app_setting.research_draft_model_id),
+          { include_blank: "チャットと同じ（未設定）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | Research Graph のドラフト合成だけ、チャット本体より軽いモデルに切り替えられます。
+
+    div
+      = form.label :research_draft_fallback, "調査ドラフト失敗時", class: "#{kb_label} mb-1"
+      = form.select :research_draft_fallback,
+          options_for_select(@research_draft_fallback_options, @app_setting.research_draft_fallback.presence || "main"),
+          {},
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | 軽量モデルが失敗・空応答のときのフォールバックです。未設定時も最終手段は根拠パックのテンプレです。
 
     div
       = form.submit "保存", class: kb_btn_primary_sm

@@ -13,7 +13,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
-- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer` / RubyLLM）
+- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック（`AppSetting.research_draft_*`）
 - **条件付き承認**: `plan.sensitive=true` かつ `auto_approve` でないときだけ `await_approval` で Interrupt
 - 非 sensitive: `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
@@ -63,4 +63,5 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 ## 次
 
-- 2 本目候補: MemoWrite Graph（草案 → 承認 → create/update_memo）— 詳細は `dev_note_tmp.md` 冒頭の再検討
+- MemoWrite Graph（create）: [agent-graph-memo-write.md](./agent-graph-memo-write.md)
+- MemoWrite v2: `update_memo` / 楽観ロック

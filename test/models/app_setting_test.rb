@@ -63,4 +63,18 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_not setting.valid?
     assert_includes setting.errors[:default_llm_sampling_preset_key], "は有効なサンプリングプリセットを選んでください"
   end
+
+  test "research_draft_model resolves stored model_id" do
+    AppSetting.instance.update!(research_draft_model_id: "gpt-oss")
+
+    assert_equal "gpt-oss", AppSetting.research_draft_model.model_id
+  end
+
+  test "rejects unknown research draft model" do
+    setting = AppSetting.instance
+    setting.research_draft_model_id = "missing-model"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:research_draft_model_id], "は有効なチャットモデルを選んでください"
+  end
 end

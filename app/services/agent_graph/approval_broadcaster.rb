@@ -12,6 +12,16 @@ module AgentGraph
         broadcast(chat, "")
       end
 
+      # Shared by Cable and chats#show so refresh uses the same graph-specific UI.
+      def panel_partial_for(agent_run)
+        case agent_run.graph_name.to_s
+        when MemoWriteGraph::NAME
+          "chats/memo_write_approval"
+        else
+          "chats/research_approval"
+        end
+      end
+
       private
 
       def broadcast(chat, html)
@@ -23,7 +33,7 @@ module AgentGraph
 
       def render_panel(agent_run)
         ApplicationController.render(
-          partial: "chats/research_approval",
+          partial: panel_partial_for(agent_run),
           locals: { chat: agent_run.chat, agent_run: agent_run }
         )
       end

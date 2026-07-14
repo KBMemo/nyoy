@@ -25,7 +25,7 @@
             = @llm_sampling_preset.sampling_params.public_send(key).nil? ? "—" : @llm_sampling_preset.sampling_params.public_send(key)
         - if @llm_sampling_preset.enable_thinking.present?
           span
-            span.kb-text-muted enable_thinking=
+            span.kb-text-muted = "enable_thinking="
             = @llm_sampling_preset.enable_thinking
   - if @llm_sampling_preset.notes.present?
     div

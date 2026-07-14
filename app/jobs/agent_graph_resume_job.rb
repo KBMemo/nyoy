@@ -11,11 +11,11 @@ class AgentGraphResumeJob < ApplicationJob
     end
 
     # Controller may already have written approval; resume is idempotent on that.
-    completed = AgentGraph::ResearchGraphRunner.resume(run, decision: decision)
+    completed = resume_runner(run, decision)
     if completed.failed?
       ChatErrorBroadcaster.fail!(
         chat,
-        AgentGraph::Error.new(completed.error_message.presence || "Research Graph failed")
+        AgentGraph::Error.new(completed.error_message.presence || failure_label(run))
       )
     end
   rescue ChatResponseControl::Cancelled
@@ -26,5 +26,25 @@ class AgentGraphResumeJob < ApplicationJob
   ensure
     ChatResponseControl.finish!(chat) if chat
     ChatUiBroadcaster.form_updated(chat) if chat
+  end
+
+  private
+
+  def resume_runner(run, decision)
+    case run.graph_name.to_s
+    when AgentGraph::MemoWriteGraph::NAME
+      AgentGraph::MemoWriteGraphRunner.resume(run, decision: decision)
+    else
+      AgentGraph::ResearchGraphRunner.resume(run, decision: decision)
+    end
+  end
+
+  def failure_label(run)
+    case run.graph_name.to_s
+    when AgentGraph::MemoWriteGraph::NAME
+      "MemoWrite Graph failed"
+    else
+      "Research Graph failed"
+    end
   end
 end

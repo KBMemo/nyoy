@@ -54,7 +54,7 @@ module AgentGraph
       node_run = @run.agent_node_runs.create!(
         node_name: node_name,
         status: "running",
-        input_snapshot: @run.state,
+        input_snapshot: scrub_null_bytes(@run.state),
         started_at: Time.current
       )
 
@@ -62,12 +62,12 @@ module AgentGraph
 
       node_run.update!(
         status: result.failed? ? "failed" : "completed",
-        output_snapshot: {
+        output_snapshot: scrub_null_bytes({
           updates: result.updates,
           goto: result.goto,
           interrupt: result.interrupt?,
           error: result.error
-        }.compact,
+        }.compact),
         error_message: result.error,
         finished_at: Time.current
       )
@@ -83,9 +83,22 @@ module AgentGraph
     end
 
     def apply_result!(node_name, result)
-      merged = (@run.state || {}).deep_merge(result.updates)
+      merged = scrub_null_bytes((@run.state || {}).deep_merge(result.updates))
       @run.update!(state: merged)
       @run.agent_checkpoints.create!(node_name: node_name, state: merged)
+    end
+
+    def scrub_null_bytes(value)
+      case value
+      when Hash
+        value.transform_values { |item| scrub_null_bytes(item) }
+      when Array
+        value.map { |item| scrub_null_bytes(item) }
+      when String
+        value.delete("\u0000")
+      else
+        value
+      end
     end
 
     def finish_completed!

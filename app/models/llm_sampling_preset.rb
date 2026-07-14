@@ -15,7 +15,15 @@ class LlmSamplingPreset < ApplicationRecord
   end
 
   def enable_thinking
-    value = params.is_a?(Hash) ? params["enable_thinking"] || params[:enable_thinking] : nil
+    return nil unless params.is_a?(Hash)
+
+    value =
+      if params.key?("enable_thinking")
+        params["enable_thinking"]
+      elsif params.key?(:enable_thinking)
+        params[:enable_thinking]
+      end
+
     case value
     when true, "true", "1", 1 then "true"
     when false, "false", "0", 0 then "false"

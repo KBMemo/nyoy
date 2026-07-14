@@ -53,11 +53,56 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/承認待ち/, flash[:alert])
   end
 
+  test "memo write approve uses memo notice" do
+    @run.update!(
+      graph_name: "memo_write",
+      state: {
+        "instruction" => "これを徒然に保存して",
+        "draft" => "### メモ\n本文",
+        "memo_draft" => { "title" => "メモ", "body" => "本文" },
+        "approval" => "pending"
+      }
+    )
+
+    post approve_chat_agent_run_path(@chat, @run)
+
+    assert_redirected_to @chat
+    assert_match(/徒然へ保存/, flash[:notice])
+  end
+
   test "show omits approval panel after decision is submitted" do
     post approve_chat_agent_run_path(@chat, @run)
     get chat_path(@chat)
 
     assert_response :success
     assert_select "#research_approval_panel", count: 0
+  end
+
+  test "show renders memo write approval panel for pending memo write run" do
+    @run.update!(
+      graph_name: "memo_write",
+      state: {
+        "instruction" => "これを徒然に保存して",
+        "draft" => "### メモ\n本文",
+        "memo_draft" => { "title" => "メモ", "body" => "本文" },
+        "approval" => "pending"
+      }
+    )
+
+    get chat_path(@chat)
+
+    assert_response :success
+    assert_select "#research_approval_panel"
+    assert_select "h2", text: "徒然メモの確認"
+    assert_select "button, input[type=submit]", text: /この内容で徒然に保存する/
+    assert_no_match(/却下してやり直す/, response.body)
+  end
+
+  test "show renders research approval panel for pending research run" do
+    get chat_path(@chat)
+
+    assert_response :success
+    assert_select "#research_approval_panel"
+    assert_select "h2", text: "調査ドラフトの確認"
   end
 end

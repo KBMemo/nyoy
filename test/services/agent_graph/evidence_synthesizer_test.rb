@@ -6,12 +6,13 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
     @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
   end
 
   test "fallback draft changes after rejection notes" do
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
-    original = AgentGraph::EvidenceSynthesizer.instance_method(:llm_synthesize)
-    AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize) { |*| [ nil, false ] }
+    previous = AgentGraph::EvidenceSynthesizer.force_template
+    AgentGraph::EvidenceSynthesizer.force_template = true
 
     begin
       base_state = {
@@ -40,7 +41,93 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
       assert_includes second, "書き直し"
       assert_includes second, "前回ドラフトで避けた点"
     ensure
-      AgentGraph::EvidenceSynthesizer.define_method(:llm_synthesize, original)
+      AgentGraph::EvidenceSynthesizer.force_template = previous
+    end
+  end
+
+  test "uses light model first then falls back to main" do
+    light = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    main = Model.create!(
+      provider: "openai",
+      model_id: "research-main-test",
+      name: "research-main-test",
+      family: "local",
+      context_window: 8192,
+      capabilities: [ "chat" ],
+      modalities: { "input" => [ "text" ], "output" => [ "text" ] },
+      metadata: { "connection_key" => "gpt_oss", "api_base" => light.metadata["api_base"] }
+    )
+    original_chat_model = @chat.model_association
+    @chat.update!(model: main)
+    AppSetting.instance.update!(research_draft_model_id: light.model_id, research_draft_fallback: "main")
+
+    calls = []
+    original = AgentGraph::EvidenceSynthesizer.instance_method(:ask_model)
+    AgentGraph::EvidenceSynthesizer.define_method(:ask_model) do |model, _evidence|
+      calls << model.model_id
+      if model.model_id == light.model_id
+        [ nil, false ]
+      else
+        [ "メインで書いたドラフト", false ]
+      end
+    end
+
+    begin
+      draft, truncated, meta = AgentGraph::EvidenceSynthesizer.new(@chat).call(
+        "question" => "出典は？",
+        "memo_context" => nil,
+        "search_results" => [],
+        "fetched_pages" => [],
+        "errors" => [],
+        "rejection_notes" => [],
+        "replan_count" => 0,
+        "revision_hints" => []
+      )
+
+      assert_equal [ light.model_id, main.model_id ], calls
+      assert_equal "メインで書いたドラフト", draft
+      refute truncated
+      assert_equal "main", meta["source"]
+      assert_equal main.model_id, meta["model_id"]
+    ensure
+      AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
+      AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)
+      AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
+      @chat.update!(model: original_chat_model)
+      main.destroy!
+    end
+  end
+
+  test "template fallback skips main when configured" do
+    light = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    AppSetting.instance.update!(research_draft_model_id: light.model_id, research_draft_fallback: "template")
+
+    calls = []
+    original = AgentGraph::EvidenceSynthesizer.instance_method(:ask_model)
+    AgentGraph::EvidenceSynthesizer.define_method(:ask_model) do |model, _evidence|
+      calls << model.model_id
+      [ nil, false ]
+    end
+
+    begin
+      draft, _truncated, meta = AgentGraph::EvidenceSynthesizer.new(@chat).call(
+        "question" => "出典は？",
+        "memo_context" => "メモ",
+        "search_results" => [],
+        "fetched_pages" => [],
+        "errors" => [],
+        "rejection_notes" => [],
+        "replan_count" => 0,
+        "revision_hints" => []
+      )
+
+      assert_equal [ light.model_id ], calls
+      assert_includes draft, "調査結果"
+      assert_equal "template", meta["source"]
+    ensure
+      AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
+      AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)
+      AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
     end
   end
 end
