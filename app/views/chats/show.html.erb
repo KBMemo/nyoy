@@ -25,6 +25,8 @@
 
 <%= render "chats/messages", chat: @chat %>
 
+<div id="research_progress"></div>
+
 <div id="research_approval">
   <% if @pending_research_run %>
     <%= render "chats/research_approval", chat: @chat, agent_run: @pending_research_run %>

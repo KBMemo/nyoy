@@ -975,6 +975,37 @@
   overflow: auto;
 }
 
+.nyoy-research-progress {
+  align-items: center;
+  color: var(--kb-text-secondary);
+  display: flex;
+  font-size: var(--kb-font-size-sm, 0.875rem);
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.nyoy-research-progress-dot {
+  animation: nyoy-research-progress-pulse 1.2s ease-in-out infinite;
+  background: var(--kb-link, #2563eb);
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+
+@keyframes nyoy-research-progress-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .nyoy-card-open {
   align-items: center;
   border-radius: var(--kb-radius-sm);

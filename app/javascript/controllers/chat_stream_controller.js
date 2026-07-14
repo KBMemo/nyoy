@@ -42,6 +42,9 @@ export default class extends Controller {
       case "approval_panel":
         this.replaceApprovalPanel(event)
         break
+      case "research_progress":
+        this.replaceResearchProgress(event)
+        break
     }
   }
 
@@ -114,6 +117,13 @@ export default class extends Controller {
 
   replaceApprovalPanel(event) {
     const mount = document.getElementById("research_approval")
+    if (!mount) return
+
+    mount.innerHTML = event.html || ""
+  }
+
+  replaceResearchProgress(event) {
+    const mount = document.getElementById("research_progress")
     if (!mount) return
 
     mount.innerHTML = event.html || ""

@@ -35,6 +35,7 @@ module AgentGraph
       finish_failed!("max steps exceeded (#{MAX_STEPS})") if @run.running?
       @run
     rescue ChatResponseControl::Cancelled
+      ProgressBroadcaster.clear!(@run.chat)
       @run.update!(status: "cancelled", finished_at: Time.current, error_message: "cancelled")
       raise
     rescue StandardError => e
@@ -47,6 +48,8 @@ module AgentGraph
     def execute_node(node_name)
       node = @graph.node_for(node_name)
       raise "unknown node: #{node_name}" unless node
+
+      ProgressBroadcaster.started!(@run.chat, node_name)
 
       node_run = @run.agent_node_runs.create!(
         node_name: node_name,
@@ -86,6 +89,7 @@ module AgentGraph
     end
 
     def finish_completed!
+      ProgressBroadcaster.clear!(@run.chat)
       @run.update!(
         status: "completed",
         current_node: nil,
@@ -94,6 +98,8 @@ module AgentGraph
     end
 
     def interrupt!(node_name)
+      # Approval panel replaces the progress line.
+      ProgressBroadcaster.clear!(@run.chat)
       @run.update!(
         status: "awaiting_approval",
         current_node: node_name,
@@ -103,6 +109,7 @@ module AgentGraph
     end
 
     def finish_failed!(message)
+      ProgressBroadcaster.clear!(@run.chat)
       @run.update!(
         status: "failed",
         error_message: message.to_s,

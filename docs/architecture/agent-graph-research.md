@@ -18,6 +18,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - 非 sensitive: `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
 - **却下**: `replan_count < 2` なら `plan_research` へ戻る（根拠・budget は保持）。`rejection_notes` と `plan.revision_hints` を Plan / Synthesizer が参照して書き直す。上限超過で終了メッセージ
+- **進捗表示**: Node 実行中は Cable `research_progress` で短いステータス行を差し替え（完了・失敗・承認待ちで消す）
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
 - `search_web` / `fetch_urls` は既存 `ChatTools::WebSearch` / `FetchUrl` + `WebToolBudget`
 
@@ -62,5 +63,4 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 ## 次
 
-- Research 運用磨き（失敗観測、進捗の薄い表示）
 - 2 本目候補: MemoWrite Graph（草案 → 承認 → create/update_memo）— 詳細は `dev_note_tmp.md` 冒頭の再検討
