@@ -6,7 +6,7 @@ module AgentGraph
       def call(state:, run:, chat:)
         plan = state.fetch("plan", {})
         unless plan["need_memo"]
-          return AgentGraph::NodeResult.next("finalize_answer")
+          return AgentGraph::NodeResult.next(AgentGraph::ResearchRouting.after_recall(state))
         end
 
         query = Array(plan["queries"]).first.presence || state.fetch("question")
@@ -14,7 +14,7 @@ module AgentGraph
 
         if result.is_a?(Hash) && result[:error]
           return AgentGraph::NodeResult.next(
-            "finalize_answer",
+            AgentGraph::ResearchRouting.after_recall(state),
             updates: {
               "memo_context" => nil,
               "errors" => Array(state["errors"]) + [ {
@@ -27,7 +27,7 @@ module AgentGraph
         end
 
         AgentGraph::NodeResult.next(
-          "finalize_answer",
+          AgentGraph::ResearchRouting.after_recall(state),
           updates: {
             "memo_context" => result.is_a?(Hash) ? result[:context] : nil
           }

@@ -10,16 +10,49 @@ module ChatTools
       )
     end
 
-    def initialize(max_searches:, max_fetches:)
+    # Restore a budget snapshot used by AgentGraph research nodes.
+    def self.from_graph_budget(budget)
+      budget = (budget || {}).stringify_keys
+      settings = SearxngSettings.load
+      new(
+        max_searches: positive(budget["max_searches"], settings.max_searches_per_turn),
+        max_fetches: positive(budget["max_fetches"], settings.max_fetches_per_turn),
+        searches: budget["searches_used"].to_i,
+        fetches: budget["fetches_used"].to_i,
+        fetched_urls: Array(budget["fetched_urls"])
+      )
+    end
+
+    def self.positive(value, fallback)
+      n = value.to_i
+      n.positive? ? n : fallback
+    end
+    private_class_method :positive
+
+    def initialize(max_searches:, max_fetches:, searches: 0, fetches: 0, fetched_urls: [])
       @max_searches = max_searches
       @max_fetches = max_fetches
-      @searches = 0
-      @fetches = 0
+      @searches = searches.to_i
+      @fetches = fetches.to_i
       @fetched_urls = {}
+      Array(fetched_urls).each do |url|
+        key = normalize_url(url)
+        @fetched_urls[key] = true if key.present?
+      end
       @mutex = Mutex.new
     end
 
-    attr_reader :max_searches, :max_fetches
+    attr_reader :max_searches, :max_fetches, :searches, :fetches
+
+    def to_graph_budget
+      {
+        "searches_used" => @searches,
+        "fetches_used" => @fetches,
+        "max_searches" => @max_searches,
+        "max_fetches" => @max_fetches,
+        "fetched_urls" => @fetched_urls.keys
+      }
+    end
 
     def consume_search!
       @mutex.synchronize do

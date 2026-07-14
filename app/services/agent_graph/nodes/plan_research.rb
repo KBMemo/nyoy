@@ -3,21 +3,21 @@
 module AgentGraph
   module Nodes
     class PlanResearch
+      URL_PATTERN = %r{https?://[^\s<>\]]+}i
+
       def call(state:, run:, chat:)
         question = state.fetch("question").to_s
-        need_memo = memo_likely?(question)
-        need_web = web_likely?(question)
-
+        urls = extract_urls(question)
         plan = {
-          "need_memo" => need_memo,
-          "need_web" => need_web,
+          "need_memo" => true,
+          "need_web" => web_likely?(question),
           "queries" => [ question.truncate(120) ],
-          "fetch_urls" => [],
+          "fetch_urls" => urls.first(3),
           "sensitive" => false
         }
 
         AgentGraph::NodeResult.next(
-          need_memo ? "recall_memos" : "finalize_answer",
+          AgentGraph::ResearchRouting.after_plan(plan),
           updates: {
             "intent" => "research",
             "plan" => plan,
@@ -28,13 +28,12 @@ module AgentGraph
 
       private
 
-      def memo_likely?(_question)
-        # R0 always consults memos for research turns; web/fetch come in R1.
-        true
+      def extract_urls(question)
+        question.scan(URL_PATTERN).map { |url| url.sub(/[),.]+$/, "") }.uniq
       end
 
       def web_likely?(question)
-        question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース/)
+        question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース|調べ|調査|出典|根拠|検索/)
       end
 
       def default_budget(state)
@@ -43,7 +42,8 @@ module AgentGraph
           "searches_used" => state.dig("budget", "searches_used").to_i,
           "fetches_used" => state.dig("budget", "fetches_used").to_i,
           "max_searches" => settings.max_searches_per_turn,
-          "max_fetches" => settings.max_fetches_per_turn
+          "max_fetches" => settings.max_fetches_per_turn,
+          "fetched_urls" => Array(state.dig("budget", "fetched_urls"))
         }
       end
     end

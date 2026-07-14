@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # R0 graph: plan_research → recall_memos → finalize_answer
+  # R1 graph: plan → recall_memos → search_web → fetch_urls → finalize_answer
+  # (nodes are skipped via ResearchRouting when the plan does not need them)
   class ResearchGraph
     NAME = "research"
     START = "plan_research"
@@ -10,6 +11,8 @@ module AgentGraph
       @nodes = {
         "plan_research" => Nodes::PlanResearch.new,
         "recall_memos" => Nodes::RecallMemos.new,
+        "search_web" => Nodes::SearchWeb.new,
+        "fetch_urls" => Nodes::FetchUrls.new,
         "finalize_answer" => Nodes::FinalizeAnswer.new
       }.freeze
     end
