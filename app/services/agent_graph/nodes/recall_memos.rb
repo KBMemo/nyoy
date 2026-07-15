@@ -11,6 +11,12 @@ module AgentGraph
 
         query = Array(plan["queries"]).first.presence || state.fetch("question")
         result = ChatTools::RecallMemos.new(chat: chat).execute(query: query)
+        AgentGraph::ToolTraceRecorder.record!(
+          chat,
+          name: "recall_memos",
+          arguments: { "query" => query },
+          result: result
+        )
 
         if result.is_a?(Hash) && result[:error]
           return AgentGraph::NodeResult.next(

@@ -28,7 +28,10 @@ module AgentGraph
         question = state.fetch("question").to_s
         urls = extract_urls(question)
         replan = state["replan_count"].to_i.positive?
-        queries = build_queries(question, state)
+        queries = AgentGraph::SearchQueryNormalizer.queries_for(
+          question,
+          replan: replan
+        )
         hints = revision_hints(state)
 
         plan = {
@@ -63,21 +66,6 @@ module AgentGraph
 
       def sensitive?(question)
         question.match?(SENSITIVE_PATTERN)
-      end
-
-      def build_queries(question, state)
-        base = [ question.truncate(120) ]
-        return base if state["replan_count"].to_i <= 0
-
-        notes = Array(state["rejection_notes"])
-        preview = notes.last.is_a?(Hash) ? notes.last["draft_preview"].to_s : ""
-        # Alternate angles so SearchWeb / synthesis do not mirror the rejected draft.
-        base << "#{question.truncate(80)} 出典 根拠".truncate(120)
-        base << "#{question.truncate(60)} 別の視点 詳細".truncate(120)
-        if preview.match?(/http/i)
-          base << "#{question.truncate(60)} 一次情報 公式".truncate(120)
-        end
-        base.uniq.first(3)
       end
 
       def revision_hints(state)

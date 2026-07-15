@@ -13,11 +13,19 @@ module AgentGraph
     end
 
     SYNTHESIS_SYSTEM = <<~TEXT.squish
-      あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に日本語で簡潔に答えてください。
-      根拠が無い場合はその旨を明記してください。推測で日付や事実を補わないでください。
-      Web 根拠がある場合は簡潔に出典 URL を添えてください。
-      却下された前回ドラフトがある場合は、その内容をそのまま繰り返さず、構成・着眼点・根拠の出し方を変えて書き直してください。
+      あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に日本語で答えてください。
+      回答は短く：結論を先に、必要なら箇条書き最大 5 項目まで。長い前置き・重複説明・ページ全文の再掲は禁止です。
+      根拠が無い場合のみその旨を一文で書いてください。推測で日付や事実を補わないでください。
+      Web 根拠がある場合は文末に URL を 1〜3 個添えるだけで十分です（詳細な出典リストはシステムが付けます）。
+      却下された前回ドラフトがある場合は繰り返さず、着眼点を変えて短く書き直してください。
+      思考過程のタグは出力せず、読者向けの最終回答だけを書いてください。
     TEXT
+
+    THINK_BLOCK = %r{
+      <think\b[^>]*>.*?</think>
+      | <redacted_reasoning\b[^>]*>.*?</redacted_reasoning>
+      | <\|thinking\|>.*?<\|/thinking\|>
+    }mix
 
     def initialize(chat)
       @chat = chat
@@ -35,13 +43,14 @@ module AgentGraph
       end
 
       llm_answer, truncated, meta = synthesize_with_fallback(evidence)
-      return [ sanitize_text(llm_answer), truncated, meta ] if llm_answer.present?
+      draft = compose_draft(llm_answer, evidence)
+      used = if llm_answer.present?
+               (meta || {}).merge("source" => meta&.dig("source") || "main")
+             else
+               { "source" => "template", "model_id" => nil, "thinking" => nil }
+             end
 
-      [
-        fallback_answer(evidence),
-        false,
-        { "source" => "template", "model_id" => nil }
-      ]
+      [ draft, truncated == true, used.stringify_keys ]
     end
 
     def evidence_pack(state)
@@ -61,13 +70,21 @@ module AgentGraph
 
     def synthesize_with_fallback(evidence)
       candidates(evidence_models).each do |model, source|
-        answer, truncated = ask_model(model, evidence)
+        answer, thinking, truncated = ask_model(model, evidence)
         next if answer.blank?
 
-        return [ answer, truncated, { "source" => source, "model_id" => model.model_id } ]
+        return [
+          answer,
+          truncated,
+          {
+            "source" => source,
+            "model_id" => model.model_id,
+            "thinking" => thinking.presence
+          }
+        ]
       end
 
-      [ nil, false, { "source" => nil, "model_id" => nil } ]
+      [ nil, false, { "source" => nil, "model_id" => nil, "thinking" => nil } ]
     end
 
     def evidence_models
@@ -95,7 +112,7 @@ module AgentGraph
     end
 
     def ask_model(model, evidence)
-      return [ nil, false ] unless model
+      return [ nil, nil, false ] unless model
 
       llm_context = ChatModelCatalog.context_for(model)
       llm = llm_context.chat(
@@ -103,18 +120,62 @@ module AgentGraph
         provider: model.provider.to_sym,
         assume_model_exists: true
       )
-      # Use the synthesis model's connection defaults — not the chat's creative overrides.
-      ChatLlmSettings.defaults_for(model: model).apply!(llm)
+      # Match normal Chat: connection/chat sampling only — do not force thinking off.
+      if model.id == @chat.model_association&.id
+        ChatLlmSettings.apply!(llm, chat: @chat)
+      else
+        ChatLlmSettings.defaults_for(model: model).apply!(llm)
+      end
 
       llm.with_instructions(SYNTHESIS_SYSTEM)
       response = llm.ask(user_prompt(evidence))
-      answer = response.content.to_s.strip.presence
-      [ sanitize_text(answer), length_truncated_response?(response) ]
+      answer, thinking = extract_answer_and_thinking(response)
+      [ answer, thinking, length_truncated_response?(response) ]
     rescue StandardError => e
       Rails.logger.warn(
         "AgentGraph::EvidenceSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
       )
-      [ nil, false ]
+      [ nil, nil, false ]
+    end
+
+    # Prefer content as the draft body; keep thinking for the UI 「思考」 panel.
+    def extract_answer_and_thinking(response)
+      field_thinking =
+        if response.respond_to?(:thinking)
+          response.thinking&.text.to_s
+        else
+          ""
+        end
+      content, embedded = peel_think_blocks(response.content.to_s)
+      thinking = sanitize_text(
+        [ field_thinking, *embedded ].map { |part| part.to_s.strip }.reject(&:blank?).join("\n\n")
+      )
+      answer = sanitize_text(content).presence || thinking.presence
+      [ answer, thinking.presence ]
+    end
+
+    def peel_think_blocks(text)
+      embedded = []
+      cleaned = text.to_s.gsub(THINK_BLOCK) do |match|
+        embedded << unwrap_think_block(match)
+        ""
+      end
+      [ cleaned.strip, embedded.reject(&:blank?) ]
+    end
+
+    def unwrap_think_block(match)
+      match.to_s
+        .sub(/\A<think\b[^>]*>/i, "")
+        .sub(%r{</think>\s*\z}i, "")
+        .sub(/\A<redacted_reasoning\b[^>]*>/i, "")
+        .sub(%r{</redacted_reasoning>\s*\z}i, "")
+        .sub(/\A<\|thinking\|>/i, "")
+        .sub(%r{<\|/thinking\|>\s*\z}i, "")
+        .strip
+    end
+
+    def strip_think_blocks(text)
+      peel_think_blocks(text).first
     end
 
     def sanitize_text(text)
@@ -123,13 +184,77 @@ module AgentGraph
       text.to_s.delete("\u0000")
     end
 
+    # Short answer + compact source list. Tool traces already show full search/fetch payloads.
+    def compose_draft(llm_answer, evidence)
+      body = llm_answer.to_s.strip
+      appendix = compact_sources(evidence)
+
+      if body.present? && appendix.present?
+        "#{body}\n\n---\n\n#{appendix}"
+      elsif body.present?
+        body
+      else
+        fallback_answer(evidence)
+      end
+    end
+
+    def compact_sources(evidence)
+      lines = []
+      lines << "### 出典"
+
+      memo = evidence[:memo].to_s.strip
+      if memo.present?
+        lines << ""
+        lines << "**関連メモ**"
+        lines << memo.truncate(280)
+      end
+
+      links = []
+      Array(evidence[:search_results]).each do |payload|
+        next unless payload.is_a?(Hash)
+
+        results = Array(payload["results"]).select { |result| result.is_a?(Hash) && result["url"].present? }
+        if results.any?
+          results.first(5).each do |result|
+            links << "- [#{result['title'].presence || result['url']}](#{result['url']})"
+          end
+        else
+          query = payload["query"].presence || "（クエリ不明）"
+          warning = payload["warning"].presence || "結果なし"
+          lines << "" if lines.size == 1
+          lines << "- 検索「#{query}」: #{warning}"
+        end
+      end
+
+      Array(evidence[:fetched_pages]).first(3).each do |page|
+        next unless page.is_a?(Hash)
+
+        url = page["url"].presence
+        next if url.blank?
+
+        title = page["title"].presence || url
+        links << "- [#{title}](#{url})"
+      end
+
+      if links.any?
+        lines << ""
+        lines << "**検索・取得**"
+        lines.concat(links.uniq.first(8))
+      end
+
+      return "" if lines.size <= 1
+
+      lines.join("\n")
+    end
+
     def user_prompt(evidence)
       lines = []
       lines << "質問:\n#{evidence[:question]}\n"
       append_revision_section!(lines, evidence)
 
-      lines << if evidence[:memo].present?
-                 "メモ抜粋:\n#{evidence[:memo]}\n"
+      memo = evidence[:memo].to_s.strip
+      lines << if memo.present?
+                 "メモ抜粋:\n#{memo.truncate(800)}\n"
                else
                  "メモ抜粋: （該当なし）\n"
                end
@@ -143,7 +268,7 @@ module AgentGraph
             next unless result.is_a?(Hash)
 
             lines << "  - #{result['title']}: #{result['url']}"
-            lines << "    #{result['content'].to_s.truncate(200)}" if result["content"].present?
+            lines << "    #{result['content'].to_s.truncate(120)}" if result["content"].present?
           end
         end
         lines << ""
@@ -152,16 +277,17 @@ module AgentGraph
       end
 
       if evidence[:fetched_pages].any?
-        lines << "取得ページ:"
-        evidence[:fetched_pages].each do |page|
+        lines << "取得ページ（要約のみ。長文を再掲しない）:"
+        evidence[:fetched_pages].first(3).each do |page|
           lines << "- #{page['title'].presence || page['url']} (#{page['url']})"
-          lines << page["content_preview"].to_s.truncate(1_500)
+          lines << page["content_preview"].to_s.truncate(400)
           lines << ""
         end
       else
         lines << "取得ページ: （なし）\n"
       end
 
+      lines << "出力形式: 短い結論＋必要なら箇条書き（合計おおよそ 400 文字以内）。"
       lines.join("\n")
     end
 
@@ -194,55 +320,32 @@ module AgentGraph
 
     def fallback_answer(evidence)
       lines = []
-      lines << "### 調査結果（Research Graph）"
-      if evidence[:replan_count].positive? || evidence[:rejection_notes].any?
-        lines << ""
-        lines << "**書き直し**（却下 #{evidence[:rejection_notes].size} 回目を踏まえた再構成）"
-      end
+      lines << "### 調査結果"
       lines << ""
       lines << "**質問**"
       lines << evidence[:question]
       lines << ""
 
       if evidence[:rejection_notes].any?
-        lines << "**前回ドラフトで避けた点**"
+        lines << "**書き直し**"
         evidence[:rejection_notes].last(2).each do |note|
           preview = note.is_a?(Hash) ? note["draft_preview"] : note.to_s
-          lines << "- （却下）#{preview.to_s.truncate(160)}" if preview.present?
+          lines << "- （却下）#{preview.to_s.truncate(120)}" if preview.present?
         end
-        Array(evidence[:revision_hints]).each { |hint| lines << "- #{hint}" }
         lines << ""
       end
 
-      if evidence[:memo].present?
-        lines << "**関連メモ抜粋**"
-        lines << evidence[:memo]
-        lines << ""
-      end
-      if evidence[:search_results].any?
-        lines << "**検索結果**"
-        evidence[:search_results].each do |payload|
-          Array(payload["results"]).first(5).each do |result|
-            next unless result.is_a?(Hash)
-
-            lines << "- [#{result['title']}](#{result['url']})"
-          end
-        end
-        lines << ""
-      end
-      if evidence[:fetched_pages].any?
-        lines << "**取得ページ要約**"
-        evidence[:fetched_pages].each do |page|
-          lines << "- #{page['title'].presence || page['url']}: #{page['content_preview'].to_s.truncate(400)}"
-        end
-        lines << ""
-      end
-      if evidence[:memo].blank? && evidence[:search_results].blank? && evidence[:fetched_pages].blank?
+      sources = compact_sources(evidence)
+      if sources.present?
+        lines << sources
+      else
         lines << "根拠となるメモ・Web 情報は見つかりませんでした。"
       end
+
       if evidence[:errors].any?
+        lines << ""
         lines << "**注意**"
-        evidence[:errors].each { |err| lines << "- #{err['node']}: #{err['message']}" }
+        evidence[:errors].first(3).each { |err| lines << "- #{err['node']}: #{err['message'].to_s.truncate(120)}" }
       end
       lines.join("\n")
     end

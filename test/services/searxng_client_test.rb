@@ -93,11 +93,11 @@ class SearxngClientTest < ActiveSupport::TestCase
     requested = []
     client.define_singleton_method(:perform_request) do |uri, req|
       requested << uri.to_s
-      if uri.to_s.include?("engines=google")
+      if uri.to_s.include?("engines=bing")
         SearxngClientTest.fake_http_response(200, {
           query: "ruby",
           results: [
-            { title: "Ruby", url: "https://ruby-lang.org", content: "lang", engine: "google" }
+            { title: "Ruby", url: "https://ruby-lang.org", content: "lang", engine: "bing" }
           ]
         }.to_json)
       else
@@ -112,7 +112,7 @@ class SearxngClientTest < ActiveSupport::TestCase
     result = client.search(q: "ruby")
 
     assert_equal 1, result["number_of_results"]
-    assert_equal "google", result["results"].first["engine"]
+    assert_equal "bing", result["results"].first["engine"]
     assert requested.size >= 2
     assert result["engines_tried"].present?
     assert_includes result["unresponsive_engines"].flatten, "CAPTCHA"

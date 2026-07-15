@@ -1,4 +1,22 @@
-<div id="research_progress_panel" class="nyoy-research-progress" role="status" aria-live="polite">
+<div
+  id="research_progress_panel"
+  class="nyoy-research-progress"
+  role="status"
+  aria-live="polite"
+  data-node-started-at="<%= node_started_at %>"
+  <% if run_started_at.present? %>data-run-started-at="<%= run_started_at %>"<% end %>
+>
   <span class="nyoy-research-progress-dot" aria-hidden="true"></span>
-  <span class="nyoy-research-progress-label"><%= label %></span>
+  <div class="nyoy-research-progress-body">
+    <span class="nyoy-research-progress-label"><%= label %></span>
+    <span class="nyoy-research-progress-meta">
+      <% if model_name.present? %>
+        <span class="nyoy-research-progress-model"><%= model_name %></span>
+      <% end %>
+      <span class="nyoy-research-progress-elapsed" data-research-progress-elapsed>0秒</span>
+      <% if run_started_at.present? %>
+        <span class="nyoy-research-progress-run-elapsed" data-research-progress-run-elapsed></span>
+      <% end %>
+    </span>
+  </div>
 </div>

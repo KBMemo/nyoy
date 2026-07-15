@@ -34,10 +34,10 @@ module AgentGraph
       "finalize_answer"
     end
 
+    # Chat UI always shows the draft approval panel unless MCP/auto_approve.
+    # plan.sensitive remains for labeling / future policy, but no longer gates HITL.
     def needs_human_approval?(state)
-      return false if auto_approve?(state)
-
-      sensitive_plan?(state)
+      !auto_approve?(state)
     end
 
     def sensitive_plan?(state)

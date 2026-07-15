@@ -6,21 +6,22 @@ LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フ
 
 ```
 plan_research → recall_memos → search_web → fetch_urls → synthesize_draft
-  → (plan.sensitive ?) await_approval → finalize_answer
-                              └ rejected（上限まで）→ plan_research
+  → await_approval → finalize_answer
+    └ rejected（上限まで）→ plan_research
 ```
 
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
-- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック（`AppSetting.research_draft_*`）
-- **条件付き承認**: `plan.sensitive=true` かつ `auto_approve` でないときだけ `await_approval` で Interrupt
-- 非 sensitive: `approval=not_required` でそのまま `finalize_answer`
+- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック（`AppSetting.research_draft_*`）。思考は通常 Chat と同様に生成し、`draft_thinking` として承認パネルと最終アシスタントメッセージへ載せる
+- **常に承認**: Chat UI では `auto_approve` でない限り必ず `await_approval` で Interrupt（調査ドラフト確認パネル）。`plan.sensitive` はラベル／方針用に残すが HITL の条件には使わない
+- MCP 既定の `auto_approve=true` のときは `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`
 - **却下**: `replan_count < 2` なら `plan_research` へ戻る（根拠・budget は保持）。`rejection_notes` と `plan.revision_hints` を Plan / Synthesizer が参照して書き直す。上限超過で終了メッセージ
-- **進捗表示**: Node 実行中は Cable `research_progress` で短いステータス行を差し替え（完了・失敗・承認待ちで消す）
+- **進捗表示**: Node 実行中は Cable `research_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗・承認待ちで消す
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
-- `search_web` / `fetch_urls` は既存 `ChatTools::WebSearch` / `FetchUrl` + `WebToolBudget`
+- `search_web` / `fetch_urls` / `recall_memos` は既存 ChatTools を呼び、実行のたびに通常 Chat と同じ **Tool Call / Tool Result** メッセージを履歴へ残す（`ToolTraceRecorder`）
+- 検索結果が空のときもドラフトの「出典」に警告を載せる（無結果でもパネルは出す）。詳細な検索・取得本文はツール履歴側に任せ、ドラフトは短い回答＋出典リンク中心
 
 ## MCP
 
@@ -53,8 +54,9 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 
 - `need_memo`: 常に true（メモ根拠を優先）
 - `need_web`: 最新・公式・調べ・調査 など
+- `queries`: `SearchQueryNormalizer` で検索向けキーワード化（「調べて / 出典 / 根拠」等を落とし、「高尾山 景信山 登山道」形式に。登山道は登山ルートも併用）
 - `fetch_urls`: 質問文中の `http(s)://...` を抽出
-- `sensitive`: 保存・メモ/徒然・公開・確認してから 等（HITL 対象）
+- `sensitive`: 保存・メモ/徒然・公開・確認してから 等（方針ラベル。HITL そのものは常時）
 
 ## 承認 UI
 

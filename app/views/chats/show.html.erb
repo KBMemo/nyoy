@@ -25,8 +25,6 @@
 
 <%= render "chats/messages", chat: @chat %>
 
-<div id="research_progress"></div>
-
 <div id="research_approval">
   <% if @pending_agent_run %>
     <%= render AgentGraph::ApprovalBroadcaster.panel_partial_for(@pending_agent_run),

@@ -22,6 +22,18 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  test "approve via turbo_stream does not redirect" do
+    assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
+      post approve_chat_agent_run_path(@chat, @run), as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_includes response.body, "research_approval"
+    assert_includes response.body, "new_message"
+    assert @chat.reload.responding?
+    assert_equal "approved", @run.reload.state["approval"]
+  end
+
   test "approve enqueues resume job and clears pending decision" do
     assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
       post approve_chat_agent_run_path(@chat, @run)

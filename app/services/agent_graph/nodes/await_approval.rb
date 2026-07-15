@@ -2,7 +2,7 @@
 
 module AgentGraph
   module Nodes
-    # Human-in-the-loop gate for sensitive plans. Resume reads approval.
+    # Human-in-the-loop gate for Research Chat drafts. Resume reads approval.
     # Rejected drafts re-enter plan_research until MAX_REPLANS is exhausted.
     class AwaitApproval
       REJECTED_MESSAGE = "調査ドラフトは却下されました。必要なら質問を言い直してください。"
@@ -23,7 +23,7 @@ module AgentGraph
               }
             )
           else
-            # Safety net: non-sensitive / auto_approve should skip HITL.
+            # Safety net: auto_approve (or unexpected routing) should skip HITL.
             AgentGraph::NodeResult.next(
               "finalize_answer",
               updates: {

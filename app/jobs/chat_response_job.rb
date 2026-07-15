@@ -145,8 +145,10 @@ class ChatResponseJob < ApplicationJob
       attrs[:content] = content if streamable_text?(content)
       attrs[:thinking_text] = thinking if streamable_text?(thinking)
       message.update_columns(attrs)
-      message.assign_attributes(attrs.except(:updated_at))
-      broadcast_assistant_message!(message, stream_state: stream_state)
+      message.reload
+      # Full HTML upsert keeps the truncated banner; streaming content/thinking
+      # events alone never re-render that note.
+      ChatUiBroadcaster.message_upsert(message)
     end
 
     ChatTruncationBroadcaster.call(chat)

@@ -24,10 +24,12 @@ module AgentGraph
           "draft_truncated" => truncated
         )
         goto = AgentGraph::ResearchRouting.after_synthesize(next_state)
+        thinking = meta.is_a?(Hash) ? meta["thinking"].presence : nil
         updates = {
           "draft" => draft,
           "draft_truncated" => truncated,
-          "draft_synthesis" => meta.stringify_keys,
+          "draft_thinking" => thinking,
+          "draft_synthesis" => (meta || {}).stringify_keys,
           "approval" => goto == "await_approval" ? nil : "not_required"
         }
 

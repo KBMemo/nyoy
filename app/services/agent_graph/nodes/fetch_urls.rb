@@ -19,6 +19,12 @@ module AgentGraph
 
         urls.first([ remaining, urls.size ].min).each do |url|
           raw = tool.execute(url: url)
+          AgentGraph::ToolTraceRecorder.record!(
+            chat,
+            name: "fetch_url",
+            arguments: { "url" => url },
+            result: raw
+          )
           parsed = parse_tool_payload(raw)
           if parsed.is_a?(Hash) && parsed["ok"]
             pages << parsed.slice(

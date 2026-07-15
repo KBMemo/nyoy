@@ -17,7 +17,7 @@ class SearxngClient
   DEFAULT_OPEN_TIMEOUT = 5
   DEFAULT_READ_TIMEOUT = 15
   # Used when the configured engines return nothing (CAPTCHA / silent Google block).
-  EMPTY_RESULT_FALLBACK_ENGINES = %w[google wikipedia].freeze
+  EMPTY_RESULT_FALLBACK_ENGINES = %w[bing wikipedia brave].freeze
 
   @search_mutex = Mutex.new
   @active_searches = 0

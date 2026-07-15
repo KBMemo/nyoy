@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # Thin progress line for Research Graph node execution (Cable → chat UI).
+  # Thin progress line for Research / MemoWrite Graph node execution (Cable → chat UI).
   class ProgressBroadcaster
     LABELS = {
       "plan_research" => "調査計画を作成しています…",
@@ -17,32 +17,73 @@ module AgentGraph
       "finalize_reply" => "保存結果を反映しています…"
     }.freeze
 
+    SYNTHESIS_NODES = %w[synthesize_draft draft_memo].freeze
+
     class << self
-      def started!(chat, node_name)
-        label = LABELS[node_name.to_s] || "調査中（#{node_name}）…"
-        broadcast(chat, label)
+      def started!(chat, node_name, agent_run: nil)
+        node = node_name.to_s
+        label = LABELS[node] || "処理中（#{node}）…"
+        model_name = model_name_for(node, chat)
+        node_started_at = Time.current.iso8601(3)
+        run_started_at = agent_run&.started_at&.iso8601(3)
+
+        broadcast(
+          chat,
+          label: label,
+          model_name: model_name,
+          node_name: node,
+          node_started_at: node_started_at,
+          run_started_at: run_started_at
+        )
       end
 
       def clear!(chat)
-        broadcast(chat, nil)
+        broadcast(chat, label: nil)
       end
 
       private
 
-      def broadcast(chat, label)
+      def model_name_for(node_name, chat)
+        if SYNTHESIS_NODES.include?(node_name.to_s)
+          draft = AppSetting.research_draft_model
+          if draft
+            return draft.name.presence || draft.model_id
+          end
+        end
+
+        return nil unless %w[synthesize_draft draft_memo finalize_answer finalize_reply].include?(node_name.to_s)
+
+        chat.model_association&.name.presence || chat.model_association&.model_id
+      end
+
+      def broadcast(chat, label:, model_name: nil, node_name: nil, node_started_at: nil, run_started_at: nil)
         ChatChannel.broadcast_to(chat, {
           type: "research_progress",
           label: label,
-          html: render_panel(label)
-        })
+          model_name: model_name,
+          node_name: node_name,
+          node_started_at: node_started_at,
+          run_started_at: run_started_at,
+          html: render_panel(
+            label: label,
+            model_name: model_name,
+            node_started_at: node_started_at,
+            run_started_at: run_started_at
+          )
+        }.compact)
       end
 
-      def render_panel(label)
+      def render_panel(label:, model_name: nil, node_started_at: nil, run_started_at: nil)
         return "" if label.blank?
 
         ApplicationController.render(
           partial: "chats/research_progress",
-          locals: { label: label }
+          locals: {
+            label: label,
+            model_name: model_name,
+            node_started_at: node_started_at,
+            run_started_at: run_started_at
+          }
         )
       end
     end

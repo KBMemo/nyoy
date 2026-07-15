@@ -123,7 +123,7 @@ MCP_API_TOKEN=your-token bin/mcp-list-tools
 - **fetch キャッシュ**: `search_fetched_page` はプロセス内メモリの `FetchedPageCache` に依存。マルチプロセス Puma では HTTP リクエスト間で共有されない。
 - **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
 - **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。
-- **調査フロー**: `run_research_graph`（既定 `auto_approve=true`）。`plan.sensitive` かつ auto_approve でないときだけ `resume_research_graph` が必要。状態は `get_research_graph`。
+- **調査フロー**: `run_research_graph`（既定 `auto_approve=true`）。`auto_approve` でないとき（Chat UI 含む）は常に `resume_research_graph` が必要。状態は `get_research_graph`。
 - **メモ新規保存フロー**: `run_memo_write_graph`（既定 `auto_approve=true`）。HITL 時は `resume_memo_write_graph`。状態は `get_memo_write_graph`。Chat UI では常に承認待ち。
 - **徒然 Agent Chat（既知の課題）**: 上記のうち **ラフ案生成〜`awaiting_selection` まで** は in-app で動作。**`refine_image` 以降は未接続**（ドラフト 1〜4 の選択 UI・仕上げポーリングなし）。当面は `show_path` の Nyoy UI で手動 refine。詳細は徒然 `docs/architecture/chat-agent-roadmap.adoc` §12。
 - **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。明示的な「徒然に保存」は MemoWrite Graph が優先。

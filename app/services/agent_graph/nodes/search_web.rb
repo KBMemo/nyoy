@@ -22,6 +22,12 @@ module AgentGraph
 
         queries.each do |query|
           payload = tool.execute(q: query)
+          AgentGraph::ToolTraceRecorder.record!(
+            chat,
+            name: "web_search",
+            arguments: { "q" => query },
+            result: payload
+          )
           if payload.is_a?(String)
             errors << {
               "node" => "search_web",

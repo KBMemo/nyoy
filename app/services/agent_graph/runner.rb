@@ -49,7 +49,7 @@ module AgentGraph
       node = @graph.node_for(node_name)
       raise "unknown node: #{node_name}" unless node
 
-      ProgressBroadcaster.started!(@run.chat, node_name)
+      ProgressBroadcaster.started!(@run.chat, node_name, agent_run: @run)
 
       node_run = @run.agent_node_runs.create!(
         node_name: node_name,

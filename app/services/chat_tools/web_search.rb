@@ -40,7 +40,12 @@ module ChatTools
         if reasons.any?
           "検索結果が空です（#{reasons.join(', ')}）。別エンジンで再試行済みの場合があります。"
         else
-          "検索結果が空です。別のクエリか、接続設定の検索エンジンを確認してください。"
+          tried = Array(payload["engines_tried"]).presence&.join(" → ")
+          if tried
+            "検索結果が空です（試行: #{tried}）。接続設定の検索エンジンを確認してください。"
+          else
+            "検索結果が空です。別のクエリか、接続設定の検索エンジンを確認してください。"
+          end
         end
 
       payload.merge("warning" => warning)

@@ -11,24 +11,36 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     @chat.messages.create!(role: :user, content: "調査日：2024年の根拠はどこから来た？")
   end
 
-  test "non-sensitive research finalizes without approval interrupt" do
+  test "research awaits approval unless auto_approve" do
     stub_recall(context: "メモ抜粋: 調査日は会話時点で誤って付けた") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-        assert run.completed?, -> { "status=#{run.status} error=#{run.error_message}" }
+        assert run.awaiting_approval?, -> { "status=#{run.status} error=#{run.error_message}" }
         refute run.state.dig("plan", "sensitive")
+        assert_equal "pending", run.state["approval"]
+        assert run.state["draft"].present?
+        refute_includes run.agent_node_runs.pluck(:node_name), "finalize_answer"
+
+        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
+        assert completed.completed?, -> { completed.error_message }
+        assert_equal "approved", completed.state["approval"]
+        assert completed.state["final_answer"].present?
+        assert_includes completed.agent_node_runs.pluck(:node_name), "finalize_answer"
+      end
+    end
+  end
+
+  test "auto_approve skips approval interrupt" do
+    stub_recall(context: "メモ抜粋: 調査日は会話時点で誤って付けた") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(@chat, auto_approve: true)
+
+        assert run.completed?, -> { "status=#{run.status} error=#{run.error_message}" }
         assert_equal "not_required", run.state["approval"]
-        assert run.state["final_answer"].present?
-
-        names = run.agent_node_runs.order(:id).pluck(:node_name)
-        assert_includes names, "synthesize_draft"
-        refute_includes names, "await_approval"
-        assert_includes names, "finalize_answer"
-
-        message = @chat.messages.where(role: :assistant).order(:id).last
-        assert message.present?
-        assert_includes message.content, "調査結果"
+        refute_includes run.agent_node_runs.pluck(:node_name), "await_approval"
+        assert_includes run.agent_node_runs.pluck(:node_name), "finalize_answer"
+        assert assistant_answer_messages.exists?
       end
     end
   end
@@ -46,7 +58,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         assert_equal "await_approval", run.current_node
         assert run.state["draft"].present?
         assert_equal "pending", run.state["approval"]
-        refute @chat.messages.where(role: :assistant).exists?
+        refute assistant_answer_messages.exists?
 
         names = run.agent_node_runs.order(:id).pluck(:node_name)
         assert_includes names, "await_approval"
@@ -60,15 +72,20 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "records recall errors and still finalizes when not sensitive" do
+  test "records recall errors and still awaits approval" do
     stub_recall(error: "rag down") do
       stub_synthesize_without_llm do
         run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-        assert run.completed?
+        assert run.awaiting_approval?
         assert_nil run.state["memo_context"]
         assert run.state["errors"].any? { |err| err["code"] == "RECALL_FAILED" }
-        assert @chat.messages.where(role: :assistant).exists?
+        refute assistant_answer_messages.exists?
+        assert @chat.messages.joins(:tool_calls).exists?
+
+        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
+        assert completed.completed?
+        assert assistant_answer_messages.exists?
       end
     end
   end
@@ -96,7 +113,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         names = resumed.agent_node_runs.order(:id).pluck(:node_name)
         assert names.count("plan_research") >= 2
         assert names.count("await_approval") >= 2
-        refute @chat.messages.where(role: :assistant).exists?
+        refute assistant_answer_messages.exists?
       end
     end
   end
@@ -119,13 +136,13 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
         assert completed.completed?, -> { "status=#{completed.status} error=#{completed.error_message}" }
         assert_equal AgentGraph::Nodes::AwaitApproval::MAX_REPLANS, completed.state["replan_count"]
-        message = @chat.messages.where(role: :assistant).order(:id).last
+        message = assistant_answer_messages.order(:id).last
         assert_includes message.content, "却下"
       end
     end
   end
 
-  test "R1 path searches and fetches then finalizes when not sensitive" do
+  test "R1 path searches and fetches then awaits approval when not sensitive" do
     @chat.messages.destroy_all
     @chat.messages.create!(role: :user, content: "最新の Hydrangea Rin 公式情報を調べて")
 
@@ -147,18 +164,29 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
           stub_synthesize_without_llm do
             run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-            assert run.completed?, -> { run.error_message }
+            assert run.awaiting_approval?, -> { run.error_message }
             names = run.agent_node_runs.order(:id).pluck(:node_name)
             assert_includes names, "search_web"
             assert_includes names, "fetch_urls"
             assert_includes names, "synthesize_draft"
-            assert_includes names, "finalize_answer"
-            refute_includes names, "await_approval"
+            assert_includes names, "await_approval"
+            refute_includes names, "finalize_answer"
             assert run.state["search_results"].any?
             assert run.state["fetched_pages"].any?
-            assert_includes run.state["final_answer"], "example.com/rin"
+            assert_includes run.state["draft"], "example.com/rin"
             assert run.state.dig("budget", "searches_used").to_i.positive?
             assert run.state.dig("budget", "fetches_used").to_i.positive?
+
+            tool_names = @chat.messages.flat_map { |m| m.tool_calls_association.pluck(:name) }
+            assert_includes tool_names, "web_search"
+            assert_includes tool_names, "fetch_url"
+            assert_includes tool_names, "recall_memos"
+            assert @chat.messages.where(role: :tool).exists?
+
+            completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "approved")
+            assert completed.completed?, -> { completed.error_message }
+            assert_includes completed.agent_node_runs.pluck(:node_name), "finalize_answer"
+            assert_includes completed.state["final_answer"], "example.com/rin"
           end
         end
       end
@@ -185,7 +213,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         stub_synthesize_without_llm do
           run = AgentGraph::ResearchGraphRunner.call(@chat)
 
-          assert run.completed?, -> { run.error_message }
+          assert run.awaiting_approval?, -> { run.error_message }
           names = run.agent_node_runs.order(:id).pluck(:node_name)
           assert_includes names, "fetch_urls"
           refute_includes names, "search_web"
@@ -209,7 +237,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         assert_equal "not_required", run.state["approval"]
         assert run.state["final_answer"].present?
         refute_includes run.agent_node_runs.pluck(:node_name), "await_approval"
-        assert @chat.messages.where(role: :assistant).exists?
+        assert assistant_answer_messages.exists?
       end
     end
   end
@@ -245,13 +273,18 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
 
         assert_equal "cancelled", first.reload.status
         assert_includes first.error_message, "superseded"
-        assert second.completed?
-        assert_equal 0, @chat.agent_runs.pending_decision.count
+        assert second.awaiting_approval?
+        assert_equal 1, @chat.agent_runs.pending_decision.count
+        assert_equal second.id, @chat.agent_runs.pending_decision.first.id
       end
     end
   end
 
   private
+
+  def assistant_answer_messages
+    @chat.messages.where(role: :assistant).where.missing(:tool_calls)
+  end
 
   def stub_recall(context: nil, error: nil)
     original = ChatTools::RecallMemos.instance_method(:execute)

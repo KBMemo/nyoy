@@ -50,26 +50,40 @@ class AgentRunsController < ApplicationController
 
   def resume!(decision, notice:)
     unless @agent_run.awaiting_approval?
-      redirect_to @chat, alert: "承認待ちの実行ではありません。"
-      return
+      return resume_blocked!("承認待ちの実行ではありません。")
     end
 
     if @agent_run.state["approval"].to_s.in?(%w[approved rejected])
-      redirect_to @chat, alert: "このドラフトはすでに処理中です。"
-      return
+      return resume_blocked!("このドラフトはすでに処理中です。")
     end
 
     if @chat.responding?
-      redirect_to @chat, alert: "別の応答が実行中です。"
-      return
+      return resume_blocked!("別の応答が実行中です。")
     end
 
     # Persist the decision and clear the panel before the async job so a
-    # redirect to show does not re-render the stale approval UI.
+    # subsequent show render does not re-display the stale approval UI.
     @agent_run.merge_state!("approval" => decision)
     AgentGraph::ApprovalBroadcaster.clear!(@chat)
     ChatResponseControl.mark_running!(@chat)
     AgentGraphResumeJob.perform_later(@agent_run.id, decision)
-    redirect_to @chat, notice: notice
+    @notice = notice
+
+    respond_to do |format|
+      # Keep the page/Cable subscription alive so finalize + truncation broadcasts
+      # are not lost during a Turbo Drive redirect gap.
+      format.turbo_stream { render :resume }
+      format.html { redirect_to @chat, notice: notice }
+    end
+  end
+
+  def resume_blocked!(alert)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update("research_approval", html: %(<div class="kb-alert kb-alert-danger" role="alert">#{ERB::Util.html_escape(alert)}</div>)),
+               status: :unprocessable_entity
+      end
+      format.html { redirect_to @chat, alert: alert }
+    end
   end
 end

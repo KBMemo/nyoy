@@ -11,6 +11,7 @@ export default class extends Controller {
   connect() {
     this.finalizedSeqByMessageId = new Map()
     this.latestSeqByMessageTarget = new Map()
+    this.progressClock = null
     this.subscription = consumer.subscriptions.create(
       { channel: "ChatChannel", chat_id: this.chatIdValue },
       { received: (event) => this.received(event) }
@@ -18,6 +19,7 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this.clearProgressClock()
     this.subscription?.unsubscribe()
   }
 
@@ -96,7 +98,19 @@ export default class extends Controller {
     if (current) {
       current.replaceWith(next)
     } else {
-      this.element.append(next)
+      this.insertMessageNode(next)
+    }
+    this.pinResearchProgress()
+    this.revealImportantMessage(next)
+  }
+
+  revealImportantMessage(node) {
+    if (!node) return
+    const important =
+      node.classList?.contains("nyoy-chat-message-error") ||
+      node.querySelector?.(".nyoy-chat-message-truncated-note")
+    if (important) {
+      node.scrollIntoView({ behavior: "smooth", block: "nearest" })
     }
   }
 
@@ -123,10 +137,88 @@ export default class extends Controller {
   }
 
   replaceResearchProgress(event) {
-    const mount = document.getElementById("research_progress")
+    const mount = this.ensureResearchProgressMount()
     if (!mount) return
 
+    this.clearProgressClock()
     mount.innerHTML = event.html || ""
+    this.pinResearchProgress()
+
+    if (!event.html) return
+
+    const panel = mount.querySelector("#research_progress_panel")
+    const nodeStartedAt = event.node_started_at || panel?.dataset?.nodeStartedAt
+    const runStartedAt = event.run_started_at || panel?.dataset?.runStartedAt
+    this.startProgressClock(nodeStartedAt, runStartedAt)
+    panel?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }
+
+  ensureResearchProgressMount() {
+    let mount = document.getElementById("research_progress")
+    if (mount) return mount
+
+    mount = document.createElement("div")
+    mount.id = "research_progress"
+    this.element.append(mount)
+    return mount
+  }
+
+  pinResearchProgress() {
+    const mount = document.getElementById("research_progress")
+    if (!mount || !this.element.contains(mount)) return
+
+    this.element.append(mount)
+  }
+
+  insertMessageNode(node) {
+    const mount = document.getElementById("research_progress")
+    if (mount && this.element.contains(mount)) {
+      mount.before(node)
+    } else {
+      this.element.append(node)
+    }
+  }
+
+  startProgressClock(nodeStartedAt, runStartedAt) {
+    this.clearProgressClock()
+    const nodeAt = Date.parse(nodeStartedAt || "")
+    const runAt = Date.parse(runStartedAt || "")
+    if (!Number.isFinite(nodeAt) && !Number.isFinite(runAt)) return
+
+    const tick = () => {
+      const nodeEl = this.element.querySelector("[data-research-progress-elapsed]")
+      const runEl = this.element.querySelector("[data-research-progress-run-elapsed]")
+      if (!nodeEl && !runEl) {
+        this.clearProgressClock()
+        return
+      }
+
+      const now = Date.now()
+      if (nodeEl && Number.isFinite(nodeAt)) {
+        nodeEl.textContent = this.formatElapsed(now - nodeAt)
+      }
+      if (runEl && Number.isFinite(runAt)) {
+        runEl.textContent = `合計 ${this.formatElapsed(now - runAt)}`
+      }
+    }
+
+    tick()
+    this.progressClock = window.setInterval(tick, 1000)
+  }
+
+  clearProgressClock() {
+    if (this.progressClock) {
+      window.clearInterval(this.progressClock)
+      this.progressClock = null
+    }
+  }
+
+  formatElapsed(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    if (minutes <= 0) return `${seconds}秒`
+    return `${minutes}分${seconds}秒`
   }
 
   acceptStreamingSequence(event, target) {
@@ -186,7 +278,8 @@ export default class extends Controller {
     meta.className = "nyoy-chat-message-meta"
 
     message.append(header, thinking, content, meta)
-    this.element.append(message)
+    this.insertMessageNode(message)
+    this.pinResearchProgress()
     return message
   }
 }
