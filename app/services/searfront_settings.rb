@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class SearfrontSettings
-  # Prefer multiple engines: duckduckgo alone often hits CAPTCHA; google backfills.
+  # engines は互換のため設定 JSON に残すが、Nyoy クライアントからは使わない（searfront 側管理）。
   DEFAULTS = {
     "result_count" => 5,
     "concurrent_searches" => 1,

@@ -92,7 +92,10 @@ class ServiceConnection < ApplicationRecord
   def assign_searfront_settings(attrs)
     return unless searfront?
 
-    self.settings = SearfrontSettings.normalize(attrs)
+    # engines は searfront 側管理。UI からは受け付けず既存値を保持する。
+    incoming = attrs.to_h.stringify_keys.except("engines")
+    merged = (settings || {}).stringify_keys.merge(incoming)
+    self.settings = SearfrontSettings.normalize(merged)
   end
 
   def assign_prompt_conversion_settings(attrs)

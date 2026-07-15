@@ -142,7 +142,9 @@ SDCPP_SWITCHD_URL=http://balvenie:11334
 # SDCPP_SWITCHD_TOKEN=...
 
 # bowmore 上の既存サービス
-SEARXNG_URL=http://bowmore.artif.org:8080
+SEARFRONT_URL=http://bowmore:13000
+SEARFRONT_TOKEN=...
+# 互換（非推奨）: SEARXNG_URL / SEARXNG_API_TOKEN
 READABILITY_URL=http://bowmore:8030
 
 # 徒然・葛籠（本番トークンを設定）

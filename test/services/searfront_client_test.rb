@@ -158,6 +158,20 @@ class SearfrontClientTest < ActiveSupport::TestCase
     assert_equal 1, attempts
   end
 
+
+  test "non-json response includes base url hint" do
+    client = SearfrontClient.new(base_url: "http://bowmore.artif.org:8080", api_token: "tok", settings: SearfrontSettings.from(retry_count: 0))
+    client.define_singleton_method(:perform_request) do |*, **|
+      SearfrontClientTest.fake_http_response(404, "<html>SearXNG</html>")
+    end
+
+    error = assert_raises(SearfrontClient::Error) { client.search(q: "test") }
+
+    assert_equal 404, error.status
+    assert_includes error.message, "JSON ではありません"
+    assert_includes error.message, "http://bowmore.artif.org:8080"
+  end
+
   def self.fake_http_response(code, body)
     klass =
       case code.to_i

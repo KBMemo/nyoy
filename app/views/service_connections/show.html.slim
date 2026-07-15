@@ -41,8 +41,6 @@
       dd = "#{searx.max_searches_per_turn} 回 / 応答"
       dt.font-medium.kb-text-secondary fetch_url 上限
       dd = "#{searx.max_fetches_per_turn} 回 / 応答"
-      dt.font-medium.kb-text-secondary 検索エンジン
-      dd.nyoy-monospace = searx.engines
     - if @service_connection.supports_prompt_conversion_settings?
       - pcs = @service_connection.prompt_conversion_settings
       dt.font-medium.kb-text-secondary JSON Schema

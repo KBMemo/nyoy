@@ -152,7 +152,6 @@ class ServiceConnectionsController < ApplicationController
         :result_count,
         :concurrent_searches,
         :concurrent_fetches,
-        :engines,
         :retry_count,
         :max_searches_per_turn,
         :max_fetches_per_turn

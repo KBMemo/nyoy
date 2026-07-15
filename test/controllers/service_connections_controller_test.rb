@@ -101,6 +101,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
 
   test "update searfront search settings" do
     connection = service_connections(:searfront)
+    previous_engines = connection.searfront_settings.engines
 
     patch service_connection_path(connection), params: {
       service_connection: {
@@ -111,7 +112,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
         searfront_settings: {
           result_count: 3,
           concurrent_searches: 1,
-          engines: "duckduckgo,wikipedia",
+          engines: "ignored,client,value",
           retry_count: 0,
           max_searches_per_turn: 1,
           max_fetches_per_turn: 2
@@ -123,10 +124,30 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     settings = connection.reload.searfront_settings
     assert_equal 3, settings.result_count
     assert_equal 1, settings.concurrent_searches
-    assert_equal "duckduckgo,wikipedia", settings.engines
+    assert_equal previous_engines, settings.engines
     assert_equal 0, settings.retry_count
     assert_equal 1, settings.max_searches_per_turn
     assert_equal 2, settings.max_fetches_per_turn
+  end
+
+  test "edit searfront form omits engines field" do
+    connection = service_connections(:searfront)
+
+    get edit_service_connection_path(connection)
+
+    assert_response :success
+    assert_select "input[name='service_connection[searfront_settings][result_count]']"
+    assert_select "input[name='service_connection[searfront_settings][engines]']", count: 0
+  end
+
+  test "show searfront omits engines row" do
+    connection = service_connections(:searfront)
+
+    get service_connection_path(connection)
+
+    assert_response :success
+    assert_select "dt", text: "web_search 上限"
+    assert_select "dt", text: "検索エンジン", count: 0
   end
 
   test "refresh models syncs openai chat model list" do

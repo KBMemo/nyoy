@@ -200,14 +200,20 @@ class SearfrontClient
 
     response = perform_request(uri, req)
     body = response.body.to_s
-    payload = body.present? ? JSON.parse(body) : {}
     code = response.code.to_i
+
+    begin
+      payload = body.present? ? JSON.parse(body) : {}
+    rescue JSON::ParserError
+      raise Error.new(
+        "searfront の応答が JSON ではありません（HTTP #{code}, #{path}）。"         "接続 URL が searfront（例: http://bowmore:13000）か確認してください（現在: #{@base_url}）。",
+        status: code
+      )
+    end
 
     return [ code, payload ] if response.is_a?(Net::HTTPSuccess) || code == 202
 
     raise Error.new(extract_error_message(payload, fallback: body.presence || "HTTP #{code}"), status: code)
-  rescue JSON::ParserError
-    raise Error, "searfront の応答が JSON ではありません（HTTP #{response&.code}）"
   end
 
   def extract_error_message(payload, fallback:)

@@ -81,7 +81,7 @@ bin/dev
 
 ## 環境変数
 
-`bin/dev` は `env.development` を読み込みます。`.env.example` をコピーして編集してください。
+`bin/dev` は `env.development` を読み込みます。`.env.example` または `env.development.example` をコピーして編集してください。
 
 PostgreSQL のホスト・認証情報は `config/database.yml` と Rails credentials（`database.username` / `database.password`）で管理します。CI のみ `DB_*` 環境変数で上書きします。
 
