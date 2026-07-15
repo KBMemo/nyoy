@@ -35,7 +35,7 @@ module ChatTools
     TEXT
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
-      web_search（SearXNG）で Web 検索、fetch_url で HTML/テキスト本文の短いプレビューを取得できます。
+      web_search（searfront）で Web 検索、fetch_url で HTML/テキスト本文の短いプレビューを取得できます。
       fetch_url は content_preview のみ返し、truncated: true のときは search_fetched_page(page_id, query) で続きを探します。
       fetch_url は一度に1件の URL だけ指定します（複数 URL を同時に並べない）。結果を受け取ってから、必要なら次の URL を fetch_url で取得できます。
       ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
@@ -110,7 +110,9 @@ module ChatTools
     end
 
     def web_tools_available?
-      NyoyConnectionStore.enabled?(:searxng) && NyoyConnectionStore.url(:searxng).present?
+      NyoyConnectionStore.enabled?(:searxng) &&
+        NyoyConnectionStore.url(:searxng).present? &&
+        NyoyConnectionStore.api_token(:searxng).present?
     end
 
     def vision_tools_available?
@@ -201,8 +203,10 @@ module ChatTools
     end
 
     def searxng_client
-      SearxngClient.new
+      SearfrontClient.new
     end
+
+    alias web_search_client searxng_client
 
     def url_fetcher
       SafeUrlFetcher.new(readability_client: readability_client)

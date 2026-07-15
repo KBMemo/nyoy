@@ -20,7 +20,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 ### Chat（徒然・Web・RAG）
 
 - **徒然メモツール** — `search_memos` / `get_memo` / `create_memo` / `update_memo`（書込は Markdown → 徒然で AsciiDoc 変換、読取は AsciiDoc）
-- **Web 検索** — SearXNG 経由の `web_search`
+- **Web 検索** — searfront 経由の `web_search`
 - **URL 取得** — `fetch_url`（SSRF 対策 + readability-js-server で本文抽出）
 - **メモ RAG** — 徒然 `export` 取込 → pgvector チャンク → 質問に関連する抜粋を Chat に自動注入
 - **コンテキスト管理** — 直近 N ターン制限、古い会話の要約（DB キャッシュ）、推定トークン表示、メモ RAG チャンク数
@@ -30,7 +30,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 ### その他
 
 - **画像理解（独立 UI）** — `/image_understandings`（`VisionChatService` 単体ページ）
-- **接続管理** — 設定 → 接続（`/service_connections`）で LLM / SD / 徒然 / SearXNG 等を編集
+- **接続管理** — 設定 → 接続（`/service_connections`）で LLM / SD / 徒然 / searfront 等を編集
 
 ## 前提条件
 
@@ -43,7 +43,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
   - **sdcpp-switchd** — SD モデル切り替え（`SDCPP_SWITCHD_URL` / `SDCPP_SWITCHD_TOKEN`）
   - **embeddings API** — bge-m3（`EMBEDDINGS_URL`）
   - **徒然 API** — メモ CRUD・export（`KBMEMO_*`）
-  - **SearXNG** — Web 検索（`SEARXNG_*`）
+  - **searfront** — Web 検索（`SEARXNG_*` / `SEARFRONT_*`、接続キーは `searxng`）
   - **readability-js-server** — ページ本文抽出（`READABILITY_URL`）
 
 ## セットアップ
@@ -118,11 +118,11 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `KBMEMO_API_TOKEN` | clip API トークン（`kbmemo_...`） | （未設定） |
 | `TSUZURA_URL` | 葛籠 API ベース URL | `http://localhost:3008` |
 | `TSUZURA_API_TOKEN` | 葛籠 API トークン（`tsuzura_...`） | （未設定） |
-| `SEARXNG_URL` | SearXNG ベース URL | `http://bowmore.artif.org:8080` |
-| `SEARXNG_API_TOKEN` | SearXNG Bearer トークン | （未設定） |
-
-SearXNG の検索方針は接続画面（`/service_connections` の SearXNG）で変更できます。既定は CAPTCHA 回避・コンテキスト溢れ防止向けに `5` 件 / 同時 `1` / `duckduckgo,wikipedia` / リトライ `1` / `web_search` 上限 `2` / `fetch_url` 上限 `3` です。Wikipedia の infobox も結果に含め、PDF は取得対象外です。
+| `SEARXNG_URL` / `SEARFRONT_URL` | searfront ベース URL（接続キーは `searxng`） | `http://bowmore:13000` |
+| `SEARXNG_API_TOKEN` / `SEARFRONT_TOKEN` | searfront Bearer トークン（必須） | （未設定） |
 | `READABILITY_URL` | readability-js-server | `http://bowmore:8030` |
+
+Web 検索は searfront（`/v1/search`）経由です。接続画面で URL・トークン・件数上限などを変更できます。エンジン選択・CAPTCHA フォールバックは searfront 側が担います。PDF は取得対象外です。
 
 ### Chat コンテキスト・メモ RAG
 

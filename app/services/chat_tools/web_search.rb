@@ -22,7 +22,7 @@ module ChatTools
 
       payload = client.search(q: q, limit: limit)
       annotate_empty_results(filter_pdf_results(payload))
-    rescue SearxngClient::Error => e
+    rescue SearfrontClient::Error, SearxngClient::Error => e
       ToolResponse.error(tool: "web_search", message: e.message)
     end
 
@@ -36,15 +36,18 @@ module ChatTools
 
         "#{entry[0]}: #{entry[1]}"
       end
+      gateway_warnings = Array(payload["warnings"]).map(&:to_s).reject(&:blank?)
       warning =
         if reasons.any?
           "検索結果が空です（#{reasons.join(', ')}）。別エンジンで再試行済みの場合があります。"
+        elsif gateway_warnings.any?
+          "検索結果が空です（#{gateway_warnings.join(', ')}）。"
         else
           tried = Array(payload["engines_tried"]).presence&.join(" → ")
           if tried
-            "検索結果が空です（試行: #{tried}）。接続設定の検索エンジンを確認してください。"
+            "検索結果が空です（試行: #{tried}）。接続設定を確認してください。"
           else
-            "検索結果が空です。別のクエリか、接続設定の検索エンジンを確認してください。"
+            "検索結果が空です。別のクエリか、searfront 接続設定を確認してください。"
           end
         end
 

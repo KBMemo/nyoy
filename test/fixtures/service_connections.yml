@@ -72,8 +72,9 @@ tsuzura:
 
 searxng:
   key: searxng
-  name: SearXNG
-  base_url: http://bowmore.artif.org:8080
+  name: searfront
+  base_url: http://bowmore:13000
+  api_token: test_searfront_token
   enabled: true
   sort_order: 8
   settings:

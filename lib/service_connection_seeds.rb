@@ -149,11 +149,11 @@ module ServiceConnectionSeeds
       },
       {
         key: "searxng",
-        name: "SearXNG",
+        name: "searfront",
         base_url: config.searxng_url,
         api_token: config.searxng_api_token,
         enabled: config.searxng_url.present?,
-        notes: "Chat web_search ツール用",
+        notes: "Chat web_search 用（searfront `/v1/search`。接続キーは searxng）",
         settings: SearxngSettings::DEFAULTS
       },
       {
