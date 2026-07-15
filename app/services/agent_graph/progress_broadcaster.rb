@@ -37,6 +37,17 @@ module AgentGraph
         )
       end
 
+      # Live thinking for finalize_answer (does not replace the panel / clock).
+      def thinking!(chat, text)
+        body = text.to_s
+        return if body.blank?
+
+        ChatChannel.broadcast_to(chat, {
+          type: "research_progress_thinking",
+          text: body
+        })
+      end
+
       def clear!(chat)
         broadcast(chat, label: nil)
       end

@@ -63,8 +63,26 @@ module AgentGraph
       )
       ChatLlmSettings.apply!(llm, chat: @chat)
       llm.with_instructions(FINAL_SYSTEM)
-      response = llm.ask(user_prompt(evidence))
+
+      progress = ThinkingProgress.new(@chat)
+      streamed_thinking = +""
+      streamed_content = +""
+
+      response = llm.ask(user_prompt(evidence)) do |chunk|
+        thinking_delta = chunk.thinking&.text
+        streamed_thinking << thinking_delta if thinking_delta.is_a?(String) && !thinking_delta.empty?
+
+        content_delta = chunk.content
+        streamed_content << content_delta if content_delta.is_a?(String) && !content_delta.empty?
+
+        live = live_thinking_text(streamed_thinking, streamed_content)
+        progress.push(live) if live.present?
+      end
+
       answer, thinking = @draft_helper.extract_answer_and_thinking(response)
+      thinking = thinking.presence || live_thinking_text(streamed_thinking, streamed_content).presence
+      progress.flush(thinking) if thinking.present?
+
       [
         answer,
         @draft_helper.length_truncated_response?(response),
@@ -79,6 +97,14 @@ module AgentGraph
         "AgentGraph::FinalAnswerSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
       )
       [ nil, false, {} ]
+    end
+
+    # Prefer provider thinking deltas; fall back to completed <think> blocks in content.
+    def live_thinking_text(streamed_thinking, streamed_content)
+      return streamed_thinking if streamed_thinking.present?
+
+      _content, embedded = @draft_helper.peel_think_blocks(streamed_content)
+      embedded.map { |part| part.to_s.strip }.reject(&:blank?).join("\n\n")
     end
 
     def compose_answer(llm_answer, evidence)

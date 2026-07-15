@@ -9,9 +9,14 @@ const MAX_TRACKED = 200
 export default class extends Controller {
   connect() {
     const match = this.element.id.match(/^message_(\d+)_thinking$/)
-    if (!match) return
+    if (match) {
+      this.messageId = match[1]
+    } else if (this.element.id === "research_progress_thinking") {
+      this.messageId = "research_progress"
+    } else {
+      return
+    }
 
-    this.messageId = match[1]
     if (!followByMessageId.has(this.messageId)) {
       followByMessageId.set(this.messageId, true)
       this.pruneTrackedState()

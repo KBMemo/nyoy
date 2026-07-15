@@ -17,6 +17,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - **常に承認**: Chat UI では `auto_approve` でない限り必ず `await_approval` で Interrupt（調査ドラフト確認パネル）。`plan.sensitive` はラベル／方針用に残すが HITL の条件には使わない
 - MCP 既定の `auto_approve=true` のときは `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。失敗時は承認済みドラフトをフォールバック投稿
+- 最終回答生成中はストリーミングの思考を Cable `research_progress_thinking` で進捗パネル内にライブ表示（完了後は assistant メッセージの「思考」にも残る）
 - **却下**: `replan_count < 2` なら `plan_research` へ戻る（根拠・budget は保持）。`rejection_notes` と `plan.revision_hints` を Plan / Synthesizer が参照して書き直す。上限超過で終了メッセージ
 - **進捗表示**: Node 実行中は Cable `research_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗・承認待ちで消す
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）

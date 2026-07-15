@@ -57,4 +57,31 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     assert_nil payload["label"]
     assert_equal "", payload["html"]
   end
+
+  test "started panel includes hidden thinking mount" do
+    payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.started!(@chat, "finalize_answer")
+    end.last
+
+    assert_includes payload["html"], "research_progress_thinking_section"
+    assert_includes payload["html"], "research_progress_thinking"
+    assert_includes payload["html"], "hidden"
+  end
+
+  test "thinking broadcasts text without replacing the panel" do
+    payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.thinking!(@chat, "まず調査ドラフトを読む…")
+    end.last
+
+    assert_equal "research_progress_thinking", payload["type"]
+    assert_equal "まず調査ドラフトを読む…", payload["text"]
+    assert_nil payload["html"]
+  end
+
+  test "thinking ignores blank text" do
+    assert_no_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.thinking!(@chat, "   ")
+      AgentGraph::ProgressBroadcaster.thinking!(@chat, "")
+    end
+  end
 end

@@ -47,6 +47,9 @@ export default class extends Controller {
       case "research_progress":
         this.replaceResearchProgress(event)
         break
+      case "research_progress_thinking":
+        this.updateResearchProgressThinking(event)
+        break
     }
   }
 
@@ -156,6 +159,46 @@ export default class extends Controller {
     const runStartedAt = event.run_started_at || panel?.dataset?.runStartedAt
     this.startProgressClock(nodeStartedAt, runStartedAt)
     panel?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }
+
+  updateResearchProgressThinking(event) {
+    const text = event.text || ""
+    if (!text) return
+
+    const mount = this.ensureResearchProgressMount()
+    const panel = mount?.querySelector("#research_progress_panel")
+    if (!panel) return
+
+    let section = panel.querySelector("#research_progress_thinking_section")
+    if (!section) {
+      section = document.createElement("div")
+      section.id = "research_progress_thinking_section"
+      section.className = "nyoy-research-progress-thinking-section"
+      panel.querySelector(".nyoy-research-progress-body")?.append(section)
+    }
+
+    section.classList.remove("hidden")
+
+    let pre = section.querySelector("#research_progress_thinking")
+    if (!pre) {
+      const details = document.createElement("details")
+      details.className = "nyoy-chat-message-thinking-details"
+      details.open = true
+
+      const summary = document.createElement("summary")
+      summary.className = "nyoy-chat-message-thinking-summary"
+      summary.textContent = "思考"
+
+      pre = document.createElement("pre")
+      pre.id = "research_progress_thinking"
+      pre.className = "nyoy-chat-message-thinking nyoy-research-progress-thinking"
+      pre.dataset.controller = "thinking-auto-scroll"
+
+      details.append(summary, pre)
+      section.replaceChildren(details)
+    }
+
+    pre.textContent = text
   }
 
   ensureResearchProgressMount() {

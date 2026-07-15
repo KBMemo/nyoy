@@ -358,6 +358,7 @@ module AgentGraph
       lines.join("\n")
     end
 
-    public :compact_sources, :fallback_answer, :extract_answer_and_thinking, :length_truncated_response?
+    public :compact_sources, :fallback_answer, :extract_answer_and_thinking,
+           :length_truncated_response?, :peel_think_blocks
   end
 end

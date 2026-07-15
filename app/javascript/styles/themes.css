@@ -1008,6 +1008,14 @@
   gap: 0.35rem 0.85rem;
 }
 
+.nyoy-research-progress-thinking-section {
+  margin-top: 0.35rem;
+}
+
+.nyoy-research-progress-thinking {
+  max-height: 12rem;
+}
+
 .nyoy-research-progress-dot {
   animation: nyoy-research-progress-pulse 1.2s ease-in-out infinite;
   background: var(--kb-link, #2563eb);
