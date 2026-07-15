@@ -102,6 +102,11 @@ export default class extends Controller {
     }
     this.pinResearchProgress()
     this.revealImportantMessage(next)
+    // Research approve publishes a full assistant message without streaming —
+    // bring it into view so the draft panel doesn't feel like it vanished.
+    if (next.classList?.contains("nyoy-chat-message-assistant")) {
+      next.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    }
   }
 
   revealImportantMessage(node) {

@@ -13,7 +13,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
-- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック（`AppSetting.research_draft_*`）。思考は通常 Chat と同様に生成し、`draft_thinking` として承認パネルと最終アシスタントメッセージへ載せる
+- `synthesize_draft` は根拠からドラフトを合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック（`AppSetting.research_draft_*`）。**高速化のため思考（`enable_thinking`）はオフ**し、承認パネル用の `draft_thinking` は空になりやすい
 - **常に承認**: Chat UI では `auto_approve` でない限り必ず `await_approval` で Interrupt（調査ドラフト確認パネル）。`plan.sensitive` はラベル／方針用に残すが HITL の条件には使わない
 - MCP 既定の `auto_approve=true` のときは `approval=not_required` でそのまま `finalize_answer`
 - 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer`

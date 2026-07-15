@@ -29,6 +29,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "research_approval"
+    assert_includes response.body, "同じ内容を回答として反映"
     assert_includes response.body, "new_message"
     assert @chat.reload.responding?
     assert_equal "approved", @run.reload.state["approval"]

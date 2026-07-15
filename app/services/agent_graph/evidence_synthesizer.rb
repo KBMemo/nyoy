@@ -120,12 +120,13 @@ module AgentGraph
         provider: model.provider.to_sym,
         assume_model_exists: true
       )
-      # Match normal Chat: connection/chat sampling only — do not force thinking off.
       if model.id == @chat.model_association&.id
         ChatLlmSettings.apply!(llm, chat: @chat)
       else
         ChatLlmSettings.defaults_for(model: model).apply!(llm)
       end
+      # Draft synthesis prioritizes latency: skip thinking tokens (qwen / llama.cpp).
+      disable_thinking!(llm)
 
       llm.with_instructions(SYNTHESIS_SYSTEM)
       response = llm.ask(user_prompt(evidence))
@@ -136,6 +137,13 @@ module AgentGraph
         "AgentGraph::EvidenceSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
       )
       [ nil, nil, false ]
+    end
+
+    def disable_thinking!(llm)
+      existing = (llm.instance_variable_get(:@params) || {}).dup
+      kwargs = existing[:chat_template_kwargs] || existing["chat_template_kwargs"] || {}
+      kwargs = kwargs.to_h.stringify_keys.merge("enable_thinking" => false)
+      llm.with_params(**existing.symbolize_keys, chat_template_kwargs: kwargs)
     end
 
     # Prefer content as the draft body; keep thinking for the UI 「思考」 panel.

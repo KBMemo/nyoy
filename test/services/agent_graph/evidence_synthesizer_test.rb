@@ -165,6 +165,22 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     end
   end
 
+  test "disable_thinking! forces enable_thinking false on llm params" do
+    synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
+    llm = Object.new
+    llm.instance_variable_set(:@params, { top_p: 0.9, chat_template_kwargs: { "enable_thinking" => true } })
+    llm.define_singleton_method(:with_params) do |**params|
+      @params = params
+      self
+    end
+    llm.define_singleton_method(:params) { @params }
+
+    synthesizer.send(:disable_thinking!, llm)
+
+    assert_equal false, llm.params.dig(:chat_template_kwargs, "enable_thinking")
+    assert_equal 0.9, llm.params[:top_p]
+  end
+
   test "strips think blocks and keeps thinking for the UI" do
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
     thinking = Struct.new(:text).new("フィールドの思考")

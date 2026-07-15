@@ -27,7 +27,7 @@ class AgentRunsController < ApplicationController
     when AgentGraph::MemoWriteGraph::NAME
       "メモ草案を承認しました。徒然へ保存します。"
     else
-      "調査ドラフトを承認しました。回答を確定します。"
+      "調査ドラフトを承認しました。同じ内容を回答として反映します。"
     end
   end
 
@@ -61,10 +61,9 @@ class AgentRunsController < ApplicationController
       return resume_blocked!("別の応答が実行中です。")
     end
 
-    # Persist the decision and clear the panel before the async job so a
-    # subsequent show render does not re-display the stale approval UI.
+    # Persist the decision before the async job. Turbo replaces the panel with a
+    # short status; finalize clears it after the answer is upserted.
     @agent_run.merge_state!("approval" => decision)
-    AgentGraph::ApprovalBroadcaster.clear!(@chat)
     ChatResponseControl.mark_running!(@chat)
     AgentGraphResumeJob.perform_later(@agent_run.id, decision)
     @notice = notice
