@@ -81,8 +81,8 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     ServiceConnectionPropsFetcher.define_method(:call, original) if defined?(original)
   end
 
-  test "update searxng api token" do
-    connection = service_connections(:searxng)
+  test "update searfront api token" do
+    connection = service_connections(:searfront)
 
     patch service_connection_path(connection), params: {
       service_connection: {
@@ -96,11 +96,11 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to service_connection_path(connection)
     assert_equal "searx_saved_token", connection.reload.api_token
-    assert_equal "searx_saved_token", NyoyConnectionStore.api_token(:searxng)
+    assert_equal "searx_saved_token", NyoyConnectionStore.api_token(:searfront)
   end
 
-  test "update searxng search settings" do
-    connection = service_connections(:searxng)
+  test "update searfront search settings" do
+    connection = service_connections(:searfront)
 
     patch service_connection_path(connection), params: {
       service_connection: {
@@ -108,7 +108,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
         base_url: connection.base_url,
         enabled: true,
         sort_order: connection.sort_order,
-        searxng_settings: {
+        searfront_settings: {
           result_count: 3,
           concurrent_searches: 1,
           engines: "duckduckgo,wikipedia",
@@ -120,7 +120,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to service_connection_path(connection)
-    settings = connection.reload.searxng_settings
+    settings = connection.reload.searfront_settings
     assert_equal 3, settings.result_count
     assert_equal 1, settings.concurrent_searches
     assert_equal "duckduckgo,wikipedia", settings.engines

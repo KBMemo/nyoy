@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class SearxngSettings
+class SearfrontSettings
   # Prefer multiple engines: duckduckgo alone often hits CAPTCHA; google backfills.
   DEFAULTS = {
     "result_count" => 5,
@@ -25,7 +25,7 @@ class SearxngSettings
               :max_searches_per_turn, :max_fetches_per_turn
 
   def self.load
-    record = ServiceConnection.find_by(key: "searxng")
+    record = ServiceConnection.find_by(key: "searfront")
     from(record&.settings)
   end
 

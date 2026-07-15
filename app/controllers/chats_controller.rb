@@ -71,12 +71,12 @@ class ChatsController < ApplicationController
   def update_chat_settings
     @chat.update!(llm_params: ChatLlmSettings.normalize(chat_llm_settings_params))
 
-    if @searxng_connection&.enabled?
-      settings = @searxng_connection.searxng_settings.to_h.merge(web_tool_settings_params)
-      @searxng_connection.assign_searxng_settings(settings)
+    if @searfront_connection&.enabled?
+      settings = @searfront_connection.searfront_settings.to_h.merge(web_tool_settings_params)
+      @searfront_connection.assign_searfront_settings(settings)
 
-      unless @searxng_connection.save
-        redirect_to @chat, alert: @searxng_connection.errors.full_messages.to_sentence
+      unless @searfront_connection.save
+        redirect_to @chat, alert: @searfront_connection.errors.full_messages.to_sentence
         return
       end
     end
@@ -111,8 +111,8 @@ class ChatsController < ApplicationController
   end
 
   def load_chat_settings
-    @searxng_connection = ServiceConnection.find_by(key: "searxng")
-    @web_tool_settings = @searxng_connection&.searxng_settings || SearxngSettings.load
+    @searfront_connection = ServiceConnection.find_by(key: "searfront")
+    @web_tool_settings = @searfront_connection&.searfront_settings || SearfrontSettings.load
     @chat_llm_settings = ChatLlmSettings.effective_for(@chat)
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
   end

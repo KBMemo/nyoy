@@ -39,8 +39,8 @@ class SearfrontClient
   end
 
   def initialize(
-    base_url: NyoyConnectionStore.url(:searxng),
-    api_token: NyoyConnectionStore.api_token(:searxng),
+    base_url: NyoyConnectionStore.url(:searfront),
+    api_token: NyoyConnectionStore.api_token(:searfront),
     settings: nil,
     open_timeout: DEFAULT_OPEN_TIMEOUT,
     read_timeout: DEFAULT_READ_TIMEOUT,
@@ -76,7 +76,7 @@ class SearfrontClient
   private
 
   def resolved_settings
-    @settings || SearxngSettings.load
+    @settings || SearfrontSettings.load
   end
 
   def clamp_limit(limit, settings)

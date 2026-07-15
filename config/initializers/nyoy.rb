@@ -28,11 +28,10 @@ Rails.application.config.x.nyoy.tap do |config|
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
   config.tsuzura_url = ENV.fetch("TSUZURA_URL", "http://localhost:3008")
   config.tsuzura_api_token = ENV["TSUZURA_API_TOKEN"]
-  # Connection key remains `searxng`; the client talks to searfront `/v1/search`.
-  config.searxng_url = ENV.fetch("SEARXNG_URL") do
-    ENV.fetch("SEARFRONT_URL", "http://bowmore:13000")
+  config.searfront_url = ENV.fetch("SEARFRONT_URL") do
+    ENV.fetch("SEARXNG_URL", "http://bowmore:13000")
   end
-  config.searxng_api_token = ENV["SEARXNG_API_TOKEN"].presence || ENV["SEARFRONT_TOKEN"]
+  config.searfront_api_token = ENV["SEARFRONT_TOKEN"].presence || ENV["SEARXNG_API_TOKEN"]
   config.readability_url = ENV.fetch("READABILITY_URL", "http://bowmore:8030")
   config.chat_context_turns = ENV.fetch("CHAT_CONTEXT_TURNS", 10).to_i
   config.memo_rag_enabled = ENV.fetch("MEMO_RAG_ENABLED", "true") == "true"

@@ -30,13 +30,13 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_includes ChatTools::Registry.tool_classes, ChatTools::FetchUrl
   end
 
-  test "web tools available when searxng connection is enabled" do
+  test "web tools available when searfront connection is enabled" do
     assert ChatTools::Registry.web_tools_available?
     assert_includes ChatTools::Registry.tool_classes, ChatTools::WebSearch
   end
 
-  test "web tools not available when searxng is disabled" do
-    service_connections(:searxng).update!(enabled: false)
+  test "web tools not available when searfront is disabled" do
+    service_connections(:searfront).update!(enabled: false)
     NyoyConnectionStore.clear_cache!
 
     assert_not ChatTools::Registry.web_tools_available?
@@ -100,9 +100,9 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     assert_equal 3, budget.max_fetches
   end
 
-  test "web tool budget reads limits from searxng connection settings" do
-    service_connections(:searxng).update!(
-      settings: service_connections(:searxng).settings.merge(
+  test "web tool budget reads limits from searfront connection settings" do
+    service_connections(:searfront).update!(
+      settings: service_connections(:searfront).settings.merge(
         "max_searches_per_turn" => 1,
         "max_fetches_per_turn" => 4
       )

@@ -98,7 +98,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | `sd_cpp` | sd.cpp 画像生成 |
 | `sd_switchd` | SD モデル切り替え |
 | `kbmemo` | **徒然 API**（メモツール・RAG 取込） |
-| `searxng` | **SearXNG**（`web_search`） |
+| `searfront` | **searfront**（`web_search`） |
 | `readability` | **readability-js-server**（`fetch_url` 本文抽出） |
 
 Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコードを同期する。
@@ -117,7 +117,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | `recall_memos` | メモ意味検索（ハイブリッド RAG） | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
 | `search_memos` | 徒然キーワード検索 | `kbmemo` |
 | `get_memo` / `create_memo` / `update_memo` | メモ CRUD | `kbmemo` |
-| `web_search` | Web 検索 | `searxng` |
+| `web_search` | Web 検索 | `searfront` |
 | `fetch_url` | URL 本文取得 | 常時（readability 優先、未設定時は直接取得） |
 
 **メモ RAG:** 既定は `MEMO_RAG_MODE=tool`（モデルが必要時に `recall_memos`）。`inject` にすると毎ターンハイブリッド RAG を最新ユーザーメッセージへ自動注入。`get_memo` は全文が必要なときの補助。

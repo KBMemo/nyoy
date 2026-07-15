@@ -38,15 +38,15 @@ class ChatToolsTest < ActiveSupport::TestCase
       calls << kwargs
       { "results" => [{ "title" => "Ruby", "url" => "https://ruby-lang.org" }] }
     end
-    original_searxng_client = ChatTools::Registry.method(:searxng_client)
-    ChatTools::Registry.define_singleton_method(:searxng_client) { fake_client }
+    original_web_search_client = ChatTools::Registry.method(:web_search_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client) { fake_client }
 
     result = ChatTools::WebSearch.new.execute(q: "ruby")
 
     assert_equal "ruby", calls.first[:q]
     assert_equal 1, result["results"].size
   ensure
-    ChatTools::Registry.define_singleton_method(:searxng_client, original_searxng_client) if defined?(original_searxng_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
   end
 
   test "web_search filters pdf results and limits calls per turn" do
@@ -61,8 +61,8 @@ class ChatToolsTest < ActiveSupport::TestCase
         ]
       }
     end
-    original_searxng_client = ChatTools::Registry.method(:searxng_client)
-    ChatTools::Registry.define_singleton_method(:searxng_client) { fake_client }
+    original_web_search_client = ChatTools::Registry.method(:web_search_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client) { fake_client }
 
     budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
     tool = ChatTools::WebSearch.new(budget: budget)
@@ -78,7 +78,7 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_match(/SEARCH_LIMIT_EXCEEDED/, third)
     assert_match(/最大 2 回/, third)
   ensure
-    ChatTools::Registry.define_singleton_method(:searxng_client, original_searxng_client) if defined?(original_searxng_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
   end
 
   test "fetch_url returns page preview json" do

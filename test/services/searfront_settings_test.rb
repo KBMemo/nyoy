@@ -2,9 +2,9 @@
 
 require "test_helper"
 
-class SearxngSettingsTest < ActiveSupport::TestCase
+class SearfrontSettingsTest < ActiveSupport::TestCase
   test "defaults include google for CAPTCHA resilience" do
-    settings = SearxngSettings.from(nil)
+    settings = SearfrontSettings.from(nil)
 
     assert_equal 5, settings.result_count
     assert_equal 1, settings.concurrent_searches
@@ -16,7 +16,7 @@ class SearxngSettingsTest < ActiveSupport::TestCase
   end
 
   test "clamps values to allowed ranges" do
-    settings = SearxngSettings.from(
+    settings = SearfrontSettings.from(
       result_count: 99,
       concurrent_searches: 0,
       concurrent_fetches: 0,
@@ -35,8 +35,8 @@ class SearxngSettingsTest < ActiveSupport::TestCase
     assert_equal "duckduckgo,wikipedia", settings.engines
   end
 
-  test "loads from searxng service connection" do
-    service_connections(:searxng).update!(
+  test "loads from searfront service connection" do
+    service_connections(:searfront).update!(
       settings: {
         "result_count" => 3,
         "concurrent_searches" => 1,
@@ -45,7 +45,7 @@ class SearxngSettingsTest < ActiveSupport::TestCase
       }
     )
 
-    settings = SearxngSettings.load
+    settings = SearfrontSettings.load
 
     assert_equal 3, settings.result_count
     assert_equal "wikipedia", settings.engines

@@ -165,9 +165,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".nyoy-chat-message-cancelled", text: /応答を中止しました/
   end
 
-  test "show renders chat settings dialog with model and web tool fields when searxng is enabled" do
+  test "show renders chat settings dialog with model and web tool fields when searfront is enabled" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-    service_connections(:searxng).update!(enabled: true)
+    service_connections(:searfront).update!(enabled: true)
 
     get chat_path(chat)
 
@@ -184,9 +184,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "section h2", text: "Web ツール上限", count: 0
   end
 
-  test "update_chat_settings persists llm params and searxng settings" do
+  test "update_chat_settings persists llm params and searfront settings" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-    connection = service_connections(:searxng)
+    connection = service_connections(:searfront)
     connection.update!(enabled: true)
 
     patch chat_settings_chat_path(chat), params: {
@@ -212,14 +212,14 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       },
       chat.reload.llm_params
     )
-    settings = connection.reload.searxng_settings
+    settings = connection.reload.searfront_settings
     assert_equal 4, settings.max_searches_per_turn
     assert_equal 6, settings.max_fetches_per_turn
   end
 
-  test "update_chat_settings persists llm params without searxng" do
+  test "update_chat_settings persists llm params without searfront" do
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-    service_connections(:searxng).update!(enabled: false)
+    service_connections(:searfront).update!(enabled: false)
 
     patch chat_settings_chat_path(chat), params: {
       temperature: 0.6,

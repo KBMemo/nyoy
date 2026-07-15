@@ -29,7 +29,7 @@ class ServiceConnectionPropsFetcherTest < ActiveSupport::TestCase
   end
 
   test "rejects non chat backends" do
-    result = ServiceConnectionPropsFetcher.new(service_connections(:searxng)).call
+    result = ServiceConnectionPropsFetcher.new(service_connections(:searfront)).call
 
     assert_not result.ok
     assert_match(/対応していません/, result.message)

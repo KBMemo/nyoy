@@ -14,7 +14,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "search builds query with engines and default limit from settings" do
-    settings = SearxngSettings.from(
+    settings = SearfrontSettings.from(
       result_count: 3,
       concurrent_searches: 1,
       engines: "duckduckgo,wikipedia",
@@ -54,7 +54,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "includes wikipedia infoboxes when results are empty" do
-    settings = SearxngSettings.from(result_count: 5, engines: "wikipedia", retry_count: 0)
+    settings = SearfrontSettings.from(result_count: 5, engines: "wikipedia", retry_count: 0)
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
     client.define_singleton_method(:perform_request) do |*, **|
       SearxngClientTest.fake_http_response(200, {
@@ -81,7 +81,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "falls back to alternate engines when primary returns CAPTCHA empty" do
-    settings = SearxngSettings.from(
+    settings = SearfrontSettings.from(
       result_count: 3,
       engines: "duckduckgo,wikipedia",
       retry_count: 0
@@ -119,7 +119,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "retries failed requests up to configured retry count" do
-    settings = SearxngSettings.from(result_count: 3, retry_count: 1, engines: "google")
+    settings = SearfrontSettings.from(result_count: 3, retry_count: 1, engines: "google")
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
     attempts = 0
     client.define_singleton_method(:perform_request) do |*, **|
@@ -143,7 +143,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "does not retry 4xx rate limit responses" do
-    settings = SearxngSettings.from(retry_count: 2)
+    settings = SearfrontSettings.from(retry_count: 2)
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
     attempts = 0
     client.define_singleton_method(:perform_request) do |*, **|
@@ -159,7 +159,7 @@ class SearxngClientTest < ActiveSupport::TestCase
   end
 
   test "raises error on api failure when retries exhausted" do
-    settings = SearxngSettings.from(retry_count: 0)
+    settings = SearfrontSettings.from(retry_count: 0)
     client = SearxngClient.new(base_url: "http://bowmore.artif.org:8080", settings: settings)
     client.define_singleton_method(:perform_request) do |*, **|
       SearxngClientTest.fake_http_response(503, { error: "unavailable" }.to_json)

@@ -76,7 +76,7 @@ module ChatTools
     end
 
     def client
-      @client ||= Registry.searxng_client
+      @client ||= Registry.web_search_client
     end
   end
 end

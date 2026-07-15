@@ -82,7 +82,7 @@ module AgentGraph
       end
 
       def default_budget(state)
-        settings = SearxngSettings.load
+        settings = SearfrontSettings.load
         {
           "searches_used" => state.dig("budget", "searches_used").to_i,
           "fetches_used" => state.dig("budget", "fetches_used").to_i,

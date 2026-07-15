@@ -148,13 +148,13 @@ module ServiceConnectionSeeds
         notes: "Chat 画像アーカイブ・メディア参照（tsuzura API トークン）"
       },
       {
-        key: "searxng",
+        key: "searfront",
         name: "searfront",
-        base_url: config.searxng_url,
-        api_token: config.searxng_api_token,
-        enabled: config.searxng_url.present?,
-        notes: "Chat web_search 用（searfront `/v1/search`。接続キーは searxng）",
-        settings: SearxngSettings::DEFAULTS
+        base_url: config.searfront_url,
+        api_token: config.searfront_api_token,
+        enabled: config.searfront_url.present?,
+        notes: "Chat web_search 用（searfront `/v1/search`）",
+        settings: SearfrontSettings::DEFAULTS
       },
       {
         key: "readability",

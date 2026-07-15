@@ -9,11 +9,11 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
   end
 
   test "searfront client uses url updated in service connection" do
-    connection = service_connections(:searxng)
+    connection = service_connections(:searfront)
     connection.update!(base_url: "http://updated-searfront:13000", api_token: "fresh_token")
 
     requested = []
-    client = ChatTools::Registry.searxng_client
+    client = ChatTools::Registry.web_search_client
     client.define_singleton_method(:perform_request) do |uri, req|
       requested << [uri.to_s, req["Authorization"]]
       ChatToolsConnectionRefreshTest.fake_http_response(200, {
@@ -55,7 +55,7 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
     original_reset = ChatTools::Registry.method(:reset_client!)
     ChatTools::Registry.define_singleton_method(:reset_client!) { called = true }
 
-    service_connections(:searxng).update!(base_url: "http://another-searx:8080")
+    service_connections(:searfront).update!(base_url: "http://another-searfront:8080")
 
     assert called
   ensure

@@ -1,4 +1,4 @@
-<% connection = local_assigns.fetch(:searxng_connection, @searxng_connection) %>
+<% connection = local_assigns.fetch(:searfront_connection, @searfront_connection) %>
 <% web_settings = local_assigns.fetch(:web_tool_settings, @web_tool_settings) %>
 <% llm_settings = local_assigns.fetch(:chat_llm_settings, @chat_llm_settings) %>
 <% presets = local_assigns.fetch(:llm_sampling_presets, @llm_sampling_presets) || LlmSamplingPreset.enabled.ordered %>
@@ -64,8 +64,8 @@
                 <%= form.label :max_searches_per_turn, "web_search 上限", class: "#{kb_label} mb-1" %>
                 <%= form.number_field :max_searches_per_turn,
                   value: web_settings.max_searches_per_turn,
-                  min: SearxngSettings::RANGES["max_searches_per_turn"].begin,
-                  max: SearxngSettings::RANGES["max_searches_per_turn"].end,
+                  min: SearfrontSettings::RANGES["max_searches_per_turn"].begin,
+                  max: SearfrontSettings::RANGES["max_searches_per_turn"].end,
                   step: 1,
                   class: kb_field_input_classes %>
               </div>
@@ -73,8 +73,8 @@
                 <%= form.label :max_fetches_per_turn, "fetch_url 上限", class: "#{kb_label} mb-1" %>
                 <%= form.number_field :max_fetches_per_turn,
                   value: web_settings.max_fetches_per_turn,
-                  min: SearxngSettings::RANGES["max_fetches_per_turn"].begin,
-                  max: SearxngSettings::RANGES["max_fetches_per_turn"].end,
+                  min: SearfrontSettings::RANGES["max_fetches_per_turn"].begin,
+                  max: SearfrontSettings::RANGES["max_fetches_per_turn"].end,
                   step: 1,
                   class: kb_field_input_classes %>
                 <p class="mt-1 text-sm kb-text-muted">fetch_url は同時に複数実行されず、結果を受け取ってから1件ずつ取得します。</p>

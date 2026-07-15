@@ -59,47 +59,47 @@
     div
       = form.label :api_token, "API トークン（任意）", class: "#{kb_label} mb-1"
       = form.password_field :api_token, class: kb_field_input_classes, autocomplete: "off"
-      - if service_connection.key == "searxng"
-        p.mt-1.text-sm.kb-text-muted SearXNG の認証トークン。空欄のまま更新すると既存のトークンは保持されます。
+      - if service_connection.key == "searfront"
+        p.mt-1.text-sm.kb-text-muted searfront の Bearer トークン（必須）。空欄のまま更新すると既存のトークンは保持されます。
       - elsif service_connection.openai?
         p.mt-1.text-sm.kb-text-muted OpenAI API キー（sk-...）。有効化するには必須です。空欄のまま更新すると既存のキーは保持されます。
       - else
         p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 
-  - if service_connection.searxng?
-    - searx = service_connection.searxng_settings
+  - if service_connection.searfront?
+    - searx = service_connection.searfront_settings
     .kb-card.p-4.space-y-4
       h2 class=kb_section_title 検索設定
-      p.text-sm.kb-text-muted CAPTCHA 回避とコンテキスト溢れ防止のため、件数・エンジン・ツール上限を抑えます。
+      p.text-sm.kb-text-muted 件数・同時実行・ツール上限を抑えてコンテキスト溢れを防ぎます。エンジン選択は searfront 側が担います。
       .grid.gap-4 class="sm:grid-cols-2"
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_result_count" 取得件数
-          input#service_connection_searxng_settings_result_count.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][result_count]" value=searx.result_count min=1 max=10 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_result_count" 取得件数
+          input#service_connection_searfront_settings_result_count.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][result_count]" value=searx.result_count min=1 max=10 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 3〜5。最大 10。
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_concurrent_searches" 同時検索数
-          input#service_connection_searxng_settings_concurrent_searches.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][concurrent_searches]" value=searx.concurrent_searches min=1 max=3 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_concurrent_searches" 同時検索数
+          input#service_connection_searfront_settings_concurrent_searches.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][concurrent_searches]" value=searx.concurrent_searches min=1 max=3 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 1。
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_concurrent_fetches" fetch_url 同時取得数
-          input#service_connection_searxng_settings_concurrent_fetches.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][concurrent_fetches]" value=searx.concurrent_fetches min=1 max=3 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_concurrent_fetches" fetch_url 同時取得数
+          input#service_connection_searfront_settings_concurrent_fetches.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][concurrent_fetches]" value=searx.concurrent_fetches min=1 max=3 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 1。Readability / HTTP 取得の並行数。
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_retry_count" リトライ回数
-          input#service_connection_searxng_settings_retry_count.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][retry_count]" value=searx.retry_count min=0 max=2 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_retry_count" リトライ回数
+          input#service_connection_searfront_settings_retry_count.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][retry_count]" value=searx.retry_count min=0 max=2 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 0〜1。
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_max_searches_per_turn" web_search 上限（応答あたり）
-          input#service_connection_searxng_settings_max_searches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][max_searches_per_turn]" value=searx.max_searches_per_turn min=1 max=5 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_max_searches_per_turn" web_search 上限（応答あたり）
+          input#service_connection_searfront_settings_max_searches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][max_searches_per_turn]" value=searx.max_searches_per_turn min=1 max=5 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 2。最大 5。
         div
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_max_fetches_per_turn" fetch_url 上限（応答あたり）
-          input#service_connection_searxng_settings_max_fetches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searxng_settings][max_fetches_per_turn]" value=searx.max_fetches_per_turn min=1 max=10 step=1
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_max_fetches_per_turn" fetch_url 上限（応答あたり）
+          input#service_connection_searfront_settings_max_fetches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][max_fetches_per_turn]" value=searx.max_fetches_per_turn min=1 max=10 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 3。fetch_url は結果を見てから1件ずつ実行されます。
         div class="sm:col-span-2"
-          label class="#{kb_label} mb-1" for="service_connection_searxng_settings_engines" 検索エンジン
-          input#service_connection_searxng_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searxng_settings][engines]" value=searx.engines placeholder="duckduckgo,google,wikipedia"
-          p.mt-1.text-sm.kb-text-muted SearXNG の engines 名（カンマ区切り）。CAPTCHA 回避のため google を含めると安定しやすいです。
+          label class="#{kb_label} mb-1" for="service_connection_searfront_settings_engines" 検索エンジン
+          input#service_connection_searfront_settings_engines.kb-input.kb-field-input type="text" name="service_connection[searfront_settings][engines]" value=searx.engines placeholder="duckduckgo,google,wikipedia"
+          p.mt-1.text-sm.kb-text-muted 互換用（Nyoy からは渡していません）。エンジン選択は searfront 側の設定を使います。
           p.mt-1.text-sm.kb-text-muted カンマ区切り。例: duckduckgo,wikipedia（google は CAPTCHA で空になりやすい）
 
   - if service_connection.supports_prompt_conversion_settings?

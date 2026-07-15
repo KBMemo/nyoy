@@ -70,8 +70,8 @@ tsuzura:
   enabled: true
   sort_order: 7
 
-searxng:
-  key: searxng
+searfront:
+  key: searfront
   name: searfront
   base_url: http://bowmore:13000
   api_token: test_searfront_token

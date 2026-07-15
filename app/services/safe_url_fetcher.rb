@@ -80,7 +80,7 @@ class SafeUrlFetcher
   end
 
   def concurrent_fetch_limit
-    SearxngSettings.load.concurrent_fetches
+    SearfrontSettings.load.concurrent_fetches
   end
 
   def with_concurrency_limit(limit)

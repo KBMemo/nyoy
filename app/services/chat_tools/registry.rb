@@ -110,9 +110,9 @@ module ChatTools
     end
 
     def web_tools_available?
-      NyoyConnectionStore.enabled?(:searxng) &&
-        NyoyConnectionStore.url(:searxng).present? &&
-        NyoyConnectionStore.api_token(:searxng).present?
+      NyoyConnectionStore.enabled?(:searfront) &&
+        NyoyConnectionStore.url(:searfront).present? &&
+        NyoyConnectionStore.api_token(:searfront).present?
     end
 
     def vision_tools_available?
@@ -202,11 +202,13 @@ module ChatTools
       TsuzuraClient.new
     end
 
-    def searxng_client
+    def web_search_client
       SearfrontClient.new
     end
 
-    alias web_search_client searxng_client
+    def searxng_client
+      web_search_client
+    end
 
     def url_fetcher
       SafeUrlFetcher.new(readability_client: readability_client)

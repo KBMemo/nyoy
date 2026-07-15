@@ -43,7 +43,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
   - **sdcpp-switchd** — SD モデル切り替え（`SDCPP_SWITCHD_URL` / `SDCPP_SWITCHD_TOKEN`）
   - **embeddings API** — bge-m3（`EMBEDDINGS_URL`）
   - **徒然 API** — メモ CRUD・export（`KBMEMO_*`）
-  - **searfront** — Web 検索（`SEARXNG_*` / `SEARFRONT_*`、接続キーは `searxng`）
+  - **searfront** — Web 検索（`SEARFRONT_*`（互換: `SEARXNG_*`））
   - **readability-js-server** — ページ本文抽出（`READABILITY_URL`）
 
 ## セットアップ
@@ -118,8 +118,9 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `KBMEMO_API_TOKEN` | clip API トークン（`kbmemo_...`） | （未設定） |
 | `TSUZURA_URL` | 葛籠 API ベース URL | `http://localhost:3008` |
 | `TSUZURA_API_TOKEN` | 葛籠 API トークン（`tsuzura_...`） | （未設定） |
-| `SEARXNG_URL` / `SEARFRONT_URL` | searfront ベース URL（接続キーは `searxng`） | `http://bowmore:13000` |
-| `SEARXNG_API_TOKEN` / `SEARFRONT_TOKEN` | searfront Bearer トークン（必須） | （未設定） |
+| `SEARFRONT_URL` | searfront ベース URL（接続キー `searfront`） | `http://bowmore:13000` |
+| `SEARFRONT_TOKEN` | searfront Bearer トークン（必須） | （未設定） |
+| `SEARXNG_URL` / `SEARXNG_API_TOKEN` | 上記の互換エイリアス | （未設定） |
 | `READABILITY_URL` | readability-js-server | `http://bowmore:8030` |
 
 Web 検索は searfront（`/v1/search`）経由です。接続画面で URL・トークン・件数上限などを変更できます。エンジン選択・CAPTCHA フォールバックは searfront 側が担います。PDF は取得対象外です。
@@ -162,7 +163,7 @@ Solid Queue recurring で `MemoKnowledgeIngestJob` が定期実行されます�
 1. `/chats` で新規チャットを作成
 2. 接続が有効なツールが自動配線されます
    - `kbmemo` — 徒然メモ CRUD + メモ RAG 注入
-   - `searxng` — Web 検索
+   - `searfront` — Web 検索
    - `readability` — URL 本文抽出（`fetch_url` は常に利用可、readability 未設定時は直接取得）
 3. 例:
    - 「過去の旅行メモを探して」（RAG + `search_memos`）

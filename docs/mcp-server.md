@@ -29,7 +29,7 @@ export MCP_API_TOKEN="your-secret-token"
 
 | ツール | 条件 |
 |--------|------|
-| `web_search` | `searxng` 有効 |
+| `web_search` | `searfront` 有効 |
 | `fetch_url` / `search_fetched_page` | 常時 |
 | `search_memos` / `get_memo` / `create_memo` / `update_memo` | `kbmemo` 有効 |
 | `recall_memos` | `kbmemo` かつ `MEMO_RAG_MODE=tool` |

@@ -3,7 +3,7 @@
 module ChatTools
   # Limits web_search / fetch_url usage within a single chat.complete turn.
   class WebToolBudget
-    def self.from_settings(settings = SearxngSettings.load)
+    def self.from_settings(settings = SearfrontSettings.load)
       new(
         max_searches: settings.max_searches_per_turn,
         max_fetches: settings.max_fetches_per_turn
@@ -13,7 +13,7 @@ module ChatTools
     # Restore a budget snapshot used by AgentGraph research nodes.
     def self.from_graph_budget(budget)
       budget = (budget || {}).stringify_keys
-      settings = SearxngSettings.load
+      settings = SearfrontSettings.load
       new(
         max_searches: positive(budget["max_searches"], settings.max_searches_per_turn),
         max_fetches: positive(budget["max_fetches"], settings.max_fetches_per_turn),

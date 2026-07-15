@@ -24,7 +24,7 @@ class ServiceConnectionsController < ApplicationController
 
   def create
     @service_connection = ServiceConnection.new(service_connection_params)
-    apply_searxng_settings!(@service_connection)
+    apply_searfront_settings!(@service_connection)
     apply_prompt_conversion_settings!(@service_connection)
     @custom_llm = @service_connection.custom_llm?
     @available_keys = ServiceConnection.available_keys unless @custom_llm
@@ -48,7 +48,7 @@ class ServiceConnectionsController < ApplicationController
 
   def update
     @service_connection.assign_attributes(service_connection_params)
-    apply_searxng_settings!(@service_connection)
+    apply_searfront_settings!(@service_connection)
     apply_prompt_conversion_settings!(@service_connection)
 
     if @service_connection.save
@@ -143,11 +143,11 @@ class ServiceConnectionsController < ApplicationController
     permitted
   end
 
-  def apply_searxng_settings!(connection)
-    return unless connection.searxng?
+  def apply_searfront_settings!(connection)
+    return unless connection.searfront?
 
-    attrs = params.dig(:service_connection, :searxng_settings)
-    connection.assign_searxng_settings(
+    attrs = params.dig(:service_connection, :searfront_settings)
+    connection.assign_searfront_settings(
       attrs.present? ? attrs.permit(
         :result_count,
         :concurrent_searches,

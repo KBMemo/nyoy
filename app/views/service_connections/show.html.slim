@@ -27,8 +27,8 @@
     dd = @service_connection.enabled? ? "有効" : "無効"
     dt.font-medium.kb-text-secondary 表示順
     dd = @service_connection.sort_order
-    - if @service_connection.searxng?
-      - searx = @service_connection.searxng_settings
+    - if @service_connection.searfront?
+      - searx = @service_connection.searfront_settings
       dt.font-medium.kb-text-secondary 取得件数
       dd = searx.result_count
       dt.font-medium.kb-text-secondary 同時検索数

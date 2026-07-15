@@ -11,7 +11,7 @@ class ServiceConnection < ApplicationRecord
     sd_switchd
     kbmemo
     tsuzura
-    searxng
+    searfront
     readability
   ].freeze
 
@@ -28,7 +28,7 @@ class ServiceConnection < ApplicationRecord
     "sd_switchd" => "sd.cpp switchd",
     "kbmemo" => "徒然（KBMemo API）",
     "tsuzura" => "葛籠（KBMemo Media API）",
-    "searxng" => "SearXNG（Web 検索）",
+    "searfront" => "searfront（Web 検索）",
     "readability" => "readability-js-server（本文抽出）"
   }.freeze
 
@@ -45,7 +45,7 @@ class ServiceConnection < ApplicationRecord
   scope :chat_backends, -> { where(key: chat_keys) }
   scope :custom_llms, -> { where("key LIKE ?", "llm_%") }
 
-  before_validation :normalize_searxng_settings, if: :searxng?
+  before_validation :normalize_searfront_settings, if: :searfront?
   before_destroy :prevent_builtin_destroy
   after_save :clear_connection_cache
   after_save :sync_chat_models, if: :chat_backend?
@@ -58,8 +58,8 @@ class ServiceConnection < ApplicationRecord
     key.to_s.match?(CUSTOM_LLM_KEY_FORMAT)
   end
 
-  def searxng?
-    key.to_s == "searxng"
+  def searfront?
+    key.to_s == "searfront"
   end
 
   def openai?
@@ -70,8 +70,8 @@ class ServiceConnection < ApplicationRecord
     openai? && enabled?
   end
 
-  def searxng_settings
-    SearxngSettings.from(settings)
+  def searfront_settings
+    SearfrontSettings.from(settings)
   end
 
   def openai_chat_model_settings
@@ -89,10 +89,10 @@ class ServiceConnection < ApplicationRecord
     self.settings = merged
   end
 
-  def assign_searxng_settings(attrs)
-    return unless searxng?
+  def assign_searfront_settings(attrs)
+    return unless searfront?
 
-    self.settings = SearxngSettings.normalize(attrs)
+    self.settings = SearfrontSettings.normalize(attrs)
   end
 
   def assign_prompt_conversion_settings(attrs)
@@ -133,8 +133,8 @@ class ServiceConnection < ApplicationRecord
     errors.add(:key, "は組み込み key か llm_ で始まるカスタム key にしてください")
   end
 
-  def normalize_searxng_settings
-    self.settings = SearxngSettings.normalize(settings)
+  def normalize_searfront_settings
+    self.settings = SearfrontSettings.normalize(settings)
   end
 
   def prevent_builtin_destroy

@@ -13,7 +13,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
   end
 
   test "search hits /v1/search and maps snippet to content" do
-    settings = SearxngSettings.from(result_count: 2, concurrent_searches: 1, retry_count: 0)
+    settings = SearfrontSettings.from(result_count: 2, concurrent_searches: 1, retry_count: 0)
     client = SearfrontClient.new(
       base_url: "http://bowmore:13000",
       api_token: "searfront_test",
@@ -75,7 +75,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
   end
 
   test "polls search_requests when search returns 202" do
-    settings = SearxngSettings.from(result_count: 1, retry_count: 0)
+    settings = SearfrontSettings.from(result_count: 1, retry_count: 0)
     client = SearfrontClient.new(
       base_url: "http://bowmore:13000",
       api_token: "tok",
@@ -117,7 +117,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
   end
 
   test "retries 5xx up to configured retry count" do
-    settings = SearxngSettings.from(result_count: 1, retry_count: 1)
+    settings = SearfrontSettings.from(result_count: 1, retry_count: 1)
     client = SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "tok", settings: settings)
     attempts = 0
     client.define_singleton_method(:backoff_sleep) { |*| }
@@ -142,7 +142,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
   end
 
   test "does not retry 4xx" do
-    settings = SearxngSettings.from(retry_count: 2)
+    settings = SearfrontSettings.from(retry_count: 2)
     client = SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "tok", settings: settings)
     attempts = 0
     client.define_singleton_method(:backoff_sleep) { |*| }
