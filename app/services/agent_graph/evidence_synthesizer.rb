@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # Shared draft / answer synthesis from Research Graph evidence.
-  # Used by SynthesizeDraft (and tests that stub LLM).
+  # Shared draft / evidence helpers for Research Graph.
+  # Used by SynthesizeDraft; FinalAnswerSynthesizer reuses evidence_pack and shared helpers.
   #
   # Prefer AppSetting.research_draft_model (light) when set; on failure fall back
   # to the chat model and/or the evidence-pack template per AppSetting.
@@ -357,5 +357,7 @@ module AgentGraph
       end
       lines.join("\n")
     end
+
+    public :compact_sources, :fallback_answer, :extract_answer_and_thinking, :length_truncated_response?
   end
 end

@@ -27,7 +27,7 @@ class AgentRunsController < ApplicationController
     when AgentGraph::MemoWriteGraph::NAME
       "メモ草案を承認しました。徒然へ保存します。"
     else
-      "調査ドラフトを承認しました。同じ内容を回答として反映します。"
+      "調査ドラフトを承認しました。最終回答を生成します。"
     end
   end
 

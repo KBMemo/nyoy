@@ -2,16 +2,28 @@
 
 module AgentGraph
   module Nodes
-    # Publish the approved draft as the final assistant message.
+    # After draft approval (or auto_approve), generate a final LLM answer and publish it.
     class FinalizeAnswer
       def call(state:, run:, chat:)
-        answer = state["draft"].to_s.presence || state["final_answer"].to_s.presence
-        if answer.blank?
+        if state["draft"].to_s.blank? && state["final_answer"].to_s.blank?
           return AgentGraph::NodeResult.fail("missing draft for finalize")
         end
 
-        truncated = state["draft_truncated"] == true
-        thinking = state["draft_thinking"].to_s.presence
+        answer, truncated, meta = AgentGraph::FinalAnswerSynthesizer.new(chat).call(state)
+        if answer.blank?
+          return AgentGraph::NodeResult.fail(
+            "empty final answer",
+            updates: {
+              "errors" => Array(state["errors"]) + [ {
+                "node" => "finalize_answer",
+                "code" => "EMPTY_FINAL_ANSWER",
+                "message" => "final answer synthesis produced no content"
+              } ]
+            }
+          )
+        end
+
+        thinking = meta.is_a?(Hash) ? meta["thinking"].presence : nil
         message = create_assistant_message!(chat, answer, truncated: truncated, thinking_text: thinking)
         ChatUiBroadcaster.message_upsert(message)
         ChatTruncationBroadcaster.call(chat) if truncated
@@ -21,7 +33,8 @@ module AgentGraph
           updates: {
             "final_answer" => answer,
             "assistant_message_id" => message.id,
-            "truncated" => truncated
+            "truncated" => truncated,
+            "final_synthesis" => (meta || {}).stringify_keys
           }
         )
       end

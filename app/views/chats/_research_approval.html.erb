@@ -6,7 +6,7 @@
   <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
     <div>
       <h2 class="text-base font-semibold kb-text-primary">調査ドラフトの確認</h2>
-      <p class="mt-1 text-sm kb-text-secondary">承認するとこの内容がそのままチャットの回答になります（再生成しません）。</p>
+      <p class="mt-1 text-sm kb-text-secondary">承認すると、このドラフトと根拠をもとに LLM が最終回答を生成します。</p>
       <% if replan_count.positive? %>
         <p class="mt-1 text-sm kb-text-muted">やり直し <%= replan_count %> 回目（残り <%= replans_remaining %> 回）</p>
       <% elsif replans_remaining.positive? %>
@@ -35,7 +35,7 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-3">
-    <%= button_to "この内容で確定する",
+    <%= button_to "このドラフトで最終回答を生成",
       approve_chat_agent_run_path(chat, agent_run),
       method: :post,
       class: kb_btn_primary_sm %>

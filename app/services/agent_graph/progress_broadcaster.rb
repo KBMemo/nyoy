@@ -10,7 +10,7 @@ module AgentGraph
       "fetch_urls" => "ページを取得しています…",
       "synthesize_draft" => "調査ドラフトを作成しています…",
       "await_approval" => "ドラフトの承認待ちです…",
-      "finalize_answer" => "回答を確定しています…",
+      "finalize_answer" => "最終回答を生成しています…",
       "plan_memo_write" => "メモ保存の準備をしています…",
       "draft_memo" => "メモ草案を作成しています…",
       "commit_memo" => "徒然に保存しています…",

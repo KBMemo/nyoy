@@ -325,10 +325,13 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
   end
 
   def stub_synthesize_without_llm
-    previous = AgentGraph::EvidenceSynthesizer.force_template
+    previous_draft = AgentGraph::EvidenceSynthesizer.force_template
+    previous_final = AgentGraph::FinalAnswerSynthesizer.force_passthrough
     AgentGraph::EvidenceSynthesizer.force_template = true
+    AgentGraph::FinalAnswerSynthesizer.force_passthrough = true
     yield
   ensure
-    AgentGraph::EvidenceSynthesizer.force_template = previous
+    AgentGraph::EvidenceSynthesizer.force_template = previous_draft
+    AgentGraph::FinalAnswerSynthesizer.force_passthrough = previous_final
   end
 end
