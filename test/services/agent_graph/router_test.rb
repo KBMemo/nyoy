@@ -42,6 +42,15 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     assert_equal AgentGraph::MemoWriteGraph::NAME, decision.graph_name
   end
 
+  test "memo update is evaluated before memo write" do
+    add_user_message("メモ 42 に追記して\n追加本文")
+
+    decision = AgentGraph::Router.route(@chat)
+
+    assert_equal AgentGraph::MemoUpdateGraph::NAME, decision.graph_name
+    assert_equal AgentGraph::MemoUpdateGraphRunner, decision.runner
+  end
+
   test "research-framed memo save defers to research graph" do
     add_user_message("根拠を調査してメモに保存して")
 

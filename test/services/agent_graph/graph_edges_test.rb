@@ -13,6 +13,16 @@ class AgentGraphGraphEdgesTest < ActiveSupport::TestCase
     assert_nil graph.next_node_for("finalize_reply", {})
   end
 
+  test "memo update graph declares fixed edges" do
+    graph = AgentGraph::MemoUpdateGraph.new
+
+    assert_equal "draft_memo_update", graph.next_node_for("plan_memo_update", {})
+    assert_equal "await_approval", graph.next_node_for("draft_memo_update", {})
+    assert_equal "commit_memo_update", graph.next_node_for("await_approval", {})
+    assert_equal "finalize_update_reply", graph.next_node_for("commit_memo_update", {})
+    assert_nil graph.next_node_for("finalize_update_reply", {})
+  end
+
   test "research graph declares routing edges" do
     graph = AgentGraph::ResearchGraph.new
 

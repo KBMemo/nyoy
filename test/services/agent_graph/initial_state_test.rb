@@ -49,6 +49,30 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     assert_equal [], state["errors"]
   end
 
+  test "builds memo update initial state" do
+    state = AgentGraph::MemoUpdateInitialState.build(
+      chat: @chat,
+      instruction: "メモ 42 に追記して",
+      auto_approve: true,
+      memo_ref: "42",
+      body: "追記本文",
+      title: "新タイトル",
+      mode: "append"
+    )
+
+    assert_equal "メモ 42 に追記して", state["instruction"]
+    assert_equal @chat.id, state["chat_id"]
+    assert_equal "memo_update", state["intent"]
+    assert_equal AgentGraph::MemoUpdateGraph::START, state["next_node"]
+    assert_equal true, state["auto_approve"]
+    assert_equal "42", state["mcp_memo_ref"]
+    assert_equal "追記本文", state["mcp_body"]
+    assert_equal "新タイトル", state["mcp_title"]
+    assert_equal "append", state["mcp_mode"]
+    assert_nil state["memo_uid"]
+    assert_equal [], state["errors"]
+  end
+
   test "research state schema rejects missing keys" do
     error = assert_raises(ArgumentError) do
       AgentGraph::ResearchStateSchema.validate!("question" => "根拠は？")
@@ -64,6 +88,15 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     end
 
     assert_includes error.message, "memo_write state missing keys"
+    assert_includes error.message, "chat_id"
+  end
+
+  test "memo update state schema rejects missing keys" do
+    error = assert_raises(ArgumentError) do
+      AgentGraph::MemoUpdateStateSchema.validate!("instruction" => "更新して")
+    end
+
+    assert_includes error.message, "memo_update state missing keys"
     assert_includes error.message, "chat_id"
   end
 end

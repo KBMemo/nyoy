@@ -2,7 +2,7 @@
 
 共通設計方針: [agent-graph-design-policy.md](./agent-graph-design-policy.md)
 
-Research と同じ薄い Workflow ランタイム上の 2 本目。**create_memo のみ**（update は未実装）。
+Research と同じ薄い Workflow ランタイム上の 2 本目。**create_memo のみ**。既存メモ更新は `MemoUpdate Graph` が担当する。
 
 ## フロー
 
@@ -11,7 +11,7 @@ plan_memo_write → draft_memo → await_approval → commit_memo → finalize_r
                               └ rejected → 終了メッセージ（再計画なし）
 ```
 
-- 入口: `ChatResponseJob` が `AgentGraph::Router` に委譲し、Router が `MemoWriteIntent` を **Research より先** に判定
+- 入口: `ChatResponseJob` が `AgentGraph::Router` に委譲し、Router が `MemoUpdateIntent` → `MemoWriteIntent` → `ResearchIntent` の順に判定
 - 調査フレーミング付きの「調べてから保存」は Intent が弾き、Research に回す
 - 本文ソース優先順: MCP `body` → 直近非 tool assistant → 指示文から保存フレーズを除いた残り
 - **常に HITL**（`auto_approve` でない限り）。承認前に `create_memo` しない
@@ -26,15 +26,17 @@ plan_memo_write → draft_memo → await_approval → commit_memo → finalize_r
 | `run_memo_write_graph` | 新規保存（`instruction` 必須、`body` / `title` / `chat_id` / `auto_approve` 任意） |
 | `get_memo_write_graph` | 状態取得 |
 | `resume_memo_write_graph` | `approved` / `rejected` |
+| `run_memo_update_graph` | 既存メモ更新（`instruction` / `memo_ref` 必須、`body` / `title` / `mode` / `chat_id` / `auto_approve` 任意） |
+| `get_memo_update_graph` | 更新 Graph 状態取得 |
+| `resume_memo_update_graph` | 更新 Graph の `approved` / `rejected` |
 
-実装: `Mcp::MemoWriteGraphTools`（Chat tool loop には載せない）。MCP の `auto_approve` 既定は true。
+実装: `Mcp::MemoWriteGraphTools` / `Mcp::MemoUpdateGraphTools`（Chat tool loop には載せない）。MCP の `auto_approve` 既定は true。
 
 ## 承認 UI
 
-- ルート: `POST .../agent_runs/:id/approve|reject`（MemoWrite Graph 専用）
+- ルート: `POST .../agent_runs/:id/approve|reject`（MemoWrite / MemoUpdate Graph）
 - Cable partial: `chats/memo_write_approval`
 
 ## 次
 
-- `update_memo`（get_memo → draft diff → 楽観ロック）
 - 承認パネル内の草案編集

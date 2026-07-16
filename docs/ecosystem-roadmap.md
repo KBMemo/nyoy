@@ -117,7 +117,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | `recall_memos` | メモ意味検索（ハイブリッド RAG） | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
 | `search_memos` | 徒然キーワード検索 | `kbmemo` |
 | `get_memo` | 徒然メモ本文取得 | `kbmemo` |
-| `create_memo` / `update_memo` | メモ write（通常 Chat では既定で非公開、Graph/MCP 側で扱う） | `kbmemo` |
+| `create_memo` / `update_memo` | メモ write（通常 Chat では既定で非公開、MemoWrite/MemoUpdate Graph・MCP 側で扱う） | `kbmemo` |
 | `web_search` | Web 検索 | `searfront` |
 | `fetch_url` | URL 本文取得 | 常時（readability 優先、未設定時は直接取得） |
 

@@ -14,7 +14,11 @@ module AgentGraph
       "plan_memo_write" => "メモ保存の準備をしています…",
       "draft_memo" => "メモ草案を作成しています…",
       "commit_memo" => "徒然に保存しています…",
-      "finalize_reply" => "保存結果を反映しています…"
+      "finalize_reply" => "保存結果を反映しています…",
+      "plan_memo_update" => "メモ更新の準備をしています…",
+      "draft_memo_update" => "メモ更新案を作成しています…",
+      "commit_memo_update" => "徒然メモを更新しています…",
+      "finalize_update_reply" => "更新結果を反映しています…"
     }.freeze
 
     # Nodes that actually call an LLM (show model name in the progress panel).

@@ -39,6 +39,8 @@ export MCP_API_TOKEN="your-secret-token"
 | `list_prompt_styles` | `sd_cpp` 有効 |
 | `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング） |
 | `run_research_graph` / `get_research_graph` | 常時（Research Graph） |
+| `run_memo_write_graph` / `get_memo_write_graph` / `resume_memo_write_graph` | 常時（MemoWrite Graph） |
+| `run_memo_update_graph` / `get_memo_update_graph` / `resume_memo_update_graph` | 常時（MemoUpdate Graph） |
 
 ---
 

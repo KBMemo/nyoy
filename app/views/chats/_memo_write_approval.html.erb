@@ -1,15 +1,16 @@
 <% draft = agent_run.state["draft"].to_s %>
 <% memo_draft = agent_run.state["memo_draft"].is_a?(Hash) ? agent_run.state["memo_draft"] : {} %>
+<% updating = agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME %>
 <div class="nyoy-research-approval kb-card p-4 mt-4" id="research_approval_panel" data-agent-run-id="<%= agent_run.id %>">
   <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
     <div>
       <h2 class="text-base font-semibold kb-text-primary">徒然メモの確認</h2>
-      <p class="mt-1 text-sm kb-text-secondary">内容を確認してから徒然に新規保存してください。</p>
+      <p class="mt-1 text-sm kb-text-secondary"><%= updating ? "内容を確認してから既存メモへ反映してください。" : "内容を確認してから徒然に新規保存してください。" %></p>
       <% if memo_draft["title"].present? %>
         <p class="mt-1 text-sm kb-text-muted">タイトル: <%= memo_draft["title"] %></p>
       <% end %>
     </div>
-    <span class="text-xs kb-text-muted">MemoWrite Graph #<%= agent_run.id %></span>
+    <span class="text-xs kb-text-muted"><%= updating ? "MemoUpdate" : "MemoWrite" %> Graph #<%= agent_run.id %></span>
   </div>
 
   <div class="nyoy-research-approval-draft nyoy-chat-markdown mb-4">
@@ -17,7 +18,7 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-3">
-    <%= button_to "この内容で徒然に保存する",
+    <%= button_to (updating ? "この内容で徒然メモを更新する" : "この内容で徒然に保存する"),
       approve_chat_agent_run_path(chat, agent_run),
       method: :post,
       class: kb_btn_primary_sm %>
@@ -25,6 +26,6 @@
       reject_chat_agent_run_path(chat, agent_run),
       method: :post,
       class: kb_btn_secondary_sm,
-      form: { data: { turbo_confirm: "このメモ保存を却下しますか？" } } %>
+      form: { data: { turbo_confirm: updating ? "このメモ更新を却下しますか？" : "このメモ保存を却下しますか？" } } %>
   </div>
 </div>

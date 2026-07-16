@@ -72,4 +72,35 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
     assert_not summary[:completed]
     assert_not summary[:auto_approve]
   end
+
+  test "memo update summary presents memo ref" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::MemoUpdateGraph::NAME,
+      status: "completed",
+      current_node: nil,
+      state: {
+        "instruction" => "更新して",
+        "memo_ref" => "42",
+        "draft" => "draft",
+        "memo_draft" => { "memo_ref" => "42", "mode" => "append" },
+        "memo_uid" => "42",
+        "final_answer" => "updated",
+        "approval" => "approved",
+        "errors" => [],
+        "auto_approve" => true
+      }
+    )
+    run.agent_node_runs.create!(node_name: "plan_memo_update", status: "completed")
+
+    summary = AgentGraph::MemoUpdateRunSummary.build(run)
+
+    assert_equal run.id, summary[:agent_run_id]
+    assert_equal "42", summary[:memo_ref]
+    assert_equal({ "memo_ref" => "42", "mode" => "append" }, summary[:memo_draft])
+    assert_equal "42", summary[:memo_uid]
+    assert_equal [ "plan_memo_update" ], summary[:nodes]
+    assert summary[:completed]
+    assert summary[:auto_approve]
+  end
 end

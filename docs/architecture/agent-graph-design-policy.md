@@ -192,7 +192,30 @@ plan_memo_write
 - MCP 入口では `auto_approve` を許す
 - `commit_memo` は `memo_uid` によって冪等にする
 - reject は終了。自動 replan はしない
-- update_memo は create と別 Graph か、明示的な subgraph として扱う
+- update は扱わない。`MemoUpdate Graph` に渡す
+
+### MemoUpdate Graph
+
+役割は「既存メモ更新を承認付きで実行する」こと。新規保存とは別 Graph として、`get_memo` → 草案 → 承認 → `update_memo` を明示する。
+
+基本フロー:
+
+```text
+plan_memo_update
+  -> draft_memo_update
+  -> await_approval
+  -> commit_memo_update
+  -> finalize_update_reply
+```
+
+方針:
+
+- Chat 入口では常に承認を挟む
+- MCP 入口では `memo_ref` 必須、`auto_approve` を許す
+- `plan_memo_update` で `get_memo` し、`updated_at` を state に固定する
+- `commit_memo_update` は `memo_uid` によって冪等にする
+- `mode` は `append` / `replace`。既定は `append`
+- 対象メモが曖昧な場合は推測更新しない
 
 ## 状態名の標準
 
@@ -228,6 +251,17 @@ MemoWrite:
 - `memo_uid`
 - `memo_result`
 
+MemoUpdate:
+
+- `instruction`
+- `memo_ref`
+- `source_body`
+- `source_title`
+- `original_memo`
+- `memo_draft`
+- `memo_uid`
+- `memo_result`
+
 新しい Graph を足すときは、まずこの一覧に状態名を追加する。Node 内だけで暗黙のキーを増やさない。
 
 ## 実装の整理順
@@ -238,7 +272,7 @@ MemoWrite:
 4. Approval を共通 interrupt として整理し、Research legacy approval を削る（完了）
 5. Broadcaster 呼び出しを Node から薄くし、Node は state updates を主語にする（完了）
 6. `summary_for` を Graph ごとの presenter に切り出す（完了）
-7. `update_memo` は MemoWrite create の拡張ではなく、新しい明示フローとして設計する
+7. `update_memo` は MemoWrite create の拡張ではなく、新しい明示フローとして設計する（完了）
 
 ## 判断基準
 

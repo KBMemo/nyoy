@@ -15,7 +15,7 @@ module AgentGraph
       # Shared by Cable and chats#show so refresh uses the same graph-specific UI.
       def panel_partial_for(agent_run)
         case agent_run.graph_name.to_s
-        when MemoWriteGraph::NAME
+        when MemoWriteGraph::NAME, MemoUpdateGraph::NAME
           "chats/memo_write_approval"
         else
           raise ArgumentError, "approval panel is not supported for graph=#{agent_run.graph_name}"

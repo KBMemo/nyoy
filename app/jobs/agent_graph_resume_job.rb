@@ -34,6 +34,8 @@ class AgentGraphResumeJob < ApplicationJob
     case run.graph_name.to_s
     when AgentGraph::MemoWriteGraph::NAME
       AgentGraph::MemoWriteGraphRunner.resume(run, decision: decision)
+    when AgentGraph::MemoUpdateGraph::NAME
+      AgentGraph::MemoUpdateGraphRunner.resume(run, decision: decision)
     else
       raise ArgumentError, "approval resume is not supported for graph=#{run.graph_name}"
     end
@@ -43,6 +45,8 @@ class AgentGraphResumeJob < ApplicationJob
     case run.graph_name.to_s
     when AgentGraph::MemoWriteGraph::NAME
       "MemoWrite Graph failed"
+    when AgentGraph::MemoUpdateGraph::NAME
+      "MemoUpdate Graph failed"
     else
       "#{run.graph_name} Graph failed"
     end

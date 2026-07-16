@@ -74,6 +74,29 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/対応していません/, flash[:alert])
   end
 
+  test "approve accepts memo update run" do
+    @run.update!(
+      graph_name: AgentGraph::MemoUpdateGraph::NAME,
+      state: @run.state.merge(
+        "memo_ref" => "42",
+        "memo_draft" => {
+          "memo_ref" => "42",
+          "updated_at" => "2026-07-16T00:00:00Z",
+          "mode" => "append",
+          "append_body" => "追記"
+        }
+      )
+    )
+
+    assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
+      post approve_chat_agent_run_path(@chat, @run)
+    end
+
+    assert_redirected_to @chat
+    assert_match(/更新を承認/, flash[:notice])
+    assert_equal "approved", @run.reload.state["approval"]
+  end
+
   test "approve rejects when not awaiting approval" do
     @run.update!(status: "completed")
 
@@ -108,6 +131,27 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: "徒然メモの確認"
     assert_select "button, input[type=submit]", text: /この内容で徒然に保存する/
     assert_no_match(/却下してやり直す/, response.body)
+  end
+
+  test "show renders memo update approval panel" do
+    @run.update!(
+      graph_name: AgentGraph::MemoUpdateGraph::NAME,
+      state: @run.state.merge(
+        "memo_ref" => "42",
+        "memo_draft" => {
+          "memo_ref" => "42",
+          "updated_at" => "2026-07-16T00:00:00Z",
+          "mode" => "append",
+          "append_body" => "追記"
+        }
+      )
+    )
+
+    get chat_path(@chat)
+
+    assert_response :success
+    assert_select "#research_approval_panel"
+    assert_select "button, input[type=submit]", text: /この内容で徒然メモを更新する/
   end
 
   test "show omits pending research approval panel" do

@@ -20,6 +20,9 @@ module AgentGraph
       text = latest_user_text(chat)
       return nil if text.blank?
 
+      memo_update = MemoUpdateIntent.decision(text)
+      return decision(MemoUpdateGraph::NAME, MemoUpdateGraphRunner, memo_update) if memo_update[:match]
+
       memo_write = MemoWriteIntent.decision(text)
       return decision(MemoWriteGraph::NAME, MemoWriteGraphRunner, memo_write) if memo_write[:match]
 

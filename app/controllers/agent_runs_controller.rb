@@ -23,15 +23,23 @@ class AgentRunsController < ApplicationController
   end
 
   def approve_notice
-    "メモ草案を承認しました。徒然へ保存します。"
+    if @agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME
+      "メモ更新を承認しました。徒然へ反映します。"
+    else
+      "メモ草案を承認しました。徒然へ保存します。"
+    end
   end
 
   def reject_notice
-    "メモ保存を却下しました。"
+    if @agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME
+      "メモ更新を却下しました。"
+    else
+      "メモ保存を却下しました。"
+    end
   end
 
   def resume!(decision, notice:)
-    unless @agent_run.graph_name == AgentGraph::MemoWriteGraph::NAME
+    unless @agent_run.graph_name.in?([ AgentGraph::MemoWriteGraph::NAME, AgentGraph::MemoUpdateGraph::NAME ])
       return resume_blocked!("この Graph は承認再開に対応していません。")
     end
 
