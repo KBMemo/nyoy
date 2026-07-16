@@ -36,7 +36,7 @@ export MCP_API_TOKEN="your-secret-token"
 | `list_albums` / `get_media` | `tsuzura` 有効 |
 | `analyze_image` | `vision_llama` 有効（MCP では `tsuzura_media_id` 指定） |
 | `list_sampling_presets` / `apply_sampling_preset` | 常時（後者は MCP では `chat_id` 必須） |
-| `list_prompt_styles` | `sd_cpp` 有効 |
+| `list_image_generation_options` / `list_prompt_styles` | `sd_cpp` 有効 |
 | `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング。`generate_image` は `generation_flow=direct` 対応） |
 | `run_research_graph` / `get_research_graph` / `retry_research_graph` | 常時（Research Graph） |
 | `run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph` | 常時（ImageUnderstanding Graph） |
@@ -96,7 +96,7 @@ Chat UI ──┐
           ├── ChatTools::* ── ServiceConnection / 徒然 API / 葛籠 API
 MCP ──────┘   ↑
               Mcp::ToolBridge（ChatTools → MCP::Tool）
-              Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / …）
+              Mcp::ExtensionTools（SD: list_image_generation_options / generate_image / …）
               Mcp::ResearchGraphTools（run_research_graph / get_research_graph / retry_research_graph）
               Mcp::ImageUnderstandingGraphTools（run_image_understanding_graph / get_image_understanding_graph / retry_image_understanding_graph）
               Mcp::MemoWriteGraphTools（run_memo_write_graph / get_memo_write_graph / resume_memo_write_graph）
@@ -161,7 +161,7 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 - **Web 予算**: `web_search` / `fetch_url` はリクエスト（stdio）または HTTP リクエスト単位で `WebToolBudget` を共有する。
 - **fetch キャッシュ**: `search_fetched_page` はプロセス内メモリの `FetchedPageCache` に依存。マルチプロセス Puma では HTTP リクエスト間で共有されない。
 - **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
-- **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。直接 txt2img は `generate_image(generation_flow=direct, sd_model_profile_id=...)` → `get_image_generation`（`completed`）。
+- **画像生成フロー**: `list_image_generation_options` で style / model / template の ID を確認。ラフ案は `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。直接 txt2img は `generate_image(generation_flow=direct, sd_model_profile_id=...)` → `get_image_generation`（`completed`）。
 - **調査フロー**: `run_research_graph`（ドラフト承認なしで最終回答まで実行）。状態は `get_research_graph`。failed の Research Graph は `retry_research_graph` で最後の成功 checkpoint から複製 run として再実行できる。
 - **画像理解フロー**: `run_image_understanding_graph`（`tsuzura_media_id` 推奨、または `chat_id` の直近添付）。状態は `get_image_understanding_graph`。failed の ImageUnderstanding Graph は `retry_image_understanding_graph` で最後の成功 checkpoint から複製 run として再実行できる。
 - **メモ新規保存フロー**: `run_memo_write_graph`（既定 `auto_approve=true`）。HITL 時は `resume_memo_write_graph`。状態は `get_memo_write_graph`。Chat UI では常に承認待ち。

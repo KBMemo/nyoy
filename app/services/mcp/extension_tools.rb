@@ -16,11 +16,28 @@ module Mcp
       return [] unless available?
 
       [
+        list_image_generation_options_tool,
         list_prompt_styles_tool,
         generate_image_tool,
         get_image_generation_tool,
         refine_image_tool
       ]
+    end
+
+    def list_image_generation_options_tool
+      MCP::Tool.define(
+        name: "list_image_generation_options",
+        description: "generate_image の draft / direct 生成で使うスタイル、SD モデルプロファイル、direct 用プロンプトテンプレートを返す。",
+        input_schema: { type: "object", properties: {} },
+        annotations: {
+          read_only_hint: true,
+          destructive_hint: false,
+          idempotent_hint: true,
+          open_world_hint: false
+        }
+      ) do |**|
+        MCP::Tool::Response.new([{ type: "text", text: JSON.generate(Mcp::ExtensionTools.image_generation_options) }])
+      end
     end
 
     def list_prompt_styles_tool
@@ -45,6 +62,47 @@ module Mcp
 
         MCP::Tool::Response.new([{ type: "text", text: JSON.generate({ styles: styles }) }])
       end
+    end
+
+    def image_generation_options
+      {
+        generation_flows: ImageGeneration::GENERATION_FLOWS,
+        styles: PromptStyle.enabled.ordered.map { |style| style_option(style) },
+        sd_model_profiles: SdModelProfile.enabled.ordered.map { |profile| sd_model_profile_option(profile) },
+        sd_prompt_templates: SdPromptTemplate.enabled.includes(:sd_model_profile).ordered.map { |template| sd_prompt_template_option(template) }
+      }
+    end
+
+    def style_option(style)
+      {
+        style_id: style.style_id,
+        name: style.name,
+        description: style.description
+      }.compact
+    end
+
+    def sd_model_profile_option(profile)
+      {
+        id: profile.id,
+        key: profile.key,
+        name: profile.name,
+        family: profile.family,
+        switch_key: profile.switch_key,
+        cfg_scale_min: profile.cfg_scale_min,
+        sampler_names: profile.family_sampler_names,
+        default_params: profile.resolved_default_params
+      }
+    end
+
+    def sd_prompt_template_option(template)
+      {
+        id: template.id,
+        name: template.name,
+        scope_label: template.scope_label,
+        family: template.family,
+        sd_model_profile_id: template.sd_model_profile_id,
+        sd_model_profile_name: template.sd_model_profile&.name
+      }.compact
     end
 
     def generate_image_tool

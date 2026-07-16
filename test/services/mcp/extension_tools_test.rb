@@ -32,6 +32,27 @@ class McpExtensionToolsTest < ActiveSupport::TestCase
     assert_includes style_ids, prompt_styles(:chojugiga).style_id
   end
 
+  test "list_image_generation_options returns styles models and templates" do
+    tool = Mcp::ExtensionTools.list_image_generation_options_tool
+    response = tool.call
+
+    payload = JSON.parse(response.content.first[:text])
+
+    assert_includes payload["generation_flows"], "draft"
+    assert_includes payload["generation_flows"], "direct"
+    assert_includes payload.fetch("styles").map { |item| item["style_id"] }, prompt_styles(:chojugiga).style_id
+
+    profile = payload.fetch("sd_model_profiles").find { |item| item["id"] == sd_model_profiles(:pony).id }
+    assert_equal "pony-v6", profile["key"]
+    assert_equal "pony", profile["family"]
+    assert_includes profile["sampler_names"], "euler_a"
+    assert_equal 768, profile.dig("default_params", "width")
+
+    template = payload.fetch("sd_prompt_templates").find { |item| item["id"] == sd_prompt_templates(:pony_family).id }
+    assert_equal "Pony XL 向け", template["name"]
+    assert_equal "pony", template["family"]
+  end
+
   test "generate_image enqueues job and returns id" do
     assert_enqueued_with(job: GenerateImageJob) do
       response = Mcp::ExtensionTools.generate_image_tool.call(
