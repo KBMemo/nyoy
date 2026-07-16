@@ -12,6 +12,7 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal "needs_web", result.updates.dig("evidence_review", "status")
     assert_equal true, result.updates.dig("plan", "need_web")
     assert_equal 1, result.updates.dig("evidence_review", "attempts")
+    assert_equal "search_web", result.updates.dig("evidence_review", "next_node")
   end
 
   test "requests page fetch for unfetched search result urls" do
@@ -22,6 +23,8 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
 
     assert_equal "needs_fetch", result.updates.dig("evidence_review", "status")
     assert_equal [ "https://example.com/a" ], result.updates.dig("plan", "fetch_urls")
+    assert_equal "fetch_urls", result.updates.dig("evidence_review", "next_node")
+    assert_equal [ "https://example.com/a" ], result.updates.dig("evidence_review", "target_urls")
   end
 
   test "marks evidence sufficient when fetched pages exist" do
@@ -32,6 +35,7 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
 
     assert_equal "sufficient", result.updates.dig("evidence_review", "status")
     assert_includes result.updates.dig("evidence_review", "reason"), "fetched pages"
+    assert_equal "synthesize_draft", result.updates.dig("evidence_review", "next_node")
   end
 
   test "marks evidence limited when retrieval was attempted and no budget remains" do

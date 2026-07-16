@@ -20,8 +20,12 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         assert_equal "not_required", run.state["approval"]
         assert run.state["draft"].present?
         assert run.state["final_answer"].present?
-        refute_includes run.agent_node_runs.pluck(:node_name), "await_approval"
-        assert_includes run.agent_node_runs.pluck(:node_name), "finalize_answer"
+        names = run.agent_node_runs.order(:id).pluck(:node_name)
+        refute_includes names, "await_approval"
+        assert_includes names, "evaluate_evidence"
+        assert_includes names, "finalize_answer"
+        assert_operator names.index("evaluate_evidence"), :<, names.index("finalize_answer")
+        assert_equal "sufficient", run.state.dig("evidence_review", "status")
         assert assistant_answer_messages.exists?
       end
     end
@@ -112,11 +116,16 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
             names = run.agent_node_runs.order(:id).pluck(:node_name)
             assert_includes names, "search_web"
             assert_includes names, "fetch_urls"
+            assert_includes names, "evaluate_evidence"
             assert_includes names, "synthesize_draft"
             assert_includes names, "finalize_answer"
+            assert_operator names.index("fetch_urls"), :<, names.index("evaluate_evidence")
+            assert_operator names.index("evaluate_evidence"), :<, names.index("synthesize_draft")
             refute_includes names, "await_approval"
             assert run.state["search_results"].any?
             assert run.state["fetched_pages"].any?
+            assert_equal "sufficient", run.state.dig("evidence_review", "status")
+            assert_equal "synthesize_draft", run.state.dig("evidence_review", "next_node")
             assert_includes run.state["draft"], "example.com/rin"
             assert_includes run.state["final_answer"], "example.com/rin"
             assert run.state.dig("budget", "searches_used").to_i.positive?

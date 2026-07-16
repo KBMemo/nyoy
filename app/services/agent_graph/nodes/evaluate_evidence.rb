@@ -12,8 +12,10 @@ module AgentGraph
           "evidence_review" => {
             "status" => review.fetch(:status),
             "reason" => review.fetch(:reason),
-            "attempts" => next_attempt(state)
-          }
+            "attempts" => next_attempt(state),
+            "next_node" => next_node_for(review.fetch(:status)),
+            "target_urls" => review.fetch(:target_urls)
+          }.compact
         })
       end
 
@@ -33,7 +35,12 @@ module AgentGraph
         urls = unfetched_urls(state, budget)
         if urls.any? && fetch_budget_available?(budget)
           plan["fetch_urls"] = urls
-          return review(status: "needs_fetch", reason: "search or user-provided URLs need page fetch", plan: plan)
+          return review(
+            status: "needs_fetch",
+            reason: "search or user-provided URLs need page fetch",
+            plan: plan,
+            target_urls: urls
+          )
         end
 
         return review(status: "sufficient", reason: "fetched pages are available", plan: plan) if Array(state["fetched_pages"]).any?
@@ -78,8 +85,19 @@ module AgentGraph
         review(status: "limited", reason: reason, plan: plan)
       end
 
-      def review(status:, reason:, plan:)
-        { status: status, reason: reason, plan: plan }
+      def review(status:, reason:, plan:, target_urls: [])
+        { status: status, reason: reason, plan: plan, target_urls: target_urls }
+      end
+
+      def next_node_for(status)
+        case status
+        when "needs_web"
+          "search_web"
+        when "needs_fetch"
+          "fetch_urls"
+        else
+          "synthesize_draft"
+        end
       end
 
       def next_attempt(state)
