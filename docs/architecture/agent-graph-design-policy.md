@@ -337,7 +337,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - **write 系 Graph は既定で自動 retry しない。** `commit_memo` / `commit_memo_update` は `memo_uid` による冪等ガードを持つが、外部 API の部分成功があり得るため、まずは読み取り専用の復旧情報表示に留める。retry API を開く場合も、承認済み state と冪等キーの有無を検証する。
    - **Research Graph は最初の対象にしやすい。** Web 検索・URL 取得・最終回答生成は失敗しても保存系副作用が少ない。ただし `ToolTraceRecorder` による tool message は増えるため、複製 run であることを state と UI に表示する。
    - **MCP/Chat UI 共通の service を作る。** `AgentGraph::RunRetryPlanner` が可否・起点 checkpoint・次 node・理由を返し、実行する場合は `AgentGraph::RunRetryLauncher` が複製 run を作る。controller / MCP tool はこの service の結果だけを見る。
-   - **最初の実装は dry-run から始める。** `AgentGraph::RunRetryPlanner` による dry-run を failed run 詳細で表示し、「retry 可能性」「起点 checkpoint」「次 node」「ブロック理由」を確認できるようにする。実行ボタンは運用ログを見てから追加する。
+   - **最初の実装は dry-run から始める。** `AgentGraph::RunRetryPlanner` による dry-run を failed run 詳細で表示し、「retry 可能性」「起点 checkpoint」「次 node」「ブロック理由」を確認できるようにする。`AgentGraph::RunRetryLauncher` は service として先に用意するが、実行ボタンは運用ログを見てから追加する。
 
 ## 判断基準
 
