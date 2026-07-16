@@ -11,7 +11,7 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     AppSetting.instance.update!(research_draft_model_id: "gpt-oss", research_draft_fallback: "main")
   end
 
-  test "started broadcasts labeled progress html with model and timestamps" do
+  test "evidence pack progress omits model name" do
     run = AgentRun.create!(
       chat: @chat,
       graph_name: AgentGraph::ResearchGraph::NAME,
@@ -28,14 +28,24 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     assert_equal "research_progress", payload["type"]
     assert_includes payload["label"], "根拠"
     assert_equal "synthesize_draft", payload["node_name"]
-    assert_equal "gpt-oss", payload["model_name"]
+    assert_nil payload["model_name"]
     assert payload["node_started_at"].present?
     assert payload["run_started_at"].present?
     assert_includes payload["html"], "research_progress_panel"
     assert_includes payload["html"], "根拠"
-    assert_includes payload["html"], "gpt-oss"
+    refute_includes payload["html"], "gpt-oss"
     assert_includes payload["html"], "data-research-progress-elapsed"
     assert_includes payload["html"], "data-research-progress-run-elapsed"
+  end
+
+  test "finalize progress shows the chat main model" do
+    payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.started!(@chat, "finalize_answer")
+    end.last
+
+    assert_includes payload["label"], "最終回答"
+    assert_equal "gpt-oss", payload["model_name"]
+    assert_includes payload["html"], "gpt-oss"
   end
 
   test "search progress omits model name" do

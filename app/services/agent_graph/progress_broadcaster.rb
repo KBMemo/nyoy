@@ -17,7 +17,8 @@ module AgentGraph
       "finalize_reply" => "保存結果を反映しています…"
     }.freeze
 
-    SYNTHESIS_NODES = %w[synthesize_draft draft_memo].freeze
+    # Nodes that actually call an LLM (show model name in the progress panel).
+    LLM_NODES = %w[draft_memo finalize_answer finalize_reply].freeze
 
     class << self
       def started!(chat, node_name, agent_run: nil)
@@ -55,14 +56,14 @@ module AgentGraph
       private
 
       def model_name_for(node_name, chat)
-        if SYNTHESIS_NODES.include?(node_name.to_s)
+        return nil unless LLM_NODES.include?(node_name.to_s)
+
+        if node_name.to_s == "draft_memo"
           draft = AppSetting.research_draft_model
           if draft
             return draft.name.presence || draft.model_id
           end
         end
-
-        return nil unless %w[synthesize_draft draft_memo finalize_answer finalize_reply].include?(node_name.to_s)
 
         chat.model_association&.name.presence || chat.model_association&.model_id
       end
