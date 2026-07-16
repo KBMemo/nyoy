@@ -46,4 +46,26 @@ class OpenAiStreamingFinishReasonTest < ActiveSupport::TestCase
     refute chunk.respond_to?(:finish_reason) && chunk.finish_reason.present?
     refute Nyoy::FinishReasonCapture.length?
   end
+
+  test "attaches usage from openai stream payload" do
+    usage = {
+      "prompt_tokens" => 120,
+      "completion_tokens" => 30,
+      "prompt_tokens_details" => { "cached_tokens" => 90 }
+    }
+    chunk = @provider.send(
+      :build_chunk,
+      {
+        "model" => "qwen",
+        "choices" => [
+          {
+            "delta" => {}
+          }
+        ],
+        "usage" => usage
+      }
+    )
+
+    assert_equal usage, chunk.usage
+  end
 end

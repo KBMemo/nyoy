@@ -265,7 +265,11 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       thinking_elapsed_ms: 4567,
       llama_cache_prompt: true,
       llama_cache_slot_id: 2,
-      llama_cache_slot_count: 4
+      llama_cache_slot_count: 4,
+      input_tokens: 160,
+      output_tokens: 40,
+      cached_tokens: 120,
+      cache_creation_tokens: 30
     )
 
     get chat_path(chat)
@@ -277,5 +281,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "4.6秒"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dt", text: "KV cache"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "prompt / slot 2/4"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dt", text: "tokens"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "in 160 / out 40 / cached 120 / created 30"
   end
 end

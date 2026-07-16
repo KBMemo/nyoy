@@ -47,6 +47,15 @@ module MessagesHelper
     parts.join(" / ")
   end
 
+  def chat_message_token_label(message)
+    parts = []
+    parts << "in #{number_with_delimiter(message.input_tokens)}" if message.input_tokens.present?
+    parts << "out #{number_with_delimiter(message.output_tokens)}" if message.output_tokens.present?
+    parts << "cached #{number_with_delimiter(message.cached_tokens)}" if message.cached_tokens.present?
+    parts << "created #{number_with_delimiter(message.cache_creation_tokens)}" if message.cache_creation_tokens.present?
+    parts.join(" / ")
+  end
+
   def chat_message_stats(message)
     stats = []
     stats << { label: "モデル", value: chat_message_model_name(message) }
@@ -65,6 +74,9 @@ module MessagesHelper
 
     llama_cache = chat_message_llama_cache_label(message)
     stats << { label: "KV cache", value: llama_cache } if llama_cache.present?
+
+    tokens = chat_message_token_label(message)
+    stats << { label: "tokens", value: tokens } if tokens.present?
 
     stats
   end

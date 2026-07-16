@@ -310,6 +310,34 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "完了", message.content
   end
 
+  test "persist_assistant_timing writes token usage from streamed chunks" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "完了")
+    timer = ChatResponseTimer.new
+    chunk = Object.new
+    chunk.define_singleton_method(:content) { nil }
+    chunk.define_singleton_method(:thinking) { nil }
+    chunk.define_singleton_method(:usage) do
+      {
+        "prompt_tokens" => 160,
+        "completion_tokens" => 40,
+        "prompt_tokens_details" => {
+          "cached_tokens" => 120,
+          "cache_creation_tokens" => 30
+        }
+      }
+    end
+    timer.observe_chunk!(chunk)
+
+    job.send(:persist_assistant_timing, @chat, timer)
+
+    message.reload
+    assert_equal 160, message.input_tokens
+    assert_equal 40, message.output_tokens
+    assert_equal 120, message.cached_tokens
+    assert_equal 30, message.cache_creation_tokens
+  end
+
   test "persist_assistant_timing writes llama cache metadata" do
     job = ChatResponseJob.new
     message = @chat.messages.create!(role: :assistant, content: "完了")

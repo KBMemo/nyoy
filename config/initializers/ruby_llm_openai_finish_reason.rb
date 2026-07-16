@@ -16,6 +16,8 @@ Rails.application.config.to_prepare do
       Nyoy::FinishReasonCapture.record!(reason)
       chunk.define_singleton_method(:finish_reason) { reason.to_s }
     end
+    usage = data["usage"]
+    chunk.define_singleton_method(:usage) { usage } if usage.is_a?(Hash)
     chunk
   end
   openai.send(:private, :build_chunk, :build_chunk_without_nyoy_finish_reason)

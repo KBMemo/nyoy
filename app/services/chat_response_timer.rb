@@ -6,10 +6,12 @@ class ChatResponseTimer
     @thinking_started_at = nil
     @thinking_elapsed_ms = nil
     @first_chunk_elapsed_ms = nil
+    @usage_attributes = {}
   end
 
   def observe_chunk!(chunk)
     observe_first_chunk!(chunk)
+    observe_usage!(chunk)
 
     if thinking_chunk?(chunk)
       @thinking_started_at ||= Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -29,6 +31,7 @@ class ChatResponseTimer
 
     attrs[:first_chunk_elapsed_ms] = @first_chunk_elapsed_ms if @first_chunk_elapsed_ms
     attrs[:context_build_elapsed_ms] = context_build_elapsed_ms.round if context_build_elapsed_ms
+    attrs.merge!(@usage_attributes)
 
     attrs
   end
@@ -44,6 +47,11 @@ class ChatResponseTimer
 
   def thinking_chunk?(chunk)
     chunk.thinking&.text.present?
+  end
+
+  def observe_usage!(chunk)
+    attrs = ChatUsageAttributes.from(chunk)
+    @usage_attributes.merge!(attrs) if attrs.present?
   end
 
   def elapsed_ms(from, to = Process.clock_gettime(Process::CLOCK_MONOTONIC))

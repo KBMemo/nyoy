@@ -38,6 +38,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     params = llm_chat.instance_variable_get(:@params)
     assert_equal true, params[:cache_prompt]
     assert_equal @chat.id % 4, params[:id_slot]
+    assert_equal true, params.dig(:stream_options, :include_usage)
     metadata = llm_chat.instance_variable_get(:@nyoy_llama_cache_metadata)
     assert_equal true, metadata[:enabled]
     assert_equal true, metadata[:cache_prompt]
@@ -118,6 +119,21 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     params = llm_chat.instance_variable_get(:@params)
     assert_equal true, params[:cache_prompt]
     assert_not params.key?(:id_slot)
+    assert_equal true, params.dig(:stream_options, :include_usage)
+  end
+
+  test "preserves existing stream options when requesting usage" do
+    Rails.application.config.x.nyoy.llama_slot_count = 0
+    Rails.application.config.x.nyoy.llama_cache_prompt = true
+    stub_props_error
+    llm_chat = RubyLLM.chat(model: "gpt-oss", provider: :openai, assume_model_exists: true)
+    llm_chat.with_params(stream_options: { "chunk_size" => 1 })
+
+    ChatLlamaCache.apply!(llm_chat, chat: @chat)
+
+    params = llm_chat.instance_variable_get(:@params)
+    assert_equal 1, params.dig(:stream_options, :chunk_size)
+    assert_equal true, params.dig(:stream_options, :include_usage)
   end
 
   private

@@ -17,12 +17,13 @@ module ChatLlamaCache
     llm_chat.instance_variable_set(:@nyoy_llama_cache_metadata, metadata)
     return llm_chat unless metadata[:enabled]
 
+    existing = llm_chat.instance_variable_get(:@params) || {}
     params = {}
     params[:cache_prompt] = true if metadata[:cache_prompt]
     params[:id_slot] = metadata[:slot_id] unless metadata[:slot_id].nil?
+    params[:stream_options] = stream_options_with_usage(existing)
     return llm_chat if params.empty?
 
-    existing = llm_chat.instance_variable_get(:@params) || {}
     llm_chat.with_params(**existing.merge(params))
   end
 
@@ -130,5 +131,10 @@ module ChatLlamaCache
 
   def props_cache
     @props_cache ||= {}
+  end
+
+  def stream_options_with_usage(existing)
+    options = existing[:stream_options] || existing["stream_options"] || {}
+    options.to_h.deep_symbolize_keys.merge(include_usage: true)
   end
 end
