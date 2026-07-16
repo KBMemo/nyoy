@@ -357,6 +357,19 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal 4, message.llama_cache_slot_count
   end
 
+  test "writable_message_attrs skips columns unknown to current process" do
+    job = ChatResponseJob.new
+    message = Object.new
+    message.define_singleton_method(:has_attribute?) { |name| name.to_sym == :response_elapsed_ms }
+
+    attrs = job.send(:writable_message_attrs, message, {
+      response_elapsed_ms: 100,
+      llama_cache_prompt: true
+    })
+
+    assert_equal({ response_elapsed_ms: 100 }, attrs)
+  end
+
   test "current_assistant_message ignores newer tool call messages" do
     job = ChatResponseJob.new
     answer = @chat.messages.create!(role: :assistant, content: "回答")

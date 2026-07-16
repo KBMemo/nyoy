@@ -35,13 +35,16 @@ module MessagesHelper
   end
 
   def chat_message_llama_cache_label(message)
-    return unless message.llama_cache_prompt == true || message.llama_cache_slot_id.present?
+    cache_prompt = chat_message_attr(message, :llama_cache_prompt)
+    slot_id = chat_message_attr(message, :llama_cache_slot_id)
+    slot_count = chat_message_attr(message, :llama_cache_slot_count)
+    return unless cache_prompt == true || slot_id.present?
 
     parts = []
-    parts << "prompt" if message.llama_cache_prompt == true
-    if message.llama_cache_slot_id.present?
-      slot = message.llama_cache_slot_id
-      slot = "#{slot}/#{message.llama_cache_slot_count}" if message.llama_cache_slot_count.present?
+    parts << "prompt" if cache_prompt == true
+    if slot_id.present?
+      slot = slot_id
+      slot = "#{slot}/#{slot_count}" if slot_count.present?
       parts << "slot #{slot}"
     end
     parts.join(" / ")
@@ -49,10 +52,14 @@ module MessagesHelper
 
   def chat_message_token_label(message)
     parts = []
-    parts << "in #{number_with_delimiter(message.input_tokens)}" if message.input_tokens.present?
-    parts << "out #{number_with_delimiter(message.output_tokens)}" if message.output_tokens.present?
-    parts << "cached #{number_with_delimiter(message.cached_tokens)}" if message.cached_tokens.present?
-    parts << "created #{number_with_delimiter(message.cache_creation_tokens)}" if message.cache_creation_tokens.present?
+    input_tokens = chat_message_attr(message, :input_tokens)
+    output_tokens = chat_message_attr(message, :output_tokens)
+    cached_tokens = chat_message_attr(message, :cached_tokens)
+    cache_creation_tokens = chat_message_attr(message, :cache_creation_tokens)
+    parts << "in #{number_with_delimiter(input_tokens)}" if input_tokens.present?
+    parts << "out #{number_with_delimiter(output_tokens)}" if output_tokens.present?
+    parts << "cached #{number_with_delimiter(cached_tokens)}" if cached_tokens.present?
+    parts << "created #{number_with_delimiter(cache_creation_tokens)}" if cache_creation_tokens.present?
     parts.join(" / ")
   end
 
@@ -118,6 +125,15 @@ module MessagesHelper
 
 
   private
+
+  def chat_message_attr(message, name)
+    if message.respond_to?(:has_attribute?) && !message.has_attribute?(name)
+      return nil
+    end
+    return nil unless message.respond_to?(name)
+
+    message.public_send(name)
+  end
 
   def partial_for(prefix:, name:)
     normalized = name.to_s.underscore.tr("-", "_")

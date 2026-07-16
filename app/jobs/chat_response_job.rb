@@ -235,11 +235,16 @@ class ChatResponseJob < ApplicationJob
 
     attrs = timer.message_timing_attributes(context_build_elapsed_ms: chat.context_build_elapsed_ms)
     attrs.merge!(llama_cache_attributes(chat))
+    attrs = writable_message_attrs(assistant_message, attrs)
     return if attrs.empty?
 
     # Timing-only writes must not re-render the whole message bubble; that would
     # replace streamed markdown with a stale DB snapshot and look truncated.
     assistant_message.update_columns(attrs.merge(updated_at: Time.current))
+  end
+
+  def writable_message_attrs(message, attrs)
+    attrs.select { |name, _value| message.has_attribute?(name) }
   end
 
   def llama_cache_attributes(chat)
