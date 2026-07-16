@@ -49,6 +49,29 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
     assert_equal [ "https://a.example" ], AgentGraph::ResearchRouting.fetch_targets(state)
   end
 
+  test "fetch_targets skips already fetched plan urls and falls back to search urls" do
+    state = {
+      "plan" => { "fetch_urls" => [ "https://a.example" ] },
+      "search_results" => [ { "results" => [ { "url" => "https://b.example" } ] } ],
+      "budget" => { "fetched_urls" => [ "https://a.example" ] }
+    }
+
+    assert_equal [ "https://b.example" ], AgentGraph::ResearchRouting.fetch_targets(state)
+  end
+
+  test "fetch_targets skips already fetched search result urls" do
+    state = {
+      "plan" => { "fetch_urls" => [] },
+      "search_results" => [ { "results" => [
+        { "url" => "https://a.example" },
+        { "url" => "https://b.example" }
+      ] } ],
+      "budget" => { "fetched_urls" => [ "https://a.example" ] }
+    }
+
+    assert_equal [ "https://b.example" ], AgentGraph::ResearchRouting.fetch_targets(state)
+  end
+
   test "after_synthesize always finalizes without approval" do
     assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_synthesize(
       "plan" => { "sensitive" => false }

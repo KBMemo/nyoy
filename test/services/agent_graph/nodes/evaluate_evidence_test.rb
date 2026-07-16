@@ -27,6 +27,23 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal [ "https://example.com/a" ], result.updates.dig("evidence_review", "target_urls")
   end
 
+  test "requests only unfetched urls when plan still contains fetched urls" do
+    result = node.call(state: state(
+      plan: { "fetch_urls" => [ "https://example.com/a", "https://example.com/b" ] },
+      budget: {
+        "searches_used" => 1,
+        "max_searches" => 2,
+        "fetches_used" => 1,
+        "max_fetches" => 3,
+        "fetched_urls" => [ "https://example.com/a" ]
+      }
+    ), run: nil, chat: nil)
+
+    assert_equal "needs_fetch", result.updates.dig("evidence_review", "status")
+    assert_equal [ "https://example.com/b" ], result.updates.dig("plan", "fetch_urls")
+    assert_equal [ "https://example.com/b" ], result.updates.dig("evidence_review", "target_urls")
+  end
+
   test "marks evidence sufficient when fetched pages exist" do
     result = node.call(state: state(
       fetched_pages: [ { "url" => "https://example.com/a", "content_preview" => "本文" } ],

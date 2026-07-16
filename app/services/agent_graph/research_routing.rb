@@ -55,14 +55,25 @@ module AgentGraph
     end
 
     def fetch_targets(state)
-      plan_urls = Array(state.dig("plan", "fetch_urls")).map(&:to_s).map(&:strip).reject(&:blank?)
+      attempted = Array(state.dig("budget", "fetched_urls")).map(&:to_s)
+      plan_urls = unfetched_urls(Array(state.dig("plan", "fetch_urls")), attempted)
       return plan_urls if plan_urls.any?
 
-      Array(state["search_results"]).flat_map do |payload|
+      urls = Array(state["search_results"]).flat_map do |payload|
         Array(payload.is_a?(Hash) ? payload["results"] : nil).filter_map do |result|
           result.is_a?(Hash) ? result["url"].to_s.presence : nil
         end
-      end.uniq
+      end
+      unfetched_urls(urls, attempted)
+    end
+
+    def unfetched_urls(urls, attempted)
+      Array(urls)
+        .map(&:to_s)
+        .map(&:strip)
+        .reject(&:blank?)
+        .reject { |url| attempted.include?(url) }
+        .uniq
     end
   end
 end

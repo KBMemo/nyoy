@@ -57,13 +57,7 @@ module AgentGraph
       end
 
       def unfetched_urls(state, budget)
-        attempted = Array(budget["fetched_urls"]).map(&:to_s)
         AgentGraph::ResearchRouting.fetch_targets(state)
-          .map(&:to_s)
-          .map(&:strip)
-          .reject(&:blank?)
-          .reject { |url| attempted.include?(url) }
-          .uniq
       end
 
       def search_budget_available?(budget)
