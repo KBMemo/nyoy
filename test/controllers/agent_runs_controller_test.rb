@@ -69,6 +69,8 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "state:"
     assert_includes response.body, "instruction"
     assert_includes response.body, "memo_draft"
+    assert_select "th", text: "Created"
+    assert_select "td[colspan='4'] summary", text: /#{node_run.node_name} の state/
     assert_includes response.body, "memo_draft"
   end
 
