@@ -27,21 +27,16 @@ module AgentGraph
       def call(state:, run:, chat:)
         question = state.fetch("question").to_s
         urls = extract_urls(question)
-        replan = state["replan_count"].to_i.positive?
         queries = AgentGraph::SearchQueryNormalizer.queries_for(
-          question,
-          replan: replan
+          question
         )
-        hints = revision_hints(state)
 
         plan = {
           "need_memo" => true,
-          "need_web" => web_likely?(question) || replan,
+          "need_web" => web_likely?(question),
           "queries" => queries,
           "fetch_urls" => urls.first(3),
-          "sensitive" => sensitive?(question),
-          "revision_hints" => hints,
-          "replan" => replan
+          "sensitive" => sensitive?(question)
         }
 
         AgentGraph::NodeResult.next(
@@ -66,19 +61,6 @@ module AgentGraph
 
       def sensitive?(question)
         question.match?(SENSITIVE_PATTERN)
-      end
-
-      def revision_hints(state)
-        return [] if state["replan_count"].to_i <= 0
-
-        hints = [
-          "前回ドラフトは却下済み。同じ構成・同じ根拠提示の繰り返しを避ける。",
-          "出典・根拠の示し方を変え、不足している視点を補う。"
-        ]
-        if Array(state["search_results"]).blank?
-          hints << "Web 根拠が薄い場合は検索を優先する。"
-        end
-        hints
       end
 
       def default_budget(state)

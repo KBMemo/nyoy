@@ -36,14 +36,11 @@ module AgentGraph
         errors: state["errors"],
         error_message: run.error_message,
         auto_approve: state["auto_approve"] == true,
-        replan_count: state["replan_count"].to_i,
-        rejection_notes: state["rejection_notes"],
         nodes: run.agent_node_runs.order(:id).pluck(:node_name),
         chat_path: Rails.application.routes.url_helpers.chat_path(run.chat),
         awaiting_approval: run.awaiting_approval?,
         completed: run.completed?,
-        failed: run.failed?,
-        replans_remaining: 0
+        failed: run.failed?
       }
     end
 

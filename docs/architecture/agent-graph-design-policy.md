@@ -51,7 +51,7 @@ State は次の層に分ける。
 - `input`: ユーザー入力、MCP 入力、起動時パラメータ
 - `plan`: 実行計画、必要な証拠、承認方針
 - `working`: 検索結果、取得ページ、草案などの中間生成物
-- `decisions`: approval、replan、routing などの明示的判断
+- `decisions`: approval、routing などの明示的判断
 - `outputs`: 最終回答、作成した memo uid、assistant message id
 - `errors`: 復旧可能なエラーの配列
 - `meta`: budget、model、timing、互換用フラグ

@@ -12,9 +12,7 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
       "memo_context" => nil,
       "search_results" => [],
       "fetched_pages" => [],
-      "errors" => [],
-      "rejection_notes" => [],
-      "replan_count" => 0
+      "errors" => []
     }
   end
 

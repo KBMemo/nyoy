@@ -19,8 +19,6 @@ module AgentGraph
         "auto_approve" => auto_approve == true,
         "budget" => {},
         "errors" => [],
-        "replan_count" => 0,
-        "rejection_notes" => [],
         "next_node" => ResearchGraph::START
       })
     end

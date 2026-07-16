@@ -26,7 +26,6 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     assert_equal [], state["search_results"]
     assert_equal [], state["fetched_pages"]
     assert_equal [], state["errors"]
-    assert_equal 0, state["replan_count"]
   end
 
   test "builds memo write initial state" do

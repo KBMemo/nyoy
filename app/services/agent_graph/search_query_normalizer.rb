@@ -38,13 +38,12 @@ module AgentGraph
     MAX_QUERY_CHARS = 80
     MAX_TOKENS = 8
 
-    def self.queries_for(question, replan: false)
-      new(question, replan: replan).queries
+    def self.queries_for(question)
+      new(question).queries
     end
 
-    def initialize(question, replan: false)
+    def initialize(question)
       @question = question.to_s
-      @replan = replan
     end
 
     def queries
@@ -54,7 +53,6 @@ module AgentGraph
       primary = keywords.first(MAX_TOKENS).join(" ").truncate(MAX_QUERY_CHARS)
       list = [ primary ]
       list.concat(expanded_variants(keywords))
-      list.concat(replan_variants(keywords)) if @replan
       list.map { |q| q.to_s.strip.truncate(MAX_QUERY_CHARS) }.reject(&:blank?).uniq.first(3)
     end
 
@@ -88,14 +86,6 @@ module AgentGraph
         variants << (keywords.first(MAX_TOKENS - 1) + [ "登山ルート" ]).join(" ")
       end
       variants
-    end
-
-    def replan_variants(keywords)
-      base = keywords.first([ MAX_TOKENS - 1, 1 ].max)
-      [
-        (base + [ "公式" ]).join(" "),
-        (base + [ "詳細" ]).join(" ")
-      ]
     end
 
     def fallback_query

@@ -9,42 +9,6 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
   end
 
-  test "fallback draft changes after rejection notes" do
-    synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
-    previous = AgentGraph::EvidenceSynthesizer.force_template
-    AgentGraph::EvidenceSynthesizer.force_template = true
-
-    begin
-      base_state = {
-        "question" => "調査日の根拠は？",
-        "memo_context" => "メモ抜粋",
-        "search_results" => [],
-        "fetched_pages" => [],
-        "errors" => [],
-        "replan_count" => 0,
-        "rejection_notes" => []
-      }
-
-      first, = synthesizer.call(base_state)
-      second, = synthesizer.call(
-        base_state.merge(
-          "replan_count" => 1,
-          "rejection_notes" => [ {
-            "replan_index" => 1,
-            "draft_preview" => first.truncate(120)
-          } ],
-          "plan" => { "revision_hints" => [ "別の構成で" ] }
-        )
-      )
-
-      refute_equal first, second
-      assert_includes second, "書き直し"
-      assert_includes second, "（却下）"
-    ensure
-      AgentGraph::EvidenceSynthesizer.force_template = previous
-    end
-  end
-
   test "uses light model first then falls back to main" do
     light = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     main = Model.create!(
@@ -78,10 +42,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
         "memo_context" => nil,
         "search_results" => [],
         "fetched_pages" => [],
-        "errors" => [],
-        "rejection_notes" => [],
-        "replan_count" => 0,
-        "revision_hints" => []
+        "errors" => []
       )
 
       assert_equal [ light.model_id, main.model_id ], calls
@@ -116,10 +77,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
         "memo_context" => "メモ",
         "search_results" => [],
         "fetched_pages" => [],
-        "errors" => [],
-        "rejection_notes" => [],
-        "replan_count" => 0,
-        "revision_hints" => []
+        "errors" => []
       )
 
       assert_equal [ light.model_id ], calls
@@ -147,10 +105,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
           "results" => [ { "title" => "公式", "url" => "https://example.com/doc" } ]
         } ],
         "fetched_pages" => [],
-        "errors" => [],
-        "rejection_notes" => [],
-        "replan_count" => 0,
-        "revision_hints" => []
+        "errors" => []
       )
 
       assert_includes draft, "短い回答本文"

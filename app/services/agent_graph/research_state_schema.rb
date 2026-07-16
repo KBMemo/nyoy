@@ -16,8 +16,6 @@ module AgentGraph
       auto_approve
       budget
       errors
-      replan_count
-      rejection_notes
       next_node
     ].freeze
 

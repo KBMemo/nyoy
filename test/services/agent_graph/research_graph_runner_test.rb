@@ -200,7 +200,7 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
 
   private
 
-  def create_pending_research_run!(question:, draft:, replan_count: 0)
+  def create_pending_research_run!(question:, draft:)
     AgentRun.create!(
       chat: @chat,
       graph_name: AgentGraph::ResearchGraph::NAME,
@@ -212,12 +212,10 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
         "draft" => draft,
         "approval" => "pending",
         "auto_approve" => false,
-        "replan_count" => replan_count,
         "plan" => {},
         "search_results" => [],
         "fetched_pages" => [],
         "errors" => [],
-        "rejection_notes" => [],
         "budget" => { "searches_used" => 0, "fetches_used" => 0 }
       }
     )

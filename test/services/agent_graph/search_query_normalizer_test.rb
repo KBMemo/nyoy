@@ -25,17 +25,6 @@ class AgentGraphSearchQueryNormalizerTest < ActiveSupport::TestCase
     assert_equal "Hydrangea Rin 公式情報", queries.first
   end
 
-  test "replan adds alternate angles without meta junk" do
-    queries = AgentGraph::SearchQueryNormalizer.queries_for(
-      "高尾山から景信山への登山道を調べて",
-      replan: true
-    )
-
-    assert queries.size >= 2
-    assert queries.any? { |query| query.include?("公式") || query.include?("詳細") }
-    refute queries.any? { |query| query.include?("出典") }
-  end
-
   test "falls back when question is only fillers" do
     queries = AgentGraph::SearchQueryNormalizer.queries_for("調べて 出典")
 
