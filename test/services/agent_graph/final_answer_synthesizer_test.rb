@@ -51,6 +51,7 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
         memo: nil,
         search_results: [],
         fetched_pages: [],
+        evidence_review: {},
         errors: []
       }
     )
@@ -61,5 +62,27 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_includes prompt, "追加検索やページ取得が必要"
     assert_no_match(/文末に関連 URL/, system)
     assert_no_match(/だけを根拠/, system)
+  end
+
+  test "final prompt asks for next research suggestions when evidence is limited" do
+    prompt = AgentGraph::FinalAnswerSynthesizer.new(@chat).send(
+      :user_prompt,
+      {
+        question: "最新の仕様は？",
+        memo: nil,
+        search_results: [],
+        fetched_pages: [],
+        evidence_review: {
+          "status" => "limited",
+          "reason" => "available evidence is limited and no additional retrieval is available"
+        },
+        errors: []
+      }
+    )
+
+    assert_includes AgentGraph::FinalAnswerSynthesizer::FINAL_SYSTEM, "次に試す検索語"
+    assert_includes prompt, "証拠評価: status=limited"
+    assert_includes prompt, "次に試す検索語"
+    assert_includes prompt, "ユーザーに確認したい条件"
   end
 end

@@ -58,6 +58,7 @@ module AgentGraph
         memo: state["memo_context"].to_s.presence,
         search_results: Array(state["search_results"]),
         fetched_pages: Array(state["fetched_pages"]),
+        evidence_review: (state["evidence_review"] || {}).to_h,
         errors: Array(state["errors"])
       }
     end
