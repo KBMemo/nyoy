@@ -94,7 +94,7 @@ ImageUnderstandingIntent は、直近 user message に画像添付があり、�
 
 ### MCP
 
-将来 `Mcp::ImageUnderstandingGraphTools` を追加する。
+`Mcp::ImageUnderstandingGraphTools` で公開する。
 
 | Tool | 役割 |
 |------|------|
@@ -137,7 +137,6 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 
 残:
 
-1. MCP tools（`run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph`）
-2. retry dry-run / launcher の UI 表示確認
-3. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
-4. `tsuzura_media_id` 入力の end-to-end test
+1. retry dry-run / launcher の UI 表示確認
+2. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
+3. `tsuzura_media_id` 入力の end-to-end test

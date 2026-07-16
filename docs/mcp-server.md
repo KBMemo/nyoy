@@ -39,6 +39,7 @@ export MCP_API_TOKEN="your-secret-token"
 | `list_prompt_styles` | `sd_cpp` 有効 |
 | `generate_image` / `get_image_generation` / `refine_image` | `sd_cpp` 有効（非同期・ポーリング） |
 | `run_research_graph` / `get_research_graph` / `retry_research_graph` | 常時（Research Graph） |
+| `run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph` | 常時（ImageUnderstanding Graph） |
 | `run_memo_write_graph` / `get_memo_write_graph` / `resume_memo_write_graph` | 常時（MemoWrite Graph） |
 | `run_memo_update_graph` / `get_memo_update_graph` / `resume_memo_update_graph` | 常時（MemoUpdate Graph） |
 
@@ -97,6 +98,7 @@ MCP ──────┘   ↑
               Mcp::ToolBridge（ChatTools → MCP::Tool）
               Mcp::ExtensionTools（SD: list_prompt_styles / generate_image / …）
               Mcp::ResearchGraphTools（run_research_graph / get_research_graph / retry_research_graph）
+              Mcp::ImageUnderstandingGraphTools（run_image_understanding_graph / get_image_understanding_graph / retry_image_understanding_graph）
               Mcp::MemoWriteGraphTools（run_memo_write_graph / get_memo_write_graph / resume_memo_write_graph）
 ```
 
@@ -106,6 +108,7 @@ MCP ──────┘   ↑
 | `app/services/mcp/tool_bridge.rb` | ツール変換・実行委譲 |
 | `app/services/mcp/extension_tools.rb` | SD パイプライン用 MCP ツール |
 | `app/services/mcp/research_graph_tools.rb` | Research Graph MCP ツール |
+| `app/services/mcp/image_understanding_graph_tools.rb` | ImageUnderstanding Graph MCP ツール |
 | `app/services/mcp/memo_write_graph_tools.rb` | MemoWrite Graph MCP ツール |
 | `app/services/mcp/tool_catalog.rb` | Chat + Extension + Graph ツール統合 |
 | `bin/mcp-stdio` | stdio トランスポート |
@@ -160,6 +163,7 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 - **画像解析**: Chat 添付がない MCP セッションでは `analyze_image` に `tsuzura_media_id` を渡す。
 - **画像生成フロー**: `generate_image` → `get_image_generation`（`awaiting_selection`）→ `refine_image`（`draft_index`）→ `get_image_generation`（`completed`）。
 - **調査フロー**: `run_research_graph`（ドラフト承認なしで最終回答まで実行）。状態は `get_research_graph`。failed の Research Graph は `retry_research_graph` で最後の成功 checkpoint から複製 run として再実行できる。
+- **画像理解フロー**: `run_image_understanding_graph`（`tsuzura_media_id` 推奨、または `chat_id` の直近添付）。状態は `get_image_understanding_graph`。failed の ImageUnderstanding Graph は `retry_image_understanding_graph` で最後の成功 checkpoint から複製 run として再実行できる。
 - **メモ新規保存フロー**: `run_memo_write_graph`（既定 `auto_approve=true`）。HITL 時は `resume_memo_write_graph`。状態は `get_memo_write_graph`。Chat UI では常に承認待ち。
 - **徒然 Agent Chat（既知の課題）**: 上記のうち **ラフ案生成〜`awaiting_selection` まで** は in-app で動作。**`refine_image` 以降は未接続**（ドラフト 1〜4 の選択 UI・仕上げポーリングなし）。当面は `show_path` の Nyoy UI で手動 refine。詳細は徒然 `docs/architecture/chat-agent-roadmap.adoc` §12。
 - **メモ保存**: `create_memo` / `update_memo` はユーザー明示依頼時のみ（Chat と同じ運用）。明示的な「徒然に保存」は MemoWrite Graph が優先。

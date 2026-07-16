@@ -15,6 +15,17 @@ module AgentGraph
       raise ArgumentError, "ImageUnderstanding Graph approval resume is not supported"
     end
 
+    def self.call_for_mcp(question:, chat_id: nil, attachment_index: 0, tsuzura_media_id: nil)
+      question = McpRunRequest.required_string(question, name: "question")
+      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: question)
+      call(
+        chat,
+        question: question,
+        attachment_index: attachment_index,
+        tsuzura_media_id: tsuzura_media_id
+      )
+    end
+
     def initialize(chat, question: nil, attachment_index: 0, tsuzura_media_id: nil)
       @chat = chat
       @question = question
