@@ -297,6 +297,29 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{chat_agent_run_path(chat, run)}']", text: "詳細"
   end
 
+  test "show summarizes failed agent runs in history" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    chat = Chat.create!(model: model)
+    run = chat.agent_runs.create!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      started_at: 1.minute.ago,
+      finished_at: Time.current,
+      state: { "question" => "調べて" },
+      error_message: "connection failed"
+    )
+    run.agent_node_runs.create!(node_name: "finalize_answer", status: "failed")
+    checkpoint = run.agent_checkpoints.create!(node_name: "synthesize_draft", state: run.state)
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "h2", text: "AgentRun"
+    assert_select "p", text: /失敗 node: finalize_answer/
+    assert_select "p", text: /最後の checkpoint: synthesize_draft ##{checkpoint.id}/
+  end
+
   test "show renders empty agent run history for image-only chat turns" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     chat = Chat.create!(model: model)

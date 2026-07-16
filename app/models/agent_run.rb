@@ -78,6 +78,15 @@ class AgentRun < ApplicationRecord
     candidates
   end
 
+  def recovery_summary
+    return unless failed?
+
+    node = failed_node_run&.node_name || current_node.presence || "不明"
+    checkpoint = latest_checkpoint
+    checkpoint_label = checkpoint ? "#{checkpoint.node_name} ##{checkpoint.id}" : "checkpoint なし"
+    "失敗 node: #{node} / 最後の checkpoint: #{checkpoint_label}"
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!

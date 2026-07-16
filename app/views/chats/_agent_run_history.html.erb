@@ -9,15 +9,20 @@
     <% if recent_agent_runs.any? %>
       <div class="mt-3 space-y-2">
         <% recent_agent_runs.each do |run| %>
-          <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <span class="kb-text-secondary">
-              #<%= run.id %>
-              <span class="kb-text-primary"><%= run.graph_name %></span>
-              / <%= run.status %>
-              <% if run.current_node.present? %>
-                / <%= run.current_node %>
+          <div class="flex flex-wrap items-start justify-between gap-3 text-sm">
+            <div>
+              <span class="kb-text-secondary">
+                #<%= run.id %>
+                <span class="kb-text-primary"><%= run.graph_name %></span>
+                / <%= run.status %>
+                <% if run.current_node.present? %>
+                  / <%= run.current_node %>
+                <% end %>
+              </span>
+              <% if run.failed? %>
+                <p class="mt-1 text-xs kb-text-secondary"><%= run.recovery_summary %></p>
               <% end %>
-            </span>
+            </div>
             <%= link_to "詳細", chat_agent_run_path(chat, run), class: "kb-chrome-link text-sm" %>
           </div>
         <% end %>

@@ -42,5 +42,9 @@ class AgentRunTest < ActiveSupport::TestCase
     assert_equal checkpoint, run.latest_checkpoint
     assert_includes run.recovery_candidates, "失敗 node: finalize_answer"
     assert_includes run.recovery_candidates, "最後の checkpoint: synthesize_draft ##{checkpoint.id}"
+    assert_equal(
+      "失敗 node: finalize_answer / 最後の checkpoint: synthesize_draft ##{checkpoint.id}",
+      run.recovery_summary
+    )
   end
 end
