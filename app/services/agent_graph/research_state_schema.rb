@@ -10,6 +10,7 @@ module AgentGraph
       memo_context
       search_results
       fetched_pages
+      evidence_review
       draft
       final_answer
       approval

@@ -13,6 +13,7 @@ module AgentGraph
         "memo_context" => nil,
         "search_results" => [],
         "fetched_pages" => [],
+        "evidence_review" => {},
         "draft" => nil,
         "final_answer" => nil,
         "approval" => nil,

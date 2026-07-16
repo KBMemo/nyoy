@@ -172,6 +172,7 @@ plan_research
   -> recall_memos?
   -> search_web?
   -> fetch_urls?
+  -> evaluate_evidence
   -> synthesize_draft
   -> finalize_answer
 ```
@@ -180,6 +181,7 @@ plan_research
 
 - メモ検索を優先する
 - Web 検索と URL fetch は budget 管理する
+- 最終回答の前に `evaluate_evidence` で十分性を確認し、不足時は追加検索 / 追加取得へ戻す
 - 取得失敗は即 failed ではなく `errors` と出典警告に残す
 - 最終回答 LLM の失敗は run failed にする
 - Research は原則 HITL しない
@@ -254,6 +256,7 @@ Research:
 - `memo_context`
 - `search_results`
 - `fetched_pages`
+- `evidence_review`
 - `draft`
 - `budget`
 

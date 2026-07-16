@@ -9,7 +9,35 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
     assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_plan(
       "need_memo" => false, "need_web" => false, "fetch_urls" => [ "https://example.com" ]
     )
-    assert_equal "synthesize_draft", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => false)
+    assert_equal "evaluate_evidence", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => false)
+  end
+
+  test "after_recall falls through to evidence evaluation" do
+    assert_equal "evaluate_evidence", AgentGraph::ResearchRouting.after_recall(
+      "plan" => { "need_web" => false, "fetch_urls" => [] }
+    )
+  end
+
+  test "after_search falls through to evidence evaluation when no fetch targets remain" do
+    assert_equal "evaluate_evidence", AgentGraph::ResearchRouting.after_search(
+      "plan" => { "fetch_urls" => [] },
+      "search_results" => []
+    )
+  end
+
+  test "after_evaluate routes to retrieval or synthesis by review status" do
+    assert_equal "search_web", AgentGraph::ResearchRouting.after_evaluate(
+      "evidence_review" => { "status" => "needs_web" }
+    )
+    assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_evaluate(
+      "evidence_review" => { "status" => "needs_fetch" }
+    )
+    assert_equal "synthesize_draft", AgentGraph::ResearchRouting.after_evaluate(
+      "evidence_review" => { "status" => "sufficient" }
+    )
+    assert_equal "synthesize_draft", AgentGraph::ResearchRouting.after_evaluate(
+      "evidence_review" => { "status" => "limited" }
+    )
   end
 
   test "fetch_targets prefers plan urls over search results" do

@@ -51,7 +51,16 @@ class AgentGraphGraphEdgesTest < ActiveSupport::TestCase
     assert_equal "fetch_urls", graph.next_node_for("search_web", {
       "plan" => { "fetch_urls" => [ "https://example.com" ] }
     })
-    assert_equal "synthesize_draft", graph.next_node_for("fetch_urls", {})
+    assert_equal "evaluate_evidence", graph.next_node_for("fetch_urls", {})
+    assert_equal "search_web", graph.next_node_for("evaluate_evidence", {
+      "evidence_review" => { "status" => "needs_web" }
+    })
+    assert_equal "fetch_urls", graph.next_node_for("evaluate_evidence", {
+      "evidence_review" => { "status" => "needs_fetch" }
+    })
+    assert_equal "synthesize_draft", graph.next_node_for("evaluate_evidence", {
+      "evidence_review" => { "status" => "sufficient" }
+    })
     assert_equal "finalize_answer", graph.next_node_for("synthesize_draft", {})
     assert_nil graph.next_node_for("finalize_answer", {})
   end

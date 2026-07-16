@@ -11,7 +11,7 @@ module AgentGraph
       return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
 
-      "synthesize_draft"
+      "evaluate_evidence"
     end
 
     def after_recall(state)
@@ -19,13 +19,24 @@ module AgentGraph
       return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
 
-      "synthesize_draft"
+      "evaluate_evidence"
     end
 
     def after_search(state)
       return "fetch_urls" if fetch_targets(state).any?
 
-      "synthesize_draft"
+      "evaluate_evidence"
+    end
+
+    def after_evaluate(state)
+      case state.dig("evidence_review", "status")
+      when "needs_web"
+        "search_web"
+      when "needs_fetch"
+        "fetch_urls"
+      else
+        "synthesize_draft"
+      end
     end
 
     # Draft is an internal intermediate; always generate the final answer next.

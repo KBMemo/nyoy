@@ -7,12 +7,13 @@ LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フ
 ## 現状（R5）
 
 ```
-plan_research → recall_memos → search_web → fetch_urls → synthesize_draft → finalize_answer
+plan_research → recall_memos → search_web → fetch_urls → evaluate_evidence → synthesize_draft → finalize_answer
 ```
 
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` が `AgentGraph::Router` に委譲し、Router が `ResearchIntent` に一致したら `ResearchGraphRunner` を起動する
+- `evaluate_evidence` は最終回答の前に evidence の十分性を確認し、不足があれば `search_web` / `fetch_urls` に戻す
 - `synthesize_draft` は LLM を使わず根拠パック（出典リスト）を内部 state に載せるだけ
 - **承認なし**: そのまま `finalize_answer` へ進む（Chat / MCP 共通）
 - `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。モデルサーバー未起動・接続失敗時は run を失敗させ、`ChatErrorBroadcaster` でエラー表示（「モデルサーバーに接続できません…」）
@@ -55,6 +56,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - `need_web`: 最新・公式・調べ・調査 など
 - `queries`: `SearchQueryNormalizer` で検索向けキーワード化（「調べて / 出典 / 根拠」等を落とし、「高尾山 景信山 登山道」形式に。登山道は登山ルートも併用）
 - `fetch_urls`: 質問文中の `http(s)://...` を抽出
+- `evidence_review`: `evaluate_evidence` の判定結果（`sufficient` / `needs_web` / `needs_fetch` / `limited`）
 - `sensitive`: 保存・メモ/徒然・公開・確認してから 等（方針ラベル。Research Graph 自体は承認待ちにしない）
 
 ## 関連 Graph

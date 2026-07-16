@@ -25,6 +25,7 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     assert_equal({}, state["plan"])
     assert_equal [], state["search_results"]
     assert_equal [], state["fetched_pages"]
+    assert_equal({}, state["evidence_review"])
     assert_equal [], state["errors"]
   end
 
