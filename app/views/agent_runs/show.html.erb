@@ -83,6 +83,23 @@
         </dd>
       </div>
     </dl>
+    <% if @retry_plan %>
+      <div class="mt-4 rounded border p-3 text-sm">
+        <h3 class="text-xs kb-text-muted">Retry Dry-run</h3>
+        <p class="mt-1 kb-text-secondary">
+          <%= @retry_plan.retryable ? "retry 候補" : "retry 保留" %>: <%= @retry_plan.reason %>
+        </p>
+        <% if @retry_plan.checkpoint %>
+          <p class="mt-1 kb-text-secondary">
+            起点 checkpoint:
+            <%= link_to "##{@retry_plan.checkpoint.id} #{@retry_plan.checkpoint.node_name}", "#agent_checkpoint_#{@retry_plan.checkpoint.id}", class: "kb-chrome-link" %>
+          </p>
+        <% end %>
+        <% if @retry_plan.next_node.present? %>
+          <p class="mt-1 kb-text-secondary">次 node: <%= @retry_plan.next_node %></p>
+        <% end %>
+      </div>
+    <% end %>
     <ul class="mt-3 space-y-1 text-sm kb-text-secondary">
       <% @recovery_candidates.each do |candidate| %>
         <li><%= candidate %></li>

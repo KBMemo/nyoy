@@ -10,6 +10,7 @@ class AgentRunsController < ApplicationController
     @failed_node_run = @agent_run.failed_node_run
     @latest_checkpoint = @agent_run.latest_checkpoint
     @recovery_candidates = @agent_run.recovery_candidates
+    @retry_plan = AgentGraph::RunRetryPlanner.call(@agent_run) if @agent_run.failed?
   end
 
   def approve

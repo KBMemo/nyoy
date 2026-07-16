@@ -76,18 +76,26 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
   test "show renders failed run recovery hints" do
     @run.update!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
       status: "failed",
       current_node: "finalize_answer",
       error_message: "モデルサーバーに接続できません"
+    )
+    completed_node = @run.agent_node_runs.create!(
+      node_name: "synthesize_draft",
+      status: "completed",
+      started_at: 2.minutes.ago,
+      finished_at: 1.minute.ago
+    )
+    checkpoint = @run.agent_checkpoints.create!(
+      node_name: completed_node.node_name,
+      state: @run.state.merge("draft" => "回答草案"),
+      created_at: completed_node.finished_at + 1.second
     )
     failed_node = @run.agent_node_runs.create!(
       node_name: "finalize_answer",
       status: "failed",
       error_message: "connection failed"
-    )
-    checkpoint = @run.agent_checkpoints.create!(
-      node_name: "synthesize_draft",
-      state: @run.state.merge("draft" => "回答草案")
     )
 
     get chat_agent_run_path(@chat, @run)
@@ -101,6 +109,10 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr#agent_checkpoint_#{checkpoint.id}"
     assert_select "td[colspan='7'] details[open] summary", text: /#{failed_node.node_name} の snapshot/
     assert_select "td[colspan='4'] details[open] summary", text: /#{checkpoint.node_name} の state/
+    assert_select "h3", text: "Retry Dry-run"
+    assert_select "p", text: /retry 候補/
+    assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} synthesize_draft/
+    assert_select "p", text: /次 node: finalize_answer/
     assert_select "li", text: /最後の checkpoint: synthesize_draft/
     assert_select "li", text: /複製 run/
   end
