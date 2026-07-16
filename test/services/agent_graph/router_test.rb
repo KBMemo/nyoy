@@ -36,8 +36,42 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     assert_equal "strong", decision.intent_decision[:reason]
   end
 
+  test "routes image attachment only turn to image understanding graph" do
+    message = add_user_message(ChatImageAttachments::PLACEHOLDER)
+    message.attachments.attach(io: StringIO.new("png"), filename: "pixel.png", content_type: "image/png")
+
+    decision = AgentGraph::Router.route(@chat)
+
+    assert_equal AgentGraph::ImageUnderstandingGraph::NAME, decision.graph_name
+    assert_equal AgentGraph::ImageUnderstandingGraphRunner, decision.runner
+    assert decision.image_understanding?
+    refute decision.memo_write?
+    refute decision.memo_update?
+    refute decision.research?
+    assert_equal "attachment_only", decision.intent_decision[:reason]
+  end
+
+  test "routes image reference turn to image understanding graph" do
+    message = add_user_message("この画像には何が写っていますか？")
+    message.attachments.attach(io: StringIO.new("png"), filename: "pixel.png", content_type: "image/png")
+
+    decision = AgentGraph::Router.route(@chat)
+
+    assert_equal AgentGraph::ImageUnderstandingGraph::NAME, decision.graph_name
+    assert_equal "image_reference", decision.intent_decision[:reason]
+  end
+
   test "memo write is evaluated before research" do
     add_user_message("この回答を徒然に保存して。出典も残して")
+
+    decision = AgentGraph::Router.route(@chat)
+
+    assert_equal AgentGraph::MemoWriteGraph::NAME, decision.graph_name
+  end
+
+  test "memo write is evaluated before image understanding" do
+    message = add_user_message("この内容をメモに保存して")
+    message.attachments.attach(io: StringIO.new("png"), filename: "pixel.png", content_type: "image/png")
 
     decision = AgentGraph::Router.route(@chat)
 
@@ -66,6 +100,13 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
 
   test "returns nil for ordinary chat" do
     add_user_message("こんにちは")
+
+    assert_nil AgentGraph::Router.route(@chat)
+  end
+
+  test "returns nil for image generation request with attachment" do
+    message = add_user_message("この画像を参考にイラストを作って")
+    message.attachments.attach(io: StringIO.new("png"), filename: "pixel.png", content_type: "image/png")
 
     assert_nil AgentGraph::Router.route(@chat)
   end

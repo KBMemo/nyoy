@@ -125,13 +125,19 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 
 `resolve_image_source` 完了後に checkpoint が残るため、vision LLM 障害からの retry は画像解決済み state から再実行できる。
 
-## 実装順
+## 実装状況
 
-1. `ImageUnderstandingIntent` と routing tests を追加
-2. `ImageUnderstandingGraph` / `ImageUnderstandingStateSchema` / `ImageUnderstandingInitialState` を追加
-3. `resolve_image_source` / `analyze_image` / `finalize_image_answer` node を追加
-4. `ImageUnderstandingGraphRunner` / `ImageUnderstandingRunSummary` を追加し、`Registry` に登録
-5. Chat 添付のみのケースで Graph 履歴が出ることを controller / system 寄りの test で確認
-6. MCP tools と retry 対応を追加
-7. 独立 UI `ImageUnderstandingsController` の GraphRunner 化を検討
+完了:
 
+1. `ImageUnderstandingIntent` と routing tests
+2. `ImageUnderstandingGraph` / `ImageUnderstandingStateSchema` / `ImageUnderstandingInitialState`
+3. `resolve_image_source` / `analyze_image` / `finalize_image_answer` node
+4. `ImageUnderstandingGraphRunner` / `ImageUnderstandingRunSummary` / `Registry` 登録
+5. Chat 添付のみのケースで Graph 履歴・assistant message が作られる runner test
+
+残:
+
+1. MCP tools（`run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph`）
+2. retry dry-run / launcher の UI 表示確認
+3. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
+4. `tsuzura_media_id` 入力の end-to-end test

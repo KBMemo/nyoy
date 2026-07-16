@@ -36,6 +36,19 @@ module AgentGraph
           resume_tool: nil
         ),
         Entry.new(
+          graph_name: ImageUnderstandingGraph::NAME,
+          graph_class: ImageUnderstandingGraph,
+          runner: ImageUnderstandingGraphRunner,
+          summary_class: ImageUnderstandingRunSummary,
+          failure_label: "ImageUnderstanding Graph failed",
+          approval_panel: nil,
+          approval_copy: nil,
+          approve_notice: nil,
+          reject_notice: nil,
+          supersede_reason: "superseded by a newer image understanding run",
+          resume_tool: nil
+        ),
+        Entry.new(
           graph_name: MemoWriteGraph::NAME,
           graph_class: MemoWriteGraph,
           runner: MemoWriteGraphRunner,

@@ -275,7 +275,7 @@ gantt
 
 ### 次期 Agent Graph
 
-- ImageUnderstanding Graph 実装（Chat 添付のみの画像説明を AgentRun 履歴・checkpoint・retry 対象にする）
+- ImageUnderstanding Graph 実装 — Chat 添付経路の AgentRun 化は実装済み。MCP tools / 独立 UI Graph 化は残。
 
 ### 運用・メンテ
 

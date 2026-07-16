@@ -16,19 +16,27 @@ module AgentGraph
       def research?
         graph_name == ResearchGraph::NAME
       end
+
+      def image_understanding?
+        graph_name == ImageUnderstandingGraph::NAME
+      end
     end
 
     module_function
 
     def route(chat)
-      text = latest_user_text(chat)
-      return nil if text.blank?
+      message = latest_user_message(chat)
+      text = message&.content.to_s.strip
+      return nil if text.blank? && !message&.attachments&.attached?
 
       memo_update = MemoUpdateIntent.decision(text)
       return decision(MemoUpdateGraph::NAME, memo_update) if memo_update[:match]
 
       memo_write = MemoWriteIntent.decision(text)
       return decision(MemoWriteGraph::NAME, memo_write) if memo_write[:match]
+
+      image_understanding = ImageUnderstandingIntent.decision(message)
+      return decision(ImageUnderstandingGraph::NAME, image_understanding) if image_understanding[:match]
 
       research = ResearchIntent.decision(text)
       return decision(ResearchGraph::NAME, research) if research[:match]
@@ -37,7 +45,11 @@ module AgentGraph
     end
 
     def latest_user_text(chat)
-      chat.messages.where(role: :user).order(:id).last&.content.to_s.strip
+      latest_user_message(chat)&.content.to_s.strip
+    end
+
+    def latest_user_message(chat)
+      chat.messages.where(role: :user).order(:id).last
     end
 
     def decision(graph_name, intent_decision)
