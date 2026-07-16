@@ -29,12 +29,24 @@ module AgentGraph
           "draft_synthesis" => {
             "source" => "evidence_pack",
             "model_id" => nil,
-            "thinking" => nil
+            "thinking" => nil,
+            "evidence" => evidence_counts(evidence)
           },
           "approval" => "not_required"
         }
 
         AgentGraph::NodeResult.next(updates: updates)
+      end
+
+      private
+
+      def evidence_counts(evidence)
+        {
+          "memo" => evidence[:memo].present? ? 1 : 0,
+          "search_results" => Array(evidence[:search_results]).sum { |payload| Array(payload["results"]).size },
+          "fetched_pages" => Array(evidence[:fetched_pages]).size,
+          "errors" => Array(evidence[:errors]).size
+        }
       end
     end
   end

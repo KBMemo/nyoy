@@ -83,4 +83,34 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "truncated"
     ], node_run.output_summary
   end
+
+  test "output_summary reports draft evidence metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "synthesize_draft",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "draft" => "draft",
+          "draft_synthesis" => {
+            "source" => "evidence_pack",
+            "evidence" => {
+              "memo" => 1,
+              "search_results" => 2,
+              "fetched_pages" => 1,
+              "errors" => 0
+            }
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: draft, draft_synthesis",
+      "source: evidence_pack",
+      "memo: 1",
+      "search: 2",
+      "fetched: 1",
+      "errors: 0"
+    ], node_run.output_summary
+  end
 end

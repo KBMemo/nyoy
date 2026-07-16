@@ -36,6 +36,7 @@ class AgentNodeRun < ApplicationRecord
     parts = []
     parts << "llm: #{synthesis["model_id"]}" if synthesis["model_id"].present?
     parts << "source: #{synthesis["source"]}" if synthesis["source"].present?
+    parts.concat(evidence_summary(synthesis["evidence"]))
     parts.concat(llama_cache_summary(synthesis["llama_cache"]))
     parts.concat(usage_summary(synthesis["usage"]))
     parts << "truncated" if updates["truncated"] == true || updates["draft_truncated"] == true
@@ -64,6 +65,17 @@ class AgentNodeRun < ApplicationRecord
     parts << "in: #{usage["input_tokens"]}" if usage["input_tokens"].present?
     parts << "out: #{usage["output_tokens"]}" if usage["output_tokens"].present?
     parts << "cached: #{usage["cached_tokens"]}" if usage["cached_tokens"].present?
+    parts
+  end
+
+  def evidence_summary(evidence)
+    return [] unless evidence.is_a?(Hash)
+
+    parts = []
+    parts << "memo: #{evidence["memo"]}" if evidence.key?("memo")
+    parts << "search: #{evidence["search_results"]}" if evidence.key?("search_results")
+    parts << "fetched: #{evidence["fetched_pages"]}" if evidence.key?("fetched_pages")
+    parts << "errors: #{evidence["errors"]}" if evidence.key?("errors")
     parts
   end
 end
