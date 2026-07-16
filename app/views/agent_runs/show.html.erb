@@ -56,6 +56,11 @@
     <p class="mt-1 text-sm kb-text-secondary">
       自動 retry はまだ行いません。失敗位置と再実行候補を確認するための情報です。
     </p>
+    <% if @failed_node_run&.error_message.present? %>
+      <div class="kb-alert kb-alert-danger mt-4" role="alert">
+        <%= @failed_node_run.error_message %>
+      </div>
+    <% end %>
     <dl class="mt-4 grid gap-3 sm:grid-cols-2">
       <div>
         <dt class="text-xs kb-text-muted">Failed Node</dt>
@@ -104,6 +109,7 @@
         </thead>
         <tbody>
           <% @node_runs.each do |node_run| %>
+            <% failed_node_detail_open = @agent_run.failed? && @failed_node_run&.id == node_run.id %>
             <tr id="agent_node_run_<%= node_run.id %>" class="nyoy-agent-node-row">
               <td class="py-2 pr-4 kb-text-muted"><%= node_run.id %></td>
               <td class="py-2 pr-4"><%= node_run.node_name %></td>
@@ -117,7 +123,7 @@
             </tr>
             <tr class="nyoy-agent-node-detail-row">
               <td colspan="7" class="pb-3">
-                <details class="rounded border p-3">
+                <details class="rounded border p-3" <%= "open" if failed_node_detail_open %>>
                   <summary class="kb-chrome-link text-sm">
                     #<%= node_run.id %> <%= node_run.node_name %> の snapshot
                   </summary>
@@ -175,6 +181,7 @@
         </thead>
         <tbody>
           <% @checkpoints.each do |checkpoint| %>
+            <% latest_checkpoint_detail_open = @agent_run.failed? && @latest_checkpoint&.id == checkpoint.id %>
             <tr id="agent_checkpoint_<%= checkpoint.id %>" class="nyoy-agent-node-row">
               <td class="py-2 pr-4 kb-text-muted"><%= checkpoint.id %></td>
               <td class="py-2 pr-4"><%= checkpoint.node_name %></td>
@@ -183,7 +190,7 @@
             </tr>
             <tr class="nyoy-agent-node-detail-row">
               <td colspan="4" class="pb-3">
-                <details class="rounded border p-3">
+                <details class="rounded border p-3" <%= "open" if latest_checkpoint_detail_open %>>
                   <summary class="kb-chrome-link text-sm">
                     #<%= checkpoint.id %> <%= checkpoint.node_name %> の state
                   </summary>

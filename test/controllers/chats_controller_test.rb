@@ -309,7 +309,11 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       state: { "question" => "調べて" },
       error_message: "connection failed"
     )
-    run.agent_node_runs.create!(node_name: "finalize_answer", status: "failed")
+    run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "failed",
+      error_message: "node connection failed"
+    )
     checkpoint = run.agent_checkpoints.create!(node_name: "synthesize_draft", state: run.state)
 
     get chat_path(chat)
@@ -318,6 +322,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: "AgentRun"
     assert_select "p", text: /失敗 node: finalize_answer/
     assert_select "p", text: /最後の checkpoint: synthesize_draft ##{checkpoint.id}/
+    assert_select "p", text: /node connection failed/
   end
 
   test "show renders empty agent run history for image-only chat turns" do

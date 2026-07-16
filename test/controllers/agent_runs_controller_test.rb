@@ -94,10 +94,13 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h2", text: "復旧確認"
+    assert_select ".kb-alert-danger", text: /connection failed/
     assert_select "a[href='#agent_node_run_#{failed_node.id}']", text: "finalize_answer"
     assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} synthesize_draft/
     assert_select "tr#agent_node_run_#{failed_node.id}"
     assert_select "tr#agent_checkpoint_#{checkpoint.id}"
+    assert_select "td[colspan='7'] details[open] summary", text: /#{failed_node.node_name} の snapshot/
+    assert_select "td[colspan='4'] details[open] summary", text: /#{checkpoint.node_name} の state/
     assert_select "li", text: /最後の checkpoint: synthesize_draft/
     assert_select "li", text: /複製 run/
   end

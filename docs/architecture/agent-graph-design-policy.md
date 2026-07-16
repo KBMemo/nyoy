@@ -319,8 +319,10 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
 
 5. failure 時の復旧導線を作る（表示は完了）
    - failed run に、失敗 node、最後の checkpoint、再実行候補を表示する
+   - failed node の error message は復旧確認パネルにも表示し、詳細 JSON を開く前に原因を読めるようにする
    - AgentRun 詳細では、復旧確認パネルから該当 node snapshot と checkpoint へ移動できる
-   - チャット画面の直近 AgentRun 履歴でも、failed run は失敗 node と最後の checkpoint を要約表示する
+   - failed run の該当 node snapshot と最後の checkpoint は初期展開し、失敗情報をすぐ読めるようにする
+   - チャット画面の直近 AgentRun 履歴でも、failed run は失敗 node、最後の checkpoint、エラー要約を表示する
    - 実際の retry ボタンは、失敗パターンを観測してから追加する
 
 6. retry / resume API を検討する

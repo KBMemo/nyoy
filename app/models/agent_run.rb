@@ -87,6 +87,12 @@ class AgentRun < ApplicationRecord
     "失敗 node: #{node} / 最後の checkpoint: #{checkpoint_label}"
   end
 
+  def recovery_error_summary
+    return unless failed?
+
+    failed_node_run&.error_message.presence || error_message.presence
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!

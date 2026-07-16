@@ -46,5 +46,6 @@ class AgentRunTest < ActiveSupport::TestCase
       "失敗 node: finalize_answer / 最後の checkpoint: synthesize_draft ##{checkpoint.id}",
       run.recovery_summary
     )
+    assert_equal "connection failed", run.recovery_error_summary
   end
 end

@@ -21,6 +21,9 @@
               </span>
               <% if run.failed? %>
                 <p class="mt-1 text-xs kb-text-secondary"><%= run.recovery_summary %></p>
+                <% if run.recovery_error_summary.present? %>
+                  <p class="mt-1 text-xs text-red-600 dark:text-red-400"><%= run.recovery_error_summary %></p>
+                <% end %>
               <% end %>
             </div>
             <%= link_to "詳細", chat_agent_run_path(chat, run), class: "kb-chrome-link text-sm" %>
