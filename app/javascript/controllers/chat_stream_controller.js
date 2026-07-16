@@ -59,6 +59,7 @@ export default class extends Controller {
   updateAssistantContent(event) {
     if (!this.acceptStreamingSequence(event, "content")) return
 
+    this.clearPendingProgress()
     const message = this.ensureAssistantMessage(event.message_id)
     const content = message.querySelector(`#message_${event.message_id}_content`)
     content.classList.add("nyoy-chat-streaming-raw")
@@ -106,7 +107,14 @@ export default class extends Controller {
     } else {
       this.insertMessageNode(next)
     }
-    this.pinAgentRunProgress()
+    if (
+      next.classList?.contains("nyoy-chat-message-assistant") ||
+      next.classList?.contains("nyoy-chat-message-error")
+    ) {
+      this.clearPendingProgress()
+    } else {
+      this.pinAgentRunProgress()
+    }
     this.revealImportantMessage(next)
     // Agent run approve publishes a full assistant message without streaming —
     // bring it into view so the draft panel doesn't feel like it vanished.
@@ -332,6 +340,14 @@ export default class extends Controller {
       window.clearInterval(this.progressClock)
       this.progressClock = null
     }
+  }
+
+  clearPendingProgress() {
+    const mount = document.getElementById("agent_run_progress")
+    if (!mount) return
+
+    mount.innerHTML = ""
+    this.clearProgressClock()
   }
 
   formatElapsed(ms) {

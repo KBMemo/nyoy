@@ -19,6 +19,8 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-stream[action='before'][target='agent_run_progress']"
     assert_select "turbo-stream[action='replace'][target='new_message']"
+    assert_select "turbo-stream[action='update'][target='agent_run_progress']"
+    assert_select "turbo-stream[action='update'][target='agent_run_progress']", text: /回答を生成しています/
     assert_select "form#new_message[data-chat-form-responding-value='true']"
     assert_select "textarea[name='message[content]'][disabled]"
     assert_select "input[type='file'][disabled]"

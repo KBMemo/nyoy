@@ -1,0 +1,20 @@
+<div
+  id="agent_run_progress_panel"
+  class="nyoy-agent-run-progress"
+  role="status"
+  aria-live="polite"
+  data-controller="generation-timer"
+  data-generation-timer-started-at-value="<%= started_at %>"
+  data-generation-timer-active-value="true"
+>
+  <span class="nyoy-agent-run-progress-dot" aria-hidden="true"></span>
+  <div class="nyoy-agent-run-progress-body">
+    <span class="nyoy-agent-run-progress-label"><%= label %></span>
+    <span class="nyoy-agent-run-progress-meta">
+      <% if model_name.present? %>
+        <span class="nyoy-agent-run-progress-model"><%= model_name %></span>
+      <% end %>
+      <span class="nyoy-agent-run-progress-elapsed" data-generation-timer-target="elapsed">0秒</span>
+    </span>
+  </div>
+</div>

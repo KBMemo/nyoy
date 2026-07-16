@@ -9,4 +9,10 @@
       form_url: chat_messages_path(@chat),
       autofocus: true %>
   <% end %>
+  <%= turbo_stream.update "agent_run_progress" do %>
+    <%= render "chats/response_progress",
+      label: "回答を生成しています…",
+      model_name: @chat.model_association&.name.presence || @chat.model_association&.model_id,
+      started_at: Time.current.iso8601(3) %>
+  <% end %>
 <% end %>
