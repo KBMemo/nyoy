@@ -309,9 +309,12 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - `AgentRun.state` と `AgentCheckpoint` を collapsible な JSON 表示にする
    - 再開・retry を入れる前に、checkpoint の実用性を確認する
 
-4. LLM 呼び出し metadata を node に寄せる（着手）
+4. LLM 呼び出し metadata を node に寄せる（完了）
    - draft / final で使った model、prompt、thinking、truncated、cache slot、token usage を `AgentNodeRun.output_snapshot` または state meta に統一的に残す
    - 通常チャットの message stats と Graph 実行 stats の見え方を揃える
+   - `final_synthesis`: `source`、`model_id`、`thinking`、`system_prompt`、`user_prompt`、`llama_cache`、`usage` を保存する
+   - `draft_synthesis`: 現行の `evidence_pack` 実装では LLM を呼ばないため、`source` と evidence 件数（memo/search/fetched/errors）を保存する
+   - `AgentNodeRun#output_summary` は synthesis metadata を要約し、詳細 JSON を開く前に model/cache/token/evidence の概要を見せる
 
 5. failure 時の復旧導線を作る
    - failed run に、失敗 node、最後の checkpoint、再実行候補を表示する
