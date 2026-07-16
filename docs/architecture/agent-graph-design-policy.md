@@ -131,13 +131,22 @@ Runner が持たない責務:
    ユーザー入力から起動すべき Graph を決める。`memo_write` を `research` より優先するなどの順序もここに集約する。
 
 2. `GraphRunner`
-   Graph 固有の初期 state を作り、共通 `Runner` を呼ぶ。Chat / MCP の入力差分をここで吸収する。
-   MCP の Chat 解決は `McpChatResolver`、同一 Graph の未決承認 run の supersede は `PendingRunSuperseder` に委譲する。
+   Graph 固有の初期 state を作り、共通 `RunLauncher` / `RunResumer` を呼ぶ。Chat / MCP の入力差分は `UserTurnResolver` / `McpRunRequest` に委譲し、runner 自体は state factory と Graph 実行の接続役に留める。
 
 3. `Runner`
    Graph を 1 step ずつ進める共通実行エンジン。
 
-補助として `AgentGraph::Registry` を置く。Graph 名から runner、失敗ラベル、承認 UI partial、承認再開可否を引くための一覧であり、controller / job / broadcaster に Graph 名の case 文を増やさない。
+補助として `AgentGraph::Registry` を置く。Graph 名から graph class、runner、summary presenter、失敗ラベル、承認 UI partial、supersede reason、MCP resume tool を引くための一覧であり、controller / job / broadcaster / MCP tools に Graph 名の case 文を増やさない。
+
+Graph 実行周辺の共通 helper:
+
+| Helper | 役割 |
+| --- | --- |
+| `RunLauncher` | `AgentRun` 作成、未決 run の supersede、`Runner` 起動 |
+| `RunResumer` | 承認 decision の検証、state 反映、`Runner` 再開 |
+| `UserTurnResolver` | Chat 入口の直近 user 入力解決と、明示入力の履歴追加 |
+| `McpRunRequest` | MCP 入口の必須文字列検証と MCP 用 Chat 解決 |
+| `RunSummaryBase` | MCP summary の共通フィールド生成 |
 
 `ChatResponseJob` は最終的に次の程度に薄くする。
 
