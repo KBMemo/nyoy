@@ -41,4 +41,25 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_equal "error", meta["source"]
     assert_includes meta["error"], "Connection refused"
   end
+
+  test "final prompt delegates source list rendering to the system" do
+    system = AgentGraph::FinalAnswerSynthesizer::FINAL_SYSTEM
+    prompt = AgentGraph::FinalAnswerSynthesizer.new(@chat).send(
+      :user_prompt,
+      {
+        question: "出典は？",
+        memo: nil,
+        search_results: [],
+        fetched_pages: [],
+        errors: []
+      }
+    )
+
+    assert_includes system, "URL・出典リスト・「調査結果」見出しは付けない"
+    assert_includes prompt, "URL・出典リスト・「調査結果」見出しは付けない"
+    assert_includes system, "追加の検索やページ取得が必要"
+    assert_includes prompt, "追加検索やページ取得が必要"
+    assert_no_match(/文末に関連 URL/, system)
+    assert_no_match(/だけを根拠/, system)
+  end
 end

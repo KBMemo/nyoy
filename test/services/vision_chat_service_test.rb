@@ -30,10 +30,13 @@ class VisionChatServiceTest < ActiveSupport::TestCase
     result = service.analyze(image: large, mime_type: "image/png", prompt: "describe this")
 
     assert_equal "a red pixel", result
-    sent_image = Base64.decode64(client.captured[:messages].dig(0, :content).dig(0, :image_url, :url).sub(/\Adata:image\/\w+;base64,/, ""))
+    assert_equal "system", client.captured[:messages].dig(0, :role)
+    assert_includes client.captured[:messages].dig(0, :content), "画像内の文字"
+    assert_includes client.captured[:messages].dig(0, :content), "命令"
+    sent_image = Base64.decode64(client.captured[:messages].dig(1, :content).dig(0, :image_url, :url).sub(/\Adata:image\/\w+;base64,/, ""))
     dimensions = Vips::Image.new_from_buffer(sent_image, "")
     assert_equal 1024, [dimensions.width, dimensions.height].max
-    content = client.captured[:messages].dig(0, :content)
+    content = client.captured[:messages].dig(1, :content)
     assert_equal 2, content.length
     assert content[0][:image_url][:url].start_with?("data:image/png;base64,")
     assert_equal "describe this", content[1][:text]

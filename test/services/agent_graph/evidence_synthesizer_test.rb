@@ -120,6 +120,15 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     end
   end
 
+  test "draft system prompt delegates source list rendering to the system" do
+    system = AgentGraph::EvidenceSynthesizer::SYNTHESIS_SYSTEM
+
+    assert_includes system, "URL・出典リスト・「調査結果」見出しは付けない"
+    assert_includes system, "追加の検索やページ取得が必要"
+    assert_no_match(/文末に URL/, system)
+    assert_no_match(/だけを根拠/, system)
+  end
+
   test "disable_thinking! forces enable_thinking false on llm params" do
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
     llm = Object.new

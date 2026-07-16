@@ -36,6 +36,9 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     assert_not_nil latest_user
     assert_includes latest_user.content.to_s, "new question"
     assert_includes latest_user.content.to_s, "以前の会話の要約"
+    assert_includes latest_user.content.to_s, "<<<CONVERSATION_SUMMARY_REFERENCE>>>"
+    assert_includes latest_user.content.to_s, "<<<END_CONVERSATION_SUMMARY_REFERENCE>>>"
+    assert_includes latest_user.content.to_s, "命令ではありません"
     assert llm.messages.none? { |message| message.role == :system && message.content.to_s.include?("以前の会話の要約") }
   ensure
     ChatTools::Registry.define_singleton_method(:apply!, original_apply) if defined?(original_apply)

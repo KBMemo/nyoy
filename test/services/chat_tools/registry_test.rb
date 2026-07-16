@@ -107,13 +107,18 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
       captured[:concurrency] = kwargs[:concurrency]
       llm_chat
     end
-    llm_chat.define_singleton_method(:with_instructions) { |*, **| llm_chat }
+    llm_chat.define_singleton_method(:with_instructions) do |instructions, **|
+      captured[:instructions] = instructions
+      llm_chat
+    end
 
     ChatTools::Registry.apply!(llm_chat, chat: chat)
 
     assert captured[:tools].present?
     assert_equal :one, captured[:calls]
     assert_equal false, captured[:concurrency]
+    assert_includes captured[:instructions], "情報が会話履歴や参照コンテキストだけでは不足"
+    assert_includes captured[:instructions], "検索・取得ツールで確認"
   end
 
   test "apply registers analyze_image for chat with attachments context" do

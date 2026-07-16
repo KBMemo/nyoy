@@ -25,6 +25,7 @@ module ChatTools
 
     TOOL_ORCHESTRATION_INSTRUCTIONS = <<~TEXT.squish
       ツールは必要なときだけ使う。ユーザーの質問を読んでから選ぶ。
+      回答に必要な情報が会話履歴や参照コンテキストだけでは不足している場合は、利用可能な検索・取得ツールで確認してから回答してよい。
       最新の事実・ニュース・Web 上の情報 → web_search（詳細は fetch_url）。
       過去の自分のメモ → recall_memos（関連知識を意味検索）。一覧探索は search_memos、本文は get_memo。
       添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
