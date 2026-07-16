@@ -223,7 +223,7 @@ DirectPromptGenerator.new(
 3. `client.chat(messages: [...], response_format: DirectPromptJsonSchema.build, ...)`
 4. `LlamaJsonParser.parse` → キー検証 → Hash 返却
 
-既存 `SdPromptTranslator`（正プロンプトのみ・`body` 差し替え）は **inpaint 専用のまま温存**。パラメータ指定は **別クラス**とし、契約の混同を避ける。
+既存 `SdPromptTranslator`（正プロンプトのみ・`body` 差し替え）は **inpaint 専用のまま温存**。パラメータ指定は **別クラス**とし、責務境界を保つ。
 
 ### 6.2 `SdPromptTemplateResolver`（新規）
 

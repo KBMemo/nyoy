@@ -1,6 +1,6 @@
 # プロンプト設計 再構築案
 
-スキル / ナレッジ / LoRA辞書 / テンプレ / 生成プリセットの役割が重複・混乱してきたため、
+スキル / ナレッジ / LoRA辞書 / テンプレ / 生成プリセットの役割が重複してきたため、
 **「スキル」を中心とした現行構成を捨て、`style_id` を軸にした構成へ再構築する**ための設計案。
 
 - 対象: `PromptSkill`, `PromptKnowledgeChunk`, `PromptLora`, `PromptPreset`, `GenerationPreset`
@@ -11,7 +11,7 @@
 
 ## 1. 現状の問題: 役割が重複している
 
-| 概念 (モデル) | 本来の役割 | 実際に持っている責務 | 重複・混乱点 |
+| 概念 (モデル) | 本来の役割 | 実際に持っている責務 | 重複・責務境界 |
 |---|---|---|---|
 | スキル `PromptSkill` | LLM 作法 (system prompt) | `body`（作法）+ `default_negative_prompt`（実行時固定ネガ）+ default 旗 | **作法と実行設定が同居**。json_plan/translate を `body LIKE '%"positive"%'` で暗黙判別 |
 | ナレッジ `PromptKnowledgeChunk` | RAG 用可変知識 | title/body/kind + embedding | テンプレと「指針 vs 固定 tag」の境界が曖昧 |
@@ -19,11 +19,11 @@
 | テンプレ `PromptPreset` | （RAG 文脈用テンプレ） | positive/negative template + default_params | **ナレッジと役割が重複**。RAG 文脈にしか使われない |
 | 生成プリセット `GenerationPreset` | 実行設定の束 | model/解像度/LoRA/sampler/skill/固定ネガ + draft/refine/hires | **「見た目」と「描画パイプライン」が同居**。固定ネガが skill と二重 |
 
-### 核心的な混乱
+### 核心的な課題
 
 1. **「固定ネガティブ」が 3 箇所に分散** — `PromptSkill.default_negative_prompt`、`GenerationPreset.default_negative_prompt`、`PromptPreset.negative_template`。`NegativePromptResolver` で都度マージしている。
 2. **「画風・positive の素」が 4 箇所に分散** — skill body、preset template、knowledge body、generation の prompt。
-3. **LLM の自由度が広すぎる** — `SdPromptPlanner` / `PromptSpecGenerator` は LLM に positive/negative だけでなく width/height/steps/cfg/model/LoRA まで生成させている。ローカル LLM の揺れがそのまま実行設定に漏れる。
+3. **実行設定の責務が LLM 側に寄りすぎている** — `SdPromptPlanner` / `PromptSpecGenerator` は LLM に positive/negative だけでなく width/height/steps/cfg/model/LoRA まで生成させている。実行設定はアプリ側で管理した方が再現性と監査性を保ちやすい。
 4. **「見た目(style)」と「描画(pipeline)」が分離していない** — `GenerationPreset` が解像度・sampler（見た目寄り）と draft/refine/hires（パイプライン）を同時に持つ。
 
 ---
