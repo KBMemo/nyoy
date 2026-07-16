@@ -15,7 +15,7 @@ module AgentGraph
     end
 
     def self.resume(agent_run, decision:)
-      new(agent_run.chat).resume(agent_run, decision: decision)
+      RunResumer.for_graph(agent_run, graph_name: MemoUpdateGraph::NAME, decision: decision)
     end
 
     def self.call_for_mcp(instruction:, memo_ref:, chat_id: nil, auto_approve: true, body: nil, title: nil, mode: nil)
@@ -62,10 +62,6 @@ module AgentGraph
           mode: @mode
         )
       )
-    end
-
-    def resume(agent_run, decision:)
-      RunResumer.for_graph(agent_run, graph_name: MemoUpdateGraph::NAME, decision: decision)
     end
 
     private
