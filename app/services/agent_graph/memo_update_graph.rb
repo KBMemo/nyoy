@@ -12,7 +12,10 @@ module AgentGraph
         nodes: {
           "plan_memo_update" => Nodes::MemoUpdate::PlanMemoUpdate.new,
           "draft_memo_update" => Nodes::MemoUpdate::DraftMemoUpdate.new,
-          "await_approval" => Nodes::MemoUpdate::AwaitApproval.new,
+          "await_approval" => Nodes::ApprovalGate.new(
+            approved_goto: "commit_memo_update",
+            rejected_message: "メモ更新は却下されました。内容を直してから、もう一度更新を指示してください。"
+          ),
           "commit_memo_update" => Nodes::MemoUpdate::CommitMemoUpdate.new,
           "finalize_update_reply" => Nodes::MemoUpdate::FinalizeUpdateReply.new
         },

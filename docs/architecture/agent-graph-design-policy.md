@@ -121,7 +121,7 @@ Runner が持たない責務:
 | Tool 呼び出し | 既存 `ChatTools` を使い、`ToolTraceRecorder` で通常チャットと同じ履歴を残す |
 | DB 書き込み | 冪等キーを state に保存し、再開時の二重実行を防ぐ |
 | UI broadcast | `AssistantMessagePublisher` / Broadcaster に委譲し、Node は「要求」レベルに留める |
-| Approval | write 系 Graph では `interrupt` と `approval` state で表現し、resume は同じ Runner に戻す |
+| Approval | write 系 Graph では共通 `ApprovalGate` が `interrupt` と `approval` state を扱い、resume は同じ Runner に戻す |
 
 ## 入口設計
 
@@ -190,6 +190,7 @@ plan_memo_write
 
 - Chat 入口では常に承認を挟む
 - MCP 入口では `auto_approve` を許す
+- 承認待ちは共通 `ApprovalGate` で扱う
 - `commit_memo` は `memo_uid` によって冪等にする
 - reject は終了。自動 replan はしない
 - update は扱わない。`MemoUpdate Graph` に渡す
@@ -212,6 +213,7 @@ plan_memo_update
 
 - Chat 入口では常に承認を挟む
 - MCP 入口では `memo_ref` 必須、`auto_approve` を許す
+- 承認待ちは共通 `ApprovalGate` で扱う
 - `plan_memo_update` で `get_memo` し、`updated_at` を state に固定する
 - `commit_memo_update` は `memo_uid` によって冪等にする
 - `mode` は `append` / `replace`。既定は `append`

@@ -13,7 +13,10 @@ module AgentGraph
         nodes: {
           "plan_memo_write" => Nodes::MemoWrite::PlanMemoWrite.new,
           "draft_memo" => Nodes::MemoWrite::DraftMemo.new,
-          "await_approval" => Nodes::MemoWrite::AwaitApproval.new,
+          "await_approval" => Nodes::ApprovalGate.new(
+            approved_goto: "commit_memo",
+            rejected_message: "メモ保存は却下されました。内容を直してから、もう一度「徒然に保存して」と伝えてください。"
+          ),
           "commit_memo" => Nodes::MemoWrite::CommitMemo.new,
           "finalize_reply" => Nodes::MemoWrite::FinalizeReply.new
         },
