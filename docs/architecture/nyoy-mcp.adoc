@@ -141,6 +141,10 @@ flowchart TB
 |`list_albums` / `get_media`
 |葛籠 API
 |Cursor、如意 Chat
+
+|`run_research_graph` / `get_research_graph` / `retry_research_graph`
+|如意 AgentGraph（Research Graph）
+|Cursor、外部 MCP クライアント
 |===
 
 === 4.1 徒然 RAG と Nyoy `recall_memos` の使い分け
