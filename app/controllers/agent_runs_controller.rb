@@ -73,7 +73,7 @@ class AgentRunsController < ApplicationController
   def resume_blocked!(alert)
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.update("research_approval", html: %(<div class="kb-alert kb-alert-danger" role="alert">#{ERB::Util.html_escape(alert)}</div>)),
+        render turbo_stream: turbo_stream.update("agent_run_approval", html: %(<div class="kb-alert kb-alert-danger" role="alert">#{ERB::Util.html_escape(alert)}</div>)),
                status: :unprocessable_entity
       end
       format.html { redirect_to @chat, alert: alert }

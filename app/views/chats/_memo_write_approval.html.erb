@@ -1,7 +1,7 @@
 <% draft = agent_run.state["draft"].to_s %>
 <% memo_draft = agent_run.state["memo_draft"].is_a?(Hash) ? agent_run.state["memo_draft"] : {} %>
 <% updating = agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME %>
-<div class="nyoy-research-approval kb-card p-4 mt-4" id="research_approval_panel" data-agent-run-id="<%= agent_run.id %>">
+<div class="nyoy-agent-run-approval kb-card p-4 mt-4" id="agent_run_approval_panel" data-agent-run-id="<%= agent_run.id %>">
   <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
     <div>
       <h2 class="text-base font-semibold kb-text-primary">徒然メモの確認</h2>
@@ -13,7 +13,7 @@
     <span class="text-xs kb-text-muted"><%= updating ? "MemoUpdate" : "MemoWrite" %> Graph #<%= agent_run.id %></span>
   </div>
 
-  <div class="nyoy-research-approval-draft nyoy-chat-markdown mb-4">
+  <div class="nyoy-agent-run-approval-draft nyoy-chat-markdown mb-4">
     <%= render_chat_markdown(draft) %>
   </div>
 

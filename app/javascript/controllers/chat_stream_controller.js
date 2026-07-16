@@ -141,7 +141,7 @@ export default class extends Controller {
   }
 
   replaceApprovalPanel(event) {
-    const mount = document.getElementById("research_approval")
+    const mount = document.getElementById("agent_run_approval")
     if (!mount) return
 
     mount.innerHTML = event.html || ""

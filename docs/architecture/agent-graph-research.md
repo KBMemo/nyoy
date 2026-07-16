@@ -57,7 +57,7 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - `fetch_urls`: 質問文中の `http(s)://...` を抽出
 - `sensitive`: 保存・メモ/徒然・公開・確認してから 等（方針ラベル。Research Graph 自体は承認待ちにしない）
 
-## 次
+## 関連 Graph
 
 - MemoWrite Graph（create）: [agent-graph-memo-write.md](./agent-graph-memo-write.md)
-- MemoWrite v2: `update_memo` / 楽観ロック
+- MemoUpdate Graph（update_memo / updated_at 楽観ロック）: [agent-graph-memo-write.md](./agent-graph-memo-write.md)

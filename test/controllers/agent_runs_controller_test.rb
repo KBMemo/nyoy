@@ -29,7 +29,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
-    assert_includes response.body, "research_approval"
+    assert_includes response.body, "agent_run_approval"
     assert_includes response.body, "徒然へ保存"
     assert_includes response.body, "new_message"
     assert @chat.reload.responding?
@@ -120,14 +120,14 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     get chat_path(@chat)
 
     assert_response :success
-    assert_select "#research_approval_panel", count: 0
+    assert_select "#agent_run_approval_panel", count: 0
   end
 
   test "show renders memo write approval panel for pending memo write run" do
     get chat_path(@chat)
 
     assert_response :success
-    assert_select "#research_approval_panel"
+    assert_select "#agent_run_approval_panel"
     assert_select "h2", text: "徒然メモの確認"
     assert_select "button, input[type=submit]", text: /この内容で徒然に保存する/
     assert_no_match(/却下してやり直す/, response.body)
@@ -150,7 +150,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     get chat_path(@chat)
 
     assert_response :success
-    assert_select "#research_approval_panel"
+    assert_select "#agent_run_approval_panel"
     assert_select "button, input[type=submit]", text: /この内容で徒然メモを更新する/
   end
 
@@ -167,6 +167,6 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     get chat_path(@chat)
 
     assert_response :success
-    assert_select "#research_approval_panel", count: 0
+    assert_select "#agent_run_approval_panel", count: 0
   end
 end

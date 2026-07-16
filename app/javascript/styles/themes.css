@@ -966,7 +966,7 @@
   margin-top: var(--kb-space-2);
 }
 
-.nyoy-research-approval-draft {
+.nyoy-agent-run-approval-draft {
   padding: 0.75rem 1rem;
   border: 1px solid color-mix(in srgb, var(--kb-border, #ccc) 80%, transparent);
   border-radius: 0.375rem;
