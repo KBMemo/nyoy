@@ -13,7 +13,8 @@ module AgentGraph
     FINAL_SYSTEM = <<~TEXT.squish
       あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に、
       ユーザーへの最終回答を日本語で書いてください。
-      結論を先に、読みやすい通常のチャット回答にしてください。
+      確認用ドラフトや箇条書きだけの要約ではなく、通常のチャット応答として読んで分かる文章にしてください。
+      結論を先に書き、必要なら手順や選択肢を補足してください。
       根拠にない事実・推測を足さないでください。
       Web 根拠がある場合は文末に URL を 1〜3 個添えてください。
       思考過程のタグは出力せず、読者向けの最終回答だけを書いてください。
@@ -26,10 +27,10 @@ module AgentGraph
 
     # @return [String, Boolean, Hash] answer, truncated?, meta
     def call(state)
-      draft = state["draft"].to_s.strip
-      evidence = @draft_helper.evidence_pack(state).merge(approved_draft: draft)
+      evidence = @draft_helper.evidence_pack(state)
 
       if self.class.force_passthrough
+        draft = state["draft"].to_s.strip
         return [
           draft.presence || @draft_helper.fallback_answer(evidence),
           state["draft_truncated"] == true,
