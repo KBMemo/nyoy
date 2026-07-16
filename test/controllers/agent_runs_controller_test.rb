@@ -80,7 +80,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
       current_node: "finalize_answer",
       error_message: "モデルサーバーに接続できません"
     )
-    @run.agent_node_runs.create!(
+    failed_node = @run.agent_node_runs.create!(
       node_name: "finalize_answer",
       status: "failed",
       error_message: "connection failed"
@@ -94,8 +94,10 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h2", text: "復旧確認"
-    assert_select "dd", text: "finalize_answer"
-    assert_select "dd", text: /##{checkpoint.id} synthesize_draft/
+    assert_select "a[href='#agent_node_run_#{failed_node.id}']", text: "finalize_answer"
+    assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} synthesize_draft/
+    assert_select "tr#agent_node_run_#{failed_node.id}"
+    assert_select "tr#agent_checkpoint_#{checkpoint.id}"
     assert_select "li", text: /最後の checkpoint: synthesize_draft/
     assert_select "li", text: /複製 run/
   end

@@ -60,14 +60,18 @@
       <div>
         <dt class="text-xs kb-text-muted">Failed Node</dt>
         <dd class="text-sm kb-text-primary">
-          <%= @failed_node_run&.node_name || @agent_run.current_node.presence || "不明" %>
+          <% if @failed_node_run %>
+            <%= link_to @failed_node_run.node_name, "#agent_node_run_#{@failed_node_run.id}", class: "kb-chrome-link" %>
+          <% else %>
+            <%= @agent_run.current_node.presence || "不明" %>
+          <% end %>
         </dd>
       </div>
       <div>
         <dt class="text-xs kb-text-muted">Last Checkpoint</dt>
         <dd class="text-sm kb-text-primary">
           <% if @latest_checkpoint %>
-            #<%= @latest_checkpoint.id %> <%= @latest_checkpoint.node_name %>
+            <%= link_to "##{@latest_checkpoint.id} #{@latest_checkpoint.node_name}", "#agent_checkpoint_#{@latest_checkpoint.id}", class: "kb-chrome-link" %>
           <% else %>
             なし
           <% end %>
@@ -100,7 +104,7 @@
         </thead>
         <tbody>
           <% @node_runs.each do |node_run| %>
-            <tr class="nyoy-agent-node-row">
+            <tr id="agent_node_run_<%= node_run.id %>" class="nyoy-agent-node-row">
               <td class="py-2 pr-4 kb-text-muted"><%= node_run.id %></td>
               <td class="py-2 pr-4"><%= node_run.node_name %></td>
               <td class="py-2 pr-4"><%= node_run.status %></td>
@@ -171,7 +175,7 @@
         </thead>
         <tbody>
           <% @checkpoints.each do |checkpoint| %>
-            <tr class="nyoy-agent-node-row">
+            <tr id="agent_checkpoint_<%= checkpoint.id %>" class="nyoy-agent-node-row">
               <td class="py-2 pr-4 kb-text-muted"><%= checkpoint.id %></td>
               <td class="py-2 pr-4"><%= checkpoint.node_name %></td>
               <td class="py-2 pr-4"><%= l(checkpoint.created_at, format: :short) %></td>
