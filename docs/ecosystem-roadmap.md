@@ -228,8 +228,7 @@ gantt
   Web 検索 + URL 取得          :done, p1, 2026-07, 1M
   メモ RAG + コンテキスト管理   :done, p3, 2026-07, 1M
   葛籠連携                     :done, p5, 2026-07, 1M
-  section 次
-  MCP サーバー公開             :active, p6, 2026-07, 1M
+  MCP サーバー公開             :done, p6, 2026-07, 1M
 ```
 
 ---
@@ -250,9 +249,9 @@ gantt
 
 ## 6. 次の作業
 
-### 推奨（Phase 6 残）
+### 推奨
 
-- Cursor 実機接続確認（`bin/mcp-list-tools` / `docs/examples/cursor-mcp-*.json`）
+- AgentRun 対象範囲の拡張（画像理解など）
 
 ### 完了（Phase 6）
 
@@ -261,6 +260,7 @@ gantt
 - `Mcp::ToolBridge` による `ChatTools::*` 再公開
 - `Mcp::ExtensionTools`（`list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`）
 - 本番 `MCP_API_TOKEN`（`config/deploy.yml` `env.secret`）
+- Cursor / MCP 接続確認（`bin/mcp-list-tools`、stdio JSON-RPC、HTTP `/mcp`）
 
 ### 完了（Phase 5）
 

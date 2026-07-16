@@ -117,6 +117,40 @@ MCP ──────┘   ↑
 MCP_API_TOKEN=your-token bin/mcp-list-tools
 ```
 
+### 接続確認
+
+stdio は Cursor が子プロセスとして起動する経路に近い形で、JSON-RPC を標準入出力に流して確認できる。
+
+```bash
+printf '%s\n%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"stdio-smoke","version":"0.1"}}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | MCP_API_TOKEN=your-token RAILS_ENV=development bin/mcp-stdio
+```
+
+HTTP は Nyoy を起動したうえで、Bearer 認証付きで `initialize` / `tools/list` を確認する。
+
+```bash
+curl -sS -X POST http://127.0.0.1:3000/mcp \
+  -H 'Authorization: Bearer your-token' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"0.1"}}}'
+
+curl -sS -X POST http://127.0.0.1:3000/mcp \
+  -H 'Authorization: Bearer your-token' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+```
+
+期待結果:
+
+- `initialize` の `serverInfo.name` が `nyoy`
+- `tools/list` に `run_research_graph` / `retry_research_graph` / `run_memo_write_graph` / `run_memo_update_graph` が含まれる
+- 認証なしの HTTP `/mcp` は `401 Unauthorized`
+- `MCP_API_TOKEN` 未設定時は HTTP `/mcp` が `404 Not Found`、`bin/mcp-stdio` が終了コード 1
+
 ---
 
 ## 制約・注意
