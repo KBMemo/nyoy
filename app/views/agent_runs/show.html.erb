@@ -98,6 +98,19 @@
         <% if @retry_plan.next_node.present? %>
           <p class="mt-1 kb-text-secondary">次 node: <%= @retry_plan.next_node %></p>
         <% end %>
+        <% if @retry_plan.retryable %>
+          <div class="mt-3">
+            <% if @chat.responding? %>
+              <span class="kb-chrome-btn-secondary kb-btn-sm opacity-50" aria-disabled="true">別の応答が実行中です</span>
+            <% else %>
+              <%= button_to "複製 run で retry",
+                retry_chat_agent_run_path(@chat, @agent_run),
+                method: :post,
+                class: kb_btn_primary_sm,
+                form: { data: { turbo_confirm: "この checkpoint から複製 run を作成して retry しますか？" } } %>
+            <% end %>
+          </div>
+        <% end %>
       </div>
     <% end %>
     <ul class="mt-3 space-y-1 text-sm kb-text-secondary">

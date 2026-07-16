@@ -21,6 +21,19 @@ class AgentRunsController < ApplicationController
     resume!("rejected")
   end
 
+  def retry
+    retry_plan = AgentGraph::RunRetryPlanner.call(@agent_run)
+    return retry_blocked!("別の応答が実行中です。") if @chat.responding?
+    return retry_blocked!(retry_plan.reason) unless retry_plan.retryable
+
+    ChatResponseControl.mark_running!(@chat)
+    AgentGraphRetryJob.perform_later(@agent_run.id)
+
+    respond_to do |format|
+      format.html { redirect_to @chat, notice: "AgentRun の retry を開始しました。" }
+    end
+  end
+
   private
 
   def set_chat
@@ -78,6 +91,12 @@ class AgentRunsController < ApplicationController
                status: :unprocessable_entity
       end
       format.html { redirect_to @chat, alert: alert }
+    end
+  end
+
+  def retry_blocked!(alert)
+    respond_to do |format|
+      format.html { redirect_to chat_agent_run_path(@chat, @agent_run), alert: alert }
     end
   end
 end

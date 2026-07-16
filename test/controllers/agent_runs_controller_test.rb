@@ -113,8 +113,85 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "p", text: /retry 候補/
     assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} synthesize_draft/
     assert_select "p", text: /次 node: finalize_answer/
+    assert_select "form[action='#{retry_chat_agent_run_path(@chat, @run)}']"
+    assert_select "button, input[type=submit]", text: /複製 run で retry/
     assert_select "li", text: /最後の checkpoint: synthesize_draft/
     assert_select "li", text: /複製 run/
+  end
+
+  test "retry enqueues retry job for retryable failed run" do
+    @run.update!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      error_message: "モデルサーバーに接続できません"
+    )
+    completed_node = @run.agent_node_runs.create!(
+      node_name: "synthesize_draft",
+      status: "completed",
+      started_at: 2.minutes.ago,
+      finished_at: 1.minute.ago
+    )
+    @run.agent_checkpoints.create!(
+      node_name: completed_node.node_name,
+      state: @run.state.merge("draft" => "回答草案"),
+      created_at: completed_node.finished_at + 1.second
+    )
+    @run.agent_node_runs.create!(node_name: "finalize_answer", status: "failed")
+
+    assert_enqueued_with(job: AgentGraphRetryJob, args: [ @run.id ]) do
+      post retry_chat_agent_run_path(@chat, @run)
+    end
+
+    assert_redirected_to @chat
+    assert_match(/retry を開始/, flash[:notice])
+    assert @chat.reload.responding?
+  end
+
+  test "retry rejects blocked failed run" do
+    @run.update!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "plan_research",
+      error_message: "failed"
+    )
+    @run.agent_node_runs.create!(node_name: "plan_research", status: "failed")
+
+    assert_no_enqueued_jobs only: AgentGraphRetryJob do
+      post retry_chat_agent_run_path(@chat, @run)
+    end
+
+    assert_redirected_to chat_agent_run_path(@chat, @run)
+    assert_match(/成功済み checkpoint/, flash[:alert])
+    assert_not @chat.reload.responding?
+  end
+
+  test "retry rejects while another response is running" do
+    @chat.update!(response_state: "running")
+    @run.update!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      error_message: "failed"
+    )
+    completed_node = @run.agent_node_runs.create!(
+      node_name: "synthesize_draft",
+      status: "completed",
+      started_at: 2.minutes.ago,
+      finished_at: 1.minute.ago
+    )
+    @run.agent_checkpoints.create!(
+      node_name: completed_node.node_name,
+      state: @run.state.merge("draft" => "回答草案"),
+      created_at: completed_node.finished_at + 1.second
+    )
+
+    assert_no_enqueued_jobs only: AgentGraphRetryJob do
+      post retry_chat_agent_run_path(@chat, @run)
+    end
+
+    assert_redirected_to chat_agent_run_path(@chat, @run)
+    assert_match(/別の応答/, flash[:alert])
   end
 
   test "approve enqueues resume job and clears pending decision" do
