@@ -169,12 +169,42 @@ module AgentGraph
         lines << "証拠評価: status=#{review['status'].presence || 'unknown'} reason=#{review['reason'].to_s.truncate(160)}"
         if review["status"].to_s == "limited"
           lines << "不足時の出力: 断定を避け、次に試す検索語・取得すべきページ種別・ユーザーに確認したい条件を最大3件で短く提案する。"
+          followup = followup_candidates(evidence)
+          lines << "追加調査候補:"
+          if followup.any?
+            followup.each { |candidate| lines << "- #{candidate}" }
+          else
+            lines << "- 質問の前提条件や対象範囲をユーザーに確認する"
+          end
         end
         lines << ""
       end
 
       lines << "出力: ユーザー向けの完成した返答本文のみ。資料が不足する場合は、推測せず追加検索やページ取得が必要だと短く述べる。必要な場合だけ次の検索候補や確認質問を最大3件で提案する。URL・出典リスト・「調査結果」見出しは付けない（システムが別途付けます）。"
       lines.join("\n")
+    end
+
+    def followup_candidates(evidence)
+      plan = evidence[:plan].to_h
+      budget = evidence[:budget].to_h
+      searched = Array(plan["searched_queries"]).map(&:to_s)
+      queries = Array(plan["queries"])
+        .map(&:to_s)
+        .map(&:strip)
+        .reject(&:blank?)
+        .reject { |query| searched.include?(query) }
+
+      fetched = Array(budget["fetched_urls"]).map(&:to_s)
+      urls = Array(plan["fetch_urls"])
+        .map(&:to_s)
+        .map(&:strip)
+        .reject(&:blank?)
+        .reject { |url| fetched.include?(url) }
+
+      [
+        *queries.first(2).map { |query| "検索: #{query}" },
+        *urls.first(2).map { |url| "ページ取得: #{url}" }
+      ].uniq.first(3)
     end
   end
 end

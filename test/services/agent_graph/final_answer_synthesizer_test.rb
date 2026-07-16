@@ -72,10 +72,16 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
         memo: nil,
         search_results: [],
         fetched_pages: [],
+        plan: {
+          "queries" => [ "仕様 2026", "公式 changelog", "移行ガイド" ],
+          "searched_queries" => [ "仕様 2026" ],
+          "fetch_urls" => [ "https://example.com/spec" ]
+        },
         evidence_review: {
           "status" => "limited",
           "reason" => "available evidence is limited and no additional retrieval is available"
         },
+        budget: { "fetched_urls" => [] },
         errors: []
       }
     )
@@ -84,5 +90,8 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_includes prompt, "証拠評価: status=limited"
     assert_includes prompt, "次に試す検索語"
     assert_includes prompt, "ユーザーに確認したい条件"
+    assert_includes prompt, "追加調査候補:"
+    assert_includes prompt, "検索: 公式 changelog"
+    assert_includes prompt, "ページ取得: https://example.com/spec"
   end
 end

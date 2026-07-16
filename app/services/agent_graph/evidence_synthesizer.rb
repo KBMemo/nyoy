@@ -56,9 +56,11 @@ module AgentGraph
       {
         question: state.fetch("question").to_s,
         memo: state["memo_context"].to_s.presence,
+        plan: (state["plan"] || {}).to_h,
         search_results: Array(state["search_results"]),
         fetched_pages: Array(state["fetched_pages"]),
         evidence_review: (state["evidence_review"] || {}).to_h,
+        budget: (state["budget"] || {}).to_h,
         errors: Array(state["errors"])
       }
     end
