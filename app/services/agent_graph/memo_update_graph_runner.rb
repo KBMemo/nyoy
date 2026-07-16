@@ -66,12 +66,7 @@ module AgentGraph
     end
 
     def resume(agent_run, decision:)
-      raise ArgumentError, "agent run must await approval" unless agent_run.awaiting_approval?
-      raise ArgumentError, "decision required" unless %w[approved rejected].include?(decision.to_s)
-
-      agent_run.merge_state!("approval" => decision.to_s)
-      Runner.new(agent_run, graph: MemoUpdateGraph.new).call
-      agent_run.reload
+      RunResumer.call(agent_run, graph: MemoUpdateGraph.new, decision: decision)
     end
 
     private
