@@ -15,28 +15,9 @@ module AgentGraph
       question = question.to_s.strip
       raise ArgumentError, "question required" if question.blank?
 
-      chat = resolve_mcp_chat(chat_id, question)
+      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: question)
       call(chat, question: question, auto_approve: auto_approve)
     end
-
-    def self.resolve_mcp_chat(chat_id, question)
-      if chat_id.present?
-        chat = Chat.find_by(id: chat_id)
-        raise ArgumentError, "chat not found: #{chat_id}" unless chat
-
-        return chat
-      end
-
-      model = ChatModelCatalog.default_model || Model.order(:id).first
-      raise ArgumentError, "no chat model available" unless model
-
-      chat = Chat.create!(model: model)
-      Message.suppressing_turbo_broadcasts do
-        chat.messages.create!(role: :user, content: question)
-      end
-      chat
-    end
-    private_class_method :resolve_mcp_chat
 
     def initialize(chat, question: nil, auto_approve: false)
       @chat = chat
@@ -67,17 +48,11 @@ module AgentGraph
     private
 
     def supersede_pending_approvals!
-      pending = @chat.agent_runs.pending_decision.where(graph_name: ResearchGraph::NAME)
-      return if pending.none?
-
-      pending.find_each do |run|
-        run.update!(
-          status: "cancelled",
-          finished_at: Time.current,
-          error_message: "superseded by a newer research run"
-        )
-      end
-      ApprovalBroadcaster.clear!(@chat)
+      PendingRunSuperseder.call(
+        chat: @chat,
+        graph_name: ResearchGraph::NAME,
+        reason: "superseded by a newer research run"
+      )
     end
 
     def ensure_question!

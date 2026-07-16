@@ -20,7 +20,7 @@ module AgentGraph
       instruction = instruction.to_s.strip
       raise ArgumentError, "instruction required" if instruction.blank?
 
-      chat = resolve_mcp_chat(chat_id, instruction)
+      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: instruction)
       call(
         chat,
         instruction: instruction,
@@ -29,25 +29,6 @@ module AgentGraph
         mcp_title: title.to_s.presence
       )
     end
-
-    def self.resolve_mcp_chat(chat_id, instruction)
-      if chat_id.present?
-        chat = Chat.find_by(id: chat_id)
-        raise ArgumentError, "chat not found: #{chat_id}" unless chat
-
-        return chat
-      end
-
-      model = ChatModelCatalog.default_model || Model.order(:id).first
-      raise ArgumentError, "no chat model available" unless model
-
-      chat = Chat.create!(model: model)
-      Message.suppressing_turbo_broadcasts do
-        chat.messages.create!(role: :user, content: instruction)
-      end
-      chat
-    end
-    private_class_method :resolve_mcp_chat
 
     def initialize(chat, instruction: nil, auto_approve: false, mcp_body: nil, mcp_title: nil)
       @chat = chat
@@ -91,17 +72,11 @@ module AgentGraph
     private
 
     def supersede_pending_approvals!
-      pending = @chat.agent_runs.pending_decision.where(graph_name: MemoWriteGraph::NAME)
-      return if pending.none?
-
-      pending.find_each do |run|
-        run.update!(
-          status: "cancelled",
-          finished_at: Time.current,
-          error_message: "superseded by a newer memo write run"
-        )
-      end
-      ApprovalBroadcaster.clear!(@chat)
+      PendingRunSuperseder.call(
+        chat: @chat,
+        graph_name: MemoWriteGraph::NAME,
+        reason: "superseded by a newer memo write run"
+      )
     end
 
     def ensure_instruction!

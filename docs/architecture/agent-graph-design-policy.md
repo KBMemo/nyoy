@@ -132,6 +132,7 @@ Runner が持たない責務:
 
 2. `GraphRunner`
    Graph 固有の初期 state を作り、共通 `Runner` を呼ぶ。Chat / MCP の入力差分をここで吸収する。
+   MCP の Chat 解決は `McpChatResolver`、同一 Graph の未決承認 run の supersede は `PendingRunSuperseder` に委譲する。
 
 3. `Runner`
    Graph を 1 step ずつ進める共通実行エンジン。
