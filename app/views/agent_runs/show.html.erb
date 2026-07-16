@@ -63,6 +63,7 @@
             <th class="py-2 pr-4">Elapsed</th>
             <th class="py-2 pr-4">Started</th>
             <th class="py-2 pr-4">Finished</th>
+            <th class="py-2 pr-4">Summary</th>
           </tr>
         </thead>
         <tbody>
@@ -74,9 +75,12 @@
               <td class="py-2 pr-4"><%= node_run.elapsed_seconds ? nyoy_format_duration(node_run.elapsed_seconds) : "-" %></td>
               <td class="py-2 pr-4"><%= node_run.started_at ? l(node_run.started_at, format: :short) : "-" %></td>
               <td class="py-2 pr-4"><%= node_run.finished_at ? l(node_run.finished_at, format: :short) : "-" %></td>
+              <td class="py-2 pr-4 kb-text-secondary">
+                <%= node_run.output_summary.join(" / ") %>
+              </td>
             </tr>
             <tr class="nyoy-agent-node-detail-row">
-              <td colspan="6" class="pb-3">
+              <td colspan="7" class="pb-3">
                 <details class="rounded border p-3">
                   <summary class="kb-chrome-link text-sm">
                     #<%= node_run.id %> <%= node_run.node_name %> の snapshot

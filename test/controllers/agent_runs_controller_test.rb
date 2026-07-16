@@ -58,9 +58,11 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "dd", text: @run.status
     assert_select "td", text: node_run.node_name
     assert_select "th", text: "Elapsed"
+    assert_select "th", text: "Summary"
     assert_select "tr.nyoy-agent-node-row"
     assert_select "tr.nyoy-agent-node-detail-row"
-    assert_select "td[colspan='6'] summary", text: /#{node_run.node_name} の snapshot/
+    assert_select "td", text: /updates: approval/
+    assert_select "td[colspan='7'] summary", text: /#{node_run.node_name} の snapshot/
     assert_select "summary", text: /JSON を表示/
     assert_includes response.body, "input_marker"
     assert_includes response.body, "updates"
