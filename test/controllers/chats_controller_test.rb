@@ -352,6 +352,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{chat_agent_run_path(chat, source)}']", text: "##{source.id}"
     assert_select "p", text: /checkpoint #789/
     assert_select "p", text: /from synthesize_draft/
+    assert_select "p", text: /retried: 1 run/
   end
 
   test "show renders empty agent run history for image-only chat turns" do

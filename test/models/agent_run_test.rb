@@ -72,5 +72,7 @@ class AgentRunTest < ActiveSupport::TestCase
     assert retry_run.retry_run?
     assert_equal source, retry_run.retry_source_run
     assert_equal "retry of ##{source.id} / checkpoint #123 / from synthesize_draft", retry_run.retry_source_summary
+    assert source.retried?
+    assert_equal [ retry_run ], source.retry_runs.to_a
   end
 end

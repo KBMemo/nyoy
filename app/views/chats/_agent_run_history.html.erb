@@ -34,6 +34,9 @@
                   <% end %>
                 </p>
               <% end %>
+              <% if !run.retry_run? && run.retried? %>
+                <p class="mt-1 text-xs kb-text-secondary">retried: <%= run.retry_runs.count %> run</p>
+              <% end %>
               <% if run.failed? %>
                 <p class="mt-1 text-xs kb-text-secondary"><%= run.recovery_summary %></p>
                 <% if run.recovery_error_summary.present? %>

@@ -96,6 +96,28 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "dd", text: /from synthesize_draft/
   end
 
+  test "show renders retry child runs on source detail" do
+    source = @run
+    retry_run = @chat.agent_runs.create!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "running",
+      current_node: "finalize_answer",
+      state: {
+        "retry_of_agent_run_id" => source.id,
+        "retry_from_checkpoint_id" => 456,
+        "retry_from_node" => "synthesize_draft"
+      }
+    )
+
+    get chat_agent_run_path(@chat, source)
+
+    assert_response :success
+    assert_select "h3", text: "Retry Runs"
+    assert_select "a[href='#{chat_agent_run_path(@chat, retry_run)}']", text: "AgentRun ##{retry_run.id}"
+    assert_select "p", text: /running/
+    assert_select "p", text: /finalize_answer/
+  end
+
   test "show renders failed run recovery hints" do
     @run.update!(
       graph_name: AgentGraph::ResearchGraph::NAME,

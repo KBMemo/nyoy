@@ -333,7 +333,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
 
    - **既存 run の巻き戻しはしない。** `Runner` は現在の `AgentRun.state` と `current_node` を前進させる実行器であり、node 履歴・checkpoint 履歴を保持したまま巻き戻すと監査ログの意味が曖昧になる。
    - **failed run の retry は「複製 run」として作る。** 元 run は failed のまま保存し、最後の checkpoint state を初期 state とする新しい `AgentRun` を作る。新 run の state には `retry_of_agent_run_id`、`retry_from_checkpoint_id`、`retry_from_node` を残す。
-   - **複製 run の lineage を UI に表示する。** AgentRun 詳細とチャット画面の直近履歴では、retry 元 run、起点 checkpoint、起点 node を表示し、元 run の監査ログへ戻れるようにする。
+   - **複製 run の lineage を UI に表示する。** AgentRun 詳細とチャット画面の直近履歴では、retry 元 run、起点 checkpoint、起点 node を表示し、元 run の監査ログへ戻れるようにする。元 run 側にも retry 子 run の一覧または件数を表示し、双方向に辿れるようにする。
    - **再開 node は checkpoint の次 node を使う。** checkpoint は node 完了後の state なので、同じ node を再実行すると副作用が二重になる可能性がある。次 node は `graph.next_node_for(checkpoint.node_name, checkpoint.state)` で求める。失敗 node そのものを再実行したい場合は、該当 node が副作用なし、または冪等キーで保護されていることを UI/API で明示条件にする。
    - **write 系 Graph は既定で自動 retry しない。** `commit_memo` / `commit_memo_update` は `memo_uid` による冪等ガードを持つが、外部 API の部分成功があり得るため、まずは読み取り専用の復旧情報表示に留める。retry API を開く場合も、承認済み state と冪等キーの有無を検証する。
    - **Research Graph は最初の対象にしやすい。** Web 検索・URL 取得・最終回答生成は失敗しても保存系副作用が少ない。ただし `ToolTraceRecorder` による tool message は増えるため、複製 run であることを state と UI に表示する。

@@ -112,6 +112,16 @@ class AgentRun < ApplicationRecord
     parts.join(" / ")
   end
 
+  def retry_runs
+    chat.agent_runs
+      .where("state->>'retry_of_agent_run_id' = ?", id.to_s)
+      .order(created_at: :desc)
+  end
+
+  def retried?
+    retry_runs.exists?
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!

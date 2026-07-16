@@ -66,6 +66,23 @@
       <%= @agent_run.error_message %>
     </div>
   <% end %>
+
+  <% if @retry_runs.any? %>
+    <div class="mt-4 rounded border p-3 text-sm">
+      <h3 class="text-xs kb-text-muted">Retry Runs</h3>
+      <div class="mt-2 space-y-1">
+        <% @retry_runs.each do |retry_run| %>
+          <p class="kb-text-secondary">
+            <%= link_to "AgentRun ##{retry_run.id}", chat_agent_run_path(@chat, retry_run), class: "kb-chrome-link" %>
+            / <%= retry_run.status %>
+            <% if retry_run.current_node.present? %>
+              / <%= retry_run.current_node %>
+            <% end %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 </section>
 
 <% if @agent_run.failed? %>
