@@ -40,6 +40,36 @@ class McpImageUnderstandingGraphToolsTest < ActiveSupport::TestCase
     end
   end
 
+  test "run_image_understanding_graph downloads tsuzura media" do
+    service_connections(:tsuzura).update!(api_token: "tsuzura_test", enabled: true)
+
+    fake_client = Object.new
+    fake_client.define_singleton_method(:download_media) do |media_id|
+      raise "unexpected media id" unless media_id == "01JARCHIVED"
+
+      TsuzuraClient::Download.new(data: "png-bytes", content_type: "image/png", filename: "archived.png")
+    end
+    captured = {}
+
+    stub_tsuzura_client(fake_client) do
+      stub_vision_service("葛籠の画像です。", captured: captured) do
+        response = Mcp::ImageUnderstandingGraphTools.run_image_understanding_graph_tool.call(
+          question: "この画像を説明して",
+          tsuzura_media_id: "01JARCHIVED"
+        )
+        payload = JSON.parse(response.content.first[:text])
+
+        assert_not response.error?
+        assert_equal "completed", payload["status"]
+        assert_equal "葛籠の画像です。", payload["analysis"]
+        assert_equal "tsuzura_media", payload.dig("image_source", "kind")
+        assert_equal "01JARCHIVED", payload.dig("image_source", "tsuzura_media_id")
+        assert_equal "png-bytes", captured[:image]
+        assert_equal "image/png", captured[:mime_type]
+      end
+    end
+  end
+
   test "get_image_understanding_graph returns summary" do
     chat = chat_with_attachment(content: "この画像には何が写っていますか？")
 
@@ -133,7 +163,7 @@ class McpImageUnderstandingGraphToolsTest < ActiveSupport::TestCase
     chat
   end
 
-  def stub_vision_service(result)
+  def stub_vision_service(result, captured: nil)
     original = VisionChatService.method(:new)
     service = Object.new
     service.define_singleton_method(:analyze) do |image:, mime_type:, prompt:|
@@ -141,11 +171,22 @@ class McpImageUnderstandingGraphToolsTest < ActiveSupport::TestCase
       raise "missing mime_type" if mime_type.blank?
       raise "missing prompt" if prompt.blank?
 
+      captured[:image] = image if captured
+      captured[:mime_type] = mime_type if captured
+      captured[:prompt] = prompt if captured
       result
     end
     VisionChatService.define_singleton_method(:new) { service }
     yield
   ensure
     VisionChatService.define_singleton_method(:new) { |**kwargs| original.call(**kwargs) } if original
+  end
+
+  def stub_tsuzura_client(client)
+    original = ChatTools::Registry.method(:tsuzura_client)
+    ChatTools::Registry.define_singleton_method(:tsuzura_client) { client }
+    yield
+  ensure
+    ChatTools::Registry.define_singleton_method(:tsuzura_client, original) if original
   end
 end

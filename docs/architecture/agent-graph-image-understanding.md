@@ -110,7 +110,7 @@ MCP では Chat 添付がないケースが多いため、`tsuzura_media_id` を
 |------|------|
 | `VisionChatService` | そのまま利用。Graph node は service の呼び出しと state 保存だけ担当 |
 | `ChatTools::AnalyzeImage` | 通常 Chat tool loop と MCP ToolBridge 用に残す |
-| 独立 UI `ImageUnderstandingsController` | 当面そのまま。後で GraphRunner を使う形に寄せられる |
+| 独立 UI `ImageUnderstandingsController` | `ImageUnderstandingGraphRunner` を使い、アップロード画像も AgentRun 履歴に残す |
 | `Message#to_llm` の添付ヒント | 通常 Chat fallback 用に残す |
 
 Graph 化後も、画像添付がある全ターンを必ず Graph にしない。画像が参考資料で、質問が通常テキストだけで答えられる場合は既存 Chat に落とす。
@@ -134,9 +134,10 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 3. `resolve_image_source` / `analyze_image` / `finalize_image_answer` node
 4. `ImageUnderstandingGraphRunner` / `ImageUnderstandingRunSummary` / `Registry` 登録
 5. Chat 添付のみのケースで Graph 履歴・assistant message が作られる runner test
+6. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
+7. `tsuzura_media_id` 入力の MCP 経路 test
+8. failed ImageUnderstanding run の retry dry-run / retry button 表示 test
 
 残:
 
-1. retry dry-run / launcher の UI 表示確認
-2. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
-3. `tsuzura_media_id` 入力の end-to-end test
+- 実運用での vision サーバー障害時 retry 確認

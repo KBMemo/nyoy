@@ -163,6 +163,55 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "li", text: /複製 run/
   end
 
+  test "show renders retry dry-run for failed image understanding run" do
+    @run.update!(
+      graph_name: AgentGraph::ImageUnderstandingGraph::NAME,
+      status: "failed",
+      current_node: "analyze_image",
+      error_message: "vision server failed",
+      state: {
+        "question" => "この画像を説明して",
+        "chat_id" => @chat.id,
+        "intent" => "image_understanding",
+        "plan" => { "message_id" => @chat.messages.where(role: :user).last.id, "attachment_index" => 0 },
+        "image_source" => { "kind" => "chat_attachment", "message_id" => @chat.messages.where(role: :user).last.id },
+        "analysis" => nil,
+        "final_answer" => nil,
+        "approval" => "not_required",
+        "auto_approve" => true,
+        "errors" => [],
+        "next_node" => "analyze_image"
+      }
+    )
+    completed_node = @run.agent_node_runs.create!(
+      node_name: "resolve_image_source",
+      status: "completed",
+      started_at: 2.minutes.ago,
+      finished_at: 1.minute.ago
+    )
+    checkpoint = @run.agent_checkpoints.create!(
+      node_name: completed_node.node_name,
+      state: @run.state,
+      created_at: completed_node.finished_at + 1.second
+    )
+    @run.agent_node_runs.create!(
+      node_name: "analyze_image",
+      status: "failed",
+      error_message: "vision server failed"
+    )
+
+    get chat_agent_run_path(@chat, @run)
+
+    assert_response :success
+    assert_select "dd", text: AgentGraph::ImageUnderstandingGraph::NAME
+    assert_select "h3", text: "Retry Dry-run"
+    assert_select "p", text: /retry 候補/
+    assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} resolve_image_source/
+    assert_select "p", text: /次 node: analyze_image/
+    assert_select "form[action='#{retry_chat_agent_run_path(@chat, @run)}']"
+    assert_select "button, input[type=submit]", text: /複製 run で retry/
+  end
+
   test "retry enqueues retry job for retryable failed run" do
     @run.update!(
       graph_name: AgentGraph::ResearchGraph::NAME,

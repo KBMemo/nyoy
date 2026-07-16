@@ -9,6 +9,8 @@ div data-controller="vision-form"
   #vision-result.kb-card.p-4.mb-6 class=("hidden" if result_hidden) data-vision-form-target="resultPanel"
     h2 class=kb_section_title 結果
     p.mt-4.text-sm.kb-text-primary.break-words data-vision-form-target="resultText" = @result
+    - if @agent_run
+      p.mt-3.text-xs.kb-text-muted AgentRun ##{@agent_run.id}
 
   .kb-alert.kb-alert-danger.hidden.mb-4 data-vision-form-target="error" role="alert"
 

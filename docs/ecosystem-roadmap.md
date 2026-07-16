@@ -275,7 +275,7 @@ gantt
 
 ### 次期 Agent Graph
 
-- ImageUnderstanding Graph 実装 — Chat 添付経路と MCP tools は実装済み。独立 UI Graph 化は残。
+- ImageUnderstanding Graph 実装 — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。実運用での vision 障害時 retry 確認は残。
 
 ### 運用・メンテ
 

@@ -20,6 +20,10 @@ class ImageUnderstandingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  setup do
+    ChatModelCatalog.seed!
+  end
+
   test "new renders form" do
     get new_image_understanding_path
     assert_response :success
@@ -39,10 +43,14 @@ class ImageUnderstandingsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "#vision-result p", text: "猫が写っています"
+    assert_select "#vision-result", text: /AgentRun #/
     assert_select "form[data-turbo='false']"
     assert_equal PNG, service.captured[:image]
     assert_equal "image/png", service.captured[:mime_type]
     assert_equal "何が写っていますか？", service.captured[:prompt]
+    run = AgentRun.order(:id).last
+    assert_equal AgentGraph::ImageUnderstandingGraph::NAME, run.graph_name
+    assert_predicate run, :completed?
   ensure
     VisionChatService.singleton_class.send(:define_method, :new, original_new)
   end
@@ -63,6 +71,7 @@ class ImageUnderstandingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "猫が写っています", json["result"]
     assert_equal "何が写っていますか？", json["prompt"]
     assert json["image_data_url"].start_with?("data:image/png;base64,")
+    assert AgentRun.find(json["agent_run_id"]).completed?
   ensure
     VisionChatService.singleton_class.send(:define_method, :new, original_new)
   end
