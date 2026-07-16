@@ -296,12 +296,12 @@ MemoUpdate:
 
 Graph の骨子は成立したため、次は新しい抽象を増やすより先に observability を固める。目的は、実行中・失敗時・再開時に「どの node が、どの state から、何を返したか」を UI から追えるようにすること。
 
-1. `AgentRun` 詳細ページを追加する（着手）
+1. `AgentRun` 詳細ページを追加する（完了）
    - チャット画面から直近の AgentRun を開ける
    - graph 名、status、current node、開始/終了時刻、error を表示する
    - まず読み取り専用にし、運用中の調査に使える状態を優先する
 
-2. node 履歴を見える化する
+2. node 履歴を見える化する（着手）
    - `AgentNodeRun` を時系列で表示する
    - node ごとの status、elapsed、error、input/output snapshot の概要を確認できるようにする
 

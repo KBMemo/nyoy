@@ -42,6 +42,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
       status: "completed",
       started_at: 1.minute.ago,
       finished_at: Time.current,
+      input_snapshot: { "input_marker" => "before" },
       output_snapshot: { "updates" => { "approval" => "pending" } }
     )
     @run.agent_checkpoints.create!(
@@ -56,7 +57,13 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "dd", text: @run.graph_name
     assert_select "dd", text: @run.status
     assert_select "td", text: node_run.node_name
+    assert_select "th", text: "Elapsed"
+    assert_select "tr.nyoy-agent-node-row"
+    assert_select "tr.nyoy-agent-node-detail-row"
+    assert_select "td[colspan='6'] summary", text: /#{node_run.node_name} の snapshot/
     assert_select "summary", text: /JSON を表示/
+    assert_includes response.body, "input_marker"
+    assert_includes response.body, "updates"
     assert_includes response.body, "memo_draft"
   end
 

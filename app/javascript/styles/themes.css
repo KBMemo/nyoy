@@ -975,6 +975,14 @@
   overflow: auto;
 }
 
+.nyoy-agent-node-row > td {
+  border-top: 2px solid var(--kb-border-strong);
+}
+
+.nyoy-agent-node-detail-row > td {
+  border-bottom: 1px solid var(--kb-border-strong);
+}
+
 .nyoy-agent-run-progress {
   align-items: flex-start;
   background: color-mix(in srgb, var(--kb-bg-muted, #f5f5f5) 85%, transparent);
