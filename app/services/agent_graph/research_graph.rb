@@ -2,7 +2,6 @@
 
 module AgentGraph
   # R2 graph: plan → recall_memos → search_web → fetch_urls → synthesize_draft → finalize_answer
-  # (await_approval remains registered for legacy pending runs / resume)
   # (evidence nodes are skipped via ResearchRouting when the plan does not need them)
   class ResearchGraph
     NAME = "research"
@@ -15,7 +14,6 @@ module AgentGraph
         "search_web" => Nodes::SearchWeb.new,
         "fetch_urls" => Nodes::FetchUrls.new,
         "synthesize_draft" => Nodes::SynthesizeDraft.new,
-        "await_approval" => Nodes::AwaitApproval.new,
         "finalize_answer" => Nodes::FinalizeAnswer.new
       }.freeze
       @edges = {
@@ -24,7 +22,6 @@ module AgentGraph
         "search_web" => Edge.new(to: ->(state) { ResearchRouting.after_search(state) }),
         "fetch_urls" => Edge.new(to: "synthesize_draft"),
         "synthesize_draft" => Edge.new(to: ->(state) { ResearchRouting.after_synthesize(state) }),
-        "await_approval" => Edge.new(to: "finalize_answer"),
         "finalize_answer" => Edge.end
       }.freeze
     end

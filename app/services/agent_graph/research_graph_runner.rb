@@ -7,7 +7,7 @@ module AgentGraph
     end
 
     def self.resume(agent_run, decision:)
-      new(agent_run.chat).resume(agent_run, decision: decision)
+      raise ArgumentError, "Research Graph approval resume is no longer supported"
     end
 
     # MCP entry: create or reuse a chat, then run the Research Graph.
@@ -43,10 +43,7 @@ module AgentGraph
         awaiting_approval: run.awaiting_approval?,
         completed: run.completed?,
         failed: run.failed?,
-        replans_remaining: [
-          AgentGraph::Nodes::AwaitApproval::MAX_REPLANS - state["replan_count"].to_i,
-          0
-        ].max
+        replans_remaining: 0
       }
     end
 
@@ -93,15 +90,6 @@ module AgentGraph
 
       Runner.new(run, graph: ResearchGraph.new).call
       run.reload
-    end
-
-    def resume(agent_run, decision:)
-      raise ArgumentError, "agent run must await approval" unless agent_run.awaiting_approval?
-      raise ArgumentError, "decision required" unless %w[approved rejected].include?(decision.to_s)
-
-      agent_run.merge_state!("approval" => decision.to_s)
-      Runner.new(agent_run, graph: ResearchGraph.new).call
-      agent_run.reload
     end
 
     private

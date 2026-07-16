@@ -18,7 +18,7 @@ module AgentGraph
         when MemoWriteGraph::NAME
           "chats/memo_write_approval"
         else
-          "chats/research_approval"
+          raise ArgumentError, "approval panel is not supported for graph=#{agent_run.graph_name}"
         end
       end
 

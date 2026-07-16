@@ -29,7 +29,6 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 |--------|------|
 | `run_research_graph` | 調査実行（`question` 必須、`chat_id` / `auto_approve` 任意・無視） |
 | `get_research_graph` | `agent_run_id` の状態取得 |
-| `resume_research_graph` | 旧 `awaiting_approval` ラン向け（新規ランでは不要） |
 
 実装: `Mcp::ResearchGraphTools`（Chat tool loop には載せない）。
 

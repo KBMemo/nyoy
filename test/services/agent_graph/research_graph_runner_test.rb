@@ -74,47 +74,16 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  test "legacy reject under limit replans then finalizes" do
-    stub_recall(context: "メモ") do
-      stub_synthesize_without_llm do
-        run = create_pending_research_run!(
-          question: "出典を調べて徒然に保存する前提で確認してから答えて",
-          draft: "初稿ドラフト"
-        )
-        first_draft = run.state["draft"]
+  test "research approval resume is no longer supported" do
+    run = create_pending_research_run!(
+      question: "出典を調べて徒然に保存する前提で確認してから答えて",
+      draft: "初稿ドラフト"
+    )
 
-        resumed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
-        assert resumed.completed?, -> { "status=#{resumed.status} error=#{resumed.error_message}" }
-        assert_equal 1, resumed.state["replan_count"]
-        assert resumed.state["draft"].present?
-        refute_equal first_draft, resumed.state["draft"]
-        assert_includes resumed.state["draft"], "書き直し"
-        assert resumed.state.dig("plan", "revision_hints").present?
-        assert resumed.state.dig("plan", "replan")
-        assert resumed.state["rejection_notes"].one?
-        assert resumed.state["final_answer"].present?
-        assert_includes resumed.agent_node_runs.pluck(:node_name), "finalize_answer"
-        assert assistant_answer_messages.exists?
-      end
+    error = assert_raises(ArgumentError) do
+      AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
     end
-  end
-
-  test "legacy reject at replan limit ends without publishing the draft" do
-    stub_recall(context: "メモ") do
-      stub_synthesize_without_llm do
-        run = create_pending_research_run!(
-          question: "出典を調べて徒然に保存する前提で確認してから答えて",
-          draft: "初稿ドラフト",
-          replan_count: AgentGraph::Nodes::AwaitApproval::MAX_REPLANS
-        )
-
-        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: "rejected")
-        assert completed.completed?, -> { "status=#{completed.status} error=#{completed.error_message}" }
-        assert_equal AgentGraph::Nodes::AwaitApproval::MAX_REPLANS, completed.state["replan_count"]
-        message = assistant_answer_messages.order(:id).last
-        assert_includes message.content, "却下"
-      end
-    end
+    assert_includes error.message, "no longer supported"
   end
 
   test "R1 path searches and fetches then finalizes" do

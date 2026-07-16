@@ -16,7 +16,7 @@ class McpResearchGraphToolsTest < ActiveSupport::TestCase
 
     assert_includes names, "run_research_graph"
     assert_includes names, "get_research_graph"
-    assert_includes names, "resume_research_graph"
+    refute_includes names, "resume_research_graph"
   end
 
   test "run_research_graph auto_approve completes with final answer" do

@@ -8,8 +8,7 @@ module Mcp
     def mcp_tools
       [
         run_research_graph_tool,
-        get_research_graph_tool,
-        resume_research_graph_tool
+        get_research_graph_tool
       ]
     end
 
@@ -61,7 +60,7 @@ module Mcp
     def get_research_graph_tool
       MCP::Tool.define(
         name: "get_research_graph",
-        description: "run_research_graph / resume_research_graph の実行状態とドラフト・最終回答を取得する。",
+        description: "run_research_graph の実行状態とドラフト・最終回答を取得する。",
         input_schema: {
           type: "object",
           properties: {
@@ -85,54 +84,8 @@ module Mcp
       end
     end
 
-    def resume_research_graph_tool
-      MCP::Tool.define(
-        name: "resume_research_graph",
-        description: "旧 awaiting_approval の Research Graph を再開する（新規ランでは不要）。",
-        input_schema: {
-          type: "object",
-          properties: {
-            agent_run_id: { type: "integer", description: "AgentRun の id" },
-            decision: {
-              type: "string",
-              enum: %w[approved rejected],
-              description: "approved で最終回答へ / rejected で却下"
-            }
-          },
-          required: %w[agent_run_id decision]
-        },
-        annotations: {
-          read_only_hint: false,
-          destructive_hint: false,
-          idempotent_hint: false,
-          open_world_hint: false
-        }
-      ) do |agent_run_id:, decision:, **|
-        run = AgentRun.find_by(id: agent_run_id, graph_name: AgentGraph::ResearchGraph::NAME)
-        unless run
-          return Mcp::ResearchGraphTools.error_response("AgentRun #{agent_run_id} が見つかりません")
-        end
-        unless run.awaiting_approval?
-          return Mcp::ResearchGraphTools.error_response(
-            "承認待ちではありません（status=#{run.status}）"
-          )
-        end
-
-        completed = AgentGraph::ResearchGraphRunner.resume(run, decision: decision)
-        Mcp::ResearchGraphTools.success_response(completed)
-      rescue ArgumentError => e
-        Mcp::ResearchGraphTools.error_response(e.message)
-      rescue StandardError => e
-        Rails.logger.error("resume_research_graph failed: #{e.full_message}")
-        Mcp::ResearchGraphTools.error_response(e.message)
-      end
-    end
-
     def success_response(run)
       payload = AgentGraph::ResearchGraphRunner.summary_for(run)
-      if run.awaiting_approval?
-        payload[:note] = "draft を確認し resume_research_graph(agent_run_id, decision) で続行してください。"
-      end
       MCP::Tool::Response.new([{ type: "text", text: JSON.generate(payload) }])
     end
 

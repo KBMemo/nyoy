@@ -11,12 +11,13 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     @chat.messages.create!(role: :user, content: "調査の根拠を教えて")
     @run = AgentRun.create!(
       chat: @chat,
-      graph_name: "research",
+      graph_name: "memo_write",
       status: "awaiting_approval",
       current_node: "await_approval",
       state: {
-        "question" => "調査の根拠を教えて",
-        "draft" => "### 調査結果\n根拠メモ",
+        "instruction" => "これを徒然に保存して",
+        "draft" => "### メモ\n本文",
+        "memo_draft" => { "title" => "メモ", "body" => "本文" },
         "approval" => "pending"
       }
     )
@@ -29,7 +30,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "research_approval"
-    assert_includes response.body, "最終回答を生成"
+    assert_includes response.body, "徒然へ保存"
     assert_includes response.body, "new_message"
     assert @chat.reload.responding?
     assert_equal "approved", @run.reload.state["approval"]
@@ -55,6 +56,24 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "rejected", @run.reload.state["approval"]
   end
 
+  test "approve rejects unsupported research run" do
+    @run.update!(
+      graph_name: "research",
+      state: {
+        "question" => "調査の根拠を教えて",
+        "draft" => "### 調査結果\n根拠メモ",
+        "approval" => "pending"
+      }
+    )
+
+    assert_no_enqueued_jobs only: AgentGraphResumeJob do
+      post approve_chat_agent_run_path(@chat, @run)
+    end
+
+    assert_redirected_to @chat
+    assert_match(/対応していません/, flash[:alert])
+  end
+
   test "approve rejects when not awaiting approval" do
     @run.update!(status: "completed")
 
@@ -66,17 +85,7 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/承認待ち/, flash[:alert])
   end
 
-  test "memo write approve uses memo notice" do
-    @run.update!(
-      graph_name: "memo_write",
-      state: {
-        "instruction" => "これを徒然に保存して",
-        "draft" => "### メモ\n本文",
-        "memo_draft" => { "title" => "メモ", "body" => "本文" },
-        "approval" => "pending"
-      }
-    )
-
+  test "approve uses memo notice" do
     post approve_chat_agent_run_path(@chat, @run)
 
     assert_redirected_to @chat
@@ -92,16 +101,6 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders memo write approval panel for pending memo write run" do
-    @run.update!(
-      graph_name: "memo_write",
-      state: {
-        "instruction" => "これを徒然に保存して",
-        "draft" => "### メモ\n本文",
-        "memo_draft" => { "title" => "メモ", "body" => "本文" },
-        "approval" => "pending"
-      }
-    )
-
     get chat_path(@chat)
 
     assert_response :success
@@ -111,11 +110,19 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/却下してやり直す/, response.body)
   end
 
-  test "show renders research approval panel for pending research run" do
+  test "show omits pending research approval panel" do
+    @run.update!(
+      graph_name: "research",
+      state: {
+        "question" => "調査の根拠を教えて",
+        "draft" => "### 調査結果\n根拠メモ",
+        "approval" => "pending"
+      }
+    )
+
     get chat_path(@chat)
 
     assert_response :success
-    assert_select "#research_approval_panel"
-    assert_select "h2", text: "調査ドラフトの確認"
+    assert_select "#research_approval_panel", count: 0
   end
 end

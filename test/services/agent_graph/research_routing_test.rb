@@ -32,6 +32,5 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
       "plan" => { "sensitive" => true },
       "auto_approve" => false
     )
-    refute AgentGraph::ResearchRouting.needs_human_approval?("auto_approve" => false)
   end
 end

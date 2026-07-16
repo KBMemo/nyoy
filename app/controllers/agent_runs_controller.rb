@@ -23,32 +23,18 @@ class AgentRunsController < ApplicationController
   end
 
   def approve_notice
-    case @agent_run.graph_name
-    when AgentGraph::MemoWriteGraph::NAME
-      "メモ草案を承認しました。徒然へ保存します。"
-    else
-      "調査ドラフトを承認しました。最終回答を生成します。"
-    end
+    "メモ草案を承認しました。徒然へ保存します。"
   end
 
   def reject_notice
-    case @agent_run.graph_name
-    when AgentGraph::MemoWriteGraph::NAME
-      "メモ保存を却下しました。"
-    else
-      remaining = [
-        AgentGraph::Nodes::AwaitApproval::MAX_REPLANS - @agent_run.state["replan_count"].to_i,
-        0
-      ].max
-      if remaining.positive?
-        "調査ドラフトを却下しました。調査をやり直します。"
-      else
-        "調査ドラフトを却下しました。"
-      end
-    end
+    "メモ保存を却下しました。"
   end
 
   def resume!(decision, notice:)
+    unless @agent_run.graph_name == AgentGraph::MemoWriteGraph::NAME
+      return resume_blocked!("この Graph は承認再開に対応していません。")
+    end
+
     unless @agent_run.awaiting_approval?
       return resume_blocked!("承認待ちの実行ではありません。")
     end

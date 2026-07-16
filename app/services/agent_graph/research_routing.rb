@@ -33,12 +33,6 @@ module AgentGraph
       "finalize_answer"
     end
 
-    # Research Graph no longer pauses for draft approval (Chat / MCP alike).
-    # MemoWrite Graph keeps its own HITL. Legacy pending research runs can still resume.
-    def needs_human_approval?(_state)
-      false
-    end
-
     def sensitive_plan?(state)
       value = state.dig("plan", "sensitive")
       value == true || value.to_s == "true"
