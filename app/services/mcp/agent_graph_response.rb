@@ -24,6 +24,21 @@ module Mcp
       AgentRun.find_by(id: agent_run_id, graph_name: graph_name)
     end
 
+    def find_run_or_error(agent_run_id, graph_name:)
+      run = find_run(agent_run_id, graph_name: graph_name)
+      return [ run, nil ] if run
+
+      [ nil, missing_run(agent_run_id) ]
+    end
+
+    def awaiting_run_or_error(agent_run_id, graph_name:)
+      run, response = find_run_or_error(agent_run_id, graph_name: graph_name)
+      return [ nil, response ] if response
+      return [ run, nil ] if run.awaiting_approval?
+
+      [ nil, not_awaiting_approval(run) ]
+    end
+
     def missing_run(agent_run_id)
       error("AgentRun #{agent_run_id} が見つかりません")
     end

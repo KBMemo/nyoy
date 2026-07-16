@@ -93,10 +93,8 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
-        unless run
-          return AgentGraphResponse.missing_run(agent_run_id)
-        end
+        run, error = AgentGraphResponse.find_run_or_error(agent_run_id, graph_name: GRAPH_NAME)
+        return error if error
 
         Mcp::MemoWriteGraphTools.success_response(run)
       end
@@ -125,13 +123,8 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, decision:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
-        unless run
-          return AgentGraphResponse.missing_run(agent_run_id)
-        end
-        unless run.awaiting_approval?
-          return AgentGraphResponse.not_awaiting_approval(run)
-        end
+        run, error = AgentGraphResponse.awaiting_run_or_error(agent_run_id, graph_name: GRAPH_NAME)
+        return error if error
 
         completed = AgentGraph::MemoWriteGraphRunner.resume(run, decision: decision)
         Mcp::MemoWriteGraphTools.success_response(completed)

@@ -50,6 +50,31 @@ class McpAgentGraphResponseTest < ActiveSupport::TestCase
     assert_nil Mcp::AgentGraphResponse.find_run(run.id, graph_name: "other_graph")
   end
 
+  test "find_run_or_error returns run or mcp error response" do
+    run = create_run(status: "completed", graph_name: "target_graph")
+
+    found, found_error = Mcp::AgentGraphResponse.find_run_or_error(run.id, graph_name: "target_graph")
+    missing, missing_error = Mcp::AgentGraphResponse.find_run_or_error(run.id, graph_name: "other_graph")
+
+    assert_equal run, found
+    assert_nil found_error
+    assert_nil missing
+    assert missing_error.error?
+  end
+
+  test "awaiting_run_or_error returns only awaiting approval runs" do
+    waiting = create_run(status: "awaiting_approval", graph_name: "target_graph")
+    completed = create_run(status: "completed", graph_name: "target_graph")
+
+    found, found_error = Mcp::AgentGraphResponse.awaiting_run_or_error(waiting.id, graph_name: "target_graph")
+    blocked, blocked_error = Mcp::AgentGraphResponse.awaiting_run_or_error(completed.id, graph_name: "target_graph")
+
+    assert_equal waiting, found
+    assert_nil found_error
+    assert_nil blocked
+    assert blocked_error.error?
+  end
+
   test "common error helpers return mcp error responses" do
     missing = Mcp::AgentGraphResponse.missing_run(123)
     not_waiting = Mcp::AgentGraphResponse.not_awaiting_approval(create_run(status: "completed"))

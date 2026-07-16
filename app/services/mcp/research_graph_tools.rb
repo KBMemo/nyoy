@@ -77,10 +77,8 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
-        unless run
-          return AgentGraphResponse.missing_run(agent_run_id)
-        end
+        run, error = AgentGraphResponse.find_run_or_error(agent_run_id, graph_name: GRAPH_NAME)
+        return error if error
 
         Mcp::ResearchGraphTools.success_response(run)
       end
