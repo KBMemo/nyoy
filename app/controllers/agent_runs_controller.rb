@@ -4,6 +4,11 @@ class AgentRunsController < ApplicationController
   before_action :set_chat
   before_action :set_agent_run
 
+  def show
+    @node_runs = @agent_run.agent_node_runs.order(:id)
+    @checkpoints = @agent_run.agent_checkpoints.order(:id)
+  end
+
   def approve
     resume!("approved")
   end

@@ -36,6 +36,30 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "approved", @run.reload.state["approval"]
   end
 
+  test "show renders agent run details" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "await_approval",
+      status: "completed",
+      started_at: 1.minute.ago,
+      finished_at: Time.current,
+      output_snapshot: { "updates" => { "approval" => "pending" } }
+    )
+    @run.agent_checkpoints.create!(
+      node_name: "await_approval",
+      state: @run.state
+    )
+
+    get chat_agent_run_path(@chat, @run)
+
+    assert_response :success
+    assert_select "h1", text: "AgentRun ##{@run.id}"
+    assert_select "dd", text: @run.graph_name
+    assert_select "dd", text: @run.status
+    assert_select "td", text: node_run.node_name
+    assert_select "summary", text: /JSON を表示/
+    assert_includes response.body, "memo_draft"
+  end
+
   test "approve enqueues resume job and clears pending decision" do
     assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
       post approve_chat_agent_run_path(@chat, @run)

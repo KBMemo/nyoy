@@ -292,6 +292,35 @@ MemoUpdate:
 6. `summary_for` を Graph ごとの presenter に切り出す（完了）
 7. `update_memo` は MemoWrite create の拡張ではなく、新しい明示フローとして設計する（完了）
 
+## 次の優先ロードマップ
+
+Graph の骨子は成立したため、次は新しい抽象を増やすより先に observability を固める。目的は、実行中・失敗時・再開時に「どの node が、どの state から、何を返したか」を UI から追えるようにすること。
+
+1. `AgentRun` 詳細ページを追加する（着手）
+   - チャット画面から直近の AgentRun を開ける
+   - graph 名、status、current node、開始/終了時刻、error を表示する
+   - まず読み取り専用にし、運用中の調査に使える状態を優先する
+
+2. node 履歴を見える化する
+   - `AgentNodeRun` を時系列で表示する
+   - node ごとの status、elapsed、error、input/output snapshot の概要を確認できるようにする
+
+3. state / checkpoint を確認可能にする
+   - `AgentRun.state` と `AgentCheckpoint` を collapsible な JSON 表示にする
+   - 再開・retry を入れる前に、checkpoint の実用性を確認する
+
+4. LLM 呼び出し metadata を node に寄せる
+   - draft / final で使った model、prompt、thinking、truncated、cache slot、token usage を `AgentNodeRun.output_snapshot` または state meta に統一的に残す
+   - 通常チャットの message stats と Graph 実行 stats の見え方を揃える
+
+5. failure 時の復旧導線を作る
+   - failed run に、失敗 node、最後の checkpoint、再実行候補を表示する
+   - 実際の retry ボタンは、失敗パターンを観測してから追加する
+
+6. retry / resume API を検討する
+   - 任意 node からの再実行、最後の checkpoint からの再開、failed run の複製実行を比較する
+   - 副作用 node は冪等キーがある場合だけ自動 retry 対象にする
+
 ## 判断基準
 
 迷ったら次で判断する。

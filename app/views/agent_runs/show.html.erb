@@ -1,0 +1,111 @@
+<% content_for :title, "AgentRun ##{@agent_run.id}" %>
+
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="<%= kb_page_title %>">AgentRun #<%= @agent_run.id %></h1>
+    <p class="mt-1 text-sm kb-text-secondary">
+      <%= @agent_run.graph_name %> /
+      <%= @agent_run.status %>
+      <% if @agent_run.current_node.present? %>
+        / current: <%= @agent_run.current_node %>
+      <% end %>
+    </p>
+  </div>
+  <%= link_to "チャットへ戻る", chat_path(@chat), class: "kb-chrome-link text-sm" %>
+</div>
+
+<section class="kb-card p-4">
+  <h2 class="<%= kb_section_title %>">実行概要</h2>
+  <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+    <div>
+      <dt class="text-xs kb-text-muted">Graph</dt>
+      <dd class="text-sm kb-text-primary"><%= @agent_run.graph_name %></dd>
+    </div>
+    <div>
+      <dt class="text-xs kb-text-muted">Status</dt>
+      <dd class="text-sm kb-text-primary"><%= @agent_run.status %></dd>
+    </div>
+    <div>
+      <dt class="text-xs kb-text-muted">Current Node</dt>
+      <dd class="text-sm kb-text-primary"><%= @agent_run.current_node.presence || "なし" %></dd>
+    </div>
+    <div>
+      <dt class="text-xs kb-text-muted">Chat</dt>
+      <dd class="text-sm kb-text-primary">#<%= @chat.id %></dd>
+    </div>
+    <div>
+      <dt class="text-xs kb-text-muted">Started</dt>
+      <dd class="text-sm kb-text-primary"><%= @agent_run.started_at ? l(@agent_run.started_at, format: :long) : "未開始" %></dd>
+    </div>
+    <div>
+      <dt class="text-xs kb-text-muted">Finished</dt>
+      <dd class="text-sm kb-text-primary"><%= @agent_run.finished_at ? l(@agent_run.finished_at, format: :long) : "未完了" %></dd>
+    </div>
+  </dl>
+
+  <% if @agent_run.error_message.present? %>
+    <div class="kb-alert kb-alert-danger mt-4" role="alert">
+      <%= @agent_run.error_message %>
+    </div>
+  <% end %>
+</section>
+
+<section class="kb-card p-4 mt-4">
+  <h2 class="<%= kb_section_title %>">Node 履歴</h2>
+  <% if @node_runs.any? %>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left kb-text-muted">
+          <tr>
+            <th class="py-2 pr-4">#</th>
+            <th class="py-2 pr-4">Node</th>
+            <th class="py-2 pr-4">Status</th>
+            <th class="py-2 pr-4">Started</th>
+            <th class="py-2 pr-4">Finished</th>
+            <th class="py-2 pr-4">Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @node_runs.each do |node_run| %>
+            <tr class="border-t">
+              <td class="py-2 pr-4 kb-text-muted"><%= node_run.id %></td>
+              <td class="py-2 pr-4"><%= node_run.node_name %></td>
+              <td class="py-2 pr-4"><%= node_run.status %></td>
+              <td class="py-2 pr-4"><%= node_run.started_at ? l(node_run.started_at, format: :short) : "-" %></td>
+              <td class="py-2 pr-4"><%= node_run.finished_at ? l(node_run.finished_at, format: :short) : "-" %></td>
+              <td class="py-2 pr-4"><%= node_run.error_message.presence || "-" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="mt-3 text-sm kb-text-secondary">Node 実行履歴はまだありません。</p>
+  <% end %>
+</section>
+
+<section class="kb-card p-4 mt-4">
+  <h2 class="<%= kb_section_title %>">State</h2>
+  <details class="mt-3">
+    <summary class="kb-chrome-link text-sm">JSON を表示</summary>
+    <pre class="mt-3 text-xs whitespace-pre-wrap nyoy-monospace"><%= JSON.pretty_generate(@agent_run.state || {}) %></pre>
+  </details>
+</section>
+
+<section class="kb-card p-4 mt-4">
+  <h2 class="<%= kb_section_title %>">Checkpoint</h2>
+  <p class="mt-1 text-sm kb-text-secondary"><%= @checkpoints.count %> 件</p>
+  <% if @checkpoints.any? %>
+    <div class="mt-3 space-y-3">
+      <% @checkpoints.each do |checkpoint| %>
+        <details>
+          <summary class="kb-chrome-link text-sm">
+            #<%= checkpoint.id %> <%= checkpoint.node_name %> /
+            <%= l(checkpoint.created_at, format: :short) %>
+          </summary>
+          <pre class="mt-3 text-xs whitespace-pre-wrap nyoy-monospace"><%= JSON.pretty_generate(checkpoint.state || {}) %></pre>
+        </details>
+      <% end %>
+    </div>
+  <% end %>
+</section>
