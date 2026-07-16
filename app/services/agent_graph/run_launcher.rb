@@ -11,6 +11,15 @@ module AgentGraph
       ).call
     end
 
+    def self.for_graph(chat:, graph_name:, state:)
+      call(
+        chat: chat,
+        graph: Registry.graph_for(graph_name),
+        state: state,
+        supersede_reason: Registry.supersede_reason_for(graph_name)
+      )
+    end
+
     def initialize(chat:, graph:, state:, supersede_reason: nil)
       @chat = chat
       @graph = graph

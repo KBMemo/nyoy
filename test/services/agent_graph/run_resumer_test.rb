@@ -23,6 +23,22 @@ class AgentGraphRunResumerTest < ActiveSupport::TestCase
     assert_equal [ "await_approval" ], completed.agent_node_runs.order(:id).pluck(:node_name)
   end
 
+  test "for_graph resumes through the registry" do
+    run = awaiting_run
+
+    with_registry_graph(resume_graph) do
+      completed = AgentGraph::RunResumer.for_graph(
+        run,
+        graph_name: "test_resume",
+        decision: "approved"
+      )
+
+      assert completed.completed?, -> { completed.error_message }
+      assert_equal "approved", completed.state["approval"]
+      assert_equal "approved", completed.state["seen_approval"]
+    end
+  end
+
   test "rejects runs that are not awaiting approval" do
     run = awaiting_run
     run.update!(status: "completed")
@@ -52,6 +68,16 @@ class AgentGraphRunResumerTest < ActiveSupport::TestCase
       current_node: "await_approval",
       state: { "approval" => "pending" }
     )
+  end
+
+  def with_registry_graph(graph)
+    singleton = class << AgentGraph::Registry; self; end
+    original_graph_for = AgentGraph::Registry.method(:graph_for)
+
+    singleton.define_method(:graph_for) { |graph_name| graph }
+    yield
+  ensure
+    singleton.define_method(:graph_for) { |graph_name| original_graph_for.call(graph_name) }
   end
 
   def resume_graph

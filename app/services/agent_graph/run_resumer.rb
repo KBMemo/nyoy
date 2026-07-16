@@ -8,6 +8,14 @@ module AgentGraph
       new(agent_run, graph: graph, decision: decision).call
     end
 
+    def self.for_graph(agent_run, graph_name:, decision:)
+      call(
+        agent_run,
+        graph: Registry.graph_for(graph_name),
+        decision: decision
+      )
+    end
+
     def initialize(agent_run, graph:, decision:)
       @agent_run = agent_run
       @graph = graph

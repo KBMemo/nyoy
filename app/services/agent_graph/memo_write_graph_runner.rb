@@ -41,24 +41,22 @@ module AgentGraph
 
     def call
       instruction = ensure_instruction!
-      graph = Registry.graph_for(MemoWriteGraph::NAME)
 
-      RunLauncher.call(
+      RunLauncher.for_graph(
         chat: @chat,
-        graph: graph,
+        graph_name: MemoWriteGraph::NAME,
         state: MemoWriteInitialState.build(
           chat: @chat,
           instruction: instruction,
           auto_approve: @auto_approve,
           mcp_body: @mcp_body,
           mcp_title: @mcp_title
-        ),
-        supersede_reason: Registry.supersede_reason_for(MemoWriteGraph::NAME)
+        )
       )
     end
 
     def resume(agent_run, decision:)
-      RunResumer.call(agent_run, graph: Registry.graph_for(MemoWriteGraph::NAME), decision: decision)
+      RunResumer.for_graph(agent_run, graph_name: MemoWriteGraph::NAME, decision: decision)
     end
 
     private

@@ -28,17 +28,15 @@ module AgentGraph
 
     def call
       question = ensure_question!
-      graph = Registry.graph_for(ResearchGraph::NAME)
 
-      RunLauncher.call(
+      RunLauncher.for_graph(
         chat: @chat,
-        graph: graph,
+        graph_name: ResearchGraph::NAME,
         state: ResearchInitialState.build(
           chat: @chat,
           question: question,
           auto_approve: @auto_approve
-        ),
-        supersede_reason: Registry.supersede_reason_for(ResearchGraph::NAME)
+        )
       )
     end
 
