@@ -10,6 +10,8 @@ module AgentGraph
     end
 
     def call
+      raise ArgumentError, "agent run graph mismatch: #{@run.graph_name} != #{@graph.name}" if @run.graph_name != @graph.name
+
       @run.update!(
         status: "running",
         started_at: @run.started_at || Time.current,
