@@ -44,4 +44,28 @@ class AgentNodeRunTest < ActiveSupport::TestCase
 
     assert_equal [ "no output" ], node_run.output_summary
   end
+
+  test "output_summary reports synthesis metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "final_answer" => "answer",
+          "truncated" => true,
+          "final_synthesis" => {
+            "source" => "main",
+            "model_id" => "gpt-oss"
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: final_answer, truncated, final_synthesis",
+      "llm: gpt-oss",
+      "source: main",
+      "truncated"
+    ], node_run.output_summary
+  end
 end

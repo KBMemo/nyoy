@@ -309,7 +309,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - `AgentRun.state` と `AgentCheckpoint` を collapsible な JSON 表示にする
    - 再開・retry を入れる前に、checkpoint の実用性を確認する
 
-4. LLM 呼び出し metadata を node に寄せる
+4. LLM 呼び出し metadata を node に寄せる（着手）
    - draft / final で使った model、prompt、thinking、truncated、cache slot、token usage を `AgentNodeRun.output_snapshot` または state meta に統一的に残す
    - 通常チャットの message stats と Graph 実行 stats の見え方を揃える
 
