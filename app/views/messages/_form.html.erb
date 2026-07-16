@@ -1,4 +1,5 @@
 <% form_url = local_assigns.fetch(:form_url) { url_for([chat, message]) } %>
+<% responding = chat.responding? %>
 <%= form_with(
   model: message,
   url: form_url,
@@ -8,7 +9,8 @@
     multipart: true,
     data: {
       controller: "source-image-preview chat-form",
-      action: 'keydown->chat-form#submitOnShortcut'
+      action: 'keydown->chat-form#submitOnShortcut submit->chat-form#submit',
+      chat_form_responding_value: responding
     }
   }
 ) do |form| %>
@@ -40,18 +42,18 @@
         </svg>
       </button>
     </div>
-    <%= form.text_area :content, rows: 3, class: kb_field_input_classes, placeholder: "メッセージを入力...（画像のみでも送信できます）", autofocus: local_assigns.fetch(:autofocus, false) %>
+    <%= form.text_area :content, rows: 3, class: kb_field_input_classes, placeholder: "メッセージを入力...（画像のみでも送信できます）", autofocus: local_assigns.fetch(:autofocus, false), disabled: responding %>
   </div>
 
   <div>
     <%= form.label :attachments, "画像（任意）", class: "#{kb_label} mb-1" %>
-    <%= form.file_field :attachments, accept: "image/jpeg,image/png,image/webp,image/gif", class: kb_field_input_classes, data: { action: "change->source-image-preview#preview", source_image_preview_target: "input" } %>
+    <%= form.file_field :attachments, accept: "image/jpeg,image/png,image/webp,image/gif", class: kb_field_input_classes, disabled: responding, data: { action: "change->source-image-preview#preview", source_image_preview_target: "input" } %>
     <p class="mt-1 text-sm kb-text-muted">Ctrl+Enter で送信。JPEG / PNG / WebP / GIF。画像解析は必要なときだけ Chat がツールで行います。</p>
   </div>
 
   <div class="flex flex-wrap items-center gap-3">
-    <%= form.submit "送信", class: kb_btn_primary_sm, data: { chat_form_target: "submit" } %>
-    <% if chat.responding? %>
+    <%= form.submit(responding ? "応答中…" : "送信", class: kb_btn_primary_sm, disabled: responding, data: { chat_form_target: "submit" }) %>
+    <% if responding %>
       <%= button_to "応答を中止",
         cancel_chat_path(chat),
         method: :post,

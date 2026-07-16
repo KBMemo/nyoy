@@ -17,8 +17,12 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
-    assert_select "turbo-stream[action='append'][target='messages']"
+    assert_select "turbo-stream[action='before'][target='agent_run_progress']"
     assert_select "turbo-stream[action='replace'][target='new_message']"
+    assert_select "form#new_message[data-chat-form-responding-value='true']"
+    assert_select "textarea[name='message[content]'][disabled]"
+    assert_select "input[type='file'][disabled]"
+    assert_select "input[type='submit'][disabled][value='応答中…']"
 
     message = @chat.messages.where(role: :user).order(:id).last
     assert_equal "こんにちは", message.content
