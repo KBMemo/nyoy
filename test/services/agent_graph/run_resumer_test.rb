@@ -50,6 +50,14 @@ class AgentGraphRunResumerTest < ActiveSupport::TestCase
     assert_equal "agent run must await approval", error.message
   end
 
+  test "rejects graph mismatch before resuming" do
+    error = assert_raises(ArgumentError) do
+      AgentGraph::RunResumer.call(awaiting_run, graph: mismatched_graph, decision: "approved")
+    end
+
+    assert_equal "agent run graph mismatch: test_resume != other_resume", error.message
+  end
+
   test "rejects invalid decisions" do
     error = assert_raises(ArgumentError) do
       AgentGraph::RunResumer.call(awaiting_run, graph: resume_graph, decision: "maybe")
@@ -83,6 +91,15 @@ class AgentGraphRunResumerTest < ActiveSupport::TestCase
   def resume_graph
     AgentGraph::GraphDefinition.new(
       name: "test_resume",
+      start_node: "await_approval",
+      nodes: { "await_approval" => ResumeNode.new },
+      edges: { "await_approval" => AgentGraph::Edge.end }
+    )
+  end
+
+  def mismatched_graph
+    AgentGraph::GraphDefinition.new(
+      name: "other_resume",
       start_node: "await_approval",
       nodes: { "await_approval" => ResumeNode.new },
       edges: { "await_approval" => AgentGraph::Edge.end }

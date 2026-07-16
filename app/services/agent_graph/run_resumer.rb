@@ -23,6 +23,7 @@ module AgentGraph
     end
 
     def call
+      raise ArgumentError, "agent run graph mismatch: #{@agent_run.graph_name} != #{@graph.name}" if @agent_run.graph_name != @graph.name
       raise ArgumentError, "agent run must await approval" unless @agent_run.awaiting_approval?
       raise ArgumentError, "decision required" unless VALID_DECISIONS.include?(@decision)
 
