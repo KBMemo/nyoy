@@ -10,7 +10,6 @@ module AgentGraph
         def call(state:, run:, chat:)
           case state["approval"].to_s
           when "approved", "not_required"
-            AgentGraph::ApprovalBroadcaster.clear!(chat)
             AgentGraph::NodeResult.next("commit_memo")
           when "rejected"
             handle_rejection(chat)
@@ -35,9 +34,10 @@ module AgentGraph
         end
 
         def handle_rejection(chat)
-          AgentGraph::ApprovalBroadcaster.clear!(chat)
-          message = create_assistant_message!(chat, REJECTED_MESSAGE)
-          ChatUiBroadcaster.message_upsert(message)
+          message = AgentGraph::AssistantMessagePublisher.call(
+            chat,
+            content: REJECTED_MESSAGE
+          )
           AgentGraph::NodeResult.end(
             updates: {
               "final_answer" => REJECTED_MESSAGE,
@@ -45,12 +45,6 @@ module AgentGraph
               "approval" => "rejected"
             }
           )
-        end
-
-        def create_assistant_message!(chat, content)
-          Message.suppressing_turbo_broadcasts do
-            chat.messages.create!(role: :assistant, content: content)
-          end
         end
       end
     end

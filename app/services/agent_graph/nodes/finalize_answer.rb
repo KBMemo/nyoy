@@ -28,10 +28,12 @@ module AgentGraph
         end
 
         thinking = meta["thinking"].presence
-        message = create_assistant_message!(chat, answer, truncated: truncated, thinking_text: thinking)
-        ChatUiBroadcaster.message_upsert(message)
-        ChatTruncationBroadcaster.call(chat) if truncated
-        AgentGraph::ApprovalBroadcaster.clear!(chat)
+        message = AgentGraph::AssistantMessagePublisher.call(
+          chat,
+          content: answer,
+          truncated: truncated,
+          thinking_text: thinking
+        )
 
         AgentGraph::NodeResult.end(
           updates: {
@@ -63,17 +65,6 @@ module AgentGraph
 
       def connection_error?(message)
         message.match?(ChatErrorBroadcaster::UNREACHABLE_PATTERN)
-      end
-
-      def create_assistant_message!(chat, answer, truncated: false, thinking_text: nil)
-        Message.suppressing_turbo_broadcasts do
-          chat.messages.create!(
-            role: :assistant,
-            content: answer,
-            truncated: truncated,
-            thinking_text: thinking_text
-          )
-        end
       end
     end
   end

@@ -13,9 +13,10 @@ module AgentGraph
 
           title = state.dig("memo_draft", "title").presence || "メモ"
           answer = "徒然に保存しました。\n\n- タイトル: #{title}\n- uid: `#{uid}`"
-          message = create_assistant_message!(chat, answer)
-          ChatUiBroadcaster.message_upsert(message)
-          AgentGraph::ApprovalBroadcaster.clear!(chat)
+          message = AgentGraph::AssistantMessagePublisher.call(
+            chat,
+            content: answer
+          )
 
           AgentGraph::NodeResult.end(
             updates: {
@@ -23,14 +24,6 @@ module AgentGraph
               "assistant_message_id" => message.id
             }
           )
-        end
-
-        private
-
-        def create_assistant_message!(chat, answer)
-          Message.suppressing_turbo_broadcasts do
-            chat.messages.create!(role: :assistant, content: answer)
-          end
         end
       end
     end

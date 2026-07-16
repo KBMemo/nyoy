@@ -236,7 +236,7 @@ MemoWrite:
 2. Graph ごとの `InitialState` / `StateSchema` を追加し、初期 state を runner から分離する（完了）
 3. Graph 定義に edge を持たせ、Node 内の遷移文字列を減らす（進行中）
 4. Approval を共通 interrupt として整理し、Research legacy approval を削る（完了）
-5. Broadcaster 呼び出しを Node から薄くし、Node は state updates を主語にする
+5. Broadcaster 呼び出しを Node から薄くし、Node は state updates を主語にする（完了）
 6. `summary_for` を Graph ごとの presenter に切り出す
 7. `update_memo` は MemoWrite create の拡張ではなく、新しい明示フローとして設計する
 
