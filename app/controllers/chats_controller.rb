@@ -53,6 +53,7 @@ class ChatsController < ApplicationController
     @message = @chat.messages.build
     @running_agent_run = @chat.agent_runs.where(status: "running").recent.first
     @recent_agent_runs = @chat.agent_runs.recent.limit(5)
+    @show_agent_run_history = @recent_agent_runs.any? || user_image_attachment_messages?
     @pending_agent_run = @chat.agent_runs.pending_decision
       .where(graph_name: AgentGraph::Registry.approval_graph_names)
       .recent
@@ -93,6 +94,10 @@ class ChatsController < ApplicationController
 
   def set_chat
     @chat = Chat.find(params[:id])
+  end
+
+  def user_image_attachment_messages?
+    @chat.messages.where(role: :user).joins(:attachments_attachments).exists?
   end
 
   def load_new_chat_sampling

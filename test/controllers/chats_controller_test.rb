@@ -297,6 +297,22 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{chat_agent_run_path(chat, run)}']", text: "詳細"
   end
 
+  test "show renders empty agent run history for image-only chat turns" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    chat = Chat.create!(model: model)
+    message = chat.messages.create!(role: :user, content: ChatImageAttachments::PLACEHOLDER)
+    png = Base64.decode64(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+    message.attachments.attach(io: StringIO.new(png), filename: "pixel.png", content_type: "image/png")
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "h2", text: "AgentRun"
+    assert_select "section", text: /Graph 実行履歴はありません/
+  end
+
   test "show renders assistant timing and model stats" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     chat = Chat.create!(model: model)

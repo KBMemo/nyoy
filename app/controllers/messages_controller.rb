@@ -26,6 +26,7 @@ class MessagesController < ApplicationController
 
     ChatResponseControl.mark_running!(@chat)
     ChatResponseJob.perform_later(@chat.id)
+    load_agent_run_history
 
     respond_to do |format|
       format.turbo_stream
@@ -37,6 +38,15 @@ class MessagesController < ApplicationController
 
   def set_chat
     @chat = Chat.find(params[:chat_id])
+  end
+
+  def load_agent_run_history
+    @recent_agent_runs = @chat.agent_runs.recent.limit(5)
+    @show_agent_run_history = @recent_agent_runs.any? || user_image_attachment_messages?
+  end
+
+  def user_image_attachment_messages?
+    @chat.messages.where(role: :user).joins(:attachments_attachments).exists?
   end
 
   def render_form_error(message)

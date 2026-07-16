@@ -20,6 +20,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-stream[action='before'][target='agent_run_progress']"
     assert_select "turbo-stream[action='replace'][target='new_message']"
     assert_select "turbo-stream[action='update'][target='agent_run_progress']"
+    assert_select "turbo-stream[action='update'][target='agent_run_history']"
     assert_select "turbo-stream[action='update'][target='agent_run_progress']", text: /回答を生成しています/
     assert_select "form#new_message[data-chat-form-responding-value='true']"
     assert_select "textarea[name='message[content]'][disabled]"
@@ -46,9 +47,11 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
             original_filename: "pixel.png"
           )
         }
-      }
+      }, as: :turbo_stream
     end
 
+    assert_response :success
+    assert_select "turbo-stream[action='update'][target='agent_run_history']", text: /Graph 実行履歴はありません/
     message = @chat.messages.where(role: :user).order(:id).last
     assert message.attachments.attached?
     assert_equal ChatImageAttachments::PLACEHOLDER, message.content

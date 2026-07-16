@@ -15,4 +15,10 @@
       model_name: @chat.model_association&.name.presence || @chat.model_association&.model_id,
       started_at: Time.current.iso8601(3) %>
   <% end %>
+  <%= turbo_stream.update "agent_run_history" do %>
+    <%= render "chats/agent_run_history",
+      chat: @chat,
+      recent_agent_runs: @recent_agent_runs,
+      show_agent_run_history: @show_agent_run_history %>
+  <% end %>
 <% end %>
