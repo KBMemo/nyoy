@@ -27,6 +27,22 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal [ "https://example.com/a" ], result.updates.dig("evidence_review", "target_urls")
   end
 
+  test "requests followup search when previous search has no fetchable urls" do
+    result = node.call(state: state(
+      plan: {
+        "need_web" => true,
+        "queries" => [ "first query", "second query" ],
+        "searched_queries" => [ "first query" ]
+      },
+      search_results: [ { "query" => "first query", "results" => [] } ],
+      budget: { "searches_used" => 1, "max_searches" => 2, "fetches_used" => 0, "max_fetches" => 2 }
+    ), run: nil, chat: nil)
+
+    assert_equal "needs_web", result.updates.dig("evidence_review", "status")
+    assert_equal "search_web", result.updates.dig("evidence_review", "next_node")
+    assert_includes result.updates.dig("evidence_review", "reason"), "previous web search"
+  end
+
   test "requests only unfetched urls when plan still contains fetched urls" do
     result = node.call(state: state(
       plan: { "fetch_urls" => [ "https://example.com/a", "https://example.com/b" ] },

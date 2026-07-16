@@ -14,7 +14,7 @@ module AgentGraph
 
         budget = ChatTools::WebToolBudget.from_graph_budget(state["budget"])
         tool = ChatTools::WebSearch.new(budget: budget)
-        queries = Array(plan["queries"]).map(&:to_s).map(&:strip).reject(&:blank?).first(MAX_QUERIES)
+        queries = next_queries(plan)
         queries = [ state.fetch("question").to_s ] if queries.empty?
 
         search_results = Array(state["search_results"]).dup
@@ -42,7 +42,10 @@ module AgentGraph
         end
 
         queued_urls = queue_urls_from_results(plan, search_results)
-        next_plan = plan.merge("fetch_urls" => queued_urls)
+        next_plan = plan.merge(
+          "fetch_urls" => queued_urls,
+          "searched_queries" => searched_queries(plan) + queries
+        )
 
         AgentGraph::NodeResult.next(
           AgentGraph::ResearchRouting.after_search(state.merge("plan" => next_plan, "search_results" => search_results)),
@@ -56,6 +59,20 @@ module AgentGraph
       end
 
       private
+
+      def next_queries(plan)
+        searched = searched_queries(plan)
+        Array(plan["queries"])
+          .map(&:to_s)
+          .map(&:strip)
+          .reject(&:blank?)
+          .reject { |query| searched.include?(query) }
+          .first(MAX_QUERIES)
+      end
+
+      def searched_queries(plan)
+        Array(plan["searched_queries"]).map(&:to_s)
+      end
 
       def queue_urls_from_results(plan, search_results)
         existing = Array(plan["fetch_urls"]).map(&:to_s).map(&:strip).reject(&:blank?)

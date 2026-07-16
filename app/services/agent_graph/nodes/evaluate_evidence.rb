@@ -32,6 +32,11 @@ module AgentGraph
           return review(status: "needs_web", reason: "web evidence is required but no search has run", plan: plan)
         end
 
+        if needs_followup_search?(state, budget)
+          plan["need_web"] = true
+          return review(status: "needs_web", reason: "previous web search returned no fetchable results", plan: plan)
+        end
+
         urls = unfetched_urls(state, budget)
         if urls.any? && fetch_budget_available?(budget)
           plan["fetch_urls"] = urls
@@ -54,6 +59,20 @@ module AgentGraph
         state.dig("plan", "need_web") &&
           Array(state["search_results"]).empty? &&
           search_budget_available?(budget)
+      end
+
+      def needs_followup_search?(state, budget)
+        state.dig("plan", "need_web") &&
+          !remaining_queries(state).empty? &&
+          Array(state["fetched_pages"]).empty? &&
+          unfetched_urls(state, budget).empty? &&
+          search_budget_available?(budget)
+      end
+
+      def remaining_queries(state)
+        queries = Array(state.dig("plan", "queries")).map(&:to_s).map(&:strip).reject(&:blank?)
+        searched = Array(state.dig("plan", "searched_queries")).map(&:to_s)
+        queries.reject { |query| searched.include?(query) }
       end
 
       def unfetched_urls(state, budget)
