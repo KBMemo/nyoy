@@ -32,6 +32,25 @@ class McpAgentGraphResponseTest < ActiveSupport::TestCase
     assert_includes payload["note"], "resume_test_graph(agent_run_id, decision)"
   end
 
+  test "success_for_graph uses registry summary and resume tool" do
+    run = create_run(
+      status: "awaiting_approval",
+      graph_name: AgentGraph::MemoWriteGraph::NAME,
+      state: { "draft" => "草案", "memo_draft" => { "title" => "件名" } }
+    )
+
+    response = Mcp::AgentGraphResponse.success_for_graph(
+      run,
+      graph_name: AgentGraph::MemoWriteGraph::NAME
+    )
+    payload = JSON.parse(response.content.first[:text])
+
+    assert_equal run.id, payload["agent_run_id"]
+    assert_equal "awaiting_approval", payload["status"]
+    assert_equal "草案", payload["draft"]
+    assert_includes payload["note"], "resume_memo_write_graph(agent_run_id, decision)"
+  end
+
   test "error serializes error payload" do
     response = Mcp::AgentGraphResponse.error("失敗しました")
     payload = JSON.parse(response.content.first[:text])
@@ -87,13 +106,13 @@ class McpAgentGraphResponseTest < ActiveSupport::TestCase
 
   private
 
-  def create_run(status:, graph_name: "test_graph")
+  def create_run(status:, graph_name: "test_graph", state: {})
     AgentRun.create!(
       chat: @chat,
       graph_name: graph_name,
       status: status,
       current_node: status == "awaiting_approval" ? "await_approval" : nil,
-      state: {}
+      state: state
     )
   end
 

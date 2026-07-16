@@ -85,7 +85,7 @@ module Mcp
     end
 
     def success_response(run)
-      AgentGraphResponse.success(run, summary: AgentGraph::Registry.summary_for(GRAPH_NAME))
+      AgentGraphResponse.success_for_graph(run, graph_name: GRAPH_NAME)
     end
 
     def error_response(message)

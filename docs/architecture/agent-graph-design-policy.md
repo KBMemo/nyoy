@@ -136,7 +136,7 @@ Runner が持たない責務:
 3. `Runner`
    Graph を 1 step ずつ進める共通実行エンジン。
 
-補助として `AgentGraph::Registry` を置く。Graph 名から graph class、runner、summary presenter、失敗ラベル、承認 UI partial、supersede reason、MCP resume tool を引くための一覧であり、controller / job / broadcaster / MCP tools に Graph 名の case 文を増やさない。
+補助として `AgentGraph::Registry` を置く。Graph 名から graph class、runner、summary presenter、失敗ラベル、承認 UI partial、承認 UI copy、承認/却下 notice、supersede reason、MCP resume tool を引くための一覧であり、controller / job / broadcaster / view / MCP tools に Graph 名の case 文を増やさない。
 
 Graph 実行周辺の共通 helper:
 
@@ -147,6 +147,7 @@ Graph 実行周辺の共通 helper:
 | `UserTurnResolver` | Chat 入口の直近 user 入力解決と、明示入力の履歴追加 |
 | `McpRunRequest` | MCP 入口の必須文字列検証と MCP 用 Chat 解決 |
 | `RunSummaryBase` | MCP summary の共通フィールド生成 |
+| `Mcp::AgentGraphResponse` | MCP response、run lookup、承認待ち検証、Registry 連動 summary 生成 |
 
 `ChatResponseJob` は最終的に次の程度に薄くする。
 

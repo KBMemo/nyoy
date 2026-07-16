@@ -13,6 +13,14 @@ module Mcp
       MCP::Tool::Response.new([{ type: "text", text: JSON.generate(payload) }])
     end
 
+    def success_for_graph(run, graph_name:)
+      success(
+        run,
+        summary: AgentGraph::Registry.summary_for(graph_name),
+        resume_tool: AgentGraph::Registry.resume_tool_for(graph_name)
+      )
+    end
+
     def error(message)
       MCP::Tool::Response.new(
         [{ type: "text", text: JSON.generate({ error: message }) }],
