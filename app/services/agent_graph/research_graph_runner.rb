@@ -27,33 +27,21 @@ module AgentGraph
 
     def call
       question = ensure_question!
-      supersede_pending_approvals!
+      graph = ResearchGraph.new
 
-      run = AgentRun.create!(
+      RunLauncher.call(
         chat: @chat,
-        graph_name: ResearchGraph::NAME,
-        status: "pending",
-        current_node: ResearchGraph::START,
+        graph: graph,
         state: ResearchInitialState.build(
           chat: @chat,
           question: question,
           auto_approve: @auto_approve
-        )
+        ),
+        supersede_reason: "superseded by a newer research run"
       )
-
-      Runner.new(run, graph: ResearchGraph.new).call
-      run.reload
     end
 
     private
-
-    def supersede_pending_approvals!
-      PendingRunSuperseder.call(
-        chat: @chat,
-        graph_name: ResearchGraph::NAME,
-        reason: "superseded by a newer research run"
-      )
-    end
 
     def ensure_question!
       question = @question.presence || latest_user_question

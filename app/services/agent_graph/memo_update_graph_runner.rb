@@ -47,13 +47,11 @@ module AgentGraph
 
     def call
       instruction = ensure_instruction!
-      supersede_pending_approvals!
+      graph = MemoUpdateGraph.new
 
-      run = AgentRun.create!(
+      RunLauncher.call(
         chat: @chat,
-        graph_name: MemoUpdateGraph::NAME,
-        status: "pending",
-        current_node: MemoUpdateGraph::START,
+        graph: graph,
         state: MemoUpdateInitialState.build(
           chat: @chat,
           instruction: instruction,
@@ -62,11 +60,9 @@ module AgentGraph
           body: @body,
           title: @title,
           mode: @mode
-        )
+        ),
+        supersede_reason: "superseded by a newer memo update run"
       )
-
-      Runner.new(run, graph: MemoUpdateGraph.new).call
-      run.reload
     end
 
     def resume(agent_run, decision:)
@@ -79,14 +75,6 @@ module AgentGraph
     end
 
     private
-
-    def supersede_pending_approvals!
-      PendingRunSuperseder.call(
-        chat: @chat,
-        graph_name: MemoUpdateGraph::NAME,
-        reason: "superseded by a newer memo update run"
-      )
-    end
 
     def ensure_instruction!
       instruction = @instruction.presence || latest_user_instruction
