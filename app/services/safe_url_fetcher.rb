@@ -139,14 +139,15 @@ class SafeUrlFetcher
     reject_pdf_response!(response)
     body, body_truncated = read_limited_body(response)
     content_type = response["content-type"].to_s
-    full_text = extract_text(body, content_type)
+    decoded_body = decode_body(body, content_type)
+    full_text = extract_text(decoded_body, content_type)
     preview_text, text_truncated = limit_text_bytes(full_text, max_bytes)
 
     {
       url: response.uri.to_s,
       status: response.code.to_i,
       content_type: content_type,
-      title: utf8_string(extract_title(body)).presence,
+      title: utf8_string(extract_title(decoded_body)).presence,
       text: preview_text,
       full_text: include_full_text ? utf8_string(full_text) : nil,
       truncated: (body_truncated || text_truncated) || nil
@@ -293,6 +294,35 @@ class SafeUrlFetcher
            end
 
     text.squish
+  end
+
+  def decode_body(body, content_type)
+    raw = body.to_s.dup
+    encoding = response_encoding(content_type, raw)
+    return utf8_string(raw) unless encoding
+
+    raw.force_encoding(encoding)
+    raw.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: "")
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError, Encoding::ConverterNotFoundError
+    utf8_string(body)
+  end
+
+  def response_encoding(content_type, body)
+    label = charset_from_content_type(content_type) || charset_from_meta(body)
+    return nil if label.blank?
+
+    Encoding.find(label)
+  rescue ArgumentError
+    nil
+  end
+
+  def charset_from_content_type(content_type)
+    content_type.to_s[/charset\s*=\s*["']?([^;"'\s]+)/i, 1]
+  end
+
+  def charset_from_meta(body)
+    head = body.to_s.byteslice(0, 4096).to_s
+    head[/<meta[^>]+charset\s*=\s*["']?\s*([^"'>\s]+)/i, 1]
   end
 
   def limit_text_bytes(text, max_bytes)

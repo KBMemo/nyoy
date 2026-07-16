@@ -95,6 +95,28 @@ class SafeUrlFetcherTest < ActiveSupport::TestCase
     assert_not_includes result[:text], "bad()"
   end
 
+  test "decodes non-utf8 html using response charset" do
+    disabled_readability = Object.new
+    disabled_readability.define_singleton_method(:configured?) { false }
+    fetcher = SafeUrlFetcher.new(readability_client: disabled_readability)
+    html = "<html><head><title>天狗山 百名山</title></head><body><p>ヤマレコのルート案内</p></body></html>"
+    fetcher.define_singleton_method(:perform_get) do |uri|
+      SafeUrlFetcherTest.fake_http_response(
+        200,
+        html.encode("EUC-JP"),
+        uri: uri,
+        content_type: "text/html; charset=EUC-JP"
+      )
+    end
+
+    result = fetcher.fetch("https://www.yamareco.com/modules/yamainfo/guide_detail.php?route_id=1202")
+
+    assert_equal "天狗山 百名山", result[:title]
+    assert_includes result[:text], "ヤマレコのルート案内"
+    assert_equal Encoding::UTF_8, result[:text].encoding
+    assert result[:text].valid_encoding?
+  end
+
   test "uses readability when configured" do
     fake_client = Object.new
     fake_client.define_singleton_method(:configured?) { true }
