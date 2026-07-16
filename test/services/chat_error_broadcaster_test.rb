@@ -51,6 +51,28 @@ class ChatErrorBroadcasterTest < ActiveSupport::TestCase
     assert_includes message.chat_error_message, "empty draft"
   end
 
+  test "surfaces unreachable model server errors clearly" do
+    error = Faraday::ConnectionFailed.new("Failed to open TCP connection to balvenie:10113 (Connection refused)")
+
+    message = ChatErrorBroadcaster.fail!(@chat, error)
+
+    assert message.chat_error?
+    assert_includes message.chat_error_message, "モデルサーバーに接続できません"
+    assert_includes message.chat_error_message, "起動しているか確認"
+    assert_includes message.chat_error_message, "Connection refused"
+  end
+
+  test "treats AgentGraph connection failures as unreachable server" do
+    message = ChatErrorBroadcaster.fail!(
+      @chat,
+      AgentGraph::Error.new("モデルサーバーに接続できません。LLM サーバーが起動しているか確認してください。\nFaraday::ConnectionFailed: Connection refused")
+    )
+
+    assert message.chat_error?
+    assert_includes message.chat_error_message, "モデルサーバーに接続できません"
+    refute_includes message.chat_error_message, "調査フローが失敗しました"
+  end
+
   test "renders chat error partial" do
     message = @chat.messages.create!(
       role: :assistant,

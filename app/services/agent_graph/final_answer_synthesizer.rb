@@ -2,8 +2,8 @@
 
 module AgentGraph
   # Final research answer for Research Graph.
-  # Uses the chat's main model (thinking allowed). On failure, shows a clear error
-  # with collected sources instead of dumping the internal evidence pack.
+  # Uses the chat's main model (thinking allowed). On failure returns no answer so
+  # FinalizeAnswer can fail the run and ChatErrorBroadcaster can show an error bubble.
   class FinalAnswerSynthesizer
     class << self
       # Test hook: skip LLM and publish the evidence pack / draft as-is.
@@ -40,7 +40,7 @@ module AgentGraph
       answer, truncated, meta = ask_main_model(evidence)
       if answer.blank?
         return [
-          failure_answer(evidence, meta),
+          nil,
           false,
           (meta || {}).stringify_keys.merge("source" => "error")
         ]
@@ -114,23 +114,8 @@ module AgentGraph
       if body.present? && appendix.present?
         "#{body}\n\n---\n\n#{appendix}"
       else
-        body.presence || failure_answer(evidence, {})
+        body
       end
-    end
-
-    def failure_answer(evidence, meta)
-      lines = []
-      lines << "最終回答の生成に失敗しました。"
-      error = meta.is_a?(Hash) ? meta["error"].presence || meta[:error].presence : nil
-      if error.present?
-        lines << "原因: #{error.to_s.truncate(200)}"
-      else
-        lines << "モデルに接続できないか、応答が空でした。もう一度質問してください。"
-      end
-      lines << ""
-      sources = @draft_helper.compact_sources(evidence)
-      lines << (sources.presence || "収集できた出典はありませんでした。")
-      lines.join("\n")
     end
 
     def user_prompt(evidence)
