@@ -9,6 +9,10 @@ module AgentGraph
         graph_name == MemoWriteGraph::NAME
       end
 
+      def memo_update?
+        graph_name == MemoUpdateGraph::NAME
+      end
+
       def research?
         graph_name == ResearchGraph::NAME
       end

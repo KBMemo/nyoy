@@ -18,6 +18,7 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     assert_equal AgentGraph::MemoWriteGraph::NAME, decision.graph_name
     assert_equal AgentGraph::MemoWriteGraphRunner, decision.runner
     assert decision.memo_write?
+    refute decision.memo_update?
     refute decision.research?
     assert_equal "strong", decision.intent_decision[:reason]
   end
@@ -31,6 +32,7 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     assert_equal AgentGraph::ResearchGraphRunner, decision.runner
     assert decision.research?
     refute decision.memo_write?
+    refute decision.memo_update?
     assert_equal "strong", decision.intent_decision[:reason]
   end
 
@@ -49,6 +51,9 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
 
     assert_equal AgentGraph::MemoUpdateGraph::NAME, decision.graph_name
     assert_equal AgentGraph::MemoUpdateGraphRunner, decision.runner
+    assert decision.memo_update?
+    refute decision.memo_write?
+    refute decision.research?
   end
 
   test "research-framed memo save defers to research graph" do
