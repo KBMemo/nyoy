@@ -3,6 +3,22 @@
 require "test_helper"
 
 class AgentGraphGraphEdgesTest < ActiveSupport::TestCase
+  test "graphs expose common definition contract" do
+    graphs = [
+      AgentGraph::ResearchGraph.new,
+      AgentGraph::MemoWriteGraph.new,
+      AgentGraph::MemoUpdateGraph.new
+    ]
+
+    assert_equal %w[research memo_write memo_update], graphs.map(&:name)
+    assert_equal %w[plan_research plan_memo_write plan_memo_update], graphs.map(&:start_node)
+    assert_equal [
+      AgentGraph::ResearchStateSchema,
+      AgentGraph::MemoWriteStateSchema,
+      AgentGraph::MemoUpdateStateSchema
+    ], graphs.map(&:state_schema)
+  end
+
   test "memo write graph declares fixed edges" do
     graph = AgentGraph::MemoWriteGraph.new
 
