@@ -301,11 +301,11 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - graph 名、status、current node、開始/終了時刻、error を表示する
    - まず読み取り専用にし、運用中の調査に使える状態を優先する
 
-2. node 履歴を見える化する（着手）
+2. node 履歴を見える化する（完了）
    - `AgentNodeRun` を時系列で表示する
    - node ごとの status、elapsed、error、input/output snapshot の概要を確認できるようにする
 
-3. state / checkpoint を確認可能にする
+3. state / checkpoint を確認可能にする（着手）
    - `AgentRun.state` と `AgentCheckpoint` を collapsible な JSON 表示にする
    - 再開・retry を入れる前に、checkpoint の実用性を確認する
 

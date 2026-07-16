@@ -43,6 +43,13 @@ class AgentRun < ApplicationRecord
     status == "awaiting_approval"
   end
 
+  def state_summary
+    keys = state.is_a?(Hash) ? state.keys : []
+    return "empty state" if keys.empty?
+
+    "state: #{keys.join(", ")}"
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!

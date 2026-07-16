@@ -116,6 +116,7 @@
 
 <section class="kb-card p-4 mt-4">
   <h2 class="<%= kb_section_title %>">State</h2>
+  <p class="mt-1 text-sm kb-text-secondary"><%= @agent_run.state_summary %></p>
   <details class="mt-3">
     <summary class="kb-chrome-link text-sm">JSON を表示</summary>
     <pre class="mt-3 text-xs whitespace-pre-wrap nyoy-monospace"><%= JSON.pretty_generate(@agent_run.state || {}) %></pre>
@@ -131,7 +132,8 @@
         <details>
           <summary class="kb-chrome-link text-sm">
             #<%= checkpoint.id %> <%= checkpoint.node_name %> /
-            <%= l(checkpoint.created_at, format: :short) %>
+            <%= l(checkpoint.created_at, format: :short) %> /
+            <%= checkpoint.state_summary %>
           </summary>
           <pre class="mt-3 text-xs whitespace-pre-wrap nyoy-monospace"><%= JSON.pretty_generate(checkpoint.state || {}) %></pre>
         </details>

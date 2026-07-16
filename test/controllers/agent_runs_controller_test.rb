@@ -66,6 +66,9 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_select "summary", text: /JSON を表示/
     assert_includes response.body, "input_marker"
     assert_includes response.body, "updates"
+    assert_includes response.body, "state:"
+    assert_includes response.body, "instruction"
+    assert_includes response.body, "memo_draft"
     assert_includes response.body, "memo_draft"
   end
 
