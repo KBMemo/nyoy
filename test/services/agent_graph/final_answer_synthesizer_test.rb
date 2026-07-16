@@ -94,4 +94,12 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_includes prompt, "検索: 公式 changelog"
     assert_includes prompt, "ページ取得: https://example.com/spec"
   end
+
+  test "detects length finish reason on streamed final answer chunks" do
+    synthesizer = AgentGraph::FinalAnswerSynthesizer.new(@chat)
+    chunk = Object.new
+    chunk.define_singleton_method(:finish_reason) { "length" }
+
+    assert synthesizer.send(:length_finish_reason?, chunk)
+  end
 end

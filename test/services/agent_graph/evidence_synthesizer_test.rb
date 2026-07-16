@@ -145,6 +145,17 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     assert_equal 0.9, llm.params[:top_p]
   end
 
+  test "length truncation uses thread-local finish reason capture" do
+    synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
+    response = Struct.new(:raw).new(nil)
+
+    Nyoy::FinishReasonCapture.record!("length")
+
+    assert synthesizer.length_truncated_response?(response)
+  ensure
+    Nyoy::FinishReasonCapture.reset!
+  end
+
   test "strips think blocks and keeps thinking for the UI" do
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
     thinking = Struct.new(:text).new("フィールドの思考")

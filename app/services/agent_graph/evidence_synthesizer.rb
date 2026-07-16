@@ -128,6 +128,7 @@ module AgentGraph
       disable_thinking!(llm)
 
       llm.with_instructions(SYNTHESIS_SYSTEM)
+      Nyoy::FinishReasonCapture.reset!
       response = llm.ask(user_prompt(evidence))
       answer, thinking = extract_answer_and_thinking(response)
       [ answer, thinking, length_truncated_response?(response) ]
@@ -298,6 +299,8 @@ module AgentGraph
     end
 
     def length_truncated_response?(response)
+      return true if Nyoy::FinishReasonCapture.length?
+
       raw = response.respond_to?(:raw) ? response.raw : nil
       body = raw.respond_to?(:body) ? raw.body : raw
       body = JSON.parse(body) if body.is_a?(String)

@@ -73,8 +73,12 @@ module AgentGraph
       progress = ThinkingProgress.new(@chat)
       streamed_thinking = +""
       streamed_content = +""
+      truncated_by_length = false
 
+      Nyoy::FinishReasonCapture.reset!
       response = llm.ask(prompt) do |chunk|
+        truncated_by_length ||= length_finish_reason?(chunk)
+
         thinking_delta = chunk.thinking&.text
         streamed_thinking << thinking_delta if thinking_delta.is_a?(String) && !thinking_delta.empty?
 
@@ -91,7 +95,7 @@ module AgentGraph
 
       [
         answer,
-        @draft_helper.length_truncated_response?(response),
+        truncated_by_length || @draft_helper.length_truncated_response?(response),
         {
           "source" => "main",
           "model_id" => model.model_id,
@@ -112,6 +116,11 @@ module AgentGraph
 
       _content, embedded = @draft_helper.peel_think_blocks(streamed_content)
       embedded.map { |part| part.to_s.strip }.reject(&:blank?).join("\n\n")
+    end
+
+    def length_finish_reason?(chunk)
+      reason = chunk.respond_to?(:finish_reason) ? chunk.finish_reason.to_s : ""
+      reason == "length"
     end
 
     def compose_answer(llm_answer, evidence)
