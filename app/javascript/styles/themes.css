@@ -1012,7 +1012,15 @@
   margin-top: 0.35rem;
 }
 
-.nyoy-research-progress-thinking {
+.nyoy-research-progress-prompts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.nyoy-research-progress-thinking,
+.nyoy-research-progress-prompt {
   max-height: 12rem;
 }
 

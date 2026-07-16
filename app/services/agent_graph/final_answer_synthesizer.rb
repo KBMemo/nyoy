@@ -66,11 +66,14 @@ module AgentGraph
       ChatLlmSettings.apply!(llm, chat: @chat)
       llm.with_instructions(FINAL_SYSTEM)
 
+      prompt = user_prompt(evidence)
+      ProgressBroadcaster.prompts!(@chat, system: FINAL_SYSTEM, user: prompt)
+
       progress = ThinkingProgress.new(@chat)
       streamed_thinking = +""
       streamed_content = +""
 
-      response = llm.ask(user_prompt(evidence)) do |chunk|
+      response = llm.ask(prompt) do |chunk|
         thinking_delta = chunk.thinking&.text
         streamed_thinking << thinking_delta if thinking_delta.is_a?(String) && !thinking_delta.empty?
 
@@ -91,7 +94,9 @@ module AgentGraph
         {
           "source" => "main",
           "model_id" => model.model_id,
-          "thinking" => thinking.presence
+          "thinking" => thinking.presence,
+          "system_prompt" => FINAL_SYSTEM,
+          "user_prompt" => prompt
         }
       ]
     rescue StandardError => e

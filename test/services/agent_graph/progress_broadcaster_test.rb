@@ -94,4 +94,19 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       AgentGraph::ProgressBroadcaster.thinking!(@chat, "")
     end
   end
+
+  test "prompts broadcasts system and user text without replacing the panel" do
+    payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.prompts!(
+        @chat,
+        system: "あなたは調査アシスタントです。",
+        user: "質問:\n高尾山は？"
+      )
+    end.last
+
+    assert_equal "research_progress_prompts", payload["type"]
+    assert_equal "あなたは調査アシスタントです。", payload["system"]
+    assert_equal "質問:\n高尾山は？", payload["user"]
+    assert_nil payload["html"]
+  end
 end

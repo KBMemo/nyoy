@@ -50,6 +50,9 @@ export default class extends Controller {
       case "research_progress_thinking":
         this.updateResearchProgressThinking(event)
         break
+      case "research_progress_prompts":
+        this.updateResearchProgressPrompts(event)
+        break
     }
   }
 
@@ -199,6 +202,76 @@ export default class extends Controller {
     }
 
     pre.textContent = text
+  }
+
+  updateResearchProgressPrompts(event) {
+    const systemText = event.system || ""
+    const userText = event.user || ""
+    if (!systemText && !userText) return
+
+    const mount = this.ensureResearchProgressMount()
+    const panel = mount?.querySelector("#research_progress_panel")
+    if (!panel) return
+
+    let section = panel.querySelector("#research_progress_prompts_section")
+    if (!section) {
+      section = document.createElement("div")
+      section.id = "research_progress_prompts_section"
+      section.className = "nyoy-research-progress-prompts-section"
+      const body = panel.querySelector(".nyoy-research-progress-body")
+      const thinking = panel.querySelector("#research_progress_thinking_section")
+      if (thinking) {
+        thinking.before(section)
+      } else {
+        body?.append(section)
+      }
+    }
+
+    section.classList.remove("hidden")
+
+    if (systemText) {
+      let systemPre = section.querySelector("#research_progress_system_prompt")
+      if (!systemPre) {
+        const details = document.createElement("details")
+        details.className = "nyoy-chat-message-thinking-details"
+        details.open = true
+
+        const summary = document.createElement("summary")
+        summary.className = "nyoy-chat-message-thinking-summary"
+        summary.textContent = "システムプロンプト"
+
+        systemPre = document.createElement("pre")
+        systemPre.id = "research_progress_system_prompt"
+        systemPre.className = "nyoy-chat-message-thinking nyoy-research-progress-prompt"
+
+        details.append(summary, systemPre)
+        section.prepend(details)
+      }
+      systemPre.textContent = systemText
+      systemPre.closest("details")?.classList.remove("hidden")
+    }
+
+    if (userText) {
+      let userDetails = section.querySelector(".nyoy-research-progress-user-prompt-details")
+      let userPre = section.querySelector("#research_progress_user_prompt")
+      if (!userPre) {
+        userDetails = document.createElement("details")
+        userDetails.className = "nyoy-chat-message-thinking-details nyoy-research-progress-user-prompt-details"
+
+        const summary = document.createElement("summary")
+        summary.className = "nyoy-chat-message-thinking-summary"
+        summary.textContent = "ユーザープロンプト"
+
+        userPre = document.createElement("pre")
+        userPre.id = "research_progress_user_prompt"
+        userPre.className = "nyoy-chat-message-thinking nyoy-research-progress-prompt"
+
+        userDetails.append(summary, userPre)
+        section.append(userDetails)
+      }
+      userPre.textContent = userText
+      userDetails?.classList.remove("hidden")
+    }
   }
 
   ensureResearchProgressMount() {

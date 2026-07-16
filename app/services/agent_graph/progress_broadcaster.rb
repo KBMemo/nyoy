@@ -49,6 +49,19 @@ module AgentGraph
         })
       end
 
+      # Show the LLM system / user prompts in the progress panel (finalize_answer).
+      def prompts!(chat, system:, user: nil)
+        system_text = system.to_s.strip
+        user_text = user.to_s.strip
+        return if system_text.blank? && user_text.blank?
+
+        ChatChannel.broadcast_to(chat, {
+          type: "research_progress_prompts",
+          system: system_text.presence,
+          user: user_text.presence
+        }.compact)
+      end
+
       def clear!(chat)
         broadcast(chat, label: nil)
       end
