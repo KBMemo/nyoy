@@ -85,7 +85,7 @@ module Mcp
     end
 
     def success_response(run)
-      payload = AgentGraph::ResearchGraphRunner.summary_for(run)
+      payload = AgentGraph::ResearchRunSummary.build(run)
       MCP::Tool::Response.new([{ type: "text", text: JSON.generate(payload) }])
     end
 

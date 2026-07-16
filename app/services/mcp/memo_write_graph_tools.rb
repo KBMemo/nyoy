@@ -144,7 +144,7 @@ module Mcp
     end
 
     def success_response(run)
-      payload = AgentGraph::MemoWriteGraphRunner.summary_for(run)
+      payload = AgentGraph::MemoWriteRunSummary.build(run)
       if run.awaiting_approval?
         payload[:note] = "draft を確認し resume_memo_write_graph(agent_run_id, decision) で続行してください。"
       end

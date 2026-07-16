@@ -30,33 +30,6 @@ module AgentGraph
       )
     end
 
-    def self.summary_for(run)
-      state = run.state || {}
-      draft = state["memo_draft"].is_a?(Hash) ? state["memo_draft"] : {}
-      {
-        agent_run_id: run.id,
-        chat_id: run.chat_id,
-        graph_name: run.graph_name,
-        status: run.status,
-        current_node: run.current_node,
-        instruction: state["instruction"],
-        draft: state["draft"],
-        memo_draft: draft,
-        memo_uid: state["memo_uid"],
-        final_answer: state["final_answer"],
-        approval: state["approval"],
-        assistant_message_id: state["assistant_message_id"],
-        errors: state["errors"],
-        error_message: run.error_message,
-        auto_approve: state["auto_approve"] == true,
-        nodes: run.agent_node_runs.order(:id).pluck(:node_name),
-        chat_path: Rails.application.routes.url_helpers.chat_path(run.chat),
-        awaiting_approval: run.awaiting_approval?,
-        completed: run.completed?,
-        failed: run.failed?
-      }
-    end
-
     def self.resolve_mcp_chat(chat_id, instruction)
       if chat_id.present?
         chat = Chat.find_by(id: chat_id)
