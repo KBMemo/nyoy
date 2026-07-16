@@ -6,11 +6,16 @@
 
 # Ignore bundler config.
 /.bundle
+/vendor/bundle/
 
 # Ignore all environment files.
 /.env*
 !/.env.example
 /env.development
+
+# Ignore local deploy credentials/config.
+/.kamal/
+/config/credentials.yml.enc
 
 # Ignore all logfiles and tempfiles.
 /log/*
@@ -51,4 +56,3 @@ node_modules
 
 # Local CLIP vocab assets.
 /public/clip/
-
