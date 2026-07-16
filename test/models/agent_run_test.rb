@@ -48,4 +48,29 @@ class AgentRunTest < ActiveSupport::TestCase
     )
     assert_equal "connection failed", run.recovery_error_summary
   end
+
+  test "retry source helpers summarize duplicate retry metadata" do
+    source = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      state: { "question" => "q" }
+    )
+    retry_run = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "running",
+      current_node: "finalize_answer",
+      state: {
+        "retry_of_agent_run_id" => source.id,
+        "retry_from_checkpoint_id" => 123,
+        "retry_from_node" => "synthesize_draft"
+      }
+    )
+
+    assert retry_run.retry_run?
+    assert_equal source, retry_run.retry_source_run
+    assert_equal "retry of ##{source.id} / checkpoint #123 / from synthesize_draft", retry_run.retry_source_summary
+  end
 end

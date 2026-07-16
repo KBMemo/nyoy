@@ -33,6 +33,24 @@
       <dt class="text-xs kb-text-muted">Chat</dt>
       <dd class="text-sm kb-text-primary">#<%= @chat.id %></dd>
     </div>
+    <% if @agent_run.retry_run? %>
+      <div>
+        <dt class="text-xs kb-text-muted">Retry Source</dt>
+        <dd class="text-sm kb-text-primary">
+          <% if (source_run = @agent_run.retry_source_run) %>
+            <%= link_to "AgentRun ##{source_run.id}", chat_agent_run_path(@chat, source_run), class: "kb-chrome-link" %>
+            <% if @agent_run.state["retry_from_checkpoint_id"].present? %>
+              / checkpoint #<%= @agent_run.state["retry_from_checkpoint_id"] %>
+            <% end %>
+            <% if @agent_run.state["retry_from_node"].present? %>
+              / from <%= @agent_run.state["retry_from_node"] %>
+            <% end %>
+          <% else %>
+            <%= @agent_run.retry_source_summary %>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
     <div>
       <dt class="text-xs kb-text-muted">Started</dt>
       <dd class="text-sm kb-text-primary"><%= @agent_run.started_at ? l(@agent_run.started_at, format: :long) : "未開始" %></dd>

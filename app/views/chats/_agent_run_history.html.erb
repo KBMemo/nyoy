@@ -19,6 +19,21 @@
                   / <%= run.current_node %>
                 <% end %>
               </span>
+              <% if run.retry_run? %>
+                <p class="mt-1 text-xs kb-text-secondary">
+                  <% if (source_run = run.retry_source_run) %>
+                    retry of <%= link_to "##{source_run.id}", chat_agent_run_path(chat, source_run), class: "kb-chrome-link" %>
+                    <% if run.state["retry_from_checkpoint_id"].present? %>
+                      / checkpoint #<%= run.state["retry_from_checkpoint_id"] %>
+                    <% end %>
+                    <% if run.state["retry_from_node"].present? %>
+                      / from <%= run.state["retry_from_node"] %>
+                    <% end %>
+                  <% else %>
+                    <%= run.retry_source_summary %>
+                  <% end %>
+                </p>
+              <% end %>
               <% if run.failed? %>
                 <p class="mt-1 text-xs kb-text-secondary"><%= run.recovery_summary %></p>
                 <% if run.recovery_error_summary.present? %>

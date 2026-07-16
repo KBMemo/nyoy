@@ -325,6 +325,35 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "p", text: /node connection failed/
   end
 
+  test "show summarizes retry runs in history" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    chat = Chat.create!(model: model)
+    source = chat.agent_runs.create!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      state: { "question" => "調べて" }
+    )
+    retry_run = chat.agent_runs.create!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "completed",
+      current_node: nil,
+      state: {
+        "retry_of_agent_run_id" => source.id,
+        "retry_from_checkpoint_id" => 789,
+        "retry_from_node" => "synthesize_draft"
+      }
+    )
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "a[href='#{chat_agent_run_path(chat, retry_run)}']", text: "詳細"
+    assert_select "a[href='#{chat_agent_run_path(chat, source)}']", text: "##{source.id}"
+    assert_select "p", text: /checkpoint #789/
+    assert_select "p", text: /from synthesize_draft/
+  end
+
   test "show renders empty agent run history for image-only chat turns" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     chat = Chat.create!(model: model)

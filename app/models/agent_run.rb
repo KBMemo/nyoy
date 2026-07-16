@@ -93,6 +93,25 @@ class AgentRun < ApplicationRecord
     failed_node_run&.error_message.presence || error_message.presence
   end
 
+  def retry_run?
+    state.is_a?(Hash) && state["retry_of_agent_run_id"].present?
+  end
+
+  def retry_source_run
+    return unless retry_run?
+
+    chat.agent_runs.find_by(id: state["retry_of_agent_run_id"])
+  end
+
+  def retry_source_summary
+    return unless retry_run?
+
+    parts = [ "retry of ##{state["retry_of_agent_run_id"]}" ]
+    parts << "checkpoint ##{state["retry_from_checkpoint_id"]}" if state["retry_from_checkpoint_id"].present?
+    parts << "from #{state["retry_from_node"]}" if state["retry_from_node"].present?
+    parts.join(" / ")
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!
