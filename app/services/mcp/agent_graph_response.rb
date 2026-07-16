@@ -19,5 +19,17 @@ module Mcp
         error: true
       )
     end
+
+    def find_run(agent_run_id, graph_name:)
+      AgentRun.find_by(id: agent_run_id, graph_name: graph_name)
+    end
+
+    def missing_run(agent_run_id)
+      error("AgentRun #{agent_run_id} が見つかりません")
+    end
+
+    def not_awaiting_approval(run)
+      error("承認待ちではありません（status=#{run.status}）")
+    end
   end
 end

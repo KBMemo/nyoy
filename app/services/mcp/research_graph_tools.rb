@@ -75,9 +75,9 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentRun.find_by(id: agent_run_id, graph_name: AgentGraph::ResearchGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::ResearchGraph::NAME)
         unless run
-          return Mcp::ResearchGraphTools.error_response("AgentRun #{agent_run_id} が見つかりません")
+          return AgentGraphResponse.missing_run(agent_run_id)
         end
 
         Mcp::ResearchGraphTools.success_response(run)

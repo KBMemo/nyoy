@@ -76,9 +76,9 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentRun.find_by(id: agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
         unless run
-          return Mcp::MemoUpdateGraphTools.error_response("AgentRun #{agent_run_id} が見つかりません")
+          return AgentGraphResponse.missing_run(agent_run_id)
         end
 
         Mcp::MemoUpdateGraphTools.success_response(run)
@@ -108,14 +108,12 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, decision:, **|
-        run = AgentRun.find_by(id: agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
         unless run
-          return Mcp::MemoUpdateGraphTools.error_response("AgentRun #{agent_run_id} が見つかりません")
+          return AgentGraphResponse.missing_run(agent_run_id)
         end
         unless run.awaiting_approval?
-          return Mcp::MemoUpdateGraphTools.error_response(
-            "承認待ちではありません（status=#{run.status}）"
-          )
+          return AgentGraphResponse.not_awaiting_approval(run)
         end
 
         completed = AgentGraph::MemoUpdateGraphRunner.resume(run, decision: decision)
