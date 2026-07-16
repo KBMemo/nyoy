@@ -1,38 +1,17 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  class ResearchRunSummary
-    def self.build(run)
-      new(run).build
-    end
-
-    def initialize(run)
-      @run = run
-      @state = run.state || {}
-    end
-
+  class ResearchRunSummary < RunSummaryBase
     def build
-      {
-        agent_run_id: @run.id,
-        chat_id: @run.chat_id,
-        graph_name: @run.graph_name,
-        status: @run.status,
-        current_node: @run.current_node,
-        question: @state["question"],
-        draft: @state["draft"],
-        final_answer: @state["final_answer"],
-        approval: @state["approval"],
-        assistant_message_id: @state["assistant_message_id"],
-        plan: @state["plan"],
-        errors: @state["errors"],
-        error_message: @run.error_message,
-        auto_approve: @state["auto_approve"] == true,
-        nodes: @run.agent_node_runs.order(:id).pluck(:node_name),
-        chat_path: Rails.application.routes.url_helpers.chat_path(@run.chat),
-        awaiting_approval: @run.awaiting_approval?,
-        completed: @run.completed?,
-        failed: @run.failed?
-      }
+      common_fields.merge(
+        question: state["question"],
+        draft: state["draft"],
+        final_answer: state["final_answer"],
+        approval: state["approval"],
+        assistant_message_id: state["assistant_message_id"],
+        plan: state["plan"],
+        errors: state["errors"]
+      ).merge(status_fields)
     end
   end
 end
