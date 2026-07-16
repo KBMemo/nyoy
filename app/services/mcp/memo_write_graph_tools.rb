@@ -144,18 +144,15 @@ module Mcp
     end
 
     def success_response(run)
-      payload = AgentGraph::MemoWriteRunSummary.build(run)
-      if run.awaiting_approval?
-        payload[:note] = "draft を確認し resume_memo_write_graph(agent_run_id, decision) で続行してください。"
-      end
-      MCP::Tool::Response.new([{ type: "text", text: JSON.generate(payload) }])
+      AgentGraphResponse.success(
+        run,
+        summary: AgentGraph::MemoWriteRunSummary,
+        resume_tool: "resume_memo_write_graph"
+      )
     end
 
     def error_response(message)
-      MCP::Tool::Response.new(
-        [{ type: "text", text: JSON.generate({ error: message }) }],
-        error: true
-      )
+      AgentGraphResponse.error(message)
     end
   end
 end

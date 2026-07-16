@@ -85,15 +85,11 @@ module Mcp
     end
 
     def success_response(run)
-      payload = AgentGraph::ResearchRunSummary.build(run)
-      MCP::Tool::Response.new([{ type: "text", text: JSON.generate(payload) }])
+      AgentGraphResponse.success(run, summary: AgentGraph::ResearchRunSummary)
     end
 
     def error_response(message)
-      MCP::Tool::Response.new(
-        [{ type: "text", text: JSON.generate({ error: message }) }],
-        error: true
-      )
+      AgentGraphResponse.error(message)
     end
   end
 end
