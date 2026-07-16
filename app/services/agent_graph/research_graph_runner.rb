@@ -45,20 +45,11 @@ module AgentGraph
     private
 
     def ensure_question!
-      question = @question.presence || latest_user_question
-      raise ArgumentError, "user question required" if question.blank?
-
-      if @question.present? && latest_user_question != @question
-        Message.suppressing_turbo_broadcasts do
-          @chat.messages.create!(role: :user, content: @question)
-        end
-      end
-
-      question
-    end
-
-    def latest_user_question
-      @chat.messages.where(role: :user).order(:id).last&.content.to_s.strip
+      UserTurnResolver.call(
+        chat: @chat,
+        explicit_content: @question,
+        required_label: "user question"
+      )
     end
   end
 end

@@ -73,20 +73,11 @@ module AgentGraph
     private
 
     def ensure_instruction!
-      instruction = @instruction.presence || latest_user_instruction
-      raise ArgumentError, "user instruction required" if instruction.blank?
-
-      if @instruction.present? && latest_user_instruction != @instruction
-        Message.suppressing_turbo_broadcasts do
-          @chat.messages.create!(role: :user, content: @instruction)
-        end
-      end
-
-      instruction
-    end
-
-    def latest_user_instruction
-      @chat.messages.where(role: :user).order(:id).last&.content.to_s.strip
+      UserTurnResolver.call(
+        chat: @chat,
+        explicit_content: @instruction,
+        required_label: "user instruction"
+      )
     end
   end
 end
