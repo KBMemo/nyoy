@@ -52,7 +52,7 @@ class ChatsController < ApplicationController
   def show
     @message = @chat.messages.build
     @pending_agent_run = @chat.agent_runs.pending_decision
-      .where(graph_name: [ AgentGraph::MemoWriteGraph::NAME, AgentGraph::MemoUpdateGraph::NAME ])
+      .where(graph_name: AgentGraph::Registry.approval_graph_names)
       .recent
       .first
   end

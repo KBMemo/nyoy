@@ -136,6 +136,8 @@ Runner が持たない責務:
 3. `Runner`
    Graph を 1 step ずつ進める共通実行エンジン。
 
+補助として `AgentGraph::Registry` を置く。Graph 名から runner、失敗ラベル、承認 UI partial、承認再開可否を引くための一覧であり、controller / job / broadcaster に Graph 名の case 文を増やさない。
+
 `ChatResponseJob` は最終的に次の程度に薄くする。
 
 ```ruby

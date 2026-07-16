@@ -31,24 +31,13 @@ class AgentGraphResumeJob < ApplicationJob
   private
 
   def resume_runner(run, decision)
-    case run.graph_name.to_s
-    when AgentGraph::MemoWriteGraph::NAME
-      AgentGraph::MemoWriteGraphRunner.resume(run, decision: decision)
-    when AgentGraph::MemoUpdateGraph::NAME
-      AgentGraph::MemoUpdateGraphRunner.resume(run, decision: decision)
-    else
-      raise ArgumentError, "approval resume is not supported for graph=#{run.graph_name}"
-    end
+    runner = AgentGraph::Registry.runner_for(run.graph_name)
+    raise ArgumentError, "approval resume is not supported for graph=#{run.graph_name}" unless AgentGraph::Registry.approval_supported?(run.graph_name)
+
+    runner.resume(run, decision: decision)
   end
 
   def failure_label(run)
-    case run.graph_name.to_s
-    when AgentGraph::MemoWriteGraph::NAME
-      "MemoWrite Graph failed"
-    when AgentGraph::MemoUpdateGraph::NAME
-      "MemoUpdate Graph failed"
-    else
-      "#{run.graph_name} Graph failed"
-    end
+    AgentGraph::Registry.failure_label_for(run.graph_name)
   end
 end

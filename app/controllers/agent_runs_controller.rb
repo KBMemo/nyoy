@@ -39,7 +39,7 @@ class AgentRunsController < ApplicationController
   end
 
   def resume!(decision, notice:)
-    unless @agent_run.graph_name.in?([ AgentGraph::MemoWriteGraph::NAME, AgentGraph::MemoUpdateGraph::NAME ])
+    unless AgentGraph::Registry.approval_supported?(@agent_run.graph_name)
       return resume_blocked!("この Graph は承認再開に対応していません。")
     end
 
