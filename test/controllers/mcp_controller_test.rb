@@ -60,6 +60,7 @@ class McpControllerTest < ActionDispatch::IntegrationTest
     assert_includes names, "refine_image"
     assert_includes names, "run_research_graph"
     assert_includes names, "get_research_graph"
+    assert_includes names, "retry_research_graph"
     refute_includes names, "resume_research_graph"
   end
 

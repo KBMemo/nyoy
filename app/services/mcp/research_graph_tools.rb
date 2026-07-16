@@ -10,7 +10,8 @@ module Mcp
     def mcp_tools
       [
         run_research_graph_tool,
-        get_research_graph_tool
+        get_research_graph_tool,
+        retry_research_graph_tool
       ]
     end
 
@@ -81,6 +82,37 @@ module Mcp
         return error if error
 
         Mcp::ResearchGraphTools.success_response(run)
+      end
+    end
+
+    def retry_research_graph_tool
+      MCP::Tool.define(
+        name: "retry_research_graph",
+        description: "failed の Research Graph を、最後の成功 checkpoint から複製 run として retry する。",
+        input_schema: {
+          type: "object",
+          properties: {
+            agent_run_id: { type: "integer", description: "retry 元の failed AgentRun id" }
+          },
+          required: [ "agent_run_id" ]
+        },
+        annotations: {
+          read_only_hint: false,
+          destructive_hint: false,
+          idempotent_hint: false,
+          open_world_hint: true
+        }
+      ) do |agent_run_id:, **|
+        run, error = AgentGraphResponse.find_run_or_error(agent_run_id, graph_name: GRAPH_NAME)
+        return error if error
+
+        retry_run = AgentGraph::RunRetryLauncher.call(run)
+        Mcp::ResearchGraphTools.success_response(retry_run)
+      rescue ArgumentError => e
+        Mcp::ResearchGraphTools.error_response(e.message)
+      rescue StandardError => e
+        Rails.logger.error("retry_research_graph failed: #{e.full_message}")
+        Mcp::ResearchGraphTools.error_response(e.message)
       end
     end
 
