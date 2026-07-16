@@ -1,5 +1,7 @@
 # Agent Graph（Research Graph）
 
+共通設計方針: [agent-graph-design-policy.md](./agent-graph-design-policy.md)
+
 LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フロー。
 
 ## 現状（R5）

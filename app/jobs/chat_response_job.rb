@@ -16,23 +16,13 @@ class ChatResponseJob < ApplicationJob
     truncated_by_length = false
     Nyoy::FinishReasonCapture.reset!
 
-    if memo_write_graph_turn?(chat)
-      run = AgentGraph::MemoWriteGraphRunner.call(chat)
+    if (graph_decision = AgentGraph::Router.route(chat))
+      log_graph_route(chat, graph_decision)
+      run = graph_decision.runner.call(chat, **graph_decision.args)
       if run.failed?
         ChatErrorBroadcaster.fail!(
           chat,
-          AgentGraph::Error.new(run.error_message.presence || "MemoWrite Graph failed")
-        )
-      end
-      return
-    end
-
-    if research_graph_turn?(chat)
-      run = AgentGraph::ResearchGraphRunner.call(chat)
-      if run.failed?
-        ChatErrorBroadcaster.fail!(
-          chat,
-          AgentGraph::Error.new(run.error_message.presence || "Research Graph failed")
+          AgentGraph::Error.new(run.error_message.presence || "#{graph_decision.graph_name} Graph failed")
         )
       end
       return
@@ -170,26 +160,12 @@ class ChatResponseJob < ApplicationJob
     generated.positive? && generated >= max
   end
 
-  def memo_write_graph_turn?(chat)
-    instruction = chat.messages.where(role: :user).order(:id).last&.content
-    decision = AgentGraph::MemoWriteIntent.decision(instruction)
-    if decision[:match]
-      Rails.logger.info(
-        "MemoWriteIntent match chat=#{chat.id} reason=#{decision[:reason]} hits=#{Array(decision[:hits]).first(3).join(",")}"
-      )
-    end
-    decision[:match]
-  end
-
-  def research_graph_turn?(chat)
-    question = chat.messages.where(role: :user).order(:id).last&.content
-    decision = AgentGraph::ResearchIntent.decision(question)
-    if decision[:match]
-      Rails.logger.info(
-        "ResearchIntent match chat=#{chat.id} reason=#{decision[:reason]} hits=#{Array(decision[:hits]).first(3).join(",")}"
-      )
-    end
-    decision[:match]
+  def log_graph_route(chat, graph_decision)
+    intent = graph_decision.intent_decision
+    Rails.logger.info(
+      "AgentGraph route graph=#{graph_decision.graph_name} chat=#{chat.id} " \
+      "reason=#{intent[:reason]} hits=#{Array(intent[:hits]).first(3).join(",")}"
+    )
   end
 
   # Resolves the assistant message being streamed with a lightweight id lookup,

@@ -1,5 +1,7 @@
 # Agent Graph（MemoWrite Graph）
 
+共通設計方針: [agent-graph-design-policy.md](./agent-graph-design-policy.md)
+
 Research と同じ薄い Workflow ランタイム上の 2 本目。**create_memo のみ**（update は未実装）。
 
 ## フロー
