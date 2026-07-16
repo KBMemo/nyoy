@@ -74,6 +74,32 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "memo_draft"
   end
 
+  test "show renders failed run recovery hints" do
+    @run.update!(
+      status: "failed",
+      current_node: "finalize_answer",
+      error_message: "モデルサーバーに接続できません"
+    )
+    @run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "failed",
+      error_message: "connection failed"
+    )
+    checkpoint = @run.agent_checkpoints.create!(
+      node_name: "synthesize_draft",
+      state: @run.state.merge("draft" => "回答草案")
+    )
+
+    get chat_agent_run_path(@chat, @run)
+
+    assert_response :success
+    assert_select "h2", text: "復旧確認"
+    assert_select "dd", text: "finalize_answer"
+    assert_select "dd", text: /##{checkpoint.id} synthesize_draft/
+    assert_select "li", text: /最後の checkpoint: synthesize_draft/
+    assert_select "li", text: /複製 run/
+  end
+
   test "approve enqueues resume job and clears pending decision" do
     assert_enqueued_with(job: AgentGraphResumeJob, args: [ @run.id, "approved" ]) do
       post approve_chat_agent_run_path(@chat, @run)

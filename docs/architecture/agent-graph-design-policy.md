@@ -300,6 +300,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - チャット画面から直近の AgentRun を開ける
    - graph 名、status、current node、開始/終了時刻、error を表示する
    - まず読み取り専用にし、運用中の調査に使える状態を優先する
+   - Router が Graph を起動しなかった通常チャット（例: 画像説明のみ）は AgentRun を作らない。UI は画像付き通常応答であることと「Graph 実行履歴なし」を明示し、存在しない run を擬似的に作らない
 
 2. node 履歴を見える化する（完了）
    - `AgentNodeRun` を時系列で表示する
@@ -316,7 +317,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - `draft_synthesis`: 現行の `evidence_pack` 実装では LLM を呼ばないため、`source` と evidence 件数（memo/search/fetched/errors）を保存する
    - `AgentNodeRun#output_summary` は synthesis metadata を要約し、詳細 JSON を開く前に model/cache/token/evidence の概要を見せる
 
-5. failure 時の復旧導線を作る
+5. failure 時の復旧導線を作る（表示は完了）
    - failed run に、失敗 node、最後の checkpoint、再実行候補を表示する
    - 実際の retry ボタンは、失敗パターンを観測してから追加する
 

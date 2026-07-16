@@ -53,6 +53,10 @@ class Chat < ApplicationRecord
     response_state == ChatResponseControl::STATES[:running]
   end
 
+  def user_image_attachment_messages?
+    messages.where(role: :user).joins(:attachments_attachments).exists?
+  end
+
   def complete(&block)
     super(&(block && cancellation_aware_block(&block)))
   end

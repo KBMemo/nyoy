@@ -50,6 +50,34 @@ class AgentRun < ApplicationRecord
     "state: #{keys.join(", ")}"
   end
 
+  def failed_node_run
+    agent_node_runs.where(status: "failed").order(:id).last
+  end
+
+  def latest_checkpoint
+    agent_checkpoints.order(:id).last
+  end
+
+  def recovery_candidates
+    return [] unless failed?
+
+    candidates = []
+    if failed_node_run
+      candidates << "失敗 node: #{failed_node_run.node_name}"
+    elsif current_node.present?
+      candidates << "失敗推定 node: #{current_node}"
+    end
+
+    if latest_checkpoint
+      candidates << "最後の checkpoint: #{latest_checkpoint.node_name} ##{latest_checkpoint.id}"
+    else
+      candidates << "checkpoint なし"
+    end
+
+    candidates << "次の実装候補: 最後の checkpoint から複製 run を作成して再実行"
+    candidates
+  end
+
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!

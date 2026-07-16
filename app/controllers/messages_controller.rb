@@ -42,11 +42,7 @@ class MessagesController < ApplicationController
 
   def load_agent_run_history
     @recent_agent_runs = @chat.agent_runs.recent.limit(5)
-    @show_agent_run_history = @recent_agent_runs.any? || user_image_attachment_messages?
-  end
-
-  def user_image_attachment_messages?
-    @chat.messages.where(role: :user).joins(:attachments_attachments).exists?
+    @show_agent_run_history = @recent_agent_runs.any? || @chat.user_image_attachment_messages?
   end
 
   def render_form_error(message)

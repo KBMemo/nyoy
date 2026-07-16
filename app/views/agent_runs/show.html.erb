@@ -50,6 +50,38 @@
   <% end %>
 </section>
 
+<% if @agent_run.failed? %>
+  <section class="kb-card p-4 mt-4">
+    <h2 class="<%= kb_section_title %>">復旧確認</h2>
+    <p class="mt-1 text-sm kb-text-secondary">
+      自動 retry はまだ行いません。失敗位置と再実行候補を確認するための情報です。
+    </p>
+    <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+      <div>
+        <dt class="text-xs kb-text-muted">Failed Node</dt>
+        <dd class="text-sm kb-text-primary">
+          <%= @failed_node_run&.node_name || @agent_run.current_node.presence || "不明" %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs kb-text-muted">Last Checkpoint</dt>
+        <dd class="text-sm kb-text-primary">
+          <% if @latest_checkpoint %>
+            #<%= @latest_checkpoint.id %> <%= @latest_checkpoint.node_name %>
+          <% else %>
+            なし
+          <% end %>
+        </dd>
+      </div>
+    </dl>
+    <ul class="mt-3 space-y-1 text-sm kb-text-secondary">
+      <% @recovery_candidates.each do |candidate| %>
+        <li><%= candidate %></li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>
+
 <section class="kb-card p-4 mt-4">
   <h2 class="<%= kb_section_title %>">Node 履歴</h2>
   <% if @node_runs.any? %>

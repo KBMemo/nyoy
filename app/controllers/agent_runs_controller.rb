@@ -7,6 +7,9 @@ class AgentRunsController < ApplicationController
   def show
     @node_runs = @agent_run.agent_node_runs.order(:id)
     @checkpoints = @agent_run.agent_checkpoints.order(:id)
+    @failed_node_run = @agent_run.failed_node_run
+    @latest_checkpoint = @agent_run.latest_checkpoint
+    @recovery_candidates = @agent_run.recovery_candidates
   end
 
   def approve

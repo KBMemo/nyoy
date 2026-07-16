@@ -19,4 +19,28 @@ class AgentRunTest < ActiveSupport::TestCase
 
     assert_equal "state: question, draft", run.state_summary
   end
+
+  test "recovery_candidates summarize failed node and latest checkpoint" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "failed",
+      current_node: "finalize_answer",
+      state: { "question" => "q" }
+    )
+    failed_node = run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "failed",
+      error_message: "connection failed"
+    )
+    checkpoint = run.agent_checkpoints.create!(
+      node_name: "synthesize_draft",
+      state: { "question" => "q", "draft" => "d" }
+    )
+
+    assert_equal failed_node, run.failed_node_run
+    assert_equal checkpoint, run.latest_checkpoint
+    assert_includes run.recovery_candidates, "失敗 node: finalize_answer"
+    assert_includes run.recovery_candidates, "最後の checkpoint: synthesize_draft ##{checkpoint.id}"
+  end
 end
