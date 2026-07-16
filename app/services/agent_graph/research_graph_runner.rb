@@ -28,7 +28,7 @@ module AgentGraph
 
     def call
       question = ensure_question!
-      graph = ResearchGraph.new
+      graph = Registry.graph_for(ResearchGraph::NAME)
 
       RunLauncher.call(
         chat: @chat,
@@ -38,7 +38,7 @@ module AgentGraph
           question: question,
           auto_approve: @auto_approve
         ),
-        supersede_reason: "superseded by a newer research run"
+        supersede_reason: Registry.supersede_reason_for(ResearchGraph::NAME)
       )
     end
 

@@ -2,7 +2,7 @@
 
 module AgentGraph
   module Registry
-    Entry = Data.define(:graph_name, :runner, :failure_label, :approval_panel)
+    Entry = Data.define(:graph_name, :graph_class, :runner, :failure_label, :approval_panel, :supersede_reason)
 
     module_function
 
@@ -10,21 +10,27 @@ module AgentGraph
       @entries ||= [
         Entry.new(
           graph_name: ResearchGraph::NAME,
+          graph_class: ResearchGraph,
           runner: ResearchGraphRunner,
           failure_label: "Research Graph failed",
-          approval_panel: nil
+          approval_panel: nil,
+          supersede_reason: "superseded by a newer research run"
         ),
         Entry.new(
           graph_name: MemoWriteGraph::NAME,
+          graph_class: MemoWriteGraph,
           runner: MemoWriteGraphRunner,
           failure_label: "MemoWrite Graph failed",
-          approval_panel: "chats/memo_write_approval"
+          approval_panel: "chats/memo_write_approval",
+          supersede_reason: "superseded by a newer memo write run"
         ),
         Entry.new(
           graph_name: MemoUpdateGraph::NAME,
+          graph_class: MemoUpdateGraph,
           runner: MemoUpdateGraphRunner,
           failure_label: "MemoUpdate Graph failed",
-          approval_panel: "chats/memo_write_approval"
+          approval_panel: "chats/memo_write_approval",
+          supersede_reason: "superseded by a newer memo update run"
         )
       ].freeze
     end
@@ -38,6 +44,14 @@ module AgentGraph
 
     def runner_for(graph_name)
       fetch(graph_name).runner
+    end
+
+    def graph_for(graph_name)
+      fetch(graph_name).graph_class.new
+    end
+
+    def supersede_reason_for(graph_name)
+      fetch(graph_name).supersede_reason
     end
 
     def failure_label_for(graph_name)

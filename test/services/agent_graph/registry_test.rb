@@ -9,6 +9,18 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
     assert_equal AgentGraph::MemoUpdateGraphRunner, AgentGraph::Registry.runner_for("memo_update")
   end
 
+  test "builds graph definitions for known graphs" do
+    assert_instance_of AgentGraph::ResearchGraph, AgentGraph::Registry.graph_for("research")
+    assert_instance_of AgentGraph::MemoWriteGraph, AgentGraph::Registry.graph_for("memo_write")
+    assert_instance_of AgentGraph::MemoUpdateGraph, AgentGraph::Registry.graph_for("memo_update")
+  end
+
+  test "returns supersede reasons for known graphs" do
+    assert_equal "superseded by a newer research run", AgentGraph::Registry.supersede_reason_for("research")
+    assert_equal "superseded by a newer memo write run", AgentGraph::Registry.supersede_reason_for("memo_write")
+    assert_equal "superseded by a newer memo update run", AgentGraph::Registry.supersede_reason_for("memo_update")
+  end
+
   test "tracks approval capable graphs" do
     assert_equal %w[memo_write memo_update], AgentGraph::Registry.approval_graph_names
     assert AgentGraph::Registry.approval_supported?("memo_write")

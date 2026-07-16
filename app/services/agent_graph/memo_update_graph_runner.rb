@@ -48,7 +48,7 @@ module AgentGraph
 
     def call
       instruction = ensure_instruction!
-      graph = MemoUpdateGraph.new
+      graph = Registry.graph_for(MemoUpdateGraph::NAME)
 
       RunLauncher.call(
         chat: @chat,
@@ -62,12 +62,12 @@ module AgentGraph
           title: @title,
           mode: @mode
         ),
-        supersede_reason: "superseded by a newer memo update run"
+        supersede_reason: Registry.supersede_reason_for(MemoUpdateGraph::NAME)
       )
     end
 
     def resume(agent_run, decision:)
-      RunResumer.call(agent_run, graph: MemoUpdateGraph.new, decision: decision)
+      RunResumer.call(agent_run, graph: Registry.graph_for(MemoUpdateGraph::NAME), decision: decision)
     end
 
     private
