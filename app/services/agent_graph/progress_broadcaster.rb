@@ -28,18 +28,28 @@ module AgentGraph
     class << self
       def started!(chat, node_name, agent_run: nil)
         node = node_name.to_s
-        label = LABELS[node] || "処理中（#{node}）…"
-        model_name = model_name_for(node, chat)
         node_started_at = Time.current.iso8601(3)
         run_started_at = agent_run&.started_at&.iso8601(3)
 
         broadcast(
           chat,
-          label: label,
-          model_name: model_name,
+          label: label_for(node),
+          model_name: model_name_for(node, chat),
           node_name: node,
           node_started_at: node_started_at,
           run_started_at: run_started_at
+        )
+      end
+
+      def render_for_run(agent_run)
+        return "" unless agent_run&.running?
+
+        node = agent_run.current_node.to_s
+        render_panel(
+          label: label_for(node),
+          model_name: model_name_for(node, agent_run.chat),
+          node_started_at: node_started_at_for(agent_run)&.iso8601(3) || Time.current.iso8601(3),
+          run_started_at: agent_run.started_at&.iso8601(3)
         )
       end
 
@@ -72,6 +82,11 @@ module AgentGraph
       end
 
       private
+
+      def label_for(node_name)
+        node = node_name.to_s
+        LABELS[node] || "処理中（#{node}）…"
+      end
 
       def model_name_for(node_name, chat)
         return nil unless LLM_NODES.include?(node_name.to_s)
@@ -115,6 +130,13 @@ module AgentGraph
             run_started_at: run_started_at
           }
         )
+      end
+
+      def node_started_at_for(agent_run)
+        agent_run.agent_node_runs
+          .where(status: "running", node_name: agent_run.current_node)
+          .order(started_at: :desc, id: :desc)
+          .pick(:started_at) || agent_run.updated_at || agent_run.started_at
       end
     end
   end

@@ -78,6 +78,29 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     assert_includes payload["html"], "hidden"
   end
 
+  test "render_for_run restores running progress panel" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "running",
+      current_node: "finalize_answer",
+      started_at: 2.minutes.ago,
+      state: { "question" => "調べて" }
+    )
+    run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "running",
+      started_at: 30.seconds.ago
+    )
+
+    html = AgentGraph::ProgressBroadcaster.render_for_run(run)
+
+    assert_includes html, "agent_run_progress_panel"
+    assert_includes html, "最終回答"
+    assert_includes html, "data-run-started-at"
+    assert_includes html, "data-node-started-at"
+  end
+
   test "thinking broadcasts text without replacing the panel" do
     payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
       AgentGraph::ProgressBroadcaster.thinking!(@chat, "まず調査ドラフトを読む…")

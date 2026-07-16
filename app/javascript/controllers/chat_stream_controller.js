@@ -16,6 +16,7 @@ export default class extends Controller {
       { channel: "ChatChannel", chat_id: this.chatIdValue },
       { received: (event) => this.received(event) }
     )
+    this.resumeExistingProgressClock()
   }
 
   disconnect() {
@@ -297,6 +298,13 @@ export default class extends Controller {
     if (!mount || !this.element.contains(mount)) return
 
     this.element.append(mount)
+  }
+
+  resumeExistingProgressClock() {
+    const panel = this.element.querySelector("#agent_run_progress_panel")
+    if (!panel) return
+
+    this.startProgressClock(panel.dataset.nodeStartedAt, panel.dataset.runStartedAt)
   }
 
   insertMessageNode(node) {

@@ -103,6 +103,14 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert synthesizer.send(:length_finish_reason?, chunk)
   end
 
+  test "live thinking includes unclosed think block while streaming" do
+    synthesizer = AgentGraph::FinalAnswerSynthesizer.new(@chat)
+
+    thinking = synthesizer.send(:live_thinking_text, "", "<think>ここまで考えた")
+
+    assert_equal "ここまで考えた", thinking
+  end
+
   test "final answer applies llama cache to main model" do
     model = @chat.model_association
     synthesizer = AgentGraph::FinalAnswerSynthesizer.new(@chat)

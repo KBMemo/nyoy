@@ -23,7 +23,7 @@
   <%= link_to "一覧へ", chats_path, class: "kb-chrome-link text-sm" %>
 </div>
 
-<%= render "chats/messages", chat: @chat %>
+<%= render "chats/messages", chat: @chat, running_agent_run: @running_agent_run %>
 
 <div id="agent_run_approval">
   <% if @pending_agent_run %>

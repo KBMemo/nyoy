@@ -2,5 +2,7 @@
   <% chat.messages.order(:id).each do |message| %>
     <%= render message %>
   <% end %>
-  <div id="agent_run_progress"></div>
+  <div id="agent_run_progress">
+    <%= AgentGraph::ProgressBroadcaster.render_for_run(local_assigns[:running_agent_run]) if local_assigns[:running_agent_run] %>
+  </div>
 </div>

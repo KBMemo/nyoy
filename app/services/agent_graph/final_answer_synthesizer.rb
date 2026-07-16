@@ -116,7 +116,27 @@ module AgentGraph
       return streamed_thinking if streamed_thinking.present?
 
       _content, embedded = @draft_helper.peel_think_blocks(streamed_content)
-      embedded.map { |part| part.to_s.strip }.reject(&:blank?).join("\n\n")
+      partial = partial_think_text(streamed_content)
+      [ *embedded, partial ].map { |part| part.to_s.strip }.reject(&:blank?).join("\n\n")
+    end
+
+    def partial_think_text(text)
+      source = text.to_s
+      patterns = [
+        [ /<think\b[^>]*>/i, %r{</think>}i ],
+        [ /<redacted_reasoning\b[^>]*>/i, %r{</redacted_reasoning>}i ],
+        [ /<\|thinking\|>/i, /<\|\/thinking\|>/i ]
+      ]
+
+      patterns.each do |open_pattern, close_pattern|
+        open_match = source.match(open_pattern)
+        next unless open_match
+
+        tail = source[(open_match.end(0))..].to_s
+        close_match = tail.match(close_pattern)
+        return close_match ? tail[0...close_match.begin(0)].to_s : tail
+      end
+      nil
     end
 
     def length_finish_reason?(chunk)

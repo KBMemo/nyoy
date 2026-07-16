@@ -254,6 +254,30 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#message_#{chat.messages.last.id}_content strong", text: "太字"
   end
 
+  test "show restores running agent progress panel" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    chat = Chat.create!(model: model)
+    run = chat.agent_runs.create!(
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "running",
+      current_node: "finalize_answer",
+      started_at: 1.minute.ago,
+      state: { "question" => "調べて" }
+    )
+    run.agent_node_runs.create!(
+      node_name: "finalize_answer",
+      status: "running",
+      started_at: 10.seconds.ago
+    )
+
+    get chat_path(chat)
+
+    assert_response :success
+    assert_select "#agent_run_progress_panel"
+    assert_select "#agent_run_progress_panel", text: /最終回答を生成しています/
+    assert_select "#agent_run_progress_panel[data-node-started-at]"
+  end
+
   test "show renders assistant timing and model stats" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     chat = Chat.create!(model: model)
