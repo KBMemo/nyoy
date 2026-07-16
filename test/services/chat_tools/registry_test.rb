@@ -13,6 +13,45 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     ChatTools::Registry.reset_client!
   end
 
+  test "main llm uses read only tools by default" do
+    names = ChatTools::Registry.tool_classes.map { |klass| klass.new.name }
+
+    assert_includes names, "recall_memos"
+    assert_includes names, "web_search"
+    assert_includes names, "fetch_url"
+    assert_includes names, "list_sampling_presets"
+    assert_not_includes names, "create_memo"
+    assert_not_includes names, "update_memo"
+    assert_not_includes names, "apply_sampling_preset"
+  end
+
+  test "main llm tool mode can allow all available tools" do
+    original_mode = Rails.application.config.x.nyoy.main_llm_tool_mode
+    Rails.application.config.x.nyoy.main_llm_tool_mode = "all"
+
+    names = ChatTools::Registry.tool_classes.map { |klass| klass.new.name }
+
+    assert_includes names, "create_memo"
+    assert_includes names, "update_memo"
+    assert_includes names, "apply_sampling_preset"
+  ensure
+    Rails.application.config.x.nyoy.main_llm_tool_mode = original_mode
+  end
+
+  test "main llm tool allowlist overrides mode" do
+    original_mode = Rails.application.config.x.nyoy.main_llm_tool_mode
+    original_allowlist = Rails.application.config.x.nyoy.main_llm_tool_allowlist
+    Rails.application.config.x.nyoy.main_llm_tool_mode = "all"
+    Rails.application.config.x.nyoy.main_llm_tool_allowlist = "recall_memos, fetch_url"
+
+    names = ChatTools::Registry.tool_classes.map { |klass| klass.new.name }
+
+    assert_equal %w[recall_memos fetch_url].sort, names.sort
+  ensure
+    Rails.application.config.x.nyoy.main_llm_tool_mode = original_mode
+    Rails.application.config.x.nyoy.main_llm_tool_allowlist = original_allowlist
+  end
+
   test "available when memo or web tools are configured" do
     assert ChatTools::Registry.available?
   end
@@ -125,7 +164,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
 
   test "sampling tools are always available" do
     assert_includes ChatTools::Registry.tool_classes, ChatTools::ListSamplingPresets
-    assert_includes ChatTools::Registry.tool_classes, ChatTools::ApplySamplingPreset
+    assert_includes ChatTools::Registry.tool_classes(scope: :mcp), ChatTools::ApplySamplingPreset
   end
 
   test "search_memos returns memos from client" do

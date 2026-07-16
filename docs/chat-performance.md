@@ -170,6 +170,8 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | `LLAMA_SLOT_COUNT` | `0` | `/props` 失敗時の slot 数フォールバック |
 | `MEMO_RAG_ENABLED` | `true` | メモ RAG 全体の有効化 |
 | `MEMO_RAG_MODE` | `tool` | `tool` / `inject` |
+| `MAIN_LLM_TOOL_MODE` | `restricted` | 通常 Chat のメインLLMに渡すツール範囲（既定は読み取り系のみ） |
+| `MAIN_LLM_TOOL_ALLOWLIST` | | カンマ区切りでメインLLM用ツールを明示指定 |
 | `CHAT_CONTEXT_TURNS` | `10` | 送信する直近ターン数 |
 
 リコールを優先して毎ターンメモを載せたい場合は `MEMO_RAG_MODE=inject`。

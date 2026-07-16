@@ -38,6 +38,11 @@ Rails.application.config.x.nyoy.tap do |config|
   # RAG の使い方: "tool" = モデルが recall_memos ツールを必要時に呼ぶ（毎ターンの前処理なし）、
   # "inject" = 毎ターン関連メモ抜粋を自動注入（高リコール・前処理あり）。
   config.memo_rag_mode = ENV.fetch("MEMO_RAG_MODE", "tool")
+  # メインLLM（通常 Chat）の tool calling 制限。
+  # restricted/read_only: 読み取り系のみ、all: write 系も含める、none: 無効。
+  # 明示 allowlist がある場合は mode より優先する（例: "recall_memos,web_search,fetch_url"）。
+  config.main_llm_tool_mode = ENV.fetch("MAIN_LLM_TOOL_MODE", "restricted")
+  config.main_llm_tool_allowlist = ENV.fetch("MAIN_LLM_TOOL_ALLOWLIST", "")
   config.memo_rag_top_k = ENV.fetch("MEMO_RAG_TOP_K", 5).to_i
   config.memo_rag_top_k_simple = ENV.fetch("MEMO_RAG_TOP_K_SIMPLE", 3).to_i
   config.memo_rag_top_k_normal = ENV.fetch("MEMO_RAG_TOP_K_NORMAL", 5).to_i

@@ -6,22 +6,21 @@ module ChatTools
       徒然（tsuredure）メモツールが利用可能です。
       関連メモの抜粋は自動で参照コンテキストに含まれます。
       さらに探すときは search_memos、本文が必要なときは get_memo を使ってください。
+      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で回答してください。
+    TEXT
+
+    MEMO_WRITE_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
       update_memo では必ず get_memo で取得した updated_at を渡してください。
       create_memo / update_memo の body は Markdown で書いてください（徒然側で AsciiDoc に変換）。
       Chat に葛籠へアーカイブ済みの添付画像がある場合、image::media: マクロは自動で本文末尾に挿入されます（手書き不要）。
-      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
     TEXT
 
     MEMO_TOOLS_INSTRUCTIONS_TOOL = <<~TEXT.squish
       徒然（tsuredure）メモツールが利用可能です。
       過去の自分のメモの内容が回答に必要なときは recall_memos（意味検索で関連抜粋を取得）を呼んでください。
       タイトル一覧をキーワードで探すだけなら search_memos、本文全体が必要なら get_memo を使ってください。
-      create_memo はユーザーが明示的に保存を求めたときだけ使ってください。
-      update_memo では必ず get_memo で取得した updated_at を渡してください。
-      create_memo / update_memo の body は Markdown で書いてください（徒然側で AsciiDoc に変換）。
-      Chat に葛籠へアーカイブ済みの添付画像がある場合、image::media: マクロは自動で本文末尾に挿入されます（手書き不要）。
-      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で更新してください。
+      get_memo で読む本文は AsciiDoc ですが、そのまま理解して Markdown で回答してください。
     TEXT
 
     TOOL_ORCHESTRATION_INSTRUCTIONS = <<~TEXT.squish
@@ -70,6 +69,11 @@ module ChatTools
       list_sampling_presets で推奨サンプリング一覧を取得できる。
       apply_sampling_preset はユーザーが明示的にサンプリングや温度などの変更を求めたときだけ使い、
       会話の llm_params をプリセットで上書きする。勝手に変更しない。
+    TEXT
+
+    SAMPLING_READ_ONLY_INSTRUCTIONS = <<~TEXT.squish
+      list_sampling_presets で推奨サンプリング一覧を取得できる。
+      会話設定の変更はメインLLMのツールでは行わない。
     TEXT
 
     MEMO_TOOL_CLASSES = [
@@ -127,7 +131,14 @@ module ChatTools
       ChatMemoRagInjector.tool_mode?
     end
 
-    def tool_classes
+    def tool_classes(scope: :main_llm)
+      classes = all_tool_classes
+      return classes if scope == :mcp || scope == :all
+
+      MainLlmToolPolicy.filter(classes)
+    end
+
+    def all_tool_classes
       classes = []
       classes.concat(MEMO_TOOL_CLASSES) if memo_tools_available?
       classes << RecallMemos if rag_tool_available?
@@ -172,7 +183,7 @@ module ChatTools
       return llm_chat if tools.empty?
 
       instructions = [TOOL_ORCHESTRATION_INSTRUCTIONS]
-      instructions << memo_tools_instructions if memo_tools_available?
+      instructions << memo_tools_instructions(tools) if memo_tools_available?
       if web_tools_available?
         instructions << WEB_TOOLS_INSTRUCTIONS
       elsif tools.any? { |tool| tool.is_a?(FetchUrl) }
@@ -180,14 +191,32 @@ module ChatTools
       end
       instructions << VISION_TOOLS_INSTRUCTIONS if vision_tools_available?
       instructions << MEDIA_TOOLS_INSTRUCTIONS if media_tools_available?
-      instructions << SAMPLING_TOOLS_INSTRUCTIONS
+      instructions << sampling_tools_instructions(tools)
 
       llm_chat.with_tools(*tools, calls: :one, concurrency: false)
               .with_instructions(instructions.compact.join(" "), append: true)
     end
 
-    def memo_tools_instructions
-      rag_tool_available? ? MEMO_TOOLS_INSTRUCTIONS_TOOL : MEMO_TOOLS_INSTRUCTIONS_INJECT
+    def memo_tools_instructions(tools)
+      text = rag_tool_available? ? MEMO_TOOLS_INSTRUCTIONS_TOOL : MEMO_TOOLS_INSTRUCTIONS_INJECT
+      return text unless write_tools_present?(tools)
+
+      [text, MEMO_WRITE_TOOLS_INSTRUCTIONS].join(" ")
+    end
+
+    def sampling_tools_instructions(tools)
+      return SAMPLING_TOOLS_INSTRUCTIONS if tool_present?(tools, "apply_sampling_preset")
+      return SAMPLING_READ_ONLY_INSTRUCTIONS if tool_present?(tools, "list_sampling_presets")
+
+      nil
+    end
+
+    def write_tools_present?(tools)
+      tools.any? { |tool| MainLlmToolPolicy.write_tool?(tool.name) }
+    end
+
+    def tool_present?(tools, name)
+      tools.any? { |tool| tool.name == name }
     end
 
     def vision_service

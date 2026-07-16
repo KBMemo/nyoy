@@ -20,13 +20,14 @@ module Mcp
       web_search fetch_url search_fetched_page
       search_memos get_memo recall_memos
       list_albums get_media analyze_image
+      list_sampling_presets
     ].freeze
 
-    DESTRUCTIVE_TOOLS = %w[create_memo update_memo].freeze
+    DESTRUCTIVE_TOOLS = %w[create_memo update_memo apply_sampling_preset].freeze
 
     class << self
       def instances(web_budget:)
-        ChatTools::Registry.tool_classes.map do |tool_class|
+        ChatTools::Registry.tool_classes(scope: :mcp).map do |tool_class|
           if CHAT_SCOPED_CLASSES.include?(tool_class)
             tool_class.new(chat: nil)
           elsif WEB_BUDGET_CLASSES.include?(tool_class)

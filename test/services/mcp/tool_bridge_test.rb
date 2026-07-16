@@ -24,7 +24,10 @@ class McpToolBridgeTest < ActiveSupport::TestCase
     names = tools.map(&:name_value)
 
     assert_includes names, "fetch_url"
-    chat_tool_names = ChatTools::Registry.tool_classes.map { |klass| klass.new.name }
+    assert_includes names, "create_memo"
+    assert_includes names, "update_memo"
+    assert_includes names, "apply_sampling_preset"
+    chat_tool_names = ChatTools::Registry.tool_classes(scope: :mcp).map { |klass| klass.new.name }
     assert chat_tool_names.all? { |name| names.include?(name) }
   end
 
@@ -42,5 +45,12 @@ class McpToolBridgeTest < ActiveSupport::TestCase
 
     assert annotations[:read_only_hint]
     assert_not annotations[:destructive_hint]
+  end
+
+  test "marks setting mutation tools as destructive" do
+    annotations = Mcp::ToolBridge.annotations_for("apply_sampling_preset")
+
+    assert_not annotations[:read_only_hint]
+    assert annotations[:destructive_hint]
   end
 end

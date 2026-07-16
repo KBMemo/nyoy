@@ -140,6 +140,8 @@ Web 検索は searfront（`/v1/search`）経由です。接続画面で URL・�
 | `DEFAULT_CHAT_CONNECTION_KEY` | チャットの既定接続（UI 未設定時のフォールバック） | `llama_cpp` |
 | `MEMO_RAG_ENABLED` | メモ RAG（有効化） | `true` |
 | `MEMO_RAG_MODE` | `tool`=recall_memos ツールで必要時取得 / `inject`=毎ターン自動注入 | `tool` |
+| `MAIN_LLM_TOOL_MODE` | 通常 Chat のメインLLMに渡すツール範囲。`restricted`/`read_only`=読み取り系のみ、`all`=write 系も含む、`none`=無効 | `restricted` |
+| `MAIN_LLM_TOOL_ALLOWLIST` | カンマ区切りの明示 allowlist。指定時は `MAIN_LLM_TOOL_MODE` より優先 | （未設定） |
 | `MEMO_RAG_TOP_K_SIMPLE` / `_NORMAL` / `_COMPLEX` | 質問複雑度別 top_k | `3` / `5` / `10` |
 | `MEMO_RAG_MAX_CHARS` | RAG 注入全体の文字上限 | `12000` |
 | `MEMO_RAG_MAX_TOKENS` | RAG トークン予算 | `1500` |

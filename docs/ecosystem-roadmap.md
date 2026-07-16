@@ -108,7 +108,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 - `ruby_llm` の `acts_as_chat` / `acts_as_message` / `acts_as_model`
 - `ChatResponseJob` が `chat.complete` を実行し、Turbo Stream で Markdown 再レンダリング
 - `ChatModelCatalog.context_for` で llama.cpp OpenAI 互換 API に接続
-- **`ChatTools::Registry`** — 接続状態に応じてツールを動的配線
+- **`ChatTools::Registry`** — 接続状態と `MainLlmToolPolicy` に応じてツールを動的配線
 - **コンテキスト制御** — `ChatContextBuilder`（ターン制限 + 要約キャッシュ）、`ChatContextBudget`（トークン予算）、UI で推定 tokens・メモ RAG チャンク数
 - **高速化** — prompt cache / sticky slot、要約・RAG を最新ユーザーメッセージへ、`recall_memos` ツール化（既定）、TTFT 計測。詳細は [Chat 高速化](./chat-performance.md)
 
@@ -116,11 +116,14 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 |--------|------|------|
 | `recall_memos` | メモ意味検索（ハイブリッド RAG） | `kbmemo` かつ `MEMO_RAG_MODE=tool` |
 | `search_memos` | 徒然キーワード検索 | `kbmemo` |
-| `get_memo` / `create_memo` / `update_memo` | メモ CRUD | `kbmemo` |
+| `get_memo` | 徒然メモ本文取得 | `kbmemo` |
+| `create_memo` / `update_memo` | メモ write（通常 Chat では既定で非公開、Graph/MCP 側で扱う） | `kbmemo` |
 | `web_search` | Web 検索 | `searfront` |
 | `fetch_url` | URL 本文取得 | 常時（readability 優先、未設定時は直接取得） |
 
 **メモ RAG:** 既定は `MEMO_RAG_MODE=tool`（モデルが必要時に `recall_memos`）。`inject` にすると毎ターンハイブリッド RAG を最新ユーザーメッセージへ自動注入。`get_memo` は全文が必要なときの補助。
+
+**メインLLMのツール制限:** 通常 Chat は `MAIN_LLM_TOOL_MODE=restricted` を既定とし、読み取り系ツールだけを渡す。`create_memo` / `update_memo` / `apply_sampling_preset` は `all` または `MAIN_LLM_TOOL_ALLOWLIST` で明示した場合だけメインLLMに公開する。MCP は `scope: :mcp` で従来どおり別公開する。
 
 実装: `app/services/chat_tools/`, `app/services/tsurezure_client.rb`, `app/services/memo_knowledge_*`, `app/services/chat_memo_rag_injector.rb`
 
