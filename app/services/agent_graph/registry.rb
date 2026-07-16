@@ -9,11 +9,14 @@ module AgentGraph
       :summary_class,
       :failure_label,
       :approval_panel,
+      :approval_copy,
       :approve_notice,
       :reject_notice,
       :supersede_reason,
       :resume_tool
     )
+
+    ApprovalCopy = Data.define(:status_label, :description, :approve_label, :reject_confirm)
 
     module_function
 
@@ -26,6 +29,7 @@ module AgentGraph
           summary_class: ResearchRunSummary,
           failure_label: "Research Graph failed",
           approval_panel: nil,
+          approval_copy: nil,
           approve_notice: nil,
           reject_notice: nil,
           supersede_reason: "superseded by a newer research run",
@@ -38,6 +42,12 @@ module AgentGraph
           summary_class: MemoWriteRunSummary,
           failure_label: "MemoWrite Graph failed",
           approval_panel: "chats/memo_write_approval",
+          approval_copy: ApprovalCopy.new(
+            status_label: "MemoWrite",
+            description: "内容を確認してから徒然に新規保存してください。",
+            approve_label: "この内容で徒然に保存する",
+            reject_confirm: "このメモ保存を却下しますか？"
+          ),
           approve_notice: "メモ草案を承認しました。徒然へ保存します。",
           reject_notice: "メモ保存を却下しました。",
           supersede_reason: "superseded by a newer memo write run",
@@ -50,6 +60,12 @@ module AgentGraph
           summary_class: MemoUpdateRunSummary,
           failure_label: "MemoUpdate Graph failed",
           approval_panel: "chats/memo_write_approval",
+          approval_copy: ApprovalCopy.new(
+            status_label: "MemoUpdate",
+            description: "内容を確認してから既存メモへ反映してください。",
+            approve_label: "この内容で徒然メモを更新する",
+            reject_confirm: "このメモ更新を却下しますか？"
+          ),
           approve_notice: "メモ更新を承認しました。徒然へ反映します。",
           reject_notice: "メモ更新を却下しました。",
           supersede_reason: "superseded by a newer memo update run",
@@ -96,6 +112,13 @@ module AgentGraph
       raise ArgumentError, "approval panel is not supported for graph=#{graph_name}" if panel.blank?
 
       panel
+    end
+
+    def approval_copy_for(graph_name)
+      copy = fetch(graph_name).approval_copy
+      raise ArgumentError, "approval copy is not supported for graph=#{graph_name}" unless copy
+
+      copy
     end
 
     def approve_notice_for(graph_name)

@@ -50,6 +50,25 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
     assert_includes error.message, "approval panel is not supported"
   end
 
+  test "returns approval copy only for approval graphs" do
+    memo_write = AgentGraph::Registry.approval_copy_for("memo_write")
+    memo_update = AgentGraph::Registry.approval_copy_for("memo_update")
+
+    assert_equal "MemoWrite", memo_write.status_label
+    assert_equal "内容を確認してから徒然に新規保存してください。", memo_write.description
+    assert_equal "この内容で徒然に保存する", memo_write.approve_label
+    assert_equal "このメモ保存を却下しますか？", memo_write.reject_confirm
+    assert_equal "MemoUpdate", memo_update.status_label
+    assert_equal "内容を確認してから既存メモへ反映してください。", memo_update.description
+    assert_equal "この内容で徒然メモを更新する", memo_update.approve_label
+    assert_equal "このメモ更新を却下しますか？", memo_update.reject_confirm
+
+    error = assert_raises(ArgumentError) do
+      AgentGraph::Registry.approval_copy_for("research")
+    end
+    assert_includes error.message, "approval copy is not supported"
+  end
+
   test "returns approval notices only for approval graphs" do
     assert_equal "メモ草案を承認しました。徒然へ保存します。", AgentGraph::Registry.approve_notice_for("memo_write")
     assert_equal "メモ保存を却下しました。", AgentGraph::Registry.reject_notice_for("memo_write")

@@ -1,6 +1,6 @@
 <%= turbo_stream.update "agent_run_approval" do %>
   <div class="kb-alert kb-alert-info mt-4" role="status">
-    <%= @notice.presence || "調査ドラフトを承認しました。最終回答を生成しています…" %>
+    <%= @notice.presence || "承認しました。処理を続行しています…" %>
   </div>
 <% end %>
 <%= turbo_stream.replace "new_message" do %>
