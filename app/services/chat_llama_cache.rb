@@ -11,16 +11,32 @@ module ChatLlamaCache
   module_function
 
   def apply!(llm_chat, chat:)
-    return llm_chat unless enabled?(chat)
+    metadata = metadata_for(chat)
+    llm_chat.instance_variable_set(:@nyoy_llama_cache_metadata, metadata)
+    return llm_chat unless metadata[:enabled]
 
     params = {}
-    params[:cache_prompt] = true if cache_prompt?
-    slot_id = slot_id_for(chat)
-    params[:id_slot] = slot_id unless slot_id.nil?
+    params[:cache_prompt] = true if metadata[:cache_prompt]
+    params[:id_slot] = metadata[:slot_id] unless metadata[:slot_id].nil?
     return llm_chat if params.empty?
 
     existing = llm_chat.instance_variable_get(:@params) || {}
     llm_chat.with_params(**existing.merge(params))
+  end
+
+  def metadata_for(chat)
+    return disabled_metadata if openai_chat?(chat)
+
+    count = slot_count_for(chat)
+    slot_id = count.to_i.positive? && chat&.id ? chat.id.to_i % count : nil
+    enabled = cache_prompt? || count.to_i.positive?
+
+    {
+      enabled: enabled,
+      cache_prompt: cache_prompt?,
+      slot_id: slot_id,
+      slot_count: count
+    }
   end
 
   def enabled?(chat = nil)
@@ -31,6 +47,15 @@ module ChatLlamaCache
 
   def openai_chat?(chat)
     chat&.model_association&.metadata&.dig("connection_key") == "openai"
+  end
+
+  def disabled_metadata
+    {
+      enabled: false,
+      cache_prompt: false,
+      slot_id: nil,
+      slot_count: nil
+    }
   end
 
   def cache_prompt?

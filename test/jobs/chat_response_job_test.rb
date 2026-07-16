@@ -310,6 +310,25 @@ class ChatResponseJobTest < ActiveJob::TestCase
     assert_equal "完了", message.content
   end
 
+  test "persist_assistant_timing writes llama cache metadata" do
+    job = ChatResponseJob.new
+    message = @chat.messages.create!(role: :assistant, content: "完了")
+    timer = ChatResponseTimer.new
+    @chat.instance_variable_set(:@llama_cache_metadata, {
+      enabled: true,
+      cache_prompt: true,
+      slot_id: 2,
+      slot_count: 4
+    })
+
+    job.send(:persist_assistant_timing, @chat, timer)
+
+    message.reload
+    assert_equal true, message.llama_cache_prompt
+    assert_equal 2, message.llama_cache_slot_id
+    assert_equal 4, message.llama_cache_slot_count
+  end
+
   test "current_assistant_message ignores newer tool call messages" do
     job = ChatResponseJob.new
     answer = @chat.messages.create!(role: :assistant, content: "回答")

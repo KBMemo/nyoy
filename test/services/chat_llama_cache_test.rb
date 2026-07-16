@@ -38,6 +38,33 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     params = llm_chat.instance_variable_get(:@params)
     assert_equal true, params[:cache_prompt]
     assert_equal @chat.id % 4, params[:id_slot]
+    metadata = llm_chat.instance_variable_get(:@nyoy_llama_cache_metadata)
+    assert_equal true, metadata[:enabled]
+    assert_equal true, metadata[:cache_prompt]
+    assert_equal @chat.id % 4, metadata[:slot_id]
+    assert_equal 4, metadata[:slot_count]
+  end
+
+  test "metadata reports disabled for OpenAI connection" do
+    model = Model.create!(
+      provider: "openai",
+      model_id: "openai-cache-test",
+      name: "openai-cache-test",
+      family: "openai",
+      capabilities: [ "chat" ],
+      metadata: { "connection_key" => "openai" }
+    )
+    chat = Chat.create!(model: model)
+
+    metadata = ChatLlamaCache.metadata_for(chat)
+
+    assert_equal false, metadata[:enabled]
+    assert_equal false, metadata[:cache_prompt]
+    assert_nil metadata[:slot_id]
+    assert_nil metadata[:slot_count]
+  ensure
+    chat&.destroy!
+    model&.destroy!
   end
 
   test "falls back to LLAMA_SLOT_COUNT when props fails" do

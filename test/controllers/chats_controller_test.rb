@@ -262,7 +262,10 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       content: "回答",
       model: model,
       response_elapsed_ms: 12_345,
-      thinking_elapsed_ms: 4567
+      thinking_elapsed_ms: 4567,
+      llama_cache_prompt: true,
+      llama_cache_slot_id: 2,
+      llama_cache_slot_count: 4
     )
 
     get chat_path(chat)
@@ -272,5 +275,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "gpt-oss"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "12.3秒"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "4.6秒"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dt", text: "KV cache"
+    assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "prompt / slot 2/4"
   end
 end

@@ -8,6 +8,7 @@ class Chat < ApplicationRecord
   # Wall-clock time spent building the LLM request in #to_llm (RAG + summary +
   # /props etc.), in ms. Read by ChatResponseJob to attribute TTFT to prework.
   attr_reader :context_build_elapsed_ms
+  attr_reader :llama_cache_metadata
 
   # How often, at most, to poll the DB for a cancellation request while
   # streaming. Streaming emits many chunks per second, so an unthrottled check
@@ -86,6 +87,7 @@ class Chat < ApplicationRecord
     end
     ChatLlmSettings.apply!(@chat, chat: self)
     ChatLlamaCache.apply!(@chat, chat: self)
+    @llama_cache_metadata = @chat.instance_variable_get(:@nyoy_llama_cache_metadata) || {}
     setup_persistence_callbacks
     ChatResponseControl.install_checks!(@chat, id) if response_state == ChatResponseControl::STATES[:running]
 

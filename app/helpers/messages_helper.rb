@@ -34,6 +34,19 @@ module MessagesHelper
     message.context_build_elapsed_ms / 1000.0
   end
 
+  def chat_message_llama_cache_label(message)
+    return unless message.llama_cache_prompt == true || message.llama_cache_slot_id.present?
+
+    parts = []
+    parts << "prompt" if message.llama_cache_prompt == true
+    if message.llama_cache_slot_id.present?
+      slot = message.llama_cache_slot_id
+      slot = "#{slot}/#{message.llama_cache_slot_count}" if message.llama_cache_slot_count.present?
+      parts << "slot #{slot}"
+    end
+    parts.join(" / ")
+  end
+
   def chat_message_stats(message)
     stats = []
     stats << { label: "モデル", value: chat_message_model_name(message) }
@@ -49,6 +62,9 @@ module MessagesHelper
 
     thinking_elapsed = chat_message_thinking_elapsed(message)
     stats << { label: "思考", value: nyoy_format_duration(thinking_elapsed) } if thinking_elapsed
+
+    llama_cache = chat_message_llama_cache_label(message)
+    stats << { label: "KV cache", value: llama_cache } if llama_cache.present?
 
     stats
   end

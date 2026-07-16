@@ -234,11 +234,23 @@ class ChatResponseJob < ApplicationJob
     return unless assistant_message
 
     attrs = timer.message_timing_attributes(context_build_elapsed_ms: chat.context_build_elapsed_ms)
+    attrs.merge!(llama_cache_attributes(chat))
     return if attrs.empty?
 
     # Timing-only writes must not re-render the whole message bubble; that would
     # replace streamed markdown with a stale DB snapshot and look truncated.
     assistant_message.update_columns(attrs.merge(updated_at: Time.current))
+  end
+
+  def llama_cache_attributes(chat)
+    metadata = chat.llama_cache_metadata || {}
+    return {} unless metadata[:enabled]
+
+    {
+      llama_cache_prompt: metadata[:cache_prompt] == true,
+      llama_cache_slot_id: metadata[:slot_id],
+      llama_cache_slot_count: metadata[:slot_count]
+    }
   end
 
   def broadcast_form_reset(chat)
