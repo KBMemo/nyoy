@@ -16,9 +16,9 @@ plan_research → recall_memos → search_web → fetch_urls → synthesize_draf
 - `synthesize_draft` は LLM を使わず根拠パック（出典リスト）を内部 state に載せるだけ
 - **承認なし**: そのまま `finalize_answer` へ進む（Chat / MCP 共通）
 - `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。モデルサーバー未起動・接続失敗時は run を失敗させ、`ChatErrorBroadcaster` でエラー表示（「モデルサーバーに接続できません…」）
-- 最終回答生成中はストリーミングの思考を Cable `research_progress_thinking` で進捗パネル内にライブ表示（完了後は assistant メッセージの「思考」にも残る）
-- 最終回答の LLM 呼び出し直前に `research_progress_prompts` でシステム／ユーザープロンプトも進捗パネルへ表示（ドラフト用プロンプト混入の確認用）
-- **進捗表示**: Node 実行中は Cable `research_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗で消す
+- 最終回答生成中はストリーミングの思考を Cable `agent_run_progress_thinking` で進捗パネル内にライブ表示（完了後は assistant メッセージの「思考」にも残る）
+- 最終回答の LLM 呼び出し直前に `agent_run_progress_prompts` でシステム／ユーザープロンプトも進捗パネルへ表示（ドラフト用プロンプト混入の確認用）
+- **進捗表示**: Node 実行中は Cable `agent_run_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗で消す
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
 - `search_web` / `fetch_urls` / `recall_memos` は既存 ChatTools を呼び、実行のたびに通常 Chat と同じ **Tool Call / Tool Result** メッセージを履歴へ残す（`ToolTraceRecorder`）
 - 検索結果が空のときも出典に警告を載せる。詳細な検索・取得本文はツール履歴側に任せ、最終回答は短い回答＋出典リンク中心

@@ -25,17 +25,17 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       AgentGraph::ProgressBroadcaster.started!(@chat, "synthesize_draft", agent_run: run)
     end.last
 
-    assert_equal "research_progress", payload["type"]
+    assert_equal "agent_run_progress", payload["type"]
     assert_includes payload["label"], "根拠"
     assert_equal "synthesize_draft", payload["node_name"]
     assert_nil payload["model_name"]
     assert payload["node_started_at"].present?
     assert payload["run_started_at"].present?
-    assert_includes payload["html"], "research_progress_panel"
+    assert_includes payload["html"], "agent_run_progress_panel"
     assert_includes payload["html"], "根拠"
     refute_includes payload["html"], "gpt-oss"
-    assert_includes payload["html"], "data-research-progress-elapsed"
-    assert_includes payload["html"], "data-research-progress-run-elapsed"
+    assert_includes payload["html"], "data-agent-run-progress-elapsed"
+    assert_includes payload["html"], "data-agent-run-progress-run-elapsed"
   end
 
   test "finalize progress shows the chat main model" do
@@ -63,7 +63,7 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       AgentGraph::ProgressBroadcaster.clear!(@chat)
     end.last
 
-    assert_equal "research_progress", payload["type"]
+    assert_equal "agent_run_progress", payload["type"]
     assert_nil payload["label"]
     assert_equal "", payload["html"]
   end
@@ -73,8 +73,8 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       AgentGraph::ProgressBroadcaster.started!(@chat, "finalize_answer")
     end.last
 
-    assert_includes payload["html"], "research_progress_thinking_section"
-    assert_includes payload["html"], "research_progress_thinking"
+    assert_includes payload["html"], "agent_run_progress_thinking_section"
+    assert_includes payload["html"], "agent_run_progress_thinking"
     assert_includes payload["html"], "hidden"
   end
 
@@ -83,7 +83,7 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       AgentGraph::ProgressBroadcaster.thinking!(@chat, "まず調査ドラフトを読む…")
     end.last
 
-    assert_equal "research_progress_thinking", payload["type"]
+    assert_equal "agent_run_progress_thinking", payload["type"]
     assert_equal "まず調査ドラフトを読む…", payload["text"]
     assert_nil payload["html"]
   end
@@ -104,7 +104,7 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
       )
     end.last
 
-    assert_equal "research_progress_prompts", payload["type"]
+    assert_equal "agent_run_progress_prompts", payload["type"]
     assert_equal "あなたは調査アシスタントです。", payload["system"]
     assert_equal "質問:\n高尾山は？", payload["user"]
     assert_nil payload["html"]

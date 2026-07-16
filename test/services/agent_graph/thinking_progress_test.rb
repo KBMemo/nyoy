@@ -20,7 +20,7 @@ class AgentGraphThinkingProgressTest < ActiveSupport::TestCase
     end
 
     types = payloads.map { |p| p["type"] }
-    assert_equal %w[research_progress_thinking research_progress_thinking], types
+    assert_equal %w[agent_run_progress_thinking agent_run_progress_thinking], types
     assert_equal "a", payloads.first["text"]
     assert_equal "abc", payloads.last["text"]
   end

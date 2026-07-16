@@ -1,5 +1,5 @@
 <% if defined?(@chat) && @chat.present? %>
-  <%= turbo_stream.before "research_progress" do %>
+  <%= turbo_stream.before "agent_run_progress" do %>
     <%= render @message %>
   <% end %>
   <%= turbo_stream.replace "new_message" do %>

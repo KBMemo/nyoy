@@ -44,14 +44,14 @@ export default class extends Controller {
       case "approval_panel":
         this.replaceApprovalPanel(event)
         break
-      case "research_progress":
-        this.replaceResearchProgress(event)
+      case "agent_run_progress":
+        this.replaceAgentRunProgress(event)
         break
-      case "research_progress_thinking":
-        this.updateResearchProgressThinking(event)
+      case "agent_run_progress_thinking":
+        this.updateAgentRunProgressThinking(event)
         break
-      case "research_progress_prompts":
-        this.updateResearchProgressPrompts(event)
+      case "agent_run_progress_prompts":
+        this.updateAgentRunProgressPrompts(event)
         break
     }
   }
@@ -106,9 +106,9 @@ export default class extends Controller {
     } else {
       this.insertMessageNode(next)
     }
-    this.pinResearchProgress()
+    this.pinAgentRunProgress()
     this.revealImportantMessage(next)
-    // Research approve publishes a full assistant message without streaming —
+    // Agent run approve publishes a full assistant message without streaming —
     // bring it into view so the draft panel doesn't feel like it vanished.
     if (next.classList?.contains("nyoy-chat-message-assistant")) {
       next.scrollIntoView({ behavior: "smooth", block: "nearest" })
@@ -147,42 +147,42 @@ export default class extends Controller {
     mount.innerHTML = event.html || ""
   }
 
-  replaceResearchProgress(event) {
-    const mount = this.ensureResearchProgressMount()
+  replaceAgentRunProgress(event) {
+    const mount = this.ensureAgentRunProgressMount()
     if (!mount) return
 
     this.clearProgressClock()
     mount.innerHTML = event.html || ""
-    this.pinResearchProgress()
+    this.pinAgentRunProgress()
 
     if (!event.html) return
 
-    const panel = mount.querySelector("#research_progress_panel")
+    const panel = mount.querySelector("#agent_run_progress_panel")
     const nodeStartedAt = event.node_started_at || panel?.dataset?.nodeStartedAt
     const runStartedAt = event.run_started_at || panel?.dataset?.runStartedAt
     this.startProgressClock(nodeStartedAt, runStartedAt)
     panel?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
-  updateResearchProgressThinking(event) {
+  updateAgentRunProgressThinking(event) {
     const text = event.text || ""
     if (!text) return
 
-    const mount = this.ensureResearchProgressMount()
-    const panel = mount?.querySelector("#research_progress_panel")
+    const mount = this.ensureAgentRunProgressMount()
+    const panel = mount?.querySelector("#agent_run_progress_panel")
     if (!panel) return
 
-    let section = panel.querySelector("#research_progress_thinking_section")
+    let section = panel.querySelector("#agent_run_progress_thinking_section")
     if (!section) {
       section = document.createElement("div")
-      section.id = "research_progress_thinking_section"
-      section.className = "nyoy-research-progress-thinking-section"
-      panel.querySelector(".nyoy-research-progress-body")?.append(section)
+      section.id = "agent_run_progress_thinking_section"
+      section.className = "nyoy-agent-run-progress-thinking-section"
+      panel.querySelector(".nyoy-agent-run-progress-body")?.append(section)
     }
 
     section.classList.remove("hidden")
 
-    let pre = section.querySelector("#research_progress_thinking")
+    let pre = section.querySelector("#agent_run_progress_thinking")
     if (!pre) {
       const details = document.createElement("details")
       details.className = "nyoy-chat-message-thinking-details"
@@ -193,8 +193,8 @@ export default class extends Controller {
       summary.textContent = "思考"
 
       pre = document.createElement("pre")
-      pre.id = "research_progress_thinking"
-      pre.className = "nyoy-chat-message-thinking nyoy-research-progress-thinking"
+      pre.id = "agent_run_progress_thinking"
+      pre.className = "nyoy-chat-message-thinking nyoy-agent-run-progress-thinking"
       pre.dataset.controller = "thinking-auto-scroll"
 
       details.append(summary, pre)
@@ -204,22 +204,22 @@ export default class extends Controller {
     pre.textContent = text
   }
 
-  updateResearchProgressPrompts(event) {
+  updateAgentRunProgressPrompts(event) {
     const systemText = event.system || ""
     const userText = event.user || ""
     if (!systemText && !userText) return
 
-    const mount = this.ensureResearchProgressMount()
-    const panel = mount?.querySelector("#research_progress_panel")
+    const mount = this.ensureAgentRunProgressMount()
+    const panel = mount?.querySelector("#agent_run_progress_panel")
     if (!panel) return
 
-    let section = panel.querySelector("#research_progress_prompts_section")
+    let section = panel.querySelector("#agent_run_progress_prompts_section")
     if (!section) {
       section = document.createElement("div")
-      section.id = "research_progress_prompts_section"
-      section.className = "nyoy-research-progress-prompts-section"
-      const body = panel.querySelector(".nyoy-research-progress-body")
-      const thinking = panel.querySelector("#research_progress_thinking_section")
+      section.id = "agent_run_progress_prompts_section"
+      section.className = "nyoy-agent-run-progress-prompts-section"
+      const body = panel.querySelector(".nyoy-agent-run-progress-body")
+      const thinking = panel.querySelector("#agent_run_progress_thinking_section")
       if (thinking) {
         thinking.before(section)
       } else {
@@ -230,7 +230,7 @@ export default class extends Controller {
     section.classList.remove("hidden")
 
     if (systemText) {
-      let systemPre = section.querySelector("#research_progress_system_prompt")
+      let systemPre = section.querySelector("#agent_run_progress_system_prompt")
       if (!systemPre) {
         const details = document.createElement("details")
         details.className = "nyoy-chat-message-thinking-details"
@@ -241,8 +241,8 @@ export default class extends Controller {
         summary.textContent = "システムプロンプト"
 
         systemPre = document.createElement("pre")
-        systemPre.id = "research_progress_system_prompt"
-        systemPre.className = "nyoy-chat-message-thinking nyoy-research-progress-prompt"
+        systemPre.id = "agent_run_progress_system_prompt"
+        systemPre.className = "nyoy-chat-message-thinking nyoy-agent-run-progress-prompt"
 
         details.append(summary, systemPre)
         section.prepend(details)
@@ -252,19 +252,19 @@ export default class extends Controller {
     }
 
     if (userText) {
-      let userDetails = section.querySelector(".nyoy-research-progress-user-prompt-details")
-      let userPre = section.querySelector("#research_progress_user_prompt")
+      let userDetails = section.querySelector(".nyoy-agent-run-progress-user-prompt-details")
+      let userPre = section.querySelector("#agent_run_progress_user_prompt")
       if (!userPre) {
         userDetails = document.createElement("details")
-        userDetails.className = "nyoy-chat-message-thinking-details nyoy-research-progress-user-prompt-details"
+        userDetails.className = "nyoy-chat-message-thinking-details nyoy-agent-run-progress-user-prompt-details"
 
         const summary = document.createElement("summary")
         summary.className = "nyoy-chat-message-thinking-summary"
         summary.textContent = "ユーザープロンプト"
 
         userPre = document.createElement("pre")
-        userPre.id = "research_progress_user_prompt"
-        userPre.className = "nyoy-chat-message-thinking nyoy-research-progress-prompt"
+        userPre.id = "agent_run_progress_user_prompt"
+        userPre.className = "nyoy-chat-message-thinking nyoy-agent-run-progress-prompt"
 
         userDetails.append(summary, userPre)
         section.append(userDetails)
@@ -274,25 +274,25 @@ export default class extends Controller {
     }
   }
 
-  ensureResearchProgressMount() {
-    let mount = document.getElementById("research_progress")
+  ensureAgentRunProgressMount() {
+    let mount = document.getElementById("agent_run_progress")
     if (mount) return mount
 
     mount = document.createElement("div")
-    mount.id = "research_progress"
+    mount.id = "agent_run_progress"
     this.element.append(mount)
     return mount
   }
 
-  pinResearchProgress() {
-    const mount = document.getElementById("research_progress")
+  pinAgentRunProgress() {
+    const mount = document.getElementById("agent_run_progress")
     if (!mount || !this.element.contains(mount)) return
 
     this.element.append(mount)
   }
 
   insertMessageNode(node) {
-    const mount = document.getElementById("research_progress")
+    const mount = document.getElementById("agent_run_progress")
     if (mount && this.element.contains(mount)) {
       mount.before(node)
     } else {
@@ -307,8 +307,8 @@ export default class extends Controller {
     if (!Number.isFinite(nodeAt) && !Number.isFinite(runAt)) return
 
     const tick = () => {
-      const nodeEl = this.element.querySelector("[data-research-progress-elapsed]")
-      const runEl = this.element.querySelector("[data-research-progress-run-elapsed]")
+      const nodeEl = this.element.querySelector("[data-agent-run-progress-elapsed]")
+      const runEl = this.element.querySelector("[data-agent-run-progress-run-elapsed]")
       if (!nodeEl && !runEl) {
         this.clearProgressClock()
         return
@@ -400,7 +400,7 @@ export default class extends Controller {
 
     message.append(header, thinking, content, meta)
     this.insertMessageNode(message)
-    this.pinResearchProgress()
+    this.pinAgentRunProgress()
     return message
   }
 }

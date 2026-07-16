@@ -11,8 +11,8 @@ export default class extends Controller {
     const match = this.element.id.match(/^message_(\d+)_thinking$/)
     if (match) {
       this.messageId = match[1]
-    } else if (this.element.id === "research_progress_thinking") {
-      this.messageId = "research_progress"
+    } else if (this.element.id === "agent_run_progress_thinking") {
+      this.messageId = "agent_run_progress"
     } else {
       return
     }

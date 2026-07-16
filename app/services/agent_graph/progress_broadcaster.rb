@@ -48,7 +48,7 @@ module AgentGraph
         return if body.blank?
 
         ChatChannel.broadcast_to(chat, {
-          type: "research_progress_thinking",
+          type: "agent_run_progress_thinking",
           text: body
         })
       end
@@ -60,7 +60,7 @@ module AgentGraph
         return if system_text.blank? && user_text.blank?
 
         ChatChannel.broadcast_to(chat, {
-          type: "research_progress_prompts",
+          type: "agent_run_progress_prompts",
           system: system_text.presence,
           user: user_text.presence
         }.compact)
@@ -87,7 +87,7 @@ module AgentGraph
 
       def broadcast(chat, label:, model_name: nil, node_name: nil, node_started_at: nil, run_started_at: nil)
         ChatChannel.broadcast_to(chat, {
-          type: "research_progress",
+          type: "agent_run_progress",
           label: label,
           model_name: model_name,
           node_name: node_name,
@@ -106,7 +106,7 @@ module AgentGraph
         return "" if label.blank?
 
         ApplicationController.render(
-          partial: "chats/research_progress",
+          partial: "chats/agent_run_progress",
           locals: {
             label: label,
             model_name: model_name,
