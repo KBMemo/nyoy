@@ -1,18 +1,19 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # Post-approval final answer generation for Research Graph.
-  # Uses the chat's main model (thinking allowed). Falls back to the approved draft.
+  # Final research answer for Research Graph.
+  # Uses the chat's main model (thinking allowed). On failure, shows a clear error
+  # with collected sources instead of dumping the internal evidence pack.
   class FinalAnswerSynthesizer
     class << self
-      # Test hook: skip LLM and publish the approved draft as-is.
+      # Test hook: skip LLM and publish the evidence pack / draft as-is.
       attr_accessor :force_passthrough
     end
 
     FINAL_SYSTEM = <<~TEXT.squish
-      あなたは調査アシスタントです。承認済みの調査ドラフトと根拠資料だけを使って、
+      あなたは調査アシスタントです。与えられたメモ抜粋・検索結果・取得ページだけを根拠に、
       ユーザーへの最終回答を日本語で書いてください。
-      ドラフトの結論を尊重しつつ、読みやすい通常のチャット回答に整えてください。
+      結論を先に、読みやすい通常のチャット回答にしてください。
       根拠にない事実・推測を足さないでください。
       Web 根拠がある場合は文末に URL を 1〜3 個添えてください。
       思考過程のタグは出力せず、読者向けの最終回答だけを書いてください。
@@ -28,7 +29,7 @@ module AgentGraph
       draft = state["draft"].to_s.strip
       evidence = @draft_helper.evidence_pack(state).merge(approved_draft: draft)
 
-      if self.class.force_passthrough || draft.blank?
+      if self.class.force_passthrough
         return [
           draft.presence || @draft_helper.fallback_answer(evidence),
           state["draft_truncated"] == true,
@@ -39,9 +40,9 @@ module AgentGraph
       answer, truncated, meta = ask_main_model(evidence)
       if answer.blank?
         return [
-          draft,
-          state["draft_truncated"] == true,
-          { "source" => "draft_fallback", "model_id" => nil, "thinking" => nil }
+          failure_answer(evidence, meta),
+          false,
+          (meta || {}).stringify_keys.merge("source" => "error")
         ]
       end
 
@@ -53,7 +54,7 @@ module AgentGraph
 
     def ask_main_model(evidence)
       model = @chat.model_association
-      return [ nil, false, {} ] unless model
+      return [ nil, false, { "error" => "no chat model" } ] unless model
 
       llm_context = ChatModelCatalog.context_for(model)
       llm = llm_context.chat(
@@ -96,10 +97,9 @@ module AgentGraph
       Rails.logger.warn(
         "AgentGraph::FinalAnswerSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
       )
-      [ nil, false, {} ]
+      [ nil, false, { "error" => "#{e.class}: #{e.message}", "model_id" => model&.model_id } ]
     end
 
-    # Prefer provider thinking deltas; fall back to completed <think> blocks in content.
     def live_thinking_text(streamed_thinking, streamed_content)
       return streamed_thinking if streamed_thinking.present?
 
@@ -114,18 +114,32 @@ module AgentGraph
       if body.present? && appendix.present?
         "#{body}\n\n---\n\n#{appendix}"
       else
-        body.presence || evidence[:approved_draft].to_s
+        body.presence || failure_answer(evidence, {})
       end
+    end
+
+    def failure_answer(evidence, meta)
+      lines = []
+      lines << "最終回答の生成に失敗しました。"
+      error = meta.is_a?(Hash) ? meta["error"].presence || meta[:error].presence : nil
+      if error.present?
+        lines << "原因: #{error.to_s.truncate(200)}"
+      else
+        lines << "モデルに接続できないか、応答が空でした。もう一度質問してください。"
+      end
+      lines << ""
+      sources = @draft_helper.compact_sources(evidence)
+      lines << (sources.presence || "収集できた出典はありませんでした。")
+      lines.join("\n")
     end
 
     def user_prompt(evidence)
       lines = []
       lines << "質問:\n#{evidence[:question]}\n"
-      lines << "承認済み調査ドラフト:\n#{evidence[:approved_draft].to_s.truncate(2_000)}\n"
 
       memo = evidence[:memo].to_s.strip
       lines << if memo.present?
-                 "メモ抜粋:\n#{memo.truncate(800)}\n"
+                 "メモ抜粋:\n#{memo.truncate(500)}\n"
                else
                  "メモ抜粋: （該当なし）\n"
                end
@@ -141,7 +155,7 @@ module AgentGraph
             next unless result.is_a?(Hash)
 
             lines << "  - #{result['title']}: #{result['url']}"
-            lines << "    #{result['content'].to_s.truncate(120)}" if result["content"].present?
+            lines << "    #{result['content'].to_s.truncate(100)}" if result["content"].present?
           end
         end
         lines << ""
@@ -153,12 +167,12 @@ module AgentGraph
           next unless page.is_a?(Hash)
 
           lines << "- #{page['title'].presence || page['url']} (#{page['url']})"
-          lines << page["content_preview"].to_s.truncate(400)
+          lines << page["content_preview"].to_s.truncate(350)
           lines << ""
         end
       end
 
-      lines << "出力: 最終回答本文のみ。ドラフトの重複した出典見出しは省略してよい（出典はシステムが付けます）。"
+      lines << "出力: 最終回答本文のみ（出典リストはシステムが付けます）。"
       lines.join("\n")
     end
   end

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module AgentGraph
-  # R2 graph: plan → recall_memos → search_web → fetch_urls → synthesize_draft → await_approval → finalize_answer
+  # R2 graph: plan → recall_memos → search_web → fetch_urls → synthesize_draft → finalize_answer
+  # (await_approval remains registered for legacy pending runs / resume)
   # (evidence nodes are skipped via ResearchRouting when the plan does not need them)
   class ResearchGraph
     NAME = "research"

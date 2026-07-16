@@ -26,13 +26,13 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     end.last
 
     assert_equal "research_progress", payload["type"]
-    assert_includes payload["label"], "調査ドラフト"
+    assert_includes payload["label"], "根拠"
     assert_equal "synthesize_draft", payload["node_name"]
     assert_equal "gpt-oss", payload["model_name"]
     assert payload["node_started_at"].present?
     assert payload["run_started_at"].present?
     assert_includes payload["html"], "research_progress_panel"
-    assert_includes payload["html"], "調査ドラフト"
+    assert_includes payload["html"], "根拠"
     assert_includes payload["html"], "gpt-oss"
     assert_includes payload["html"], "data-research-progress-elapsed"
     assert_includes payload["html"], "data-research-progress-run-elapsed"

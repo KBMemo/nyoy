@@ -35,7 +35,7 @@ class McpResearchGraphToolsTest < ActiveSupport::TestCase
     end
   end
 
-  test "run_research_graph without auto_approve awaits draft approval" do
+  test "run_research_graph without auto_approve still completes immediately" do
     stub_research_nodes do
       response = Mcp::ResearchGraphTools.run_research_graph_tool.call(
         question: "出典を調べて",
@@ -43,19 +43,11 @@ class McpResearchGraphToolsTest < ActiveSupport::TestCase
       )
       payload = JSON.parse(response.content.first[:text])
 
-      assert_equal "awaiting_approval", payload["status"]
-      assert payload["draft"].present?
-      assert payload["note"].present?
-      assert payload["awaiting_approval"]
-
-      resume = Mcp::ResearchGraphTools.resume_research_graph_tool.call(
-        agent_run_id: payload["agent_run_id"],
-        decision: "approved"
-      )
-      done = JSON.parse(resume.content.first[:text])
-
-      assert_equal "completed", done["status"]
-      assert_equal payload["draft"], done["final_answer"]
+      assert_equal "completed", payload["status"]
+      assert payload["final_answer"].present?
+      assert_equal true, payload["completed"]
+      refute payload["awaiting_approval"]
+      assert_includes payload["nodes"], "finalize_answer"
     end
   end
 

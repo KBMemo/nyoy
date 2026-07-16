@@ -2,8 +2,8 @@
 
 module AgentGraph
   module Nodes
-    # Human-in-the-loop gate for Research Chat drafts. Resume reads approval.
-    # Rejected drafts re-enter plan_research until MAX_REPLANS is exhausted.
+    # Legacy / safety gate. New Research runs skip this node (see ResearchRouting).
+    # Resume still handles approved / rejected for leftover awaiting_approval runs.
     class AwaitApproval
       REJECTED_MESSAGE = "調査ドラフトは却下されました。必要なら質問を言い直してください。"
       MAX_REPLANS = 2
@@ -23,11 +23,11 @@ module AgentGraph
               }
             )
           else
-            # Safety net: auto_approve (or unexpected routing) should skip HITL.
+            # New research path never requires HITL; finalize immediately.
             AgentGraph::NodeResult.next(
               "finalize_answer",
               updates: {
-                "approval" => AgentGraph::ResearchRouting.auto_approve?(state) ? "approved" : "not_required"
+                "approval" => "not_required"
               }
             )
           end

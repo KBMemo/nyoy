@@ -5,32 +5,28 @@ LangGraph 型の薄い Workflow ランタイム。最初の 1 Graph は調査フ
 ## 現状（R5）
 
 ```
-plan_research → recall_memos → search_web → fetch_urls → synthesize_draft
-  → await_approval → finalize_answer
-    └ rejected（上限まで）→ plan_research
+plan_research → recall_memos → search_web → fetch_urls → synthesize_draft → finalize_answer
 ```
 
 各 Node は plan / 結果に応じてスキップされる（例: `need_web=false` なら search/fetch へ進まない）。
 
 - 入口: `ChatResponseJob` がユーザー質問を `AgentGraph::ResearchIntent` で判定し、一致したら `ResearchGraphRunner` に委譲
-- `synthesize_draft` は根拠から**確認用ドラフト**を合成（`EvidenceSynthesizer`）。**既定モデル設定**の「調査ドラフト用モデル」があればそれを優先し、失敗時は「メイン再試行」または「テンプレのみ」にフォールバック。ドラフト合成は高速化のため思考オフ
-- **常に承認**: Chat UI では `auto_approve` でない限り必ず `await_approval` で Interrupt（調査ドラフト確認パネル）。`plan.sensitive` はラベル／方針用に残すが HITL の条件には使わない
-- MCP 既定の `auto_approve=true` のときは `approval=not_required` でそのまま `finalize_answer`
-- 承認後: `AgentGraphResumeJob` / MCP `resume_research_graph` → `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。失敗時は承認済みドラフトをフォールバック投稿
+- `synthesize_draft` は LLM を使わず根拠パック（出典リスト）を内部 state に載せるだけ
+- **承認なし**: そのまま `finalize_answer` へ進む（Chat / MCP 共通）
+- `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。失敗時は出典付きのエラー文を投稿（内部パックを黙って出さない）
 - 最終回答生成中はストリーミングの思考を Cable `research_progress_thinking` で進捗パネル内にライブ表示（完了後は assistant メッセージの「思考」にも残る）
-- **却下**: `replan_count < 2` なら `plan_research` へ戻る（根拠・budget は保持）。`rejection_notes` と `plan.revision_hints` を Plan / Synthesizer が参照して書き直す。上限超過で終了メッセージ
-- **進捗表示**: Node 実行中は Cable `research_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗・承認待ちで消す
+- **進捗表示**: Node 実行中は Cable `research_progress` でメッセージ末尾に進捗パネル（ラベル・モデル名・経過時間／合計時間）。完了・失敗で消す
 - 既存 Chat tool loop はそのまま残る（意図が一致しない通常会話）
 - `search_web` / `fetch_urls` / `recall_memos` は既存 ChatTools を呼び、実行のたびに通常 Chat と同じ **Tool Call / Tool Result** メッセージを履歴へ残す（`ToolTraceRecorder`）
-- 検索結果が空のときもドラフトの「出典」に警告を載せる（無結果でもパネルは出す）。詳細な検索・取得本文はツール履歴側に任せ、ドラフトは短い回答＋出典リンク中心
+- 検索結果が空のときも出典に警告を載せる。詳細な検索・取得本文はツール履歴側に任せ、最終回答は短い回答＋出典リンク中心
 
 ## MCP
 
 | ツール | 役割 |
 |--------|------|
-| `run_research_graph` | 調査実行（`question` 必須、`chat_id` / `auto_approve` 任意） |
+| `run_research_graph` | 調査実行（`question` 必須、`chat_id` / `auto_approve` 任意・無視） |
 | `get_research_graph` | `agent_run_id` の状態取得 |
-| `resume_research_graph` | `approved` / `rejected` で再開 |
+| `resume_research_graph` | 旧 `awaiting_approval` ラン向け（新規ランでは不要） |
 
 実装: `Mcp::ResearchGraphTools`（Chat tool loop には載せない）。
 

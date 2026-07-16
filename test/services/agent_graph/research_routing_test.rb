@@ -21,20 +21,17 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
     assert_equal [ "https://a.example" ], AgentGraph::ResearchRouting.fetch_targets(state)
   end
 
-  test "after_synthesize awaits approval unless auto_approve" do
-    assert_equal "await_approval", AgentGraph::ResearchRouting.after_synthesize(
+  test "after_synthesize always finalizes without approval" do
+    assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_synthesize(
       "plan" => { "sensitive" => false }
     )
-    assert_equal "await_approval", AgentGraph::ResearchRouting.after_synthesize(
+    assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_synthesize(
       "plan" => { "sensitive" => true }
     )
     assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_synthesize(
       "plan" => { "sensitive" => true },
-      "auto_approve" => true
+      "auto_approve" => false
     )
-    assert_equal "finalize_answer", AgentGraph::ResearchRouting.after_synthesize(
-      "plan" => { "sensitive" => false },
-      "auto_approve" => true
-    )
+    refute AgentGraph::ResearchRouting.needs_human_approval?("auto_approve" => false)
   end
 end

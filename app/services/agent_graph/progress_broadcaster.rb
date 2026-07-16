@@ -8,7 +8,7 @@ module AgentGraph
       "recall_memos" => "関連メモを検索しています…",
       "search_web" => "Web を検索しています…",
       "fetch_urls" => "ページを取得しています…",
-      "synthesize_draft" => "調査ドラフトを作成しています…",
+      "synthesize_draft" => "根拠を整理しています…",
       "await_approval" => "ドラフトの承認待ちです…",
       "finalize_answer" => "最終回答を生成しています…",
       "plan_memo_write" => "メモ保存の準備をしています…",

@@ -28,16 +28,15 @@ module AgentGraph
       "synthesize_draft"
     end
 
-    def after_synthesize(state)
-      return "await_approval" if needs_human_approval?(state)
-
+    # Draft is an internal intermediate; always generate the final answer next.
+    def after_synthesize(_state)
       "finalize_answer"
     end
 
-    # Chat UI always shows the draft approval panel unless MCP/auto_approve.
-    # plan.sensitive remains for labeling / future policy, but no longer gates HITL.
-    def needs_human_approval?(state)
-      !auto_approve?(state)
+    # Research Graph no longer pauses for draft approval (Chat / MCP alike).
+    # MemoWrite Graph keeps its own HITL. Legacy pending research runs can still resume.
+    def needs_human_approval?(_state)
+      false
     end
 
     def sensitive_plan?(state)

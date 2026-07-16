@@ -30,4 +30,26 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
   ensure
     AgentGraph::FinalAnswerSynthesizer.force_passthrough = previous
   end
+
+  test "llm failure returns explicit error with sources instead of silent draft dump" do
+    synthesizer = AgentGraph::FinalAnswerSynthesizer.new(@chat)
+    synthesizer.define_singleton_method(:ask_main_model) do |_evidence|
+      [ nil, false, { "error" => "Faraday::ConnectionFailed: Connection refused" } ]
+    end
+
+    state = @state.merge(
+      "search_results" => [ {
+        "query" => "高尾山",
+        "results" => [ { "title" => "高尾山", "url" => "https://example.com/takao" } ]
+      } ]
+    )
+
+    answer, _truncated, meta = synthesizer.call(state)
+
+    assert_includes answer, "最終回答の生成に失敗しました"
+    assert_includes answer, "Connection refused"
+    assert_includes answer, "example.com/takao"
+    refute_includes answer, "### 調査結果"
+    assert_equal "error", meta["source"]
+  end
 end

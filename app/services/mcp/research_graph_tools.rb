@@ -17,10 +17,9 @@ module Mcp
       MCP::Tool.define(
         name: "run_research_graph",
         description: <<~TEXT.squish,
-          Research Graph で調査する（メモ想起→Web 検索→URL 取得→ドラフト合成→回答）。
-          plan.sensitive（保存・公開・確認してから 等）のときだけ承認待ちになる。
-          auto_approve=true（既定）なら sensitive でも承認をスキップする。
-          awaiting_approval のときは draft を確認して resume_research_graph を呼ぶ。
+          Research Graph で調査する（メモ想起→Web 検索→URL 取得→ドラフト合成→最終回答）。
+          ドラフト承認は行わず、そのまま最終回答まで進む。
+          auto_approve は互換のため受け付けるが動作には影響しない。
         TEXT
         input_schema: {
           type: "object",
@@ -32,7 +31,7 @@ module Mcp
             },
             auto_approve: {
               type: "boolean",
-              description: "true（既定）ならドラフト承認を自動で通す。false なら承認待ち"
+              description: "互換用（無視される）。常に最終回答まで実行する"
             }
           },
           required: [ "question" ]
@@ -89,7 +88,7 @@ module Mcp
     def resume_research_graph_tool
       MCP::Tool.define(
         name: "resume_research_graph",
-        description: "awaiting_approval の Research Graph を承認または却下して再開する。",
+        description: "旧 awaiting_approval の Research Graph を再開する（新規ランでは不要）。",
         input_schema: {
           type: "object",
           properties: {
