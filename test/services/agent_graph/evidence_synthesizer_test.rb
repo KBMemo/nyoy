@@ -145,6 +145,41 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     assert_equal 0.9, llm.params[:top_p]
   end
 
+  test "draft synthesis applies llama cache to selected model" do
+    model = @chat.model_association
+    synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
+    llm = fake_llm(content: "ドラフト")
+    context = Object.new
+    context.define_singleton_method(:chat) { |**| llm }
+
+    cache_calls = []
+    original_context_for = ChatModelCatalog.method(:context_for)
+    original_cache_apply = ChatLlamaCache.method(:apply!)
+    ChatModelCatalog.define_singleton_method(:context_for) { |_| context }
+    ChatLlamaCache.define_singleton_method(:apply!) do |llm_chat, chat:, model: nil, slot_key: nil|
+      cache_calls << { llm: llm_chat, chat: chat, model: model, slot_key: slot_key }
+      llm_chat
+    end
+
+    answer, _thinking, _truncated = synthesizer.send(:ask_model, model, {
+      question: "質問",
+      memo: nil,
+      search_results: [],
+      fetched_pages: [],
+      errors: []
+    })
+
+    assert_equal "ドラフト", answer
+    assert_equal 1, cache_calls.size
+    assert_same llm, cache_calls.first[:llm]
+    assert_equal @chat, cache_calls.first[:chat]
+    assert_equal model, cache_calls.first[:model]
+    assert_equal "agent_graph:draft:#{@chat.id}:#{model.model_id}", cache_calls.first[:slot_key]
+  ensure
+    ChatModelCatalog.define_singleton_method(:context_for, original_context_for)
+    ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)
+  end
+
   test "length truncation uses thread-local finish reason capture" do
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
     response = Struct.new(:raw).new(nil)
@@ -169,5 +204,19 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     answer, extracted = synthesizer.send(:extract_answer_and_thinking, empty)
     assert_equal "フィールドの思考", answer
     assert_equal "フィールドの思考", extracted
+  end
+
+  private
+
+  def fake_llm(content:)
+    llm = Object.new
+    llm.instance_variable_set(:@params, {})
+    llm.define_singleton_method(:with_params) do |**params|
+      @params = params
+      self
+    end
+    llm.define_singleton_method(:with_instructions) { |_| self }
+    llm.define_singleton_method(:ask) { |_| Struct.new(:content, :thinking, :raw).new(content, nil, nil) }
+    llm
   end
 end

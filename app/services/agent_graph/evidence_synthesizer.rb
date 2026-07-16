@@ -124,6 +124,7 @@ module AgentGraph
       else
         ChatLlmSettings.defaults_for(model: model).apply!(llm)
       end
+      ChatLlamaCache.apply!(llm, chat: @chat, model: model, slot_key: "agent_graph:draft:#{@chat.id}:#{model.model_id}")
       # Draft synthesis prioritizes latency: skip thinking tokens (qwen / llama.cpp).
       disable_thinking!(llm)
 

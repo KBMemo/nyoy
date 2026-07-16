@@ -67,6 +67,38 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     model&.destroy!
   end
 
+  test "metadata can use an explicit model connection" do
+    model = Model.create!(
+      provider: "openai",
+      model_id: "explicit-llama-cache-test",
+      name: "explicit-llama-cache-test",
+      family: "local",
+      capabilities: [ "chat" ],
+      metadata: { "connection_key" => "llama_cpp" }
+    )
+    Rails.application.config.x.nyoy.llama_slot_count = 0
+    Rails.application.config.x.nyoy.llama_cache_prompt = true
+    stub_props_total_slots(6)
+
+    metadata = ChatLlamaCache.metadata_for(@chat, model: model)
+
+    assert_equal true, metadata[:enabled]
+    assert_equal true, metadata[:cache_prompt]
+    assert_equal @chat.id % 6, metadata[:slot_id]
+    assert_equal 6, metadata[:slot_count]
+  ensure
+    model&.destroy!
+  end
+
+  test "slot key gives a stable purpose-specific slot" do
+    Rails.application.config.x.nyoy.llama_slot_count = 0
+    stub_props_total_slots(8)
+
+    metadata = ChatLlamaCache.metadata_for(@chat, slot_key: "agent_graph:final:#{@chat.id}")
+
+    assert_equal Zlib.crc32("agent_graph:final:#{@chat.id}") % 8, metadata[:slot_id]
+  end
+
   test "falls back to LLAMA_SLOT_COUNT when props fails" do
     Rails.application.config.x.nyoy.llama_slot_count = 3
     stub_props_error

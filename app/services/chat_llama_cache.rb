@@ -4,14 +4,16 @@
 # History is still sent (API contract), but matching prefixes are not re-processed.
 #
 # Slot count is read from GET /props (total_slots). LLAMA_SLOT_COUNT is an optional fallback.
+require "zlib"
+
 module ChatLlamaCache
   PROPS_CACHE_TTL = 60
   PROPS_ERROR_TTL = 10
 
   module_function
 
-  def apply!(llm_chat, chat:)
-    metadata = metadata_for(chat)
+  def apply!(llm_chat, chat:, model: nil, slot_key: nil)
+    metadata = metadata_for(chat, model: model, slot_key: slot_key)
     llm_chat.instance_variable_set(:@nyoy_llama_cache_metadata, metadata)
     return llm_chat unless metadata[:enabled]
 
@@ -24,11 +26,12 @@ module ChatLlamaCache
     llm_chat.with_params(**existing.merge(params))
   end
 
-  def metadata_for(chat)
-    return disabled_metadata if openai_chat?(chat)
+  def metadata_for(chat, model: nil, slot_key: nil)
+    model ||= chat&.model_association
+    return disabled_metadata if openai_model?(model)
 
-    count = slot_count_for(chat)
-    slot_id = count.to_i.positive? && chat&.id ? chat.id.to_i % count : nil
+    count = slot_count_for(chat, model: model)
+    slot_id = slot_id_for(chat, model: model, slot_key: slot_key)
     enabled = cache_prompt? || count.to_i.positive?
 
     {
@@ -40,13 +43,17 @@ module ChatLlamaCache
   end
 
   def enabled?(chat = nil)
-    return false if openai_chat?(chat)
+    return false if openai_model?(chat&.model_association)
 
     cache_prompt? || slot_count_for(chat).to_i.positive?
   end
 
   def openai_chat?(chat)
-    chat&.model_association&.metadata&.dig("connection_key") == "openai"
+    openai_model?(chat&.model_association)
+  end
+
+  def openai_model?(model)
+    model&.metadata&.dig("connection_key") == "openai"
   end
 
   def disabled_metadata
@@ -62,16 +69,18 @@ module ChatLlamaCache
     Rails.application.config.x.nyoy.llama_cache_prompt
   end
 
-  def slot_id_for(chat)
-    count = slot_count_for(chat)
+  def slot_id_for(chat, model: nil, slot_key: nil)
+    count = slot_count_for(chat, model: model)
     return nil if count.to_i <= 0
+
+    return Zlib.crc32(slot_key.to_s) % count if slot_key.present?
     return nil unless chat&.id
 
     chat.id.to_i % count
   end
 
-  def slot_count_for(chat)
-    base_url = api_base_for(chat)
+  def slot_count_for(chat, model: nil)
+    base_url = api_base_for(chat, model: model)
     fetched = total_slots_from_props(base_url)
     return fetched if fetched.to_i.positive?
 
@@ -83,8 +92,8 @@ module ChatLlamaCache
     count.positive? ? count : nil
   end
 
-  def api_base_for(chat)
-    model = chat&.model_association
+  def api_base_for(chat, model: nil)
+    model ||= chat&.model_association
     connection_key = model&.metadata&.dig("connection_key")
     if connection_key.present?
       NyoyConnectionStore.url(connection_key).to_s.sub(%r{/\z}, "").presence

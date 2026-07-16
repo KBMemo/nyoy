@@ -102,4 +102,57 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
 
     assert synthesizer.send(:length_finish_reason?, chunk)
   end
+
+  test "final answer applies llama cache to main model" do
+    model = @chat.model_association
+    synthesizer = AgentGraph::FinalAnswerSynthesizer.new(@chat)
+    llm = fake_llm(content: "最終回答")
+    context = Object.new
+    context.define_singleton_method(:chat) { |**| llm }
+
+    cache_calls = []
+    original_context_for = ChatModelCatalog.method(:context_for)
+    original_cache_apply = ChatLlamaCache.method(:apply!)
+    ChatModelCatalog.define_singleton_method(:context_for) { |_| context }
+    ChatLlamaCache.define_singleton_method(:apply!) do |llm_chat, chat:, model: nil, slot_key: nil|
+      cache_calls << { llm: llm_chat, chat: chat, model: model, slot_key: slot_key }
+      llm_chat
+    end
+
+    answer, _truncated, _meta = synthesizer.send(:ask_main_model, {
+      question: "質問",
+      memo: nil,
+      search_results: [],
+      fetched_pages: [],
+      evidence_review: {},
+      errors: []
+    })
+
+    assert_equal "最終回答", answer
+    assert_equal 1, cache_calls.size
+    assert_same llm, cache_calls.first[:llm]
+    assert_equal @chat, cache_calls.first[:chat]
+    assert_equal model, cache_calls.first[:model]
+    assert_equal "agent_graph:final:#{@chat.id}", cache_calls.first[:slot_key]
+  ensure
+    ChatModelCatalog.define_singleton_method(:context_for, original_context_for)
+    ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)
+  end
+
+  private
+
+  def fake_llm(content:)
+    llm = Object.new
+    llm.instance_variable_set(:@params, {})
+    llm.define_singleton_method(:with_params) do |**params|
+      @params = params
+      self
+    end
+    llm.define_singleton_method(:with_instructions) { |_| self }
+    llm.define_singleton_method(:ask) do |_prompt, &block|
+      block&.call(Struct.new(:content, :thinking, :finish_reason).new(content, nil, nil))
+      Struct.new(:content, :thinking, :raw).new(content, nil, nil)
+    end
+    llm
+  end
 end

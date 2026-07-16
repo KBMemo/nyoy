@@ -65,6 +65,7 @@ module AgentGraph
         assume_model_exists: true
       )
       ChatLlmSettings.apply!(llm, chat: @chat)
+      ChatLlamaCache.apply!(llm, chat: @chat, model: model, slot_key: "agent_graph:final:#{@chat.id}")
       llm.with_instructions(FINAL_SYSTEM)
 
       prompt = user_prompt(evidence)
