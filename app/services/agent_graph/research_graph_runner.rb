@@ -12,10 +12,11 @@ module AgentGraph
 
     # MCP entry: create or reuse a chat, then run the Research Graph.
     def self.call_for_mcp(question:, chat_id: nil, auto_approve: true)
-      question = question.to_s.strip
-      raise ArgumentError, "question required" if question.blank?
-
-      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: question)
+      chat, question = McpRunRequest.resolve(
+        chat_id: chat_id,
+        user_content: question,
+        required_name: "question"
+      )
       call(chat, question: question, auto_approve: auto_approve)
     end
 

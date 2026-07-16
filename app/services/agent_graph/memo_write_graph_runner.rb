@@ -17,10 +17,11 @@ module AgentGraph
     end
 
     def self.call_for_mcp(instruction:, chat_id: nil, auto_approve: true, body: nil, title: nil)
-      instruction = instruction.to_s.strip
-      raise ArgumentError, "instruction required" if instruction.blank?
-
-      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: instruction)
+      chat, instruction = McpRunRequest.resolve(
+        chat_id: chat_id,
+        user_content: instruction,
+        required_name: "instruction"
+      )
       call(
         chat,
         instruction: instruction,

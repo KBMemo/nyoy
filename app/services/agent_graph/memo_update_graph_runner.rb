@@ -19,16 +19,17 @@ module AgentGraph
     end
 
     def self.call_for_mcp(instruction:, memo_ref:, chat_id: nil, auto_approve: true, body: nil, title: nil, mode: nil)
-      instruction = instruction.to_s.strip
-      raise ArgumentError, "instruction required" if instruction.blank?
-      raise ArgumentError, "memo_ref required" if memo_ref.to_s.strip.blank?
-
-      chat = McpChatResolver.resolve(chat_id: chat_id, user_content: instruction)
+      chat, instruction = McpRunRequest.resolve(
+        chat_id: chat_id,
+        user_content: instruction,
+        required_name: "instruction"
+      )
+      memo_ref = McpRunRequest.required_string(memo_ref, name: "memo_ref")
       call(
         chat,
         instruction: instruction,
         auto_approve: auto_approve,
-        memo_ref: memo_ref.to_s.strip,
+        memo_ref: memo_ref,
         body: body.to_s.presence,
         title: title.to_s.presence,
         mode: mode.to_s.presence
