@@ -20,7 +20,6 @@ module AgentGraph
           draft = format_draft(title, body)
 
           AgentGraph::NodeResult.next(
-            "await_approval",
             updates: {
               "memo_draft" => memo_draft,
               "draft" => draft

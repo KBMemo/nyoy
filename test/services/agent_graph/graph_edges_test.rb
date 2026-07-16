@@ -1,0 +1,40 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class AgentGraphGraphEdgesTest < ActiveSupport::TestCase
+  test "memo write graph declares fixed edges" do
+    graph = AgentGraph::MemoWriteGraph.new
+
+    assert_equal "draft_memo", graph.next_node_for("plan_memo_write", {})
+    assert_equal "await_approval", graph.next_node_for("draft_memo", {})
+    assert_equal "commit_memo", graph.next_node_for("await_approval", {})
+    assert_equal "finalize_reply", graph.next_node_for("commit_memo", {})
+    assert_nil graph.next_node_for("finalize_reply", {})
+  end
+
+  test "research graph declares routing edges" do
+    graph = AgentGraph::ResearchGraph.new
+
+    assert_equal "recall_memos", graph.next_node_for("plan_research", {
+      "plan" => { "need_memo" => true, "need_web" => true }
+    })
+    assert_equal "search_web", graph.next_node_for("recall_memos", {
+      "plan" => { "need_web" => true, "fetch_urls" => [] }
+    })
+    assert_equal "fetch_urls", graph.next_node_for("search_web", {
+      "plan" => { "fetch_urls" => [ "https://example.com" ] }
+    })
+    assert_equal "synthesize_draft", graph.next_node_for("fetch_urls", {})
+    assert_equal "finalize_answer", graph.next_node_for("synthesize_draft", {})
+    assert_nil graph.next_node_for("finalize_answer", {})
+  end
+
+  test "missing edge is explicit failure" do
+    error = assert_raises(RuntimeError) do
+      AgentGraph::ResearchGraph.new.next_node_for("missing", {})
+    end
+
+    assert_includes error.message, "missing edge"
+  end
+end

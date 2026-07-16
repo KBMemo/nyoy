@@ -22,8 +22,6 @@ module AgentGraph
           )
         end
 
-        next_state = state.merge("draft" => draft, "draft_truncated" => false)
-        goto = AgentGraph::ResearchRouting.after_synthesize(next_state)
         updates = {
           "draft" => draft,
           "draft_truncated" => false,
@@ -36,7 +34,7 @@ module AgentGraph
           "approval" => "not_required"
         }
 
-        AgentGraph::NodeResult.next(goto, updates: updates)
+        AgentGraph::NodeResult.next(updates: updates)
       end
     end
   end

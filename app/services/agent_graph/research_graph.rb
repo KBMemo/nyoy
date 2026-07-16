@@ -18,6 +18,15 @@ module AgentGraph
         "await_approval" => Nodes::AwaitApproval.new,
         "finalize_answer" => Nodes::FinalizeAnswer.new
       }.freeze
+      @edges = {
+        "plan_research" => Edge.new(to: ->(state) { ResearchRouting.after_plan(state["plan"]) }),
+        "recall_memos" => Edge.new(to: ->(state) { ResearchRouting.after_recall(state) }),
+        "search_web" => Edge.new(to: ->(state) { ResearchRouting.after_search(state) }),
+        "fetch_urls" => Edge.new(to: "synthesize_draft"),
+        "synthesize_draft" => Edge.new(to: ->(state) { ResearchRouting.after_synthesize(state) }),
+        "await_approval" => Edge.new(to: "finalize_answer"),
+        "finalize_answer" => Edge.end
+      }.freeze
     end
 
     def name
@@ -30,6 +39,13 @@ module AgentGraph
 
     def node_for(name)
       @nodes[name.to_s]
+    end
+
+    def next_node_for(name, state)
+      edge = @edges[name.to_s]
+      raise "missing edge for node: #{name}" unless edge
+
+      edge.next_node(state)
     end
   end
 end

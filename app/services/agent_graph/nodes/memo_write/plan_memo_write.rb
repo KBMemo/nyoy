@@ -37,7 +37,6 @@ module AgentGraph
           }
 
           AgentGraph::NodeResult.next(
-            "draft_memo",
             updates: {
               "intent" => "memo_write",
               "plan" => plan,

@@ -234,7 +234,7 @@ MemoWrite:
 
 1. `AgentGraph::Router` を追加し、`ChatResponseJob` から Intent 判定を移す（完了）
 2. Graph ごとの `InitialState` / `StateSchema` を追加し、初期 state を runner から分離する（完了）
-3. Graph 定義に edge を持たせ、Node 内の遷移文字列を減らす
+3. Graph 定義に edge を持たせ、Node 内の遷移文字列を減らす（進行中）
 4. Approval を共通 interrupt として整理し、Research legacy approval を削る
 5. Broadcaster 呼び出しを Node から薄くし、Node は state updates を主語にする
 6. `summary_for` を Graph ごとの presenter に切り出す

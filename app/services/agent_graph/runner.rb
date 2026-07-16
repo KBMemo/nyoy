@@ -29,7 +29,7 @@ module AgentGraph
         break interrupt!(node_name) if result.interrupt?
         break finish_completed! if result.finished?
 
-        @run.update!(current_node: result.goto)
+        @run.update!(current_node: next_node_for(node_name, result))
       end
 
       finish_failed!("max steps exceeded (#{MAX_STEPS})") if @run.running?
@@ -86,6 +86,12 @@ module AgentGraph
       merged = scrub_null_bytes((@run.state || {}).deep_merge(result.updates))
       @run.update!(state: merged)
       @run.agent_checkpoints.create!(node_name: node_name, state: merged)
+    end
+
+    def next_node_for(node_name, result)
+      return result.goto if result.explicit_goto?
+
+      @graph.next_node_for(node_name, @run.state)
     end
 
     def scrub_null_bytes(value)

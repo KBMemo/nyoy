@@ -7,7 +7,7 @@ module AgentGraph
       class CommitMemo
         def call(state:, run:, chat:)
           if state["memo_uid"].present?
-            return AgentGraph::NodeResult.next("finalize_reply")
+            return AgentGraph::NodeResult.next
           end
 
           draft = state["memo_draft"]
@@ -46,7 +46,6 @@ module AgentGraph
           end
 
           AgentGraph::NodeResult.next(
-            "finalize_reply",
             updates: {
               "memo_uid" => uid.to_s,
               "memo_result" => result.is_a?(Hash) ? result : { "raw" => result }

@@ -69,7 +69,8 @@ class AgentGraphMemoWriteGraphRunnerTest < ActiveSupport::TestCase
         run: completed,
         chat: @chat
       )
-      assert_equal "finalize_reply", result.goto
+      refute result.explicit_goto?
+      assert_equal "finalize_reply", AgentGraph::MemoWriteGraph.new.next_node_for("commit_memo", completed.state)
     end
   end
 
