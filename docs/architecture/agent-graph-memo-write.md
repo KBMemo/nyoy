@@ -11,7 +11,7 @@ plan_memo_write → draft_memo → await_approval → commit_memo → finalize_r
                               └ rejected → 終了メッセージ（再計画なし）
 ```
 
-- 入口: `ChatResponseJob` が `AgentGraph::MemoWriteIntent` を **Research より先** に判定
+- 入口: `ChatResponseJob` が `AgentGraph::Router` に委譲し、Router が `MemoWriteIntent` を **Research より先** に判定
 - 調査フレーミング付きの「調べてから保存」は Intent が弾き、Research に回す
 - 本文ソース優先順: MCP `body` → 直近非 tool assistant → 指示文から保存フレーズを除いた残り
 - **常に HITL**（`auto_approve` でない限り）。承認前に `create_memo` しない
@@ -31,8 +31,8 @@ plan_memo_write → draft_memo → await_approval → commit_memo → finalize_r
 
 ## 承認 UI
 
-- ルートは Research と共有: `POST .../agent_runs/:id/approve|reject`
-- Cable partial: `chats/memo_write_approval`（`ApprovalBroadcaster` が `graph_name` で切替）
+- ルート: `POST .../agent_runs/:id/approve|reject`（MemoWrite Graph 専用）
+- Cable partial: `chats/memo_write_approval`
 
 ## 次
 

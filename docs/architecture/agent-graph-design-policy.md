@@ -120,8 +120,8 @@ Runner が持たない責務:
 | LLM 呼び出し | Synthesizer / service に切り出し、Node は結果を state に保存する |
 | Tool 呼び出し | 既存 `ChatTools` を使い、`ToolTraceRecorder` で通常チャットと同じ履歴を残す |
 | DB 書き込み | 冪等キーを state に保存し、再開時の二重実行を防ぐ |
-| UI broadcast | 原則 Broadcaster に委譲し、Node は「要求」レベルに留める |
-| Approval | `interrupt` と `approval` state で表現し、resume は同じ Runner に戻す |
+| UI broadcast | `AssistantMessagePublisher` / Broadcaster に委譲し、Node は「要求」レベルに留める |
+| Approval | write 系 Graph では `interrupt` と `approval` state で表現し、resume は同じ Runner に戻す |
 
 ## 入口設計
 
