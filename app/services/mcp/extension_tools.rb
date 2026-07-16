@@ -50,11 +50,39 @@ module Mcp
     def generate_image_tool
       MCP::Tool.define(
         name: "generate_image",
-        description: "日本語プロンプトから Stable Diffusion 画像のラフ案を非同期生成する。返却された id で get_image_generation をポーリングする。",
+        description: "日本語プロンプトから Stable Diffusion 画像を非同期生成する。既定はラフ案生成。generation_flow=direct なら直接 txt2img 生成する。",
         input_schema: {
           type: "object",
           properties: {
             japanese_prompt: { type: "string", description: "生成したい内容（日本語）" },
+            generation_flow: {
+              type: "string",
+              enum: ImageGeneration::GENERATION_FLOWS,
+              description: "draft（既定）または direct"
+            },
+            sd_model_profile_id: {
+              type: "integer",
+              description: "direct 生成で使う SdModelProfile id（generation_flow=direct で必須）"
+            },
+            sd_prompt_template_id: {
+              type: "integer",
+              description: "direct 生成で使う SdPromptTemplate id（省略可）"
+            },
+            prompt: {
+              type: "string",
+              description: "direct 生成用 SD prompt。省略時は GenerateImageJob が日本語プロンプトから生成"
+            },
+            negative_prompt: {
+              type: "string",
+              description: "direct 生成用 negative prompt。省略可"
+            },
+            width: { type: "integer", description: "direct 生成幅。省略時はモデル既定" },
+            height: { type: "integer", description: "direct 生成高さ。省略時はモデル既定" },
+            steps: { type: "integer", description: "direct 生成 steps。省略時はモデル既定" },
+            cfg_scale: { type: "number", description: "direct 生成 CFG scale。省略時はモデル既定" },
+            sampler_name: { type: "string", description: "direct 生成 sampler。省略時はモデル既定" },
+            seed: { type: "integer", description: "seed。省略時または -1 はランダム" },
+            vae_tiling: { type: "boolean", description: "VAE tiling を使うか。省略時 true" },
             style_id: { type: "string", description: "省略時は LLM が style を選択" },
             aspect_ratio: {
               type: "string",
@@ -90,10 +118,15 @@ module Mcp
           text: JSON.generate({
             id: generation.id,
             status: generation.status,
+            generation_flow: generation.generation_flow,
             show_path: Rails.application.routes.url_helpers.image_generation_path(generation),
-            note: "get_image_generation でステータスを確認。awaiting_selection 後は refine_image でラフ案を仕上げ。"
+            note: generation.direct_flow? ?
+              "get_image_generation で completed を確認してください。" :
+              "get_image_generation でステータスを確認。awaiting_selection 後は refine_image でラフ案を仕上げ。"
           })
         }])
+      rescue ArgumentError => e
+        Mcp::ExtensionTools.error_response(e.message)
       end
     end
 
@@ -215,7 +248,12 @@ module Mcp
       )
     end
 
-    def build_generation(japanese_prompt:, style_id: nil, aspect_ratio: nil, style_plan_connection_key: nil, **)
+    def build_generation(japanese_prompt:, generation_flow: nil, style_id: nil, aspect_ratio: nil,
+                         style_plan_connection_key: nil, **kwargs)
+      flow = generation_flow.to_s.presence || "draft"
+      return build_direct_generation(japanese_prompt: japanese_prompt, style_plan_connection_key: style_plan_connection_key, **kwargs) if flow == "direct"
+      raise ArgumentError, "generation_flow は draft または direct を指定してください" unless flow == "draft"
+
       generation = ImageGeneration.new(
         japanese_prompt: japanese_prompt,
         style_id: style_id.presence,
@@ -239,6 +277,39 @@ module Mcp
       generation
     end
 
+    def build_direct_generation(japanese_prompt:, sd_model_profile_id: nil, sd_prompt_template_id: nil,
+                                prompt: nil, negative_prompt: nil, style_plan_connection_key: nil, **kwargs)
+      profile = SdModelProfile.enabled.find_by(id: sd_model_profile_id)
+      raise ArgumentError, "direct 生成には sd_model_profile_id が必要です" unless profile
+
+      params = profile.resolved_default_params || {}
+      generation = ImageGeneration.new(
+        generation_flow: "direct",
+        japanese_prompt: japanese_prompt,
+        prompt: prompt.presence,
+        negative_prompt: negative_prompt.presence,
+        style_plan_connection_key: style_plan_connection_key.presence,
+        sd_model_profile: profile,
+        sd_prompt_template_id: sd_prompt_template_id.presence,
+        width: direct_param(kwargs, params, :width, 768).to_i,
+        height: direct_param(kwargs, params, :height, 768).to_i,
+        steps: direct_param(kwargs, params, :steps, 24).to_i,
+        cfg_scale: direct_param(kwargs, params, :cfg_scale, 6.0).to_f,
+        sampler_name: direct_param(kwargs, params, :sampler_name, "euler_a").to_s,
+        seed: kwargs[:seed],
+        vae_tiling: kwargs.key?(:vae_tiling) ? kwargs[:vae_tiling] : true,
+        loras: "[]",
+        enable_hires: false
+      )
+      generation
+    end
+
+    def direct_param(kwargs, defaults, key, fallback)
+      value = kwargs[key]
+      value = defaults[key.to_s] if value.nil?
+      value.nil? ? fallback : value
+    end
+
     def summary_for(generation)
       draft_count = generation.drafts.attachments.size
       {
@@ -249,7 +320,11 @@ module Mcp
         japanese_prompt: generation.japanese_prompt,
         style_id: generation.style_id,
         style_label: generation.style_label,
+        generation_flow: generation.generation_flow,
+        sd_model_profile_id: generation.sd_model_profile_id,
+        sd_model_profile_name: generation.sd_model_profile&.name,
         prompt: generation.prompt,
+        negative_prompt: generation.negative_prompt,
         error_message: generation.error_message,
         draft_count: draft_count,
         draft_indices: (0...draft_count).to_a,

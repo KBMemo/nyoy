@@ -42,7 +42,53 @@ class McpExtensionToolsTest < ActiveSupport::TestCase
       assert payload["id"].present?
       assert_equal "pending", payload["status"]
       assert payload["show_path"].present?
+      assert_equal "draft", payload["generation_flow"]
     end
+  end
+
+  test "generate_image supports direct flow" do
+    profile = sd_model_profiles(:pony)
+
+    assert_enqueued_with(job: GenerateImageJob) do
+      response = Mcp::ExtensionTools.generate_image_tool.call(
+        japanese_prompt: "少女の肖像",
+        generation_flow: "direct",
+        sd_model_profile_id: profile.id,
+        prompt: "1girl, masterpiece",
+        negative_prompt: "low quality",
+        width: 768,
+        height: 768,
+        steps: 24,
+        cfg_scale: 6.0,
+        sampler_name: "euler_a"
+      )
+      payload = JSON.parse(response.content.first[:text])
+
+      assert_not response.error?
+      assert payload["id"].present?
+      assert_equal "pending", payload["status"]
+      assert_equal "direct", payload["generation_flow"]
+      assert_match(/completed/, payload["note"])
+
+      generation = ImageGeneration.find(payload["id"])
+      assert generation.direct_flow?
+      assert_equal profile, generation.sd_model_profile
+      assert_equal "1girl, masterpiece", generation.prompt
+      assert_equal "low quality", generation.negative_prompt
+      assert_equal 768, generation.width
+      assert_equal 24, generation.steps
+    end
+  end
+
+  test "generate_image direct flow requires model profile" do
+    response = Mcp::ExtensionTools.generate_image_tool.call(
+      japanese_prompt: "少女の肖像",
+      generation_flow: "direct"
+    )
+
+    assert response.error?
+    payload = JSON.parse(response.content.first[:text])
+    assert_match(/sd_model_profile_id/, payload["error"])
   end
 
   test "get_image_generation returns summary" do
@@ -69,6 +115,7 @@ class McpExtensionToolsTest < ActiveSupport::TestCase
     assert_equal generation.id, payload["id"]
     assert_equal "awaiting_selection", payload["status"]
     assert payload["awaiting_selection"]
+    assert_equal "draft", payload["generation_flow"]
   end
 
   test "get_image_generation returns error for missing id" do

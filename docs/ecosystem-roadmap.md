@@ -291,7 +291,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 ### 徒然（site）側
 
 - **Agent Chat 画像仕上げ（refine）** — ラフ案生成は動作。ドラフト 1〜4 選択後の `refine_image`〜`completed` は **未実装**（徒然 `chat-agent-roadmap.adoc` §12）
-- **如意 パラメータ指定タブ** — SD モデル直選・生成テンプレート CRUD・JSON プロンプト生成・直接生成フロー — [設計書](./architecture/parameter-tab-image-generation.md)（Phase 4 まで完了、Phase 5 MCP は未実装）
+- **如意 パラメータ指定タブ** — SD モデル直選・生成テンプレート CRUD・JSON プロンプト生成・直接生成フロー・MCP direct 生成 — [設計書](./architecture/parameter-tab-image-generation.md)（如意側 Phase 5 まで完了）
 - API 書込 `body_format: markdown` → AsciiDoc 変換（Pandoc、**未実装**）
 - PGroonga 全文検索（`Memo.search_text` 差し替え — **インストール OK**、[手順](./tsuredure-pgroonga-search.md)）
 - `export/deletions` エンドポイント

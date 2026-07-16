@@ -341,7 +341,7 @@ Stimulus: `image-generation-form` を拡張し、パラメータタブでは `ge
 | **2** | LLM 契約 | `DirectPromptJsonSchema`, `SdPromptTemplateResolver`, `DirectPromptGenerator`, tests（完了） |
 | **3** | 生成 API + UI | `generate_prompt_direct`, パラメータタブフォーム, Stimulus（完了） |
 | **4** | 直接生成 | `generation_flow`, `GenerateImageJob#generate_direct`, status panel（完了） |
-| **5** | MCP / 徒然 Agent Chat | `generate_image` の direct オプション（任意・後追い） |
+| **5** | MCP / 徒然 Agent Chat | `generate_image` の direct オプション（完了） |
 
 各 Phase 末で `bin/rails test` と UI から 1 件生成の手動確認。
 
@@ -355,7 +355,7 @@ Stimulus: `image-generation-form` を拡張し、パラメータタブでは `ge
 | 2 | LLM 接続 | `StylePlanModelCatalog` 既定を流用。パラメータタブ専用接続は不要（当面） |
 | 3 | `refined_images` vs `image` | ラフタブと揃え **`refined_images`** に統一 |
 | 4 | 生成テンプレートとナレッジ chunk | 統合しない。inpaint chunk とは別テーブルで明確化 |
-| 5 | 徒然 Agent Chat refine | 徒然 `chat-agent-roadmap.adoc` §12 の通り別途。direct 生成の MCP 公開は Phase 5 |
+| 5 | 徒然 Agent Chat refine | 徒然 `chat-agent-roadmap.adoc` §12 の通り別途。direct 生成の MCP 公開は完了 |
 
 ---
 
