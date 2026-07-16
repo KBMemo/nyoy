@@ -86,7 +86,11 @@ module AgentGraph
     end
 
     def graph_for(graph_name)
-      fetch(graph_name).graph_class.new
+      entry = fetch(graph_name)
+      graph = entry.graph_class.new
+      raise ArgumentError, "registered graph name mismatch: #{entry.graph_name} != #{graph.name}" if graph.name != entry.graph_name
+
+      graph
     end
 
     def supersede_reason_for(graph_name)

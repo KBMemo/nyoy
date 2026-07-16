@@ -15,6 +15,18 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::MemoUpdateGraph, AgentGraph::Registry.graph_for("memo_update")
   end
 
+  test "rejects graph classes registered under mismatched names" do
+    with_registry_entries([
+      registry_entry(graph_name: "registered_graph", graph_class: MismatchedGraph)
+    ]) do
+      error = assert_raises(ArgumentError) do
+        AgentGraph::Registry.graph_for("registered_graph")
+      end
+
+      assert_equal "registered graph name mismatch: registered_graph != actual_graph", error.message
+    end
+  end
+
   test "returns supersede reasons for known graphs" do
     assert_equal "superseded by a newer research run", AgentGraph::Registry.supersede_reason_for("research")
     assert_equal "superseded by a newer memo write run", AgentGraph::Registry.supersede_reason_for("memo_write")
@@ -84,5 +96,39 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
   test "falls back failure label for unknown graph names" do
     assert_equal "MemoWrite Graph failed", AgentGraph::Registry.failure_label_for("memo_write")
     assert_equal "custom Graph failed", AgentGraph::Registry.failure_label_for("custom")
+  end
+
+  private
+
+  def registry_entry(graph_name:, graph_class:)
+    AgentGraph::Registry::Entry.new(
+      graph_name: graph_name,
+      graph_class: graph_class,
+      runner: AgentGraph::ResearchGraphRunner,
+      summary_class: AgentGraph::ResearchRunSummary,
+      failure_label: "Test Graph failed",
+      approval_panel: nil,
+      approval_copy: nil,
+      approve_notice: nil,
+      reject_notice: nil,
+      supersede_reason: "superseded by a newer test run",
+      resume_tool: nil
+    )
+  end
+
+  def with_registry_entries(entries)
+    singleton = class << AgentGraph::Registry; self; end
+    original_entries = AgentGraph::Registry.method(:entries)
+
+    singleton.define_method(:entries) { entries }
+    yield
+  ensure
+    singleton.define_method(:entries) { original_entries.call }
+  end
+
+  class MismatchedGraph
+    def name
+      "actual_graph"
+    end
   end
 end
