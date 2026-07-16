@@ -21,6 +21,8 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
         "approval" => nil,
         "assistant_message_id" => 123,
         "plan" => { "need_web" => true },
+        "evidence_review" => { "status" => "limited", "reason" => "no more retrieval" },
+        "budget" => { "searches_used" => 2, "max_searches" => 2 },
         "errors" => [],
         "auto_approve" => true
       }
@@ -35,6 +37,8 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
     assert_equal "根拠を調べて", summary[:question]
     assert_equal "answer", summary[:final_answer]
     assert_equal({ "need_web" => true }, summary[:plan])
+    assert_equal({ "status" => "limited", "reason" => "no more retrieval" }, summary[:evidence_review])
+    assert_equal({ "searches_used" => 2, "max_searches" => 2 }, summary[:budget])
     assert_equal %w[plan_research finalize_answer], summary[:nodes]
     assert_equal "/chats/#{@chat.id}", summary[:chat_path]
     assert summary[:completed]
