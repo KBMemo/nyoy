@@ -142,6 +142,48 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  test "R1 retries a remaining search query when first search has no fetchable results" do
+    @chat.messages.destroy_all
+    @chat.messages.create!(role: :user, content: "高尾山から景信山への登山道を調べて")
+
+    stub_search_queries([ "first query", "second query", "third query" ]) do
+      stub_searfront_settings(max_searches_per_turn: 3) do
+        stub_recall(context: nil) do
+          stub_web_search_by_query(
+            "first query" => [],
+            "second query" => [],
+            "third query" => [ {
+              "title" => "高尾山から景信山",
+              "url" => "https://example.com/trail",
+              "content" => "登山ルート"
+            } ]
+          ) do |queries|
+            stub_fetch_url(
+              url: "https://example.com/trail",
+              payload: {
+                "ok" => true,
+                "url" => "https://example.com/trail",
+                "title" => "Trail",
+                "content_preview" => "高尾山から景信山への登山道"
+              }
+            ) do
+              stub_synthesize_without_llm do
+                run = AgentGraph::ResearchGraphRunner.call(@chat)
+
+                assert run.completed?, -> { run.error_message }
+                assert_equal [ "first query", "second query", "third query" ], queries
+                assert_equal queries, run.state.dig("plan", "searched_queries")
+                assert_equal "sufficient", run.state.dig("evidence_review", "status")
+                assert run.state["fetched_pages"].any? { |page| page["url"] == "https://example.com/trail" }
+                assert_operator run.agent_node_runs.where(node_name: "search_web").count, :>=, 2
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   test "R1 fetches URLs embedded in the question without searching" do
     @chat.messages.destroy_all
     @chat.messages.create!(
@@ -256,6 +298,40 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     yield
   ensure
     ChatTools::WebSearch.define_method(:execute, original)
+  end
+
+  def stub_web_search_by_query(results_by_query)
+    queries = []
+    original = ChatTools::WebSearch.instance_method(:execute)
+    ChatTools::WebSearch.define_method(:execute) do |q:, limit: nil|
+      queries << q
+      if (error = @budget.consume_search!)
+        error
+      else
+        results = Array(results_by_query.fetch(q, []))
+        { "query" => q, "results" => results, "number_of_results" => results.size }
+      end
+    end
+    yield queries
+  ensure
+    ChatTools::WebSearch.define_method(:execute, original)
+  end
+
+  def stub_search_queries(queries)
+    original = AgentGraph::SearchQueryNormalizer.method(:queries_for)
+    AgentGraph::SearchQueryNormalizer.define_singleton_method(:queries_for) { |_question| queries }
+    yield
+  ensure
+    AgentGraph::SearchQueryNormalizer.define_singleton_method(:queries_for) { |question| original.call(question) }
+  end
+
+  def stub_searfront_settings(overrides)
+    original = SearfrontSettings.method(:load)
+    settings = SearfrontSettings.from(SearfrontSettings::DEFAULTS.merge(overrides.stringify_keys))
+    SearfrontSettings.define_singleton_method(:load) { settings }
+    yield
+  ensure
+    SearfrontSettings.define_singleton_method(:load) { original.call }
   end
 
   def stub_fetch_url(url:, payload:)

@@ -19,6 +19,7 @@ module AgentGraph
 
         search_results = Array(state["search_results"]).dup
         errors = Array(state["errors"]).dup
+        attempted_queries = []
 
         queries.each do |query|
           payload = tool.execute(q: query)
@@ -29,6 +30,7 @@ module AgentGraph
             result: payload
           )
           if payload.is_a?(String)
+            attempted_queries << query unless search_limit_exceeded?(payload)
             errors << {
               "node" => "search_web",
               "code" => "SEARCH_FAILED",
@@ -38,13 +40,14 @@ module AgentGraph
             next
           end
 
+          attempted_queries << query
           search_results << payload.merge("query" => query)
         end
 
         queued_urls = queue_urls_from_results(plan, search_results)
         next_plan = plan.merge(
           "fetch_urls" => queued_urls,
-          "searched_queries" => searched_queries(plan) + queries
+          "searched_queries" => searched_queries(plan) + attempted_queries
         )
 
         AgentGraph::NodeResult.next(
@@ -72,6 +75,10 @@ module AgentGraph
 
       def searched_queries(plan)
         Array(plan["searched_queries"]).map(&:to_s)
+      end
+
+      def search_limit_exceeded?(payload)
+        payload.to_s.include?("CODE: SEARCH_LIMIT_EXCEEDED")
       end
 
       def queue_urls_from_results(plan, search_results)

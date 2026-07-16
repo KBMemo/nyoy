@@ -45,6 +45,36 @@ class AgentGraphNodesSearchWebTest < ActiveSupport::TestCase
     end
   end
 
+  test "does not record a query as searched when search budget is exhausted" do
+    calls = []
+    stub_web_search(calls: calls, results: []) do
+      result = AgentGraph::Nodes::SearchWeb.new.call(
+        state: {
+          "question" => "調べて",
+          "plan" => {
+            "need_web" => true,
+            "queries" => [ "first query", "second query" ]
+          },
+          "search_results" => [],
+          "budget" => {
+            "searches_used" => 0,
+            "max_searches" => 1,
+            "fetches_used" => 0,
+            "max_fetches" => 2,
+            "fetched_urls" => []
+          },
+          "errors" => []
+        },
+        run: @run,
+        chat: @chat
+      )
+
+      assert_equal [ "first query", "second query" ], calls
+      assert_equal [ "first query" ], result.updates.dig("plan", "searched_queries")
+      assert result.updates["errors"].any? { |error| error["query"] == "second query" }
+    end
+  end
+
   private
 
   def stub_web_search(calls:, results:)
