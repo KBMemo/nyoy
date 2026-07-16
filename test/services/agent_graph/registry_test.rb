@@ -50,6 +50,18 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
     assert_includes error.message, "approval panel is not supported"
   end
 
+  test "returns approval notices only for approval graphs" do
+    assert_equal "メモ草案を承認しました。徒然へ保存します。", AgentGraph::Registry.approve_notice_for("memo_write")
+    assert_equal "メモ保存を却下しました。", AgentGraph::Registry.reject_notice_for("memo_write")
+    assert_equal "メモ更新を承認しました。徒然へ反映します。", AgentGraph::Registry.approve_notice_for("memo_update")
+    assert_equal "メモ更新を却下しました。", AgentGraph::Registry.reject_notice_for("memo_update")
+
+    error = assert_raises(ArgumentError) do
+      AgentGraph::Registry.approve_notice_for("research")
+    end
+    assert_includes error.message, "approval notice is not supported"
+  end
+
   test "falls back failure label for unknown graph names" do
     assert_equal "MemoWrite Graph failed", AgentGraph::Registry.failure_label_for("memo_write")
     assert_equal "custom Graph failed", AgentGraph::Registry.failure_label_for("custom")

@@ -9,6 +9,8 @@ module AgentGraph
       :summary_class,
       :failure_label,
       :approval_panel,
+      :approve_notice,
+      :reject_notice,
       :supersede_reason,
       :resume_tool
     )
@@ -24,6 +26,8 @@ module AgentGraph
           summary_class: ResearchRunSummary,
           failure_label: "Research Graph failed",
           approval_panel: nil,
+          approve_notice: nil,
+          reject_notice: nil,
           supersede_reason: "superseded by a newer research run",
           resume_tool: nil
         ),
@@ -34,6 +38,8 @@ module AgentGraph
           summary_class: MemoWriteRunSummary,
           failure_label: "MemoWrite Graph failed",
           approval_panel: "chats/memo_write_approval",
+          approve_notice: "メモ草案を承認しました。徒然へ保存します。",
+          reject_notice: "メモ保存を却下しました。",
           supersede_reason: "superseded by a newer memo write run",
           resume_tool: "resume_memo_write_graph"
         ),
@@ -44,6 +50,8 @@ module AgentGraph
           summary_class: MemoUpdateRunSummary,
           failure_label: "MemoUpdate Graph failed",
           approval_panel: "chats/memo_write_approval",
+          approve_notice: "メモ更新を承認しました。徒然へ反映します。",
+          reject_notice: "メモ更新を却下しました。",
           supersede_reason: "superseded by a newer memo update run",
           resume_tool: "resume_memo_update_graph"
         )
@@ -88,6 +96,20 @@ module AgentGraph
       raise ArgumentError, "approval panel is not supported for graph=#{graph_name}" if panel.blank?
 
       panel
+    end
+
+    def approve_notice_for(graph_name)
+      notice = fetch(graph_name).approve_notice
+      raise ArgumentError, "approval notice is not supported for graph=#{graph_name}" if notice.blank?
+
+      notice
+    end
+
+    def reject_notice_for(graph_name)
+      notice = fetch(graph_name).reject_notice
+      raise ArgumentError, "rejection notice is not supported for graph=#{graph_name}" if notice.blank?
+
+      notice
     end
 
     def approval_graph_names

@@ -5,11 +5,11 @@ class AgentRunsController < ApplicationController
   before_action :set_agent_run
 
   def approve
-    resume!("approved", notice: approve_notice)
+    resume!("approved")
   end
 
   def reject
-    resume!("rejected", notice: reject_notice)
+    resume!("rejected")
   end
 
   private
@@ -23,22 +23,14 @@ class AgentRunsController < ApplicationController
   end
 
   def approve_notice
-    if @agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME
-      "メモ更新を承認しました。徒然へ反映します。"
-    else
-      "メモ草案を承認しました。徒然へ保存します。"
-    end
+    AgentGraph::Registry.approve_notice_for(@agent_run.graph_name)
   end
 
   def reject_notice
-    if @agent_run.graph_name == AgentGraph::MemoUpdateGraph::NAME
-      "メモ更新を却下しました。"
-    else
-      "メモ保存を却下しました。"
-    end
+    AgentGraph::Registry.reject_notice_for(@agent_run.graph_name)
   end
 
-  def resume!(decision, notice:)
+  def resume!(decision)
     unless AgentGraph::Registry.approval_supported?(@agent_run.graph_name)
       return resume_blocked!("この Graph は承認再開に対応していません。")
     end
@@ -60,13 +52,13 @@ class AgentRunsController < ApplicationController
     @agent_run.merge_state!("approval" => decision)
     ChatResponseControl.mark_running!(@chat)
     AgentGraphResumeJob.perform_later(@agent_run.id, decision)
-    @notice = notice
+    @notice = decision == "approved" ? approve_notice : reject_notice
 
     respond_to do |format|
       # Keep the page/Cable subscription alive so finalize + truncation broadcasts
       # are not lost during a Turbo Drive redirect gap.
       format.turbo_stream { render :resume }
-      format.html { redirect_to @chat, notice: notice }
+      format.html { redirect_to @chat, notice: @notice }
     end
   end
 
