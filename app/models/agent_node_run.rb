@@ -36,7 +36,34 @@ class AgentNodeRun < ApplicationRecord
     parts = []
     parts << "llm: #{synthesis["model_id"]}" if synthesis["model_id"].present?
     parts << "source: #{synthesis["source"]}" if synthesis["source"].present?
+    parts.concat(llama_cache_summary(synthesis["llama_cache"]))
+    parts.concat(usage_summary(synthesis["usage"]))
     parts << "truncated" if updates["truncated"] == true || updates["draft_truncated"] == true
+    parts
+  end
+
+  def llama_cache_summary(cache)
+    return [] unless cache.is_a?(Hash)
+
+    parts = []
+    if cache["cache_prompt"] == true
+      parts << "cache_prompt"
+    end
+    if cache["slot_id"].present?
+      slot = cache["slot_id"]
+      slot = "#{slot}/#{cache["slot_count"]}" if cache["slot_count"].present?
+      parts << "slot: #{slot}"
+    end
+    parts
+  end
+
+  def usage_summary(usage)
+    return [] unless usage.is_a?(Hash)
+
+    parts = []
+    parts << "in: #{usage["input_tokens"]}" if usage["input_tokens"].present?
+    parts << "out: #{usage["output_tokens"]}" if usage["output_tokens"].present?
+    parts << "cached: #{usage["cached_tokens"]}" if usage["cached_tokens"].present?
     parts
   end
 end

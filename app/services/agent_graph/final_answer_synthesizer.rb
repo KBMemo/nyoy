@@ -66,6 +66,7 @@ module AgentGraph
       )
       ChatLlmSettings.apply!(llm, chat: @chat)
       ChatLlamaCache.apply!(llm, chat: @chat, model: model, slot_key: "agent_graph:final:#{@chat.id}")
+      llama_cache = llm.instance_variable_get(:@nyoy_llama_cache_metadata) || {}
       llm.with_instructions(FINAL_SYSTEM)
 
       prompt = user_prompt(evidence)
@@ -75,10 +76,12 @@ module AgentGraph
       streamed_thinking = +""
       streamed_content = +""
       truncated_by_length = false
+      usage = {}
 
       Nyoy::FinishReasonCapture.reset!
       response = llm.ask(prompt) do |chunk|
         truncated_by_length ||= length_finish_reason?(chunk)
+        usage.merge!(ChatUsageAttributes.from(chunk))
 
         thinking_delta = chunk.thinking&.text
         streamed_thinking << thinking_delta if thinking_delta.is_a?(String) && !thinking_delta.empty?
@@ -102,7 +105,9 @@ module AgentGraph
           "model_id" => model.model_id,
           "thinking" => thinking.presence,
           "system_prompt" => FINAL_SYSTEM,
-          "user_prompt" => prompt
+          "user_prompt" => prompt,
+          "llama_cache" => llama_cache.stringify_keys,
+          "usage" => usage.stringify_keys
         }
       ]
     rescue StandardError => e

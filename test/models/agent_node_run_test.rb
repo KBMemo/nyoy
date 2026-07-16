@@ -55,7 +55,17 @@ class AgentNodeRunTest < ActiveSupport::TestCase
           "truncated" => true,
           "final_synthesis" => {
             "source" => "main",
-            "model_id" => "gpt-oss"
+            "model_id" => "gpt-oss",
+            "llama_cache" => {
+              "cache_prompt" => true,
+              "slot_id" => 2,
+              "slot_count" => 4
+            },
+            "usage" => {
+              "input_tokens" => 100,
+              "output_tokens" => 20,
+              "cached_tokens" => 80
+            }
           }
         }
       }
@@ -65,6 +75,11 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "updates: final_answer, truncated, final_synthesis",
       "llm: gpt-oss",
       "source: main",
+      "cache_prompt",
+      "slot: 2/4",
+      "in: 100",
+      "out: 20",
+      "cached: 80",
       "truncated"
     ], node_run.output_summary
   end

@@ -124,10 +124,16 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     ChatModelCatalog.define_singleton_method(:context_for) { |_| context }
     ChatLlamaCache.define_singleton_method(:apply!) do |llm_chat, chat:, model: nil, slot_key: nil|
       cache_calls << { llm: llm_chat, chat: chat, model: model, slot_key: slot_key }
+      llm_chat.instance_variable_set(:@nyoy_llama_cache_metadata, {
+        enabled: true,
+        cache_prompt: true,
+        slot_id: 2,
+        slot_count: 4
+      })
       llm_chat
     end
 
-    answer, _truncated, _meta = synthesizer.send(:ask_main_model, {
+    answer, _truncated, meta = synthesizer.send(:ask_main_model, {
       question: "質問",
       memo: nil,
       search_results: [],
@@ -142,6 +148,10 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_equal @chat, cache_calls.first[:chat]
     assert_equal model, cache_calls.first[:model]
     assert_equal "agent_graph:final:#{@chat.id}", cache_calls.first[:slot_key]
+    assert_equal true, meta.dig("llama_cache", "cache_prompt")
+    assert_equal 2, meta.dig("llama_cache", "slot_id")
+    assert_equal 10, meta.dig("usage", "input_tokens")
+    assert_equal 3, meta.dig("usage", "output_tokens")
   ensure
     ChatModelCatalog.define_singleton_method(:context_for, original_context_for)
     ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)
@@ -158,7 +168,14 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     end
     llm.define_singleton_method(:with_instructions) { |_| self }
     llm.define_singleton_method(:ask) do |_prompt, &block|
-      block&.call(Struct.new(:content, :thinking, :finish_reason).new(content, nil, nil))
+      chunk = Struct.new(:content, :thinking, :finish_reason).new(content, nil, nil)
+      chunk.define_singleton_method(:usage) do
+        {
+          "prompt_tokens" => 10,
+          "completion_tokens" => 3
+        }
+      end
+      block&.call(chunk)
       Struct.new(:content, :thinking, :raw).new(content, nil, nil)
     end
     llm
