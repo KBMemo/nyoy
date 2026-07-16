@@ -21,13 +21,13 @@ module AgentGraph
       return nil if text.blank?
 
       memo_update = MemoUpdateIntent.decision(text)
-      return decision(MemoUpdateGraph::NAME, MemoUpdateGraphRunner, memo_update) if memo_update[:match]
+      return decision(MemoUpdateGraph::NAME, memo_update) if memo_update[:match]
 
       memo_write = MemoWriteIntent.decision(text)
-      return decision(MemoWriteGraph::NAME, MemoWriteGraphRunner, memo_write) if memo_write[:match]
+      return decision(MemoWriteGraph::NAME, memo_write) if memo_write[:match]
 
       research = ResearchIntent.decision(text)
-      return decision(ResearchGraph::NAME, ResearchGraphRunner, research) if research[:match]
+      return decision(ResearchGraph::NAME, research) if research[:match]
 
       nil
     end
@@ -36,10 +36,10 @@ module AgentGraph
       chat.messages.where(role: :user).order(:id).last&.content.to_s.strip
     end
 
-    def decision(graph_name, runner, intent_decision)
+    def decision(graph_name, intent_decision)
       Decision.new(
         graph_name: graph_name,
-        runner: runner,
+        runner: Registry.runner_for(graph_name),
         args: {},
         intent_decision: intent_decision
       )

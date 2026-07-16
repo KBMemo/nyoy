@@ -3,6 +3,8 @@
 module Mcp
   # MCP-only Research Graph tools (not exposed to the Chat tool loop).
   module ResearchGraphTools
+    GRAPH_NAME = AgentGraph::ResearchGraph::NAME
+
     module_function
 
     def mcp_tools
@@ -75,7 +77,7 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::ResearchGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
         unless run
           return AgentGraphResponse.missing_run(agent_run_id)
         end
@@ -85,7 +87,7 @@ module Mcp
     end
 
     def success_response(run)
-      AgentGraphResponse.success(run, summary: AgentGraph::ResearchRunSummary)
+      AgentGraphResponse.success(run, summary: AgentGraph::Registry.summary_for(GRAPH_NAME))
     end
 
     def error_response(message)

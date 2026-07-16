@@ -21,6 +21,18 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
     assert_equal "superseded by a newer memo update run", AgentGraph::Registry.supersede_reason_for("memo_update")
   end
 
+  test "returns summary classes for known graphs" do
+    assert_equal AgentGraph::ResearchRunSummary, AgentGraph::Registry.summary_for("research")
+    assert_equal AgentGraph::MemoWriteRunSummary, AgentGraph::Registry.summary_for("memo_write")
+    assert_equal AgentGraph::MemoUpdateRunSummary, AgentGraph::Registry.summary_for("memo_update")
+  end
+
+  test "returns mcp resume tools for approval graphs" do
+    assert_nil AgentGraph::Registry.resume_tool_for("research")
+    assert_equal "resume_memo_write_graph", AgentGraph::Registry.resume_tool_for("memo_write")
+    assert_equal "resume_memo_update_graph", AgentGraph::Registry.resume_tool_for("memo_update")
+  end
+
   test "tracks approval capable graphs" do
     assert_equal %w[memo_write memo_update], AgentGraph::Registry.approval_graph_names
     assert AgentGraph::Registry.approval_supported?("memo_write")

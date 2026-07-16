@@ -2,6 +2,8 @@
 
 module Mcp
   module MemoUpdateGraphTools
+    GRAPH_NAME = AgentGraph::MemoUpdateGraph::NAME
+
     module_function
 
     def mcp_tools
@@ -76,7 +78,7 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
         unless run
           return AgentGraphResponse.missing_run(agent_run_id)
         end
@@ -108,7 +110,7 @@ module Mcp
           open_world_hint: false
         }
       ) do |agent_run_id:, decision:, **|
-        run = AgentGraphResponse.find_run(agent_run_id, graph_name: AgentGraph::MemoUpdateGraph::NAME)
+        run = AgentGraphResponse.find_run(agent_run_id, graph_name: GRAPH_NAME)
         unless run
           return AgentGraphResponse.missing_run(agent_run_id)
         end
@@ -129,8 +131,8 @@ module Mcp
     def success_response(run)
       AgentGraphResponse.success(
         run,
-        summary: AgentGraph::MemoUpdateRunSummary,
-        resume_tool: "resume_memo_update_graph"
+        summary: AgentGraph::Registry.summary_for(GRAPH_NAME),
+        resume_tool: AgentGraph::Registry.resume_tool_for(GRAPH_NAME)
       )
     end
 
