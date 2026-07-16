@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+module AgentGraph
+  module MemoWriteStateSchema
+    REQUIRED_KEYS = %w[
+      instruction
+      chat_id
+      intent
+      plan
+      memo_draft
+      draft
+      memo_uid
+      memo_result
+      final_answer
+      approval
+      auto_approve
+      mcp_body
+      mcp_title
+      errors
+      next_node
+    ].freeze
+
+    SCHEMA = StateSchema.new(
+      name: MemoWriteGraph::NAME,
+      required_keys: REQUIRED_KEYS
+    )
+
+    module_function
+
+    def validate!(state)
+      SCHEMA.validate!(state)
+    end
+  end
+end

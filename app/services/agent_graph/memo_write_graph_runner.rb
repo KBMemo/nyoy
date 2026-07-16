@@ -93,23 +93,13 @@ module AgentGraph
         graph_name: MemoWriteGraph::NAME,
         status: "pending",
         current_node: MemoWriteGraph::START,
-        state: {
-          "instruction" => instruction,
-          "chat_id" => @chat.id,
-          "intent" => "memo_write",
-          "plan" => {},
-          "memo_draft" => nil,
-          "draft" => nil,
-          "memo_uid" => nil,
-          "memo_result" => nil,
-          "final_answer" => nil,
-          "approval" => nil,
-          "auto_approve" => @auto_approve == true,
-          "mcp_body" => @mcp_body,
-          "mcp_title" => @mcp_title,
-          "errors" => [],
-          "next_node" => MemoWriteGraph::START
-        }
+        state: MemoWriteInitialState.build(
+          chat: @chat,
+          instruction: instruction,
+          auto_approve: @auto_approve,
+          mcp_body: @mcp_body,
+          mcp_title: @mcp_title
+        )
       )
 
       Runner.new(run, graph: MemoWriteGraph.new).call
