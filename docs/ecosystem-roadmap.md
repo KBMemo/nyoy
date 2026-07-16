@@ -251,7 +251,7 @@ gantt
 
 ### 推奨
 
-- AgentRun 対象範囲の拡張（画像理解など）
+- AgentRun 対象範囲の拡張（画像理解。設計: [Agent Graph Image Understanding](./architecture/agent-graph-image-understanding.md)）
 
 ### 完了（Phase 6）
 
@@ -272,6 +272,10 @@ gantt
 
 - Chat メッセージへの画像添付
 - `VisionChatService` を `analyze_image` ツール化
+
+### 次期 Agent Graph
+
+- ImageUnderstanding Graph 実装（Chat 添付のみの画像説明を AgentRun 履歴・checkpoint・retry 対象にする）
 
 ### 運用・メンテ
 
@@ -302,6 +306,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [プロンプト設計 再構築案](./prompt-architecture-redesign.md)
 - [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 - [Nyoy MCP アーキテクチャ](./architecture/nyoy-mcp.adoc)
+- [Agent Graph Image Understanding](./architecture/agent-graph-image-understanding.md)
 - [パラメータ指定タブ画像生成設計](./architecture/parameter-tab-image-generation.md)
 - [Nyoy MCP 運用](./mcp-server.md)
 - [README](../README.md)

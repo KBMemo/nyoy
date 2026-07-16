@@ -32,7 +32,7 @@ Graph は状態機械の宣言であり、次を持つ。
 - `edges`
 - `interrupts`
 
-`ResearchGraph` / `MemoWriteGraph` / `MemoUpdateGraph` は `GraphDefinition` を継承し、`nodes` と `edges` を Graph 側に宣言する。固定遷移も条件付き遷移も、Runner ではなく Graph / Routing helper で読めるようにする。
+`ResearchGraph` / `MemoWriteGraph` / `MemoUpdateGraph` / `ImageUnderstandingGraph` は `GraphDefinition` を継承し、`nodes` と `edges` を Graph 側に宣言する。固定遷移も条件付き遷移も、Runner ではなく Graph / Routing helper で読めるようにする。
 
 推奨形:
 
@@ -234,6 +234,28 @@ plan_memo_update
 - `mode` は `append` / `replace`。既定は `append`
 - 対象メモが曖昧な場合は推測更新しない
 
+### ImageUnderstanding Graph
+
+役割は「画像の視覚的内容を解析して回答する」こと。通常 Chat の `analyze_image` tool calling に任せると AgentRun 履歴が残らないため、明確な画像理解依頼は独立 Graph として扱う。
+
+基本フロー:
+
+```text
+plan_image_understanding
+  -> resolve_image_source
+  -> analyze_image
+  -> finalize_image_answer
+```
+
+方針:
+
+- Research Graph には混ぜない。画像解析と根拠調査は責務が異なる
+- Chat 添付のみ、または「この画像を説明して」系の依頼を Graph に入れる
+- 画像生成やメモ保存・更新はそれぞれの intent を優先する
+- `VisionChatService` を再利用し、Node は画像解決・解析・投稿に責務を分ける
+- 画像バイナリは `AgentRun.state` に保存せず、Active Storage / 葛籠 media への参照だけを保存する
+- HITL は不要。失敗時は checkpoint から retry できるようにする
+
 ## 状態名の標準
 
 共通:
@@ -259,6 +281,14 @@ Research:
 - `evidence_review`
 - `draft`
 - `budget`
+
+ImageUnderstanding:
+
+- `question`
+- `plan`
+- `image_source`
+- `analysis`
+- `final_answer`
 
 MemoWrite:
 
