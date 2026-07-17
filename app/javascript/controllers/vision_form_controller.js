@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["submit", "status", "resultPanel", "resultText", "error"]
+  static targets = ["submit", "status", "resultPanel", "resultText", "agentRun", "agentRunLink", "error"]
 
   async submit(event) {
     event.preventDefault()
@@ -27,7 +27,7 @@ export default class extends Controller {
         return
       }
 
-      this.showResult(data.result)
+      this.showResult(data.result, data.agent_run_id, data.agent_run_path)
       form.querySelector("#image")?.removeAttribute("required")
     } catch (_error) {
       this.showError("解析に失敗しました")
@@ -36,10 +36,24 @@ export default class extends Controller {
     }
   }
 
-  showResult(text) {
+  showResult(text, agentRunId, agentRunPath) {
     this.resultTextTarget.textContent = text
+    this.showAgentRun(agentRunId, agentRunPath)
     this.resultPanelTarget.classList.remove("hidden")
     this.resultPanelTarget.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  showAgentRun(agentRunId, agentRunPath) {
+    if (!this.hasAgentRunTarget || !this.hasAgentRunLinkTarget) return
+
+    if (!agentRunId || !agentRunPath) {
+      this.agentRunTarget.classList.add("hidden")
+      return
+    }
+
+    this.agentRunLinkTarget.href = agentRunPath
+    this.agentRunLinkTarget.textContent = `AgentRun #${agentRunId}`
+    this.agentRunTarget.classList.remove("hidden")
   }
 
   showError(message) {

@@ -9,8 +9,11 @@ div data-controller="vision-form"
   #vision-result.kb-card.p-4.mb-6 class=("hidden" if result_hidden) data-vision-form-target="resultPanel"
     h2 class=kb_section_title 結果
     p.mt-4.text-sm.kb-text-primary.break-words data-vision-form-target="resultText" = @result
-    - if @agent_run
-      p.mt-3.text-xs.kb-text-muted AgentRun ##{@agent_run.id}
+    p.mt-3.text-xs.kb-text-muted class=("hidden" unless @agent_run) data-vision-form-target="agentRun"
+      - if @agent_run
+        = link_to "AgentRun ##{@agent_run.id}", chat_agent_run_path(@agent_run.chat, @agent_run), class: "kb-chrome-link", data: { vision_form_target: "agentRunLink" }
+      - else
+        a.kb-chrome-link href="#" data-vision-form-target="agentRunLink"
 
   .kb-alert.kb-alert-danger.hidden.mb-4 data-vision-form-target="error" role="alert"
 

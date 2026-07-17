@@ -90,7 +90,12 @@ bin/rails console
 ```
 
 ```ruby
-Message.where(role: :user).joins(:attachments).order(id: :desc).first.attachments.first.metadata["tsuzura_media_id"]
+ActiveStorage::Attachment
+  .where(record_type: "Message", name: "attachments")
+  .order(id: :desc)
+  .find { |attachment| attachment.metadata["tsuzura_media_id"].present? }
+  &.metadata
+  &.fetch("tsuzura_media_id")
 ```
 
 HTTP MCP 例:

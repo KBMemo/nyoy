@@ -36,7 +36,8 @@ class ImageUnderstandingsController < ApplicationController
           result: @result,
           prompt: @prompt,
           image_data_url: @image_data_url,
-          agent_run_id: @agent_run.id
+          agent_run_id: @agent_run.id,
+          agent_run_path: chat_agent_run_path(@agent_run.chat, @agent_run)
         }
       end
     end
