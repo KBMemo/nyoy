@@ -10,7 +10,11 @@ module AgentGraph
           return AgentGraph::NodeResult.fail("missing draft for finalize")
         end
 
-        answer, truncated, meta = AgentGraph::FinalAnswerSynthesizer.new(chat).call(state)
+        answer, truncated, meta = AgentGraph::RoleServices.fetch(:final_answer).call(
+          state: state,
+          run: run,
+          chat: chat
+        )
         meta = (meta || {}).stringify_keys
 
         if answer.blank? || meta["source"] == "error"
