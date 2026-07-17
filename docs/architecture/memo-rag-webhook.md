@@ -189,6 +189,7 @@ site 側実装:
 - 既存の `MemoKnowledgeIngestJob` は削除しない。
 - recurring schedule は残す。Webhook は低遅延化、定期 job は修復・監査用。
 - webhook 処理件数、失敗件数、最終処理時刻を log / status UI に出すとよい。
+- 本番有効化は [Memo RAG Webhook 本番有効化 Runbook](../memo-rag-webhook-production-runbook.md) を正本にする。
 
 ## development E2E 確認手順
 
@@ -293,7 +294,7 @@ MemoKnowledgeChunk.where(memo_uid: event.memo_uid).count
 3. ~~徒然: webhook delivery job / signer / Memo after_commit enqueue~~
 4. ~~徒然: settings env と docs~~
 5. ~~development で create/update/delete の実機確認~~
-6. 本番投入後も `MemoKnowledgeIngestJob` の定期同期ログで収束を確認
+6. 本番投入後も [本番有効化 Runbook](../memo-rag-webhook-production-runbook.md) に沿って `MemoKnowledgeIngestJob` の定期同期ログで収束を確認
 
 ## 未決
 

@@ -257,7 +257,7 @@ gantt
 
 ### 推奨
 
-- webhook を本番投入する場合は、site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
+- webhook を本番投入する場合は、[Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md) に沿って site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
 
 ### 完了（Phase 6）
 
@@ -315,6 +315,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [Nyoy MCP アーキテクチャ](./architecture/nyoy-mcp.adoc)
 - [Agent Graph Image Understanding](./architecture/agent-graph-image-understanding.md)
 - [Memo RAG Webhook 設計](./architecture/memo-rag-webhook.md)
+- [Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md)
 - [パラメータ指定タブ画像生成設計](./architecture/parameter-tab-image-generation.md)
 - [Nyoy MCP 運用](./mcp-server.md)
 - [README](../README.md)
