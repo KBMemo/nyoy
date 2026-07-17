@@ -201,6 +201,36 @@ bin/mcp-call-tool retry_image_understanding_graph '{"agent_run_id":123}'
 - retry 元 AgentRun id と retry 後 AgentRun id
 - 失敗した場合の node 名、`error_message`、復旧内容
 
+記録テンプレート:
+
+```markdown
+## ImageUnderstanding Graph 実機確認
+
+- 確認日時:
+- 環境:
+- Nyoy URL:
+- vision model / endpoint:
+- `vision_llama` ServiceConnection:
+- `tsuzura` ServiceConnection:
+- 使用画像:
+- `tsuzura_media_id`:
+
+| 経路 | AgentRun | 結果 | 確認内容 |
+|------|----------|------|----------|
+| 独立 UI |  |  | AgentRun リンク / node 履歴 / image_source |
+| Chat 添付 |  |  | Graph 選択 / assistant message / image_source |
+| MCP `tsuzura_media_id` |  |  | `completed` / `agent_run_path` / `image_source.kind=tsuzura_media` |
+| MCP 入力不足 |  |  | `failed` / `IMAGE_SOURCE_MISSING` / retry 不可 |
+| vision 障害 retry | 元:  / retry:  |  | `analyze_image` failed / `retry_from_node=resolve_image_source` / retry run completed |
+
+補足:
+
+- 失敗 node:
+- `error_message`:
+- 復旧内容:
+- 次回確認事項:
+```
+
 ## トラブルシュート
 
 `run_image_understanding_graph` が tools/list に出ない:
