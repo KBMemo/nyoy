@@ -33,6 +33,37 @@
       <dt class="text-xs kb-text-muted">Chat</dt>
       <dd class="text-sm kb-text-primary">#<%= @chat.id %></dd>
     </div>
+    <% if @agent_run.graph_name == AgentGraph::ImageUnderstandingGraph::NAME && @agent_run.state["image_source"].is_a?(Hash) %>
+      <% image_source = @agent_run.state["image_source"] %>
+      <% analysis_meta = @agent_run.state["analysis_meta"].is_a?(Hash) ? @agent_run.state["analysis_meta"] : {} %>
+      <div>
+        <dt class="text-xs kb-text-muted">Image Source</dt>
+        <dd class="text-sm kb-text-primary">
+          <%= image_source["kind"].presence || "unknown" %>
+          <% if image_source["attachment_id"].present? %>
+            / attachment #<%= image_source["attachment_id"] %>
+          <% end %>
+        </dd>
+      </div>
+      <% if image_source["tsuzura_media_id"].present? %>
+        <div>
+          <dt class="text-xs kb-text-muted">Tsuzura Media</dt>
+          <dd class="text-sm kb-text-primary"><%= image_source["tsuzura_media_id"] %></dd>
+        </div>
+      <% end %>
+      <% if (image_filename = image_source["filename"].presence || analysis_meta["filename"].presence) %>
+        <div>
+          <dt class="text-xs kb-text-muted">Image Filename</dt>
+          <dd class="text-sm kb-text-primary"><%= image_filename %></dd>
+        </div>
+      <% end %>
+      <% if (image_content_type = image_source["content_type"].presence || analysis_meta["content_type"].presence) %>
+        <div>
+          <dt class="text-xs kb-text-muted">Image Content-Type</dt>
+          <dd class="text-sm kb-text-primary"><%= image_content_type %></dd>
+        </div>
+      <% end %>
+    <% end %>
     <% if @agent_run.retry_run? %>
       <div>
         <dt class="text-xs kb-text-muted">Retry Source</dt>

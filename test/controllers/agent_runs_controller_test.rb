@@ -174,7 +174,15 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
         "chat_id" => @chat.id,
         "intent" => "image_understanding",
         "plan" => { "message_id" => @chat.messages.where(role: :user).last.id, "attachment_index" => 0 },
-        "image_source" => { "kind" => "chat_attachment", "message_id" => @chat.messages.where(role: :user).last.id },
+        "image_source" => {
+          "kind" => "chat_attachment",
+          "message_id" => @chat.messages.where(role: :user).last.id,
+          "attachment_id" => 123,
+          "filename" => "trail.png",
+          "content_type" => "image/png",
+          "tsuzura_media_id" => "01KXIMAGE"
+        },
+        "analysis_meta" => { "source" => "chat_attachment", "filename" => "trail.png", "content_type" => "image/png" },
         "analysis" => nil,
         "final_answer" => nil,
         "approval" => "not_required",
@@ -204,6 +212,15 @@ class AgentRunsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "dd", text: AgentGraph::ImageUnderstandingGraph::NAME
+    assert_select "dt", text: "Image Source"
+    assert_select "dd", text: /chat_attachment/
+    assert_select "dd", text: /attachment #123/
+    assert_select "dt", text: "Tsuzura Media"
+    assert_select "dd", text: "01KXIMAGE"
+    assert_select "dt", text: "Image Filename"
+    assert_select "dd", text: "trail.png"
+    assert_select "dt", text: "Image Content-Type"
+    assert_select "dd", text: "image/png"
     assert_select "h3", text: "Retry Dry-run"
     assert_select "p", text: /retry 候補/
     assert_select "a[href='#agent_checkpoint_#{checkpoint.id}']", text: /##{checkpoint.id} resolve_image_source/
