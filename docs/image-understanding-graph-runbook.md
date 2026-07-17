@@ -18,10 +18,17 @@
 bin/dev
 ```
 
+ローカル開発の MCP 接続先と token:
+
+```bash
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export MCP_API_TOKEN="your-token"
+```
+
 MCP ツール確認:
 
 ```bash
-MCP_API_TOKEN=your-token bin/mcp-list-tools
+bin/mcp-list-tools
 ```
 
 期待:
@@ -101,8 +108,8 @@ ActiveStorage::Attachment
 HTTP MCP 例:
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"run_image_understanding_graph","arguments":{"question":"この画像を説明して","tsuzura_media_id":"01J..."}}}'
@@ -111,8 +118,8 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 返却された `agent_run_id` を控える。
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_image_understanding_graph","arguments":{"agent_run_id":123}}}'
@@ -131,8 +138,8 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 目的: MCP で画像ソースを渡さない場合に、実行失敗が AgentRun として観測できることを確認する。
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_image_understanding_graph","arguments":{"question":"この画像を説明して"}}}'
@@ -162,8 +169,8 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 HTTP MCP retry 例:
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"retry_image_understanding_graph","arguments":{"agent_run_id":123}}}'

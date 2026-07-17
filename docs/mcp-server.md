@@ -134,14 +134,17 @@ printf '%s\n%s\n' \
 HTTP は Nyoy を起動したうえで、Bearer 認証付きで `initialize` / `tools/list` を確認する。
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export MCP_API_TOKEN="your-token"
+
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"0.1"}}}'
 
-curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer your-token' \
+curl -sS -X POST "$NYOY_MCP_URL" \
+  -H "Authorization: Bearer $MCP_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
   --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
