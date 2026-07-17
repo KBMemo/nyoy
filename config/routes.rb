@@ -75,6 +75,12 @@ Rails.application.routes.draw do
 
   match "mcp", to: "mcp#entry", via: %i[get post delete], as: :mcp
 
+  namespace :webhooks do
+    namespace :kbmemo do
+      post "memos", to: "memos#create", as: :memos
+    end
+  end
+
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker

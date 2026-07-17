@@ -64,7 +64,33 @@ class MemoKnowledgeIngester
     scope.where.not("metadata->>'memo_uid' IN (?)", uids).delete_all
   end
 
+  def stale_memo_update?(memo_uid, memo_updated_at)
+    uid = memo_uid.to_s.strip
+    update_time = parse_time(memo_updated_at)
+    return false if uid.blank? || update_time.blank?
+
+    latest = latest_chunk_time(uid)
+    latest.present? && latest >= update_time
+  end
+
   private
+
+  def latest_chunk_time(memo_uid)
+    PromptKnowledgeChunk.from_memo
+                        .where("metadata->>'memo_uid' = ?", memo_uid)
+                        .pluck(Arel.sql("metadata->>'memo_updated_at'"))
+                        .filter_map { |value| parse_time(value) }
+                        .max
+  end
+
+  def parse_time(value)
+    return value if value.is_a?(Time)
+    return value.to_time if value.respond_to?(:to_time) && !value.is_a?(String)
+
+    Time.iso8601(value.to_s)
+  rescue ArgumentError, TypeError
+    nil
+  end
 
   def build_record(memo_uid:, memo_id:, title:, content:, index:, chunk_count:, memo_updated_at:)
     PromptKnowledgeChunk.new(

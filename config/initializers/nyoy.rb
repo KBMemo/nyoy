@@ -52,6 +52,8 @@ Rails.application.config.x.nyoy.tap do |config|
   config.memo_rag_llm_compress = ENV.fetch("MEMO_RAG_LLM_COMPRESS", "false") == "true"
   config.memo_chunk_max_chars = ENV.fetch("MEMO_CHUNK_MAX_CHARS", 1500).to_i
   config.memo_ingest_page_limit = ENV.fetch("MEMO_INGEST_PAGE_LIMIT", 100).to_i
+  config.memo_rag_webhook_enabled = ENV.fetch("MEMO_RAG_WEBHOOK_ENABLED", "false") == "true"
+  config.memo_rag_webhook_secret = ENV["MEMO_RAG_WEBHOOK_SECRET"]
   config.chat_summary_enabled = ENV.fetch("CHAT_SUMMARY_ENABLED", "true") == "true"
   config.chat_summary_max_chars = ENV.fetch("CHAT_SUMMARY_MAX_CHARS", 1200).to_i
   config.chat_summary_llm = ENV.fetch("CHAT_SUMMARY_LLM", "false") == "true"

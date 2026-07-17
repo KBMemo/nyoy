@@ -178,7 +178,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 |------|--------------|------|
 | Groonga 検索（`GET /memos?q=` 内部差し替え） | **不要** | 検索精度のみ向上 |
 | `export/deletions` 実装 | 取込ジョブが削除同期可能に | **完了** |
-| webhook 通知 | 将来リアルタイム re-embed | 設計済み（[Memo RAG Webhook](./architecture/memo-rag-webhook.md)） |
+| webhook 通知 | 将来リアルタイム re-embed | Nyoy 受信側実装済み。徒然 delivery 未実装（[Memo RAG Webhook](./architecture/memo-rag-webhook.md)） |
 
 ### 3.4 ツール層アーキテクチャ（目標）
 
@@ -257,7 +257,7 @@ gantt
 
 ### 推奨
 
-- webhook によるメモ RAG リアルタイム re-embed の Nyoy 側受信実装（現状は checkpoint 定期同期で運用可能）
+- webhook によるメモ RAG リアルタイム re-embed の徒然 delivery 実装（現状は checkpoint 定期同期で運用可能）
 
 ### 完了（Phase 6）
 

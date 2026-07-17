@@ -82,4 +82,24 @@ class MemoKnowledgeIngesterTest < ActiveSupport::TestCase
     assert PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", keep_uid).exists?
     assert_not PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", stale_uid).exists?
   end
+
+  test "stale_memo_update detects older webhook timestamps" do
+    uid = "01J8X2K3M4N5P6Q7R8S9T0UVA3"
+    chunk = PromptKnowledgeChunk.new(
+      source: PromptKnowledgeChunk::SOURCE_MEMO,
+      kind: "memo",
+      external_id: PromptKnowledgeChunk.memo_external_id(uid, 0),
+      title: uid,
+      body: "本文",
+      metadata: { memo_uid: uid, memo_updated_at: "2026-07-02T00:00:00Z" }
+    )
+    chunk.skip_auto_embed = true
+    chunk.save!
+
+    ingester = MemoKnowledgeIngester.new
+
+    assert ingester.stale_memo_update?(uid, "2026-07-01T00:00:00Z")
+    assert ingester.stale_memo_update?(uid, "2026-07-02T00:00:00Z")
+    assert_not ingester.stale_memo_update?(uid, "2026-07-03T00:00:00Z")
+  end
 end

@@ -87,6 +87,9 @@ Response:
 
 ## Nyoy 実装案
 
+Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検証、event table、`MemoKnowledgeWebhookJob`）。
+残りは徒然側の delivery job / signer / `Memo` callback。
+
 ### 設定
 
 - `MEMO_RAG_WEBHOOK_SECRET`
@@ -183,8 +186,8 @@ Response:
 
 ## 実装順
 
-1. Nyoy: webhook event table / verifier / controller / job
-2. Nyoy: `MemoKnowledgeIngester` に「既存 memo_updated_at より古いか」の helper を追加
+1. ~~Nyoy: webhook event table / verifier / controller / job~~
+2. ~~Nyoy: `MemoKnowledgeIngester` に「既存 memo_updated_at より古いか」の helper を追加~~
 3. 徒然: webhook delivery job / signer / Memo after_commit enqueue
 4. 徒然: settings env と docs
 5. development で create/update/delete の実機確認

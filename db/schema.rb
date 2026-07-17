@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_17_121000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_17_124000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -260,6 +260,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_17_121000) do
     t.datetime "updated_at", null: false
     t.integer "width", default: 512, null: false
     t.index ["style_id"], name: "index_memo_illustrations_on_style_id"
+  end
+
+  create_table "memo_rag_webhook_events", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.string "event_id", null: false
+    t.string "event_type", null: false
+    t.bigint "memo_id"
+    t.string "memo_uid", null: false
+    t.datetime "memo_updated_at"
+    t.datetime "occurred_at", null: false
+    t.datetime "processed_at"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_memo_rag_webhook_events_on_event_id", unique: true
+    t.index ["memo_uid"], name: "index_memo_rag_webhook_events_on_memo_uid"
+    t.index ["status", "created_at"], name: "index_memo_rag_webhook_events_on_status_and_created_at"
   end
 
   create_table "messages", force: :cascade do |t|

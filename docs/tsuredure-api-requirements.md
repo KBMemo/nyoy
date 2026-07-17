@@ -154,7 +154,7 @@
 
 **要求（将来）:**
 
-- webhook エンドポイント（如意側）— 設計済み: [Memo RAG Webhook](./architecture/memo-rag-webhook.md)
+- webhook エンドポイント（如意側）— 受信側実装済み: [Memo RAG Webhook](./architecture/memo-rag-webhook.md)
 - イベント種別: created / updated / deleted
 - HMAC 署名検証
 
@@ -608,7 +608,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` | **完了** |
-| P3a | memo RAG webhook | **設計済み**（未実装、定期 checkpoint 同期で運用可） |
+| P3a | memo RAG webhook | Nyoy 受信側実装済み、徒然 delivery 未実装（定期 checkpoint 同期で運用可） |
 | P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | **完了**（site 実装、本番 Pandoc 確認、如意 `TsurezureClient` 経路の smoke 確認済み） |
 
