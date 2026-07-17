@@ -4,7 +4,7 @@
 **ラフ→仕上げ** タブ（既存の style 計画パイプライン）とは別系統とし、ユーザーが **SD モデルを直接選び**、**プロンプト生成テンプレート**（システムプロンプト）で正/ネガティブプロンプトを生成してから、解像度・Steps 等を指定して **1 発 txt2img** する。
 
 - **ステータス:** 設計（2026-07）
-- **関連:** [prompt-architecture-redesign.md](../prompt-architecture-redesign.md)、徒然 `docs/architecture/chat-agent-roadmap.adoc` §12（refine 未接続）
+- **関連:** [prompt-architecture-redesign.md](../prompt-architecture-redesign.md)、徒然 `docs/architecture/chat-agent-roadmap.adoc` §12（Agent Chat refine 接続済み）
 - **UI たたき台:** `image_generations/new` の 2 タブ（ラフ→仕上げ / パラメータ指定）。パラメータ側はラフ生成カード除去のみ、**バックエンド未接続**
 
 ---

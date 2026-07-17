@@ -17,8 +17,8 @@
 * **SD パイプライン** — MCP 拡張ツール（`list_image_generation_options` / `generate_image` / `refine_image`。`list_prompt_styles` は既存クライアント互換の非推奨ツール）
 * **接続管理** — `ServiceConnection` + `NyoyConnectionStore`（llama / SearXNG / 徒然 API / 葛籠 / sd.cpp 等）
 
-徒然は **in-app Chat::Agent**（intent ルーティング・pgroonga/pgvector RAG）を Phase 0–2 / 5a–5b まで実装済み。
-Web / URL / Vision / 画像生成ツールは **徒然内未実装**（Router は名前のみ返す）。
+徒然は **in-app Chat::Agent**（intent ルーティング・pgroonga/pgvector RAG）を Phase 0–2 / 5a–5b / 9 まで実装済み。
+Web / URL / Vision / 画像生成は徒然内に同等ツールを実装せず、Nyoy MCP へ委譲する。
 
 == 2. 設計原則（更新）
 
@@ -194,7 +194,7 @@ flowchart TB
 
 === 5.2 徒然 in-app Agent（`/agent_chat`）
 
-現行パイプラインを維持しつつ、未実装ツールフェーズの方針を変更する。
+現行パイプラインを維持しつつ、横断ツールは Nyoy MCP へ委譲する。
 
 [source,text]
 ----
@@ -202,10 +202,9 @@ User → IntentClassifier → Router → [実装済みツールのみ] → LLM �
 ----
 
 * **実装済み（徒然内）**: `rag_search` / `memo_search`（pgroonga 系）
-* **Nyoy MCP に委譲（徒然では実装しない）**: `fetch_url`, `web_search`, `image_analysis`, `image_generation`
-* **UI で案内**: Router が未実装ツールを返したとき、pending 表示に加え「如意 MCP / 如意 Chat UI を利用」と示す（任意）
-
-将来オプション: `Chat::NyoyMcpClient` で MCP `tools/call` を in-app から呼ぶ（HTTP 往復・認証が増えるため **後追い**）。
+* **Nyoy MCP に委譲（徒然では同等実装を持たない）**: `fetch_url`, `web_search`, `image_analysis`, `image_generation`
+* **MCP 呼び出し**: Phase 9 で `Chat::NyoyMcpClient` 経由の HTTP `tools/call` を接続済み。`generate_image` のラフ案表示と `refine_image` 仕上げも `/agent_chat` から実行できる。
+* **UI で案内**: MCP 未設定・ツール無効時は pending 表示に加え、Nyoy MCP 設定やツール有効化を案内する。
 
 === 5.3 如意 Chat UI
 
@@ -305,8 +304,7 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 * **in-app からの MCP 呼び出し** — Phase 9 完了（徒然 `Chat::NyoyMcpClient`）。詳細は徒然 `chat-agent-roadmap.adoc`。
 * **MCP 認可の細分化** — 当面は API キー 1 本。マルチユーザー時はトークン per account。
 * **徒然 `export/deletions`** — Nyoy `recall_memos` の鮮度向上。徒然側実装待ち。
-* **ラフ案プレビュー** — MCP `get_image_generation` の `draft_urls` で徒然 Agent Chat に表示（2026-07 対応）。
-* **仕上げ（refine）** — **課題（徒然側）**。Nyoy MCP の `refine_image` は公開済みだが、徒然 `/agent_chat` は `awaiting_selection` で止まる。ラフ案選択〜`completed` までの in-app フローは徒然 `chat-agent-roadmap.adoc` §12 を参照。当面は Nyoy UI（`show_path`）で手動選択。
+* **画像生成 refine フロー** — MCP `get_image_generation` の `draft_urls` を徒然 Agent Chat に表示し、ドラフト選択後の `refine_image`〜`completed` polling、完成画像 URL の会話履歴 metadata 永続化まで対応済み（2026-07）。詳細は徒然 `chat-agent-roadmap.adoc` §12。
 
 == 10. 関連ドキュメント
 
