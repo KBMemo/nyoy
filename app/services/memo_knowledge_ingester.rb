@@ -49,6 +49,21 @@ class MemoKnowledgeIngester
     records.size
   end
 
+  def delete_memo!(memo_uid)
+    uid = memo_uid.to_s.strip
+    raise Error, "memo uid required" if uid.blank?
+
+    PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", uid).delete_all
+  end
+
+  def delete_except_memos!(memo_uids)
+    uids = Array(memo_uids).map { |uid| uid.to_s.strip }.reject(&:blank?).uniq
+    scope = PromptKnowledgeChunk.from_memo
+    return scope.delete_all if uids.empty?
+
+    scope.where.not("metadata->>'memo_uid' IN (?)", uids).delete_all
+  end
+
   private
 
   def build_record(memo_uid:, memo_id:, title:, content:, index:, chunk_count:, memo_updated_at:)

@@ -40,4 +40,46 @@ class MemoKnowledgeIngesterTest < ActiveSupport::TestCase
     assert_equal 1, chunks.count
     assert_includes chunks.first.body, "新しい本文"
   end
+
+  test "delete_memo removes chunks for the memo uid" do
+    uid = "01J8X2K3M4N5P6Q7R8S9T0UVWZ"
+    chunk = PromptKnowledgeChunk.new(
+      source: PromptKnowledgeChunk::SOURCE_MEMO,
+      kind: "memo",
+      external_id: PromptKnowledgeChunk.memo_external_id(uid, 0),
+      title: "削除対象",
+      body: "本文",
+      metadata: { memo_uid: uid }
+    )
+    chunk.skip_auto_embed = true
+    chunk.save!
+
+    deleted_count = MemoKnowledgeIngester.new.delete_memo!(uid)
+
+    assert_equal 1, deleted_count
+    assert_not PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", uid).exists?
+  end
+
+  test "delete_except_memos removes stale memo chunks" do
+    keep_uid = "01J8X2K3M4N5P6Q7R8S9T0UVA1"
+    stale_uid = "01J8X2K3M4N5P6Q7R8S9T0UVA2"
+    [ keep_uid, stale_uid ].each do |uid|
+      chunk = PromptKnowledgeChunk.new(
+        source: PromptKnowledgeChunk::SOURCE_MEMO,
+        kind: "memo",
+        external_id: PromptKnowledgeChunk.memo_external_id(uid, 0),
+        title: uid,
+        body: "本文",
+        metadata: { memo_uid: uid }
+      )
+      chunk.skip_auto_embed = true
+      chunk.save!
+    end
+
+    deleted_count = MemoKnowledgeIngester.new.delete_except_memos!([ keep_uid ])
+
+    assert_equal 1, deleted_count
+    assert PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", keep_uid).exists?
+    assert_not PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", stale_uid).exists?
+  end
 end

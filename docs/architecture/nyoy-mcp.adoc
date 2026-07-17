@@ -303,7 +303,7 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 
 * **in-app からの MCP 呼び出し** — Phase 9 完了（徒然 `Chat::NyoyMcpClient`）。詳細は徒然 `chat-agent-roadmap.adoc`。
 * **MCP 認可の細分化** — 当面は API キー 1 本。マルチユーザー時はトークン per account。
-* **徒然 `export/deletions`** — Nyoy `recall_memos` の鮮度向上。徒然側実装待ち。
+* **徒然 `export/deletions`** — 実装済み。`MemoKnowledgeIngestJob` が `AppSetting.memo_knowledge_last_ingested_at` を checkpoint にして、増分取込時に削除済みメモの RAG chunk を削除する。
 * **画像生成 refine フロー** — MCP `get_image_generation` の `draft_urls` を徒然 Agent Chat に表示し、ドラフト選択後の `refine_image`〜`completed` polling、完成画像 URL の会話履歴 metadata 永続化まで対応済み（2026-07）。詳細は徒然 `chat-agent-roadmap.adoc` §12。
 
 == 10. 関連ドキュメント

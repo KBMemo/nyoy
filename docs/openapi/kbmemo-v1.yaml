@@ -266,7 +266,7 @@ paths:
       summary: 削除メモ ID フィード
       description: |
         RAG 側のチャンク削除用。`deleted_since` 以降に削除されたメモの `uid` を返す。
-        実装には tombstone テーブルまたは削除ログが必要（徒然現状は未実装）。
+        徒然側は物理削除時に tombstone レコードを残し、このフィードで差分同期する。
       parameters:
         - name: deleted_since
           in: query

@@ -56,6 +56,14 @@ class AppSetting < ApplicationRecord
       RESEARCH_DRAFT_FALLBACKS.include?(value) ? value : "main"
     end
 
+    def memo_knowledge_last_ingested_at
+      instance.memo_knowledge_last_ingested_at
+    end
+
+    def update_memo_knowledge_last_ingested_at!(time)
+      instance.update!(memo_knowledge_last_ingested_at: time)
+    end
+
     private
 
     def resolve(column, env_fallback:)

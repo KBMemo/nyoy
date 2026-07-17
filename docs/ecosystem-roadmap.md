@@ -136,6 +136,8 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 
 - `PromptKnowledgeChunk` — pgvector + `neighbor`、HNSW index
 - 取込: `GET /api/v1/memos/export` → `MemoKnowledgeIngestJob` / `bin/rails kbmemo:rag:ingest`
+- checkpoint: `AppSetting.memo_knowledge_last_ingested_at`。初回は全件 export 後に stale chunk を reconcile、以後は checkpoint 差分。
+- 削除同期: `GET /api/v1/memos/export/deletions` → 該当 `memo_uid` の chunk を削除
 - チャンク ID: `kbmemo:{uid}:chunk:{n}`（`external_id` 列）
 
 ### 2.6 外部連携の現状
@@ -175,7 +177,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | 変更 | 如意 API 変更 | 備考 |
 |------|--------------|------|
 | Groonga 検索（`GET /memos?q=` 内部差し替え） | **不要** | 検索精度のみ向上 |
-| `export/deletions` 実装 | 取込ジョブが削除同期可能に | 徒然 **501** |
+| `export/deletions` 実装 | 取込ジョブが削除同期可能に | **完了** |
 | webhook 通知 | 将来リアルタイム re-embed | 未設計 |
 
 ### 3.4 ツール層アーキテクチャ（目標）
@@ -243,7 +245,7 @@ gantt
 |---|------|------|------|
 | 1 | ~~徒然 API 認証~~ | — | **決定:** 当面 `clip_api_token` 流用 |
 | 2 | 葛籠への画像移行タイミング | 生成物の保管 | |
-| 3 | メモ RAG 削除同期 | 鮮度 | `export/deletions` 徒然側未実装 |
+| 3 | ~~メモ RAG 削除同期~~ | 鮮度 | **完了** |
 | 4 | ~~徒然 Groonga 検索~~ | キーワード RAG 精度 | **決定:** PGroonga（徒然 DB）。[実装手順](./tsuredure-pgroonga-search.md) |
 | 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
 | 6 | マルチ Workspace 開発 | site + nyoy | OpenAPI 契約 + マルチルート推奨 |
@@ -291,7 +293,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 ```
 
 - Chat 画面で推定 tokens・メモ RAG チャンク数を確認
-- 徒然 `export/deletions` 実装後、取込ジョブに削除同期を追加
+- 初回全件取込では export に存在しない stale chunk を削除し、以後は checkpoint から徒然 `export/deletions` も読んで削除済みメモの RAG chunk を同期削除
 
 ### 徒然（site）側
 
@@ -299,7 +301,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - **如意 パラメータ指定タブ** — SD モデル直選・生成テンプレート CRUD・JSON プロンプト生成・直接生成フロー・MCP direct 生成 — [設計書](./architecture/parameter-tab-image-generation.md)（如意側 Phase 5 まで完了）
 - API 書込 `body_format: markdown` → AsciiDoc 変換 — **完了**（site 実装、Pandoc 確認、如意 `TsurezureClient` 経路の smoke 確認済み）
 - PGroonga 全文検索（`Memo.search_text` 差し替え — **インストール OK**、[手順](./tsuredure-pgroonga-search.md)）
-- `export/deletions` エンドポイント
+- `export/deletions` エンドポイント — **完了**
 
 ---
 

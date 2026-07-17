@@ -91,6 +91,15 @@ class TsurezureClient
     get_json("/memos/export#{query}")
   end
 
+  def export_memo_deletions(deleted_since:, cursor: nil, limit: 100)
+    query = compact_query(
+      deleted_since: iso8601(deleted_since),
+      cursor: cursor,
+      limit: limit
+    )
+    get_json("/memos/export/deletions#{query}")
+  end
+
   private
 
   def normalize_api_root(base_url)

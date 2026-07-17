@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_095000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_17_121000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -89,6 +89,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_095000) do
     t.string "default_chat_connection_key"
     t.string "default_llm_sampling_preset_key"
     t.string "default_style_plan_connection_key"
+    t.datetime "memo_knowledge_last_ingested_at"
     t.string "research_draft_fallback", default: "main", null: false
     t.string "research_draft_model_id"
     t.datetime "updated_at", null: false

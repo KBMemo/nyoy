@@ -132,12 +132,13 @@
 1. ジョブが `list_memos`（または `export_memos`）で対象メモ一覧を取得
 2. 各メモをチャンク分割 → `EmbeddingClient` でベクトル化
 3. `KnowledgeChunk`（source: memo）として pgvector に保存
-4. 次回以降は `updated_since` で差分のみ再取込
+4. 初回は全件 export 後に stale chunk を reconcile
+5. 次回以降は `AppSetting.memo_knowledge_last_ingested_at` を checkpoint にして、`updated_since` / `deleted_since` で差分のみ再取込
 
 **要求（実装済み / 残）:**
 
 - [x] 一覧・export API、`updated_since` 差分 — **実装済み**
-- [ ] 削除されたメモの検知 — **`export/deletions` 未実装**
+- [x] 削除されたメモの検知 — `export/deletions` + 如意削除同期 **実装済み**
 - [x] レート制限・ページサイズ — export は `MEMO_INGEST_PAGE_LIMIT` でページング
 
 ### UC-5: RAG 取込（リアルタイム、将来）
@@ -429,14 +430,14 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 | モデル | `PromptKnowledgeChunk`（`source: memo`） |
 | external_id | `kbmemo:{uid}:chunk:{index}` |
 | metadata | title, tags, updated_at, chunk_index 等 |
-| 削除 | **未同期** — `export/deletions` 徒然 501 のため全件 re-ingest または将来 webhook |
+| 削除 | 初回全件取込では export に存在しない chunk を削除。以後は `export/deletions` の tombstone フィードを `MemoKnowledgeIngestJob` が読み、該当 `memo_uid` の chunk を削除 |
 
 実装: `app/services/memo_text_chunker.rb`, `memo_knowledge_ingester.rb`, `memo_knowledge_retriever.rb`, `chat_memo_rag_injector.rb`
 
 ### 6.3 徒然 API への要求（残）
 
 - [x] `GET /memos/export?updated_since=` — **提供済み**
-- [ ] 削除メモ ID リスト（`export/deletions` — **501**）
+- [x] 削除メモ ID リスト（`export/deletions`）
 - [ ] 1 メモあたりの最大サイズ上限の明示（任意）
 
 ---
@@ -506,7 +507,7 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 | `GET /api/v1/me` | アカウント情報 | 同上 |
 | `GET/POST/PATCH/DELETE /api/v1/memos` | メモ CRUD + 検索 | 同上 |
 | `GET /api/v1/memos/export` | RAG 用 export | 同上 |
-| `GET /api/v1/memos/export/deletions` | 削除フィード | **501 未実装** |
+| `GET /api/v1/memos/export/deletions` | 削除フィード | 同上 |
 | `GET /internal/tsuzura/*` | 葛籠（Web UI 内部） | セッション / 内部シークレット |
 
 参照: `site/app/controllers/api/v1/`, `site/test/controllers/api/v1/`
@@ -562,9 +563,9 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | Git 作業ツリー | `MemoRepository` がコミット時に `.adoc` を書き出し |
 | Rake | `kbmemo:notebook:export`, `kbmemo:docs:sync` |
 | HTTP API | **`GET /api/v1/memos/export`**（RAG 取込用。`updated_since` ページング） |
-| 削除フィード | **`GET /api/v1/memos/export/deletions`** — **501 未実装** |
+| 削除フィード | **`GET /api/v1/memos/export/deletions`** — tombstone ベースの差分削除フィード |
 
-如意側: `TsurezureClient#export_memos` → `MemoKnowledgeIngestJob` / `bin/rails kbmemo:rag:ingest`
+如意側: `TsurezureClient#export_memos` / `#export_memo_deletions` → `MemoKnowledgeIngestJob` / `bin/rails kbmemo:rag:ingest`
 
 ### 9.7 ギャップ分析（2026-07 更新）
 
@@ -575,7 +576,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | `POST /api/v1/memos` | ✓ | ✓ `create_memo` ツール |
 | `PATCH` + 競合検知 | ✓ `stale_memo` | ✓ `update_memo` ツール |
 | `export?updated_since=` | ✓ | ✓ `MemoKnowledgeIngestJob` / `kbmemo:rag:ingest` |
-| 削除フィード | ✗ 501 | ✗ 未同期 |
+| 削除フィード | ✓ `export/deletions` | ✓ `MemoKnowledgeIngestJob` が増分取り込み時に chunk 削除 |
 | Bearer 認証 | ✓ `clip_api_token` | ✓ `ServiceConnection` `kbmemo` |
 | DB 接続登録 | — | ✓ 設定 → 接続 |
 
@@ -584,7 +585,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 - [x] ~~如意用トークンを `clip_api_token` と分離するか~~ — **当面 clip 流用**
 - [x] ~~API 作成メモの格納先ディレクトリ~~ — API 非公開。徒然側 Home 既定
 - [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
-- [ ] 削除メモの RAG 同期方式（`export/deletions` 実装）
+- [x] 削除メモの RAG 同期方式（`export/deletions` + chunk 削除）
 - [ ] `visibility` が group のメモを API でどう扱うか
 - [x] Groonga 全文検索 — **PGroonga**（site コード済み。[手順](./tsuredure-pgroonga-search.md)。本番 `db:migrate` 待ち）
 
@@ -599,7 +600,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P1 | SearXNG + URL 取得ツール | **完了** |
 | P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
-| P3 | `export/deletions` + webhook | 徒然側未実装 |
+| P3 | `export/deletions` | **完了**（webhook は将来リアルタイム化候補） |
 | P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | **完了**（site 実装、本番 Pandoc 確認、如意 `TsurezureClient` 経路の smoke 確認済み） |
 
@@ -613,7 +614,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 4. ~~SearXNG + `fetch_url`~~ — 完了
 5. ~~メモ RAG 取込 + Chat 注入~~ — 完了（`bin/rails kbmemo:rag:ingest`）
 6. ~~Phase 2~~ — Chat への画像理解（`analyze_image`）— **完了**
-7. **徒然 site** — `export/deletions`、本番 git sync
+7. ~~徒然 site — `export/deletions`~~ — 完了
 8. **Phase 5** — 葛籠連携
 9. **Phase 6** — MCP サーバー（`ChatTools::*` 再公開）
 
