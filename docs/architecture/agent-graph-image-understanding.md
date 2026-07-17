@@ -158,6 +158,7 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 8. failed ImageUnderstanding run の retry dry-run / retry button 表示 test
 9. MCP 入力不足と checkpoint なし retry の境界 test
 
-残:
+実機確認済み:
 
-- 実機での vision サーバー障害時 retry 確認
+- 独立 UI / Chat 添付 / MCP `tsuzura_media_id`
+- vision サーバー障害時の failed run 作成と、復旧後の複製 retry

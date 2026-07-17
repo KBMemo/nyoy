@@ -85,10 +85,9 @@ Response:
 }
 ```
 
-## Nyoy 実装案
+## Nyoy 実装
 
-Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検証、event table、`MemoKnowledgeWebhookJob`）。
-残りは徒然側の delivery job / signer / `Memo` callback。
+Status: **E2E 確認済み**（Nyoy 受信側、徒然 delivery job / signer / `Memo` callback、development create/update/delete）。
 
 ### 設定
 
