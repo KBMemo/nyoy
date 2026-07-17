@@ -42,12 +42,43 @@ class McpCallToolScriptTest < ActiveSupport::TestCase
     assert_equal "123", JSON.parse(payload.dig("result", "content", 0, "text"))["agent_run_id"].to_s
   end
 
+  test "requires tool name" do
+    stdout, stderr, status = run_script_without_token
+
+    assert_not status.success?
+    assert_empty stdout
+    assert_includes stderr, "Usage: bin/mcp-call-tool"
+  end
+
+  test "requires mcp token" do
+    stdout, stderr, status = run_script_without_token("run_image_understanding_graph", "{}")
+
+    assert_not status.success?
+    assert_empty stdout
+    assert_includes stderr, "MCP_API_TOKEN is required"
+  end
+
+  test "requires json object arguments" do
+    stdout, stderr, status = run_script("run_image_understanding_graph", "[]")
+
+    assert_not status.success?
+    assert_empty stdout
+    assert_includes stderr, "JSON_ARGUMENTS must be a JSON object"
+  end
+
   private
 
   def run_script(*args)
     env = {
       "NYOY_MCP_URL" => @url,
       "MCP_API_TOKEN" => "test-token"
+    }
+    Open3.capture3(env, Rails.root.join("bin/mcp-call-tool").to_s, *args, chdir: Rails.root.to_s)
+  end
+
+  def run_script_without_token(*args)
+    env = {
+      "NYOY_MCP_URL" => @url
     }
     Open3.capture3(env, Rails.root.join("bin/mcp-call-tool").to_s, *args, chdir: Rails.root.to_s)
   end
