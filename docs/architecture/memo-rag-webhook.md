@@ -50,7 +50,7 @@ Headers:
 
 ```http
 Content-Type: application/json
-X-KBMemo-Webhook-Timestamp: 2026-07-17T12:34:56Z
+X-KBMemo-Webhook-Timestamp: 2026-07-17T12:34:56.000000Z
 X-KBMemo-Signature: sha256=<hex hmac>
 ```
 
@@ -138,7 +138,7 @@ Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検�
   - `MemoKnowledgeIngester#ingest!(memo)`
   - status completed
 
-## 徒然 実装案
+## 徒然 実装
 
 ### 設定
 
@@ -148,11 +148,18 @@ Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検�
 
 ### 発火点
 
-`Memo` の `after_commit`:
+site 側実装:
+
+- `NyoyMemoWebhookJob`
+- `NyoyMemoWebhook::Client`
+- `NyoyMemoWebhook::Signature`
+- `Memo` の `after_commit` / `after_destroy_commit`
+
+`Memo` の callback:
 
 - create/update: committed メモのみ送る。
   - `file_committed_at` が nil の draft 保存は送らない。
-  - draft から committed になったら `memo.created` 相当または `memo.updated` を送ればよい。Nyoy 側はどちらも get+ingest なので区別は厳密でなくてよい。
+  - draft から committed になったら `memo.updated` として送る。Nyoy 側は created / updated とも get+ingest なので処理は同じ。
 - destroy: `memo.deleted` を送る。
   - 既存 `MemoDeletionRecord` 作成後に UID が残るので同じ情報を使う。
 
@@ -160,7 +167,7 @@ Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検�
 
 ### payload 生成
 
-- `event_id`: ULID
+- `event_id`: UUID
 - `occurred_at`: `Time.current.utc.iso8601`
 - `memo_updated_at`: memo の `updated_at.utc.iso8601`
 - `account_id`, `memo_id`, `memo_uid`
@@ -184,17 +191,112 @@ Status: **受信側は実装済み**（`POST /webhooks/kbmemo/memos`、HMAC 検�
 - recurring schedule は残す。Webhook は低遅延化、定期 job は修復・監査用。
 - webhook 処理件数、失敗件数、最終処理時刻を log / status UI に出すとよい。
 
+## development E2E 確認手順
+
+前提:
+
+- Nyoy は `http://localhost:3109` で起動する
+- site は通常の development 環境で起動する
+- Nyoy の `kbmemo` ServiceConnection は site API を読める token を持つ
+- `MEMO_RAG_WEBHOOK_SECRET` と `NYOY_MEMO_WEBHOOK_SECRET` は同じ値にする
+
+Nyoy 側:
+
+```bash
+MEMO_RAG_WEBHOOK_ENABLED=true \
+MEMO_RAG_WEBHOOK_SECRET=dev-webhook-secret \
+bin/rails server -p 3109
+```
+
+site 側:
+
+```bash
+NYOY_MEMO_WEBHOOK_ENABLED=true \
+NYOY_MEMO_WEBHOOK_URL=http://localhost:3109/webhooks/kbmemo/memos \
+NYOY_MEMO_WEBHOOK_SECRET=dev-webhook-secret \
+bin/rails server
+```
+
+確認 1: update
+
+1. site で committed メモ本文を更新する
+2. site job が `NyoyMemoWebhookJob` を実行する
+3. Nyoy console で次を確認する
+
+```ruby
+event = MemoRagWebhookEvent.order(id: :desc).first
+[event.event_type, event.status, event.memo_uid, event.error_message]
+MemoKnowledgeChunk.where(memo_uid: event.memo_uid).count
+```
+
+期待:
+
+- `event_type` は `memo.updated`
+- `status` は `completed`
+- chunk が存在し、`metadata["memo_updated_at"]` が更新後時刻になる
+
+確認 2: delete
+
+1. site で同じメモを削除する
+2. Nyoy console で同じ `memo_uid` の event と chunk を確認する
+
+```ruby
+event = MemoRagWebhookEvent.where(memo_uid: "対象UID").order(id: :desc).first
+[event.event_type, event.status, event.error_message]
+MemoKnowledgeChunk.where(memo_uid: event.memo_uid).count
+```
+
+期待:
+
+- `event_type` は `memo.deleted`
+- `status` は `completed`
+- chunk count は `0`
+
+確認 3: draft
+
+1. site で `file_committed_at` が nil の draft メモを保存する
+2. `NyoyMemoWebhookJob` が enqueue されないことを確認する
+
+補足:
+
+- site 側の job 実行方式が async でない場合は Solid Queue worker を起動する
+- webhook が失敗した場合、Nyoy 側は `MemoRagWebhookEvent.status=failed` と `error_message` に残す
+- 取りこぼし・長期障害時は既存 `MemoKnowledgeIngestJob` の checkpoint 同期で収束する
+
+## 確認ログ
+
+### 2026-07-17 development E2E
+
+環境:
+
+- Nyoy: `http://127.0.0.1:3110`（`MEMO_RAG_WEBHOOK_ENABLED=true` / `SOLID_QUEUE_IN_PUMA=true`）
+- site: `http://localhost:3000`
+- webhook URL: `http://127.0.0.1:3110/webhooks/kbmemo/memos`
+- 対象 UID: `01KXQK2N4SPM1YWWAPJ8PDZX3X`（確認後 site 側で削除済み）
+
+結果:
+
+| 操作 | event_type | status | chunk |
+|---|---|---|---|
+| create | `memo.created` | `completed` | `PromptKnowledgeChunk` 2 件作成 |
+| update | `memo.updated` | `completed` | `metadata["memo_updated_at"]` が更新後時刻へ反映 |
+| delete | `memo.deleted` | `completed` | chunk count `0` |
+
+発見と対応:
+
+- site 送信側が `X-KBMemo-Webhook-Timestamp` に epoch 秒を送っており、Nyoy 受信側の ISO8601 検証で 401 になった。
+- site 側 `NyoyMemoWebhook::Client` を UTC ISO8601 (`iso8601(6)`) に修正し、再確認で 202 / completed まで通過した。
+
 ## 実装順
 
 1. ~~Nyoy: webhook event table / verifier / controller / job~~
 2. ~~Nyoy: `MemoKnowledgeIngester` に「既存 memo_updated_at より古いか」の helper を追加~~
-3. 徒然: webhook delivery job / signer / Memo after_commit enqueue
-4. 徒然: settings env と docs
-5. development で create/update/delete の実機確認
+3. ~~徒然: webhook delivery job / signer / Memo after_commit enqueue~~
+4. ~~徒然: settings env と docs~~
+5. ~~development で create/update/delete の実機確認~~
 6. 本番投入後も `MemoKnowledgeIngestJob` の定期同期ログで収束を確認
 
 ## 未決
 
 - multi account RAG を行うか。現状は単一 `kbmemo` ServiceConnection token account の視界を Nyoy RAG に取り込む。
 - webhook delivery の管理 UI を作るか。初期は env 設定で十分。
-- draft の commit イベントを `memo.created` とするか `memo.updated` とするか。Nyoy 側は同じ処理なので、徒然側実装の都合で選べる。

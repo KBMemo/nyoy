@@ -143,7 +143,7 @@
 - [x] 下書きの扱い — 既定では committed のみ。`include_drafts=true` の明示時だけ下書きを含める。如意 RAG 取込は既定の false。
 - [x] group visibility の扱い — API token の account に対する `MemoPolicy::Scope` が正。`group_read` / `group_read_write` は対象グループのメンバーだけ list / export / RAG 対象。
 
-### UC-5: RAG 取込（リアルタイム、将来）
+### UC-5: RAG 取込（リアルタイム）
 
 **アクター:** 徒然 → 如意 webhook  
 **流れ:**
@@ -152,11 +152,13 @@
 2. webhook で如意に通知
 3. 如意が該当メモのみ re-embed
 
-**要求（将来）:**
+**要求（実装済み / 残）:**
 
-- webhook エンドポイント（如意側）— 受信側実装済み: [Memo RAG Webhook](./architecture/memo-rag-webhook.md)
-- イベント種別: created / updated / deleted
-- HMAC 署名検証
+- [x] webhook エンドポイント（如意側）— 受信側実装済み: [Memo RAG Webhook](./architecture/memo-rag-webhook.md)
+- [x] 徒然 delivery job / signer / Memo callback — site 側実装済み
+- [x] イベント種別: created / updated / deleted
+- [x] HMAC 署名検証
+- [x] development で create/update/delete の E2E 確認
 
 ---
 
@@ -608,7 +610,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P2 | メモ RAG 取込（`export` + pgvector） | **完了** |
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` | **完了** |
-| P3a | memo RAG webhook | Nyoy 受信側実装済み、徒然 delivery 未実装（定期 checkpoint 同期で運用可） |
+| P3a | memo RAG webhook | Nyoy 受信側・徒然 delivery 実装済み。development E2E 確認済み（定期 checkpoint 同期で収束可） |
 | P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | **完了**（site 実装、本番 Pandoc 確認、如意 `TsurezureClient` 経路の smoke 確認済み） |
 
