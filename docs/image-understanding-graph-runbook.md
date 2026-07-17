@@ -158,12 +158,30 @@ bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説
 
 手順:
 
-1. vision LLM または `vision_llama` 接続先を停止する
+1. vision LLM または `vision_llama` 接続先を停止する。サーバーを止めずに確認する場合は、下の Rails runner 例で `vision_llama.base_url` を一時的に未使用ポートへ向ける
 2. Chat 添付経路、または MCP `tsuzura_media_id` 経路で画像理解を実行する
 3. failed run の `agent_run_id` を控える
 4. node 履歴で `resolve_image_source` が completed、`analyze_image` が failed であることを確認する
 5. vision LLM を復旧する
 6. retry を実行する
+
+接続先を一時変更して失敗を作る例:
+
+```bash
+bin/rails runner '
+connection = ServiceConnection.find_by!(key: "vision_llama")
+original_url = connection.base_url
+begin
+  connection.update!(base_url: "http://127.0.0.1:9")
+  puts "vision_llama temporarily points to #{connection.reload.base_url}"
+  puts "Run image understanding now, then press Enter to restore."
+  STDIN.gets
+ensure
+  connection.update!(base_url: original_url)
+  puts "vision_llama restored to #{connection.reload.base_url}"
+end
+'
+```
 
 HTTP MCP retry 例:
 
