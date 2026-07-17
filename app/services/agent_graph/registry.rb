@@ -21,70 +21,43 @@ module AgentGraph
     module_function
 
     def entries
-      @entries ||= [
-        Entry.new(
-          graph_name: ResearchGraph::NAME,
-          graph_class: ResearchGraph,
-          runner: ResearchGraphRunner,
-          summary_class: ResearchRunSummary,
-          failure_label: "Research Graph failed",
-          approval_panel: nil,
-          approval_copy: nil,
-          approve_notice: nil,
-          reject_notice: nil,
-          supersede_reason: "superseded by a newer research run",
-          resume_tool: nil
-        ),
-        Entry.new(
-          graph_name: ImageUnderstandingGraph::NAME,
-          graph_class: ImageUnderstandingGraph,
-          runner: ImageUnderstandingGraphRunner,
-          summary_class: ImageUnderstandingRunSummary,
-          failure_label: "ImageUnderstanding Graph failed",
-          approval_panel: nil,
-          approval_copy: nil,
-          approve_notice: nil,
-          reject_notice: nil,
-          supersede_reason: "superseded by a newer image understanding run",
-          resume_tool: nil
-        ),
-        Entry.new(
-          graph_name: MemoWriteGraph::NAME,
-          graph_class: MemoWriteGraph,
-          runner: MemoWriteGraphRunner,
-          summary_class: MemoWriteRunSummary,
-          failure_label: "MemoWrite Graph failed",
-          approval_panel: "chats/memo_write_approval",
-          approval_copy: ApprovalCopy.new(
-            status_label: "MemoWrite",
-            description: "内容を確認してから徒然に新規保存してください。",
-            approve_label: "この内容で徒然に保存する",
-            reject_confirm: "このメモ保存を却下しますか？"
-          ),
-          approve_notice: "メモ草案を承認しました。徒然へ保存します。",
-          reject_notice: "メモ保存を却下しました。",
-          supersede_reason: "superseded by a newer memo write run",
-          resume_tool: "resume_memo_write_graph"
-        ),
-        Entry.new(
-          graph_name: MemoUpdateGraph::NAME,
-          graph_class: MemoUpdateGraph,
-          runner: MemoUpdateGraphRunner,
-          summary_class: MemoUpdateRunSummary,
-          failure_label: "MemoUpdate Graph failed",
-          approval_panel: "chats/memo_write_approval",
-          approval_copy: ApprovalCopy.new(
-            status_label: "MemoUpdate",
-            description: "内容を確認してから既存メモへ反映してください。",
-            approve_label: "この内容で徒然メモを更新する",
-            reject_confirm: "このメモ更新を却下しますか？"
-          ),
-          approve_notice: "メモ更新を承認しました。徒然へ反映します。",
-          reject_notice: "メモ更新を却下しました。",
-          supersede_reason: "superseded by a newer memo update run",
-          resume_tool: "resume_memo_update_graph"
-        )
-      ].freeze
+      ensure_defaults!
+      @entries.values
+    end
+
+    def register(
+      key:,
+      graph:,
+      runner:,
+      summary:,
+      failure_label: nil,
+      approval_panel: nil,
+      approval_copy: nil,
+      approve_notice: nil,
+      reject_notice: nil,
+      supersede_reason: nil,
+      resume_tool: nil
+    )
+      entry = Entry.new(
+        graph_name: key.to_s,
+        graph_class: graph,
+        runner: runner,
+        summary_class: summary,
+        failure_label: failure_label || "#{key} Graph failed",
+        approval_panel: approval_panel,
+        approval_copy: approval_copy,
+        approve_notice: approve_notice,
+        reject_notice: reject_notice,
+        supersede_reason: supersede_reason,
+        resume_tool: resume_tool
+      )
+      registry[entry.graph_name] = entry
+      entry
+    end
+
+    def reset!
+      @entries = {}
+      @defaults_registered = false
     end
 
     def fetch(graph_name)
@@ -159,5 +132,74 @@ module AgentGraph
     def approval_supported?(graph_name)
       approval_graph_names.include?(graph_name.to_s)
     end
+
+    def registry
+      @entries ||= {}
+    end
+    private_class_method :registry
+
+    def ensure_defaults!
+      return if @defaults_registered
+
+      register_defaults!
+      @defaults_registered = true
+    end
+    private_class_method :ensure_defaults!
+
+    def register_defaults!
+      register(
+        key: ResearchGraph::NAME,
+        graph: ResearchGraph,
+        runner: ResearchGraphRunner,
+        summary: ResearchRunSummary,
+        failure_label: "Research Graph failed",
+        supersede_reason: "superseded by a newer research run"
+      )
+      register(
+        key: ImageUnderstandingGraph::NAME,
+        graph: ImageUnderstandingGraph,
+        runner: ImageUnderstandingGraphRunner,
+        summary: ImageUnderstandingRunSummary,
+        failure_label: "ImageUnderstanding Graph failed",
+        supersede_reason: "superseded by a newer image understanding run"
+      )
+      register(
+        key: MemoWriteGraph::NAME,
+        graph: MemoWriteGraph,
+        runner: MemoWriteGraphRunner,
+        summary: MemoWriteRunSummary,
+        failure_label: "MemoWrite Graph failed",
+        approval_panel: "chats/memo_write_approval",
+        approval_copy: ApprovalCopy.new(
+          status_label: "MemoWrite",
+          description: "内容を確認してから徒然に新規保存してください。",
+          approve_label: "この内容で徒然に保存する",
+          reject_confirm: "このメモ保存を却下しますか？"
+        ),
+        approve_notice: "メモ草案を承認しました。徒然へ保存します。",
+        reject_notice: "メモ保存を却下しました。",
+        supersede_reason: "superseded by a newer memo write run",
+        resume_tool: "resume_memo_write_graph"
+      )
+      register(
+        key: MemoUpdateGraph::NAME,
+        graph: MemoUpdateGraph,
+        runner: MemoUpdateGraphRunner,
+        summary: MemoUpdateRunSummary,
+        failure_label: "MemoUpdate Graph failed",
+        approval_panel: "chats/memo_write_approval",
+        approval_copy: ApprovalCopy.new(
+          status_label: "MemoUpdate",
+          description: "内容を確認してから既存メモへ反映してください。",
+          approve_label: "この内容で徒然メモを更新する",
+          reject_confirm: "このメモ更新を却下しますか？"
+        ),
+        approve_notice: "メモ更新を承認しました。徒然へ反映します。",
+        reject_notice: "メモ更新を却下しました。",
+        supersede_reason: "superseded by a newer memo update run",
+        resume_tool: "resume_memo_update_graph"
+      )
+    end
+    private_class_method :register_defaults!
   end
 end

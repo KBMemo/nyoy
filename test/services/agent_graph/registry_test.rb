@@ -3,6 +3,10 @@
 require "test_helper"
 
 class AgentGraphRegistryTest < ActiveSupport::TestCase
+  teardown do
+    AgentGraph::Registry.reset!
+  end
+
   test "returns runners for known graphs" do
     assert_equal AgentGraph::ResearchGraphRunner, AgentGraph::Registry.runner_for("research")
     assert_equal AgentGraph::MemoWriteGraphRunner, AgentGraph::Registry.runner_for("memo_write")
@@ -16,15 +20,38 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
   end
 
   test "rejects graph classes registered under mismatched names" do
-    with_registry_entries([
-      registry_entry(graph_name: "registered_graph", graph_class: MismatchedGraph)
-    ]) do
-      error = assert_raises(ArgumentError) do
-        AgentGraph::Registry.graph_for("registered_graph")
-      end
+    AgentGraph::Registry.reset!
+    AgentGraph::Registry.register(
+      key: "registered_graph",
+      graph: MismatchedGraph,
+      runner: AgentGraph::ResearchGraphRunner,
+      summary: AgentGraph::ResearchRunSummary
+    )
 
-      assert_equal "registered graph name mismatch: registered_graph != actual_graph", error.message
+    error = assert_raises(ArgumentError) do
+      AgentGraph::Registry.graph_for("registered_graph")
     end
+
+    assert_equal "registered graph name mismatch: registered_graph != actual_graph", error.message
+  end
+
+  test "registers custom graph entries through public API" do
+    AgentGraph::Registry.reset!
+    entry = AgentGraph::Registry.register(
+      key: "custom_graph",
+      graph: CustomGraph,
+      runner: AgentGraph::ResearchGraphRunner,
+      summary: AgentGraph::ResearchRunSummary,
+      failure_label: "Custom Graph failed",
+      supersede_reason: "superseded by a newer custom run"
+    )
+
+    assert_equal "custom_graph", entry.graph_name
+    assert_instance_of CustomGraph, AgentGraph::Registry.graph_for("custom_graph")
+    assert_equal AgentGraph::ResearchGraphRunner, AgentGraph::Registry.runner_for("custom_graph")
+    assert_equal AgentGraph::ResearchRunSummary, AgentGraph::Registry.summary_for("custom_graph")
+    assert_equal "Custom Graph failed", AgentGraph::Registry.failure_label_for("custom_graph")
+    assert_equal "superseded by a newer custom run", AgentGraph::Registry.supersede_reason_for("custom_graph")
   end
 
   test "returns supersede reasons for known graphs" do
@@ -100,35 +127,15 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
 
   private
 
-  def registry_entry(graph_name:, graph_class:)
-    AgentGraph::Registry::Entry.new(
-      graph_name: graph_name,
-      graph_class: graph_class,
-      runner: AgentGraph::ResearchGraphRunner,
-      summary_class: AgentGraph::ResearchRunSummary,
-      failure_label: "Test Graph failed",
-      approval_panel: nil,
-      approval_copy: nil,
-      approve_notice: nil,
-      reject_notice: nil,
-      supersede_reason: "superseded by a newer test run",
-      resume_tool: nil
-    )
-  end
-
-  def with_registry_entries(entries)
-    singleton = class << AgentGraph::Registry; self; end
-    original_entries = AgentGraph::Registry.method(:entries)
-
-    singleton.define_method(:entries) { entries }
-    yield
-  ensure
-    singleton.define_method(:entries) { original_entries.call }
-  end
-
   class MismatchedGraph
     def name
       "actual_graph"
+    end
+  end
+
+  class CustomGraph
+    def name
+      "custom_graph"
     end
   end
 end
