@@ -478,18 +478,42 @@ AgentGraph::Registry.register(
 2. `Runner` から Nyoy 固有の永続化・broadcast・trace 呼び出しを洗い出し、`RuntimeContext` の候補 interface を作る（着手済み。cancellation / progress / approval / node call kwargs を context 経由にする）
 3. intent / draft / final / evidence の呼び出し箇所を role service 経由にする（着手済み。`RoleServices` を追加し、`intent` / `evidence_evaluator` / `draft` / `final_answer` role を既存実装 adapter 経由にする）
 4. `AgentGraph::Registry.register` の登録形式を public API として固定する（完了）
-5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する（着手済み。Router 非接続の `DiagnosticGraph` で Registry 登録・実行・summary を検証）
-6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する
+5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する（完了。Router 非接続の `DiagnosticGraph` で Registry 登録・実行・summary を検証）
+6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する（次段階）
 
 ### 再検討条件
 
 次の条件がそろったら gem 化を再評価する。
 
-- `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない
-- workflow 追加が `Registry.register` と node 定義の追加だけで済む
-- role service の差し替えで軽量モデルを複数試せる
-- checkpoint / retry の契約が Core から見て adapter interface になっている
-- Nyoy 固有 node と Core runtime のテストが分離できている
+- `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない（達成）
+- workflow 追加が `Registry.register` と node 定義の追加だけで済む（`DiagnosticGraph` で検証済み）
+- role service の差し替えで軽量モデルを複数試せる（`intent` / `evidence_evaluator` / `draft` / `final_answer` は差し替え可能）
+- checkpoint / retry の契約が Core から見て adapter interface になっている（未達。`Runner` はまだ `AgentRun` / `AgentNodeRun` / `AgentCheckpoint` を直接更新する）
+- Nyoy 固有 node と Core runtime のテストが分離できている（部分達成。`AgentGraph::Core` test は独立、`Runner` は Rails model 依存）
+
+### 再検討メモ
+
+現時点では、純粋 Ruby gem として切り出せるのは `AgentGraph::Core` の小さな状態機械部品に限られる。`Runner` 以降は Rails adapter として扱うのが現実的である。
+
+候補:
+
+| レイヤ | 現状 | 次の判断 |
+| --- | --- | --- |
+| `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を保持 | pure Ruby gem 化候補 |
+| `AgentGraph::Runner` | `RuntimeContext` は導入済みだが、`AgentRun` / node run / checkpoint 永続化を直接扱う | persistence adapter 抽象が必要 |
+| `RoleServices` | role 差し替え API は成立。既定実装は Nyoy の LLM / heuristic に依存 | Nyoy adapter 側に残す |
+| `Registry` | public `register` API は成立。標準 Graph 登録も同 API 経由 | Core API と Rails adapter API の境界を要検討 |
+| 具体 Graph / Node | Research / MemoWrite / MemoUpdate / ImageUnderstanding / Diagnostic は Nyoy の Chat / Tool / UI 依存を持つ | Nyoy 側に残す |
+
+次に実装するなら、`Runner` から persistence を剥がすために `RuntimeContext` へ次の責務を移す。
+
+- run status 更新
+- current node 更新
+- node run 作成・完了
+- checkpoint 作成
+- state merge / scrub
+
+これにより、Core runner は「node を実行し、結果から次 node を決める」だけになり、Rails adapter runner は現在の `AgentRun` 永続化を担当できる。
 
 ## 判断基準
 
