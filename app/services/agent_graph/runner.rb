@@ -4,9 +4,10 @@ module AgentGraph
   class Runner
     MAX_STEPS = 12
 
-    def initialize(agent_run, graph:)
+    def initialize(agent_run, graph:, context: nil)
       @run = agent_run
       @graph = graph
+      @context = context || RuntimeContext.new(run: agent_run, graph: graph)
     end
 
     def call
@@ -19,7 +20,7 @@ module AgentGraph
       )
 
       MAX_STEPS.times do
-        ChatResponseControl.check!(@run.chat_id)
+        @context.check_cancelled!
 
         node_name = @run.current_node
         break finish_completed! if node_name.blank?
@@ -37,7 +38,7 @@ module AgentGraph
       finish_failed!("max steps exceeded (#{MAX_STEPS})") if @run.running?
       @run
     rescue ChatResponseControl::Cancelled
-      ProgressBroadcaster.clear!(@run.chat)
+      @context.clear_progress!
       @run.update!(status: "cancelled", finished_at: Time.current, error_message: "cancelled")
       raise
     rescue StandardError => e
@@ -51,7 +52,7 @@ module AgentGraph
       node = @graph.node_for(node_name)
       raise "unknown node: #{node_name}" unless node
 
-      ProgressBroadcaster.started!(@run.chat, node_name, agent_run: @run)
+      @context.node_started!(node_name)
 
       node_run = @run.agent_node_runs.create!(
         node_name: node_name,
@@ -60,7 +61,7 @@ module AgentGraph
         started_at: Time.current
       )
 
-      result = node.call(state: @run.state.deep_dup, run: @run, chat: @run.chat)
+      result = node.call(**@context.node_call_kwargs(state: @run.state.deep_dup))
 
       node_run.update!(
         status: result.failed? ? "failed" : "completed",
@@ -110,7 +111,7 @@ module AgentGraph
     end
 
     def finish_completed!
-      ProgressBroadcaster.clear!(@run.chat)
+      @context.clear_progress!
       @run.update!(
         status: "completed",
         current_node: nil,
@@ -120,17 +121,17 @@ module AgentGraph
 
     def interrupt!(node_name)
       # Approval panel replaces the progress line.
-      ProgressBroadcaster.clear!(@run.chat)
+      @context.clear_progress!
       @run.update!(
         status: "awaiting_approval",
         current_node: node_name,
         finished_at: nil
       )
-      ApprovalBroadcaster.request!(@run.reload)
+      @context.request_approval!
     end
 
     def finish_failed!(message)
-      ProgressBroadcaster.clear!(@run.chat)
+      @context.clear_progress!
       @run.update!(
         status: "failed",
         error_message: message.to_s,

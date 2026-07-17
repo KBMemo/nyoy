@@ -27,6 +27,22 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     assert_empty run.agent_node_runs
   end
 
+  test "uses injected runtime context for node execution hooks" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: "test_graph",
+      status: "pending",
+      current_node: "start",
+      state: { "input" => "ok" }
+    )
+    context = RecordingContext.new(run: run)
+
+    AgentGraph::Runner.new(run, graph: graph(name: "test_graph"), context: context).call
+
+    assert_equal "completed", run.reload.status
+    assert_equal [ :check_cancelled, [ :node_started, "start" ], :clear_progress ], context.events
+  end
+
   private
 
   def graph(name:)
@@ -41,6 +57,35 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
   class Node
     def call(state:, run:, chat:)
       AgentGraph::NodeResult.end
+    end
+  end
+
+  class RecordingContext
+    attr_reader :events
+
+    def initialize(run:)
+      @run = run
+      @events = []
+    end
+
+    def check_cancelled!
+      @events << :check_cancelled
+    end
+
+    def node_started!(node_name)
+      @events << [ :node_started, node_name ]
+    end
+
+    def clear_progress!
+      @events << :clear_progress
+    end
+
+    def request_approval!
+      @events << :request_approval
+    end
+
+    def node_call_kwargs(state:)
+      { state: state, run: @run, chat: @run.chat }
     end
   end
 end
