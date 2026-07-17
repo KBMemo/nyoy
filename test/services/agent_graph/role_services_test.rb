@@ -13,6 +13,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::FinalAnswer, service
   end
 
+  test "fetches default draft service" do
+    service = AgentGraph::RoleServices.fetch(:draft)
+
+    assert_instance_of AgentGraph::RoleServices::EvidencePackDraft, service
+  end
+
   test "temporarily overrides a role service" do
     custom = Object.new
 

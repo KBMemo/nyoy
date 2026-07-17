@@ -15,6 +15,10 @@ class AgentGraphNodesSynthesizeDraftTest < ActiveSupport::TestCase
     )
   end
 
+  teardown do
+    AgentGraph::RoleServices.reset!
+  end
+
   test "records evidence counts in draft synthesis metadata" do
     result = AgentGraph::Nodes::SynthesizeDraft.new.call(
       state: {
@@ -42,5 +46,59 @@ class AgentGraphNodesSynthesizeDraftTest < ActiveSupport::TestCase
       "fetched_pages" => 1,
       "errors" => 1
     }, result.updates.dig("draft_synthesis", "evidence"))
+  end
+
+  test "uses draft role service" do
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |state:, run:, chat:|
+      calls << { state: state, run: run, chat: chat }
+      [
+        "draft from role",
+        true,
+        {
+          "source" => "test",
+          "model_id" => "tiny",
+          "thinking" => "short thought"
+        }
+      ]
+    end
+
+    AgentGraph::RoleServices.with(:draft, service) do
+      result = AgentGraph::Nodes::SynthesizeDraft.new.call(
+        state: { "question" => "根拠は？" },
+        run: @run,
+        chat: @chat
+      )
+
+      assert_equal false, result.failed?
+      assert_equal "draft from role", result.updates.fetch("draft")
+      assert_equal true, result.updates.fetch("draft_truncated")
+      assert_equal "short thought", result.updates.fetch("draft_thinking")
+      assert_equal "test", result.updates.dig("draft_synthesis", "source")
+      assert_equal "not_required", result.updates.fetch("approval")
+    end
+
+    assert_equal 1, calls.size
+    assert_equal "根拠は？", calls.first.fetch(:state).fetch("question")
+    assert_equal @run, calls.first.fetch(:run)
+    assert_equal @chat, calls.first.fetch(:chat)
+  end
+
+  test "fails when draft role returns blank content" do
+    service = Object.new
+    service.define_singleton_method(:call) { |**| [ "", false, { "source" => "empty" } ] }
+
+    AgentGraph::RoleServices.with(:draft, service) do
+      result = AgentGraph::Nodes::SynthesizeDraft.new.call(
+        state: { "question" => "根拠は？", "errors" => [] },
+        run: @run,
+        chat: @chat
+      )
+
+      assert result.failed?
+      assert_equal "empty draft", result.error
+      assert_equal "EMPTY_DRAFT", result.updates.dig("errors", 0, "code")
+    end
   end
 end
