@@ -140,6 +140,8 @@
 - [x] 一覧・export API、`updated_since` 差分 — **実装済み**
 - [x] 削除されたメモの検知 — `export/deletions` + 如意削除同期 **実装済み**
 - [x] レート制限・ページサイズ — export は `MEMO_INGEST_PAGE_LIMIT` でページング
+- [x] 下書きの扱い — 既定では committed のみ。`include_drafts=true` の明示時だけ下書きを含める。如意 RAG 取込は既定の false。
+- [x] group visibility の扱い — API token の account に対する `MemoPolicy::Scope` が正。`group_read` / `group_read_write` は対象グループのメンバーだけ list / export / RAG 対象。
 
 ### UC-5: RAG 取込（リアルタイム、将来）
 
@@ -299,6 +301,11 @@ Authorization: Bearer <api_token>
 | `file_committed_at` | | Git コミット時刻。`null` なら下書き |
 | `draft` | | `file_committed_at` が `null` かどうかの派生 |
 | `url` | | Web UI へのリンク |
+
+API の一覧・検索・export は Bearer token の account に対する `MemoPolicy::Scope` を通す。
+`group_read` / `group_read_write` は token account が対象 `memo_group` の member の場合のみ返る。
+下書き（`file_committed_at` が null）は既定では返さず、`include_drafts=true` の明示時だけ含める。
+如意 RAG 取込は未コミット本文を混ぜないため既定の `include_drafts=false` を使う。
 
 **格納ディレクトリ:**
 
@@ -584,9 +591,9 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 
 - [x] ~~如意用トークンを `clip_api_token` と分離するか~~ — **当面 clip 流用**
 - [x] ~~API 作成メモの格納先ディレクトリ~~ — API 非公開。徒然側 Home 既定
-- [ ] 下書きメモを export / 検索対象に含めるか（`include_drafts`）
+- [x] 下書きメモを export / 検索対象に含めるか — 既定は除外、`include_drafts=true` の明示時だけ含める
 - [x] 削除メモの RAG 同期方式（`export/deletions` + chunk 削除）
-- [ ] `visibility` が group のメモを API でどう扱うか
+- [x] `visibility` が group のメモを API でどう扱うか — token account の `MemoPolicy::Scope` に従う
 - [x] Groonga 全文検索 — **PGroonga**（site コード済み。[手順](./tsuredure-pgroonga-search.md)。本番 `db:migrate` 待ち）
 
 ---

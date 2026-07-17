@@ -56,6 +56,9 @@ paths:
       tags: [memos]
       summary: メモ一覧・キーワード検索
       description: |
+        Bearer token に紐づくアカウントの `MemoPolicy::Scope` で閲覧可能なメモのみ返す。
+        `group_read` / `group_read_write` はトークンのアカウントが対象グループのメンバーである場合だけ含まれる。
+        既定では `file_committed_at` が入った committed メモのみ返し、下書きは `include_drafts=true` のときだけ含める。
         `q` 指定時はタイトル・本文を検索（徒然 `Memo.search_text`）。
         PGroonga 導入後は日本語全文検索 + 関連度順。パラメータ形状は不変。
         未指定時は更新日時降順の一覧。
@@ -220,7 +223,10 @@ paths:
       tags: [export]
       summary: RAG 取込用メモ export
       description: |
-        認可範囲内のメモをバッチ取得する。
+        Bearer token に紐づくアカウントの `MemoPolicy::Scope` で閲覧可能なメモをバッチ取得する。
+        `group_read` / `group_read_write` はトークンのアカウントが対象グループのメンバーである場合だけ含まれる。
+        既定では committed メモのみ返し、下書きは `include_drafts=true` のときだけ含める。
+        如意 RAG 取込は既定の `include_drafts=false` を使う。
         `updated_since` 以降に更新されたメモのみ返す（初回は省略可）。
         ページングは cursor 方式を推奨（大量メモ向け）。
       parameters:
@@ -366,7 +372,9 @@ components:
     QueryIncludeDrafts:
       name: include_drafts
       in: query
-      description: 下書き（`file_committed_at` が null）を含める
+      description: |
+        下書き（`file_committed_at` が null）を含める。
+        既定は false。RAG 取込用途では未コミット本文を混ぜないため、通常は省略する。
       schema:
         type: boolean
         default: false

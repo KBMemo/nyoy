@@ -257,7 +257,7 @@ gantt
 
 ### 推奨
 
-- 徒然 API の残仕様整理（`include_drafts` / `visibility: group_*` の API・RAG での扱い）
+- webhook によるメモ RAG リアルタイム re-embed の設計（現状は checkpoint 定期同期で運用可能）
 
 ### 完了（Phase 6）
 
