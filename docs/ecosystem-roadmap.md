@@ -82,7 +82,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | 徒然連携 | `TsurezureClient` + `ChatTools::*` | **運用中**（本番確認済み） |
 | Web 検索 / URL 取得 | `web_search` / `fetch_url` | **実装済み** |
 | メモ RAG | export 取込 + pgvector + `recall_memos`（既定）/ 自動注入 | **実装済み** |
-| MCP サーバー | `/mcp` + `bin/mcp-stdio` | **Phase 6 着手**（Chat ツール再公開） |
+| MCP サーバー | `/mcp` + `bin/mcp-stdio` | **運用中**（Chat / Graph / SD ツール公開） |
 | 葛籠連携 | `TsuzuraClient` + Chat アーカイブ + メディアツール | **Phase 5a 完了** |
 
 ### 2.3 接続管理（ServiceConnection）
@@ -168,7 +168,7 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | メモ RAG | export 取込 + `recall_memos` / 注入切替 | **完了**（Groonga は徒然側） |
 | Chat 高速化（cache / 計測） | prompt cache・ツール化 RAG・TTFT | **完了**（検討案件は [chat-performance.md](./chat-performance.md)） |
 | 画像理解 | Chat 添付 + `analyze_image` ツール | **完了** |
-| MCP 公開 | `ChatTools::*` の再公開 | **着手**（HTTP `/mcp` + `bin/mcp-stdio`） |
+| MCP 公開 | `ChatTools::*` / Graph / SD ツールの再公開 | **完了**（HTTP `/mcp` + `bin/mcp-stdio`） |
 
 ### 3.3 徒然側（site Workspace）との連携
 
@@ -197,7 +197,11 @@ MCP Server ┘
 | `recall_memos` | メモ RAG | **公開済** |
 | `list_albums` / `get_media` | 葛籠 API | **公開済** |
 | `analyze_image` | `VisionChatService` | **公開済** |
-| `generate_image` 等 | SD パイプライン | **公開済**（draft → refine まで MCP 化） |
+| `list_image_generation_options` / `generate_image` / `get_image_generation` / `refine_image` | SD パイプライン | **公開済**（draft → refine / direct txt2img） |
+| `run_research_graph` / `get_research_graph` / `retry_research_graph` | Research Graph | **公開済** |
+| `run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph` | ImageUnderstanding Graph | **公開済** |
+| `run_memo_write_graph` / `get_memo_write_graph` / `resume_memo_write_graph` | MemoWrite Graph | **公開済** |
+| `run_memo_update_graph` / `get_memo_update_graph` / `resume_memo_update_graph` | MemoUpdate Graph | **公開済** |
 
 ---
 
@@ -251,14 +255,16 @@ gantt
 
 ### 推奨
 
-- AgentRun 対象範囲の拡張（画像理解。設計: [Agent Graph Image Understanding](./architecture/agent-graph-image-understanding.md)）
+- ImageUnderstanding Graph の実運用確認（vision 障害時 retry、`tsuzura_media_id` 経路、独立 UI 経路）
+- 徒然 Agent Chat の画像 refine 実装（如意 MCP `refine_image` / `get_image_generation` の利用）
 
 ### 完了（Phase 6）
 
 - HTTP `/mcp`（Streamable HTTP、Bearer 認証）
 - `bin/mcp-stdio`（stdio トランスポート）
 - `Mcp::ToolBridge` による `ChatTools::*` 再公開
-- `Mcp::ExtensionTools`（`list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`）
+- `Mcp::ExtensionTools`（`list_image_generation_options` / `list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`）
+- Graph MCP tools（Research / ImageUnderstanding / MemoWrite / MemoUpdate）
 - 本番 `MCP_API_TOKEN`（`config/deploy.yml` `env.secret`）
 - Cursor / MCP 接続確認（`bin/mcp-list-tools`、stdio JSON-RPC、HTTP `/mcp`）
 
@@ -275,7 +281,7 @@ gantt
 
 ### 次期 Agent Graph
 
-- ImageUnderstanding Graph 実装 — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。実運用での vision 障害時 retry 確認は残。
+- ImageUnderstanding Graph — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。実運用での vision 障害時 retry 確認は残。
 
 ### 運用・メンテ
 
