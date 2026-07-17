@@ -19,6 +19,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::EvidencePackDraft, service
   end
 
+  test "fetches default evidence evaluator service" do
+    service = AgentGraph::RoleServices.fetch(:evidence_evaluator)
+
+    assert_instance_of AgentGraph::RoleServices::HeuristicEvidenceEvaluator, service
+  end
+
   test "temporarily overrides a role service" do
     custom = Object.new
 

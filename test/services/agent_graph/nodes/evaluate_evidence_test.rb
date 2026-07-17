@@ -3,6 +3,10 @@
 require "test_helper"
 
 class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
+  teardown do
+    AgentGraph::RoleServices.reset!
+  end
+
   test "requests web search when web evidence is needed but missing" do
     result = node.call(state: state(
       plan: { "need_web" => true },
@@ -84,12 +88,40 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
   test "marks evidence limited after retry limit" do
     result = node.call(state: state(
       plan: { "need_web" => true },
-      evidence_review: { "attempts" => AgentGraph::Nodes::EvaluateEvidence::MAX_ATTEMPTS },
+      evidence_review: { "attempts" => AgentGraph::RoleServices::HeuristicEvidenceEvaluator::MAX_ATTEMPTS },
       budget: { "searches_used" => 0, "max_searches" => 2, "fetches_used" => 0, "max_fetches" => 2 }
     ), run: nil, chat: nil)
 
     assert_equal "limited", result.updates.dig("evidence_review", "status")
     assert_includes result.updates.dig("evidence_review", "reason"), "retry limit"
+  end
+
+  test "uses evidence evaluator role service" do
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |state:, run:, chat:|
+      calls << { state: state, run: run, chat: chat }
+      {
+        status: "needs_fetch",
+        reason: "custom evaluator",
+        plan: { "fetch_urls" => [ "https://example.com/custom" ] },
+        target_urls: [ "https://example.com/custom" ]
+      }
+    end
+
+    AgentGraph::RoleServices.with(:evidence_evaluator, service) do
+      result = node.call(state: state(plan: { "need_web" => true }), run: :run, chat: :chat)
+
+      assert_equal "needs_fetch", result.updates.dig("evidence_review", "status")
+      assert_equal "custom evaluator", result.updates.dig("evidence_review", "reason")
+      assert_equal "fetch_urls", result.updates.dig("evidence_review", "next_node")
+      assert_equal [ "https://example.com/custom" ], result.updates.dig("plan", "fetch_urls")
+    end
+
+    assert_equal 1, calls.size
+    assert_equal true, calls.first.fetch(:state).dig("plan", "need_web")
+    assert_equal :run, calls.first.fetch(:run)
+    assert_equal :chat, calls.first.fetch(:chat)
   end
 
   private
