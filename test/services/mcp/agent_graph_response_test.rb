@@ -48,6 +48,7 @@ class McpAgentGraphResponseTest < ActiveSupport::TestCase
     assert_equal run.id, payload["agent_run_id"]
     assert_equal "awaiting_approval", payload["status"]
     assert_equal "草案", payload["draft"]
+    assert_equal "/chats/#{@chat.id}/agent_runs/#{run.id}", payload["agent_run_path"]
     assert_includes payload["note"], "resume_memo_write_graph(agent_run_id, decision)"
   end
 

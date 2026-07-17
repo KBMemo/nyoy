@@ -31,6 +31,7 @@ module AgentGraph
         auto_approve: state["auto_approve"] == true,
         nodes: run.agent_node_runs.order(:id).pluck(:node_name),
         chat_path: Rails.application.routes.url_helpers.chat_path(run.chat),
+        agent_run_path: Rails.application.routes.url_helpers.chat_agent_run_path(run.chat, run),
         awaiting_approval: run.awaiting_approval?,
         completed: run.completed?,
         failed: run.failed?

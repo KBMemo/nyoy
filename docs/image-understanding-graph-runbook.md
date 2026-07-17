@@ -115,7 +115,7 @@ curl -sS -X POST "$NYOY_MCP_URL" \
   --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"run_image_understanding_graph","arguments":{"question":"この画像を説明して","tsuzura_media_id":"01J..."}}}'
 ```
 
-返却された `agent_run_id` を控える。
+返却された `agent_run_id` を控える。UI で確認する場合は、同じ payload の `agent_run_path` を開く。
 
 ```bash
 curl -sS -X POST "$NYOY_MCP_URL" \
@@ -132,6 +132,7 @@ curl -sS -X POST "$NYOY_MCP_URL" \
 - `image_source.tsuzura_media_id` は指定値
 - `analysis` / `final_answer` が空ではない
 - node 履歴に `analyze_image` が含まれる
+- `agent_run_path` から AgentRun 詳細を開ける
 
 ## 4. MCP 入力不足
 

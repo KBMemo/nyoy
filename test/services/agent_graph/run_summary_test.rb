@@ -41,6 +41,7 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
     assert_equal({ "searches_used" => 2, "max_searches" => 2 }, summary[:budget])
     assert_equal %w[plan_research finalize_answer], summary[:nodes]
     assert_equal "/chats/#{@chat.id}", summary[:chat_path]
+    assert_equal "/chats/#{@chat.id}/agent_runs/#{run.id}", summary[:agent_run_path]
     assert summary[:completed]
     assert_not summary[:failed]
     assert summary[:auto_approve]
