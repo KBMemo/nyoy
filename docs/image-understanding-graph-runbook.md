@@ -168,19 +168,16 @@ bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説
 接続先を一時変更して失敗を作る例:
 
 ```bash
-bin/rails runner '
-connection = ServiceConnection.find_by!(key: "vision_llama")
-original_url = connection.base_url
-begin
-  connection.update!(base_url: "http://127.0.0.1:9")
-  puts "vision_llama temporarily points to #{connection.reload.base_url}"
-  puts "Run image understanding now, then press Enter to restore."
-  STDIN.gets
-ensure
-  connection.update!(base_url: original_url)
-  puts "vision_llama restored to #{connection.reload.base_url}"
-end
-'
+bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- \
+  bin/mcp-call-tool run_image_understanding_graph \
+    "{\"question\":\"この画像を説明して\",\"tsuzura_media_id\":\"$TSUZURA_MEDIA_ID\"}"
+```
+
+`bin/with-service-connection-url` は指定コマンドの終了後に元の `base_url` へ戻す。手動で UI 操作する場合は、次のように一時変更を維持し、別 shell で `/image_understandings/new` または Chat 添付経路を実行してから Enter で復旧する。
+
+```bash
+bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- \
+  bash -lc 'read -r -p "Run image understanding now, then press Enter to restore vision_llama..."'
 ```
 
 HTTP MCP retry 例:
