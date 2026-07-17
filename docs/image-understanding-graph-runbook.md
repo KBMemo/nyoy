@@ -255,6 +255,32 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 
 ## 確認ログ
 
+### 2026-07-17 development: 独立 UI / Chat 添付経路
+
+- 確認日時: 2026-07-17 15:52 JST
+- 環境: development
+- Nyoy URL: `http://127.0.0.1:3109`
+- vision model / endpoint: `qwen2.5-vl-3b` / `http://balvenie:10021`
+- `vision_llama` ServiceConnection: enabled / `http://balvenie:10021`
+- `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
+- 使用画像: `public/icon.png`（PNG、512x512、黒背景に赤い円）
+- `tsuzura_media_id`: `01KXQDH66PSK6AF23A74S9WCZF`（Chat 添付経路で葛籠へアーカイブされた media）
+
+| 経路 | AgentRun | 結果 | 確認内容 |
+|------|----------|------|----------|
+| 独立 UI | `67` | 成功 | `/image_understandings` へ multipart POST。`agent_run_path=/chats/150/agent_runs/67`、`image_source.kind=chat_attachment`、node 履歴は `plan_image_understanding` → `resolve_image_source` → `analyze_image` → `finalize_image_answer` で全て completed。 |
+| Chat 添付 | `68` | 成功 | `/chats` へ画像添付付き multipart POST。Router が `image_understanding` を選択し、assistant message が Chat に投稿された。`image_source.kind=chat_attachment`、`state.final_answer` と assistant message が一致。 |
+| HTTP MCP `tsuzura_media_id` | `69` | 成功 | `env.development` の `MCP_API_TOKEN` を読み込み、`bin/mcp-call-tool run_image_understanding_graph` / `get_image_understanding_graph` を実行。`agent_run_path=/chats/152/agent_runs/69`、`image_source.kind=tsuzura_media`、`final_answer` あり。 |
+
+補足:
+
+- Chat: `#151`
+- Chat user message: `#2208`
+- Chat assistant message: `#2209`
+- Chat 添付: Active Storage attachment `#538`
+- HTTP MCP Chat: `#152`
+- HTTP MCP assistant message: `#2211`
+
 ### 2026-07-17 development: vision 障害 retry
 
 - 環境: development
