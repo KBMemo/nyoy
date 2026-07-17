@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class AgentGraphCoreTest < ActiveSupport::TestCase
+  test "core graph definition uses string keys without ActiveSupport helpers" do
+    graph = AgentGraph::Core::GraphDefinition.new(
+      name: :sample,
+      start_node: :start,
+      nodes: { start: -> {} },
+      edges: { start: AgentGraph::Core::Edge.new(to: ->(state) { state.fetch("next") }) }
+    )
+
+    assert_equal "sample", graph.name
+    assert graph.node_for("start")
+    assert_equal "done", graph.next_node_for(:start, { "next" => "done" })
+  end
+
+  test "core node result deep stringifies updates" do
+    result = AgentGraph::Core::NodeResult.next(updates: {
+      foo: { bar: [ { baz: "qux" } ] }
+    })
+
+    assert_equal({ "foo" => { "bar" => [ { "baz" => "qux" } ] } }, result.updates)
+  end
+
+  test "legacy constants point to core classes" do
+    assert_same AgentGraph::Core::GraphDefinition, AgentGraph::GraphDefinition
+    assert_same AgentGraph::Core::Edge, AgentGraph::Edge
+    assert_same AgentGraph::Core::NodeResult, AgentGraph::NodeResult
+    assert_same AgentGraph::Core::StateSchema, AgentGraph::StateSchema
+  end
+end

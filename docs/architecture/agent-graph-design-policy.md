@@ -474,7 +474,7 @@ AgentGraph::Registry.register(
 
 ### 実装順
 
-1. `AgentGraph::Core` 名前空間を作り、`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を移す
+1. `AgentGraph::Core` 名前空間を作り、`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を移す（着手済み。旧 `AgentGraph::*` 定数は互換 alias として残す）
 2. `Runner` から Nyoy 固有の永続化・broadcast・trace 呼び出しを洗い出し、`RuntimeContext` の候補 interface を作る
 3. intent / draft / final / evidence の呼び出し箇所を role service 経由にする
 4. `AgentGraph::Registry.register` の登録形式を public API として固定する
