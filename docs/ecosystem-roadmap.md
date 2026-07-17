@@ -255,7 +255,7 @@ gantt
 
 ### 推奨
 
-- ImageUnderstanding Graph の実運用確認（vision 障害時 retry、`tsuzura_media_id` 経路、独立 UI 経路）
+- ImageUnderstanding Graph の残実運用確認（独立 UI 経路、Chat 添付経路の手動確認）
 
 ### 完了（Phase 6）
 
@@ -280,7 +280,7 @@ gantt
 
 ### 次期 Agent Graph
 
-- ImageUnderstanding Graph — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。実運用での vision 障害時 retry 確認は残。
+- ImageUnderstanding Graph — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。vision 障害時 retry は development 実機で確認済み（`docs/image-understanding-graph-runbook.md` 確認ログ）。
 
 ### 運用・メンテ
 

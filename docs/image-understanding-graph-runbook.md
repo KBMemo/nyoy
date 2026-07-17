@@ -253,6 +253,34 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 - 次回確認事項:
 ```
 
+## 確認ログ
+
+### 2026-07-17 development: vision 障害 retry
+
+- 環境: development
+- Nyoy URL: `http://127.0.0.1:3109`
+- vision model / endpoint: `qwen2.5-vl-3b` / `http://balvenie:10021`
+- `vision_llama` ServiceConnection: 確認中のみ `enabled=true`、障害注入時のみ `base_url=http://127.0.0.1:9`。確認後は `enabled=false` / `base_url=http://balvenie:10021` に復旧
+- `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
+- 使用画像: 葛籠 media
+- `tsuzura_media_id`: `01KXGK8VENEJ7CXJYNZCHYGKVZ`
+- 実行経路: Rails runner から `AgentGraph::ImageUnderstandingGraphRunner.call_for_mcp` / `AgentGraph::RunRetryLauncher.call` を直接実行。HTTP MCP はローカル server の `MCP_API_TOKEN` が不明で 401 のため未使用
+
+| 経路 | AgentRun | 結果 | 確認内容 |
+|------|----------|------|----------|
+| vision 障害 retry | 元: `65` / retry: `66` | 成功 | 元 run は `analyze_image` failed / `retry_from_node=resolve_image_source` / retry run completed |
+
+補足:
+
+- 失敗 node: `analyze_image`
+- `error_message`: `llama.cpp に接続できませんでした（Failed to open TCP connection to 127.0.0.1:9 ...）`
+- 元 run: `status=failed`、`state.errors[0].code=VISION_ANALYSIS_FAILED`、`image_source.kind=tsuzura_media`
+- 元 run node 履歴: `plan_image_understanding=completed`、`resolve_image_source=completed`、`analyze_image=failed`
+- checkpoint: `resolve_image_source` checkpoint `#434`
+- retry run: `status=completed`、`retry_of_agent_run_id=65`、`retry_from_checkpoint_id=434`、`analysis` / `final_answer` あり
+- 復旧内容: `vision_llama.base_url` を `http://balvenie:10021` に戻して retry 実行。確認後、`vision_llama.enabled` も元の `false` に復旧
+- 次回確認事項: HTTP MCP 経路で同じ retry を確認するには、起動中 server の `MCP_API_TOKEN` を shell に設定して実行する
+
 ## トラブルシュート
 
 `run_image_understanding_graph` が tools/list に出ない:
