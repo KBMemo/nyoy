@@ -263,7 +263,7 @@ gantt
 - HTTP `/mcp`（Streamable HTTP、Bearer 認証）
 - `bin/mcp-stdio`（stdio トランスポート）
 - `Mcp::ToolBridge` による `ChatTools::*` 再公開
-- `Mcp::ExtensionTools`（`list_image_generation_options` / `list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`）
+- `Mcp::ExtensionTools`（`list_image_generation_options` / `generate_image` / `get_image_generation` / `refine_image`。`list_prompt_styles` は既存クライアント互換のため公開継続する非推奨ツール）
 - Graph MCP tools（Research / ImageUnderstanding / MemoWrite / MemoUpdate）
 - 本番 `MCP_API_TOKEN`（`config/deploy.yml` `env.secret`）
 - Cursor / MCP 接続確認（`bin/mcp-list-tools`、stdio JSON-RPC、HTTP `/mcp`）

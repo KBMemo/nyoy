@@ -14,7 +14,7 @@
 
 * **Chat UI** — `ChatTools::Registry` によるツール付きチャット（`ruby_llm`）
 * **MCP サーバー** — 同一 `ChatTools::*` を HTTP（`/mcp`）と stdio（`bin/mcp-stdio`）で再公開
-* **SD パイプライン** — MCP 拡張ツール（`generate_image` / `refine_image` / `list_prompt_styles`）
+* **SD パイプライン** — MCP 拡張ツール（`list_image_generation_options` / `generate_image` / `refine_image`。`list_prompt_styles` は既存クライアント互換の非推奨ツール）
 * **接続管理** — `ServiceConnection` + `NyoyConnectionStore`（llama / SearXNG / 徒然 API / 葛籠 / sd.cpp 等）
 
 徒然は **in-app Chat::Agent**（intent ルーティング・pgroonga/pgvector RAG）を Phase 0–2 / 5a–5b まで実装済み。
@@ -134,7 +134,7 @@ flowchart TB
 |vision llama + 葛籠 or チャット添付 / 如意 AgentGraph（ImageUnderstanding Graph）
 |Cursor、如意 Chat
 
-|`list_image_generation_options` / `list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`
+|`list_image_generation_options` / `generate_image` / `get_image_generation` / `refine_image`（`list_prompt_styles` は互換用・非推奨）
 |如意 SD パイプライン（sd.cpp）。`generate_image` は draft / direct 両対応
 |Cursor
 
