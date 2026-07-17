@@ -70,6 +70,20 @@ class McpImageUnderstandingGraphToolsTest < ActiveSupport::TestCase
     end
   end
 
+  test "run_image_understanding_graph returns failed run when image source is missing" do
+    response = Mcp::ImageUnderstandingGraphTools.run_image_understanding_graph_tool.call(
+      question: "この画像を説明して"
+    )
+    payload = JSON.parse(response.content.first[:text])
+
+    assert_not response.error?
+    assert_equal "failed", payload["status"]
+    assert_match(/画像/, payload["error_message"])
+    assert_equal "IMAGE_SOURCE_MISSING", payload.dig("errors", 0, "code")
+    assert_includes payload["nodes"], "resolve_image_source"
+    refute_includes payload["nodes"], "analyze_image"
+  end
+
   test "get_image_understanding_graph returns summary" do
     chat = chat_with_attachment(content: "この画像には何が写っていますか？")
 
@@ -150,6 +164,29 @@ class McpImageUnderstandingGraphToolsTest < ActiveSupport::TestCase
       assert_equal checkpoint.id, retry_run.state["retry_from_checkpoint_id"]
       assert_equal "resolve_image_source", retry_run.state["retry_from_node"]
     end
+  end
+
+  test "retry_image_understanding_graph reports non retryable run without checkpoint" do
+    chat = Chat.create!(model: @model)
+    run = AgentRun.create!(
+      chat: chat,
+      graph_name: AgentGraph::ImageUnderstandingGraph::NAME,
+      status: "failed",
+      current_node: "resolve_image_source",
+      state: {
+        "question" => "この画像を説明して",
+        "chat_id" => chat.id,
+        "intent" => "image_understanding",
+        "errors" => []
+      },
+      error_message: "画像がありません"
+    )
+
+    response = Mcp::ImageUnderstandingGraphTools.retry_image_understanding_graph_tool.call(agent_run_id: run.id)
+    payload = JSON.parse(response.content.first[:text])
+
+    assert response.error?
+    assert_match(/checkpoint/, payload["error"])
   end
 
   private

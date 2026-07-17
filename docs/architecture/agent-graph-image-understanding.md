@@ -118,12 +118,29 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 ## 失敗と retry
 
 - 画像が見つからない: `resolve_image_source` failed
-- 未対応 content type: `resolve_image_source` failed
+- 未対応 content type: `analyze_image` failed
 - vision サーバー接続失敗: `analyze_image` failed
 - 応答空: `analyze_image` failed
 - assistant message 投稿失敗: `finalize_image_answer` failed
 
 `resolve_image_source` 完了後に checkpoint が残るため、vision LLM 障害からの retry は画像解決済み state から再実行できる。
+
+## 実運用確認
+
+自動テストで固定する範囲:
+
+- Chat 添付画像から `plan_image_understanding` → `finalize_image_answer` まで完了し、assistant message と AgentRun 履歴が残る
+- 添付なしの MCP 実行は failed run として返り、`IMAGE_SOURCE_MISSING` を state に残す
+- `tsuzura_media_id` 指定の MCP 実行は葛籠から画像を取得し、vision に渡す
+- vision 障害後の failed run は、成功 checkpoint があれば複製 run として retry できる
+- checkpoint がない failed run は retry 不可としてエラーを返す
+
+手動で確認する範囲:
+
+1. 独立 UI `/image_understandings/new` で画像をアップロードし、回答下の AgentRun リンクから node 履歴を開けること
+2. Chat に画像のみ、または「この画像を説明して」と添付して送信し、ImageUnderstanding Graph が選択されること
+3. MCP クライアントから `run_image_understanding_graph(question, tsuzura_media_id)` を実行し、`get_image_understanding_graph` で `completed` と `image_source.kind=tsuzura_media` を確認すること
+4. vision サーバー停止中に実行して `analyze_image` failed を作り、復旧後に `retry_image_understanding_graph` で完了すること
 
 ## 実装状況
 
@@ -137,7 +154,8 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 6. 独立 UI `ImageUnderstandingsController` の GraphRunner 化
 7. `tsuzura_media_id` 入力の MCP 経路 test
 8. failed ImageUnderstanding run の retry dry-run / retry button 表示 test
+9. MCP 入力不足と checkpoint なし retry の境界 test
 
 残:
 
-- 実運用での vision サーバー障害時 retry 確認
+- 実機での vision サーバー障害時 retry 確認
