@@ -130,12 +130,12 @@ flowchart TB
 |SearXNG / readability / 如意プロセス内キャッシュ
 |Cursor、如意 Chat
 
-|`analyze_image`
-|vision llama + 葛籠 or チャット添付
+|`analyze_image` / `run_image_understanding_graph` / `get_image_understanding_graph` / `retry_image_understanding_graph`
+|vision llama + 葛籠 or チャット添付 / 如意 AgentGraph（ImageUnderstanding Graph）
 |Cursor、如意 Chat
 
-|`list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`
-|如意 SD パイプライン（sd.cpp）
+|`list_image_generation_options` / `list_prompt_styles` / `generate_image` / `get_image_generation` / `refine_image`
+|如意 SD パイプライン（sd.cpp）。`generate_image` は draft / direct 両対応
 |Cursor
 
 |`list_albums` / `get_media`
@@ -144,6 +144,14 @@ flowchart TB
 
 |`run_research_graph` / `get_research_graph` / `retry_research_graph`
 |如意 AgentGraph（Research Graph）
+|Cursor、外部 MCP クライアント
+
+|`run_memo_write_graph` / `get_memo_write_graph` / `resume_memo_write_graph`
+|如意 AgentGraph（MemoWrite Graph） + 徒然 `/api/v1`
+|Cursor、外部 MCP クライアント
+
+|`run_memo_update_graph` / `get_memo_update_graph` / `resume_memo_update_graph`
+|如意 AgentGraph（MemoUpdate Graph） + 徒然 `/api/v1`
 |Cursor、外部 MCP クライアント
 |===
 
@@ -229,11 +237,11 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 
 |6 Vision
 |**委譲**
-|Nyoy MCP `analyze_image`（`tsuzura_media_id` または如意 Chat 添付経路）。
+|Nyoy MCP `analyze_image` または `run_image_understanding_graph`（`tsuzura_media_id` または如意 Chat 添付経路）。
 
 |7 画像生成
 |**委譲**
-|Nyoy MCP `generate_image` → `refine_image` → `get_image_generation`。
+|Nyoy MCP `list_image_generation_options` → `generate_image`。ラフ案は `refine_image` で仕上げ、direct は `generation_flow=direct` で直接 txt2img。
 
 |8 会話永続化
 |**徒然で継続**
@@ -298,7 +306,7 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 * **MCP 認可の細分化** — 当面は API キー 1 本。マルチユーザー時はトークン per account。
 * **徒然 `export/deletions`** — Nyoy `recall_memos` の鮮度向上。徒然側実装待ち。
 * **ラフ案プレビュー** — MCP `get_image_generation` の `draft_urls` で徒然 Agent Chat に表示（2026-07 対応）。
-* **仕上げ（refine）** — **課題（未接続）**。Nyoy MCP の `refine_image` は公開済みだが、徒然 `/agent_chat` は `awaiting_selection` で止まる。ラフ案選択〜`completed` までの in-app フローは徒然 `chat-agent-roadmap.adoc` §12 を参照。当面は Nyoy UI（`show_path`）で手動選択。
+* **仕上げ（refine）** — **課題（徒然側）**。Nyoy MCP の `refine_image` は公開済みだが、徒然 `/agent_chat` は `awaiting_selection` で止まる。ラフ案選択〜`completed` までの in-app フローは徒然 `chat-agent-roadmap.adoc` §12 を参照。当面は Nyoy UI（`show_path`）で手動選択。
 
 == 10. 関連ドキュメント
 
