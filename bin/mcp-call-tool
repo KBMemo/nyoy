@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "net/http"
+require "uri"
+
+def usage
+  warn "Usage: bin/mcp-call-tool TOOL_NAME [JSON_ARGUMENTS]"
+  warn %q(Example: bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}')
+end
+
+begin
+tool_name = ARGV[0].to_s.strip
+if tool_name.empty?
+  usage
+  exit 1
+end
+
+token = ENV["MCP_API_TOKEN"].to_s
+if token.empty?
+  warn "MCP_API_TOKEN is required."
+  exit 1
+end
+
+arguments_json = ARGV[1].to_s.strip
+arguments_json = "{}" if arguments_json.empty?
+
+arguments = JSON.parse(arguments_json)
+unless arguments.is_a?(Hash)
+  warn "JSON_ARGUMENTS must be a JSON object."
+  exit 1
+end
+
+url = ENV.fetch("NYOY_MCP_URL", "http://127.0.0.1:3109/mcp")
+uri = URI.parse(url)
+request = Net::HTTP::Post.new(uri)
+request["Authorization"] = "Bearer #{token}"
+request["Content-Type"] = "application/json"
+request["Accept"] = "application/json"
+request.body = JSON.generate(
+  jsonrpc: "2.0",
+  id: 1,
+  method: "tools/call",
+  params: {
+    name: tool_name,
+    arguments: arguments
+  }
+)
+
+http = Net::HTTP.new(uri.host, uri.port)
+http.use_ssl = uri.scheme == "https"
+response = http.request(request)
+
+begin
+  payload = JSON.parse(response.body)
+  puts JSON.pretty_generate(payload)
+rescue JSON::ParserError
+  puts response.body
+end
+
+exit(response.is_a?(Net::HTTPSuccess) ? 0 : 1)
+rescue JSON::ParserError => e
+  warn "Invalid JSON_ARGUMENTS: #{e.message}"
+  exit 1
+rescue URI::InvalidURIError => e
+  warn "Invalid NYOY_MCP_URL: #{e.message}"
+  exit 1
+end

@@ -108,21 +108,14 @@ ActiveStorage::Attachment
 HTTP MCP 例:
 
 ```bash
-curl -sS -X POST "$NYOY_MCP_URL" \
-  -H "Authorization: Bearer $MCP_API_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"run_image_understanding_graph","arguments":{"question":"この画像を説明して","tsuzura_media_id":"01J..."}}}'
+bin/mcp-call-tool run_image_understanding_graph \
+  '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}'
 ```
 
 返却された `agent_run_id` を控える。UI で確認する場合は、同じ payload の `agent_run_path` を開く。
 
 ```bash
-curl -sS -X POST "$NYOY_MCP_URL" \
-  -H "Authorization: Bearer $MCP_API_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  --data '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_image_understanding_graph","arguments":{"agent_run_id":123}}}'
+bin/mcp-call-tool get_image_understanding_graph '{"agent_run_id":123}'
 ```
 
 期待:
@@ -139,11 +132,7 @@ curl -sS -X POST "$NYOY_MCP_URL" \
 目的: MCP で画像ソースを渡さない場合に、実行失敗が AgentRun として観測できることを確認する。
 
 ```bash
-curl -sS -X POST "$NYOY_MCP_URL" \
-  -H "Authorization: Bearer $MCP_API_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  --data '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_image_understanding_graph","arguments":{"question":"この画像を説明して"}}}'
+bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説明して"}'
 ```
 
 期待:
@@ -170,11 +159,7 @@ curl -sS -X POST "$NYOY_MCP_URL" \
 HTTP MCP retry 例:
 
 ```bash
-curl -sS -X POST "$NYOY_MCP_URL" \
-  -H "Authorization: Bearer $MCP_API_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json' \
-  --data '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"retry_image_understanding_graph","arguments":{"agent_run_id":123}}}'
+bin/mcp-call-tool retry_image_understanding_graph '{"agent_run_id":123}'
 ```
 
 期待:

@@ -112,12 +112,23 @@ MCP ──────┘   ↑
 | `app/services/mcp/memo_write_graph_tools.rb` | MemoWrite Graph MCP ツール |
 | `app/services/mcp/tool_catalog.rb` | Chat + Extension + Graph ツール統合 |
 | `bin/mcp-stdio` | stdio トランスポート |
+| `bin/mcp-call-tool` | HTTP `/mcp` の `tools/call` 確認ヘルパー |
 
 本番では `MCP_API_TOKEN` を Kamal secrets（`.kamal/secrets`）に追加する（`config/deploy.yml` の `env.secret` に登録済み）。
 
 ```bash
 # ローカルで公開ツール名を確認
 MCP_API_TOKEN=your-token bin/mcp-list-tools
+```
+
+HTTP `/mcp` の tool call は `NYOY_MCP_URL` と `MCP_API_TOKEN` を設定して確認できる。
+
+```bash
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export MCP_API_TOKEN="your-token"
+
+bin/mcp-call-tool run_image_understanding_graph \
+  '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}'
 ```
 
 ### 接続確認
