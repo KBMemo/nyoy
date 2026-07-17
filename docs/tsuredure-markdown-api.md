@@ -68,7 +68,7 @@ Chat ツール説明は Markdown 書込 / AsciiDoc 読取。
 - [x] 如意 `TsurezureClient` に `body_format: markdown`
 - [x] 本番 deploy + Pandoc 確認（2026-07-03）
 - [x] API `body_format: markdown` → AsciiDoc 変換確認
-- [ ] 如意 Chat から `create_memo` で保存確認
+- [x] 如意 `TsurezureClient#create_memo` smoke 確認（2026-07-17、`commit=false` の一時メモを作成し、AsciiDoc 変換後に API DELETE）
 
 ---
 
