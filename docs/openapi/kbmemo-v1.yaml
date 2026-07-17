@@ -8,7 +8,7 @@ info:
     如意（Nyoy）の Chat ツール・RAG 取込・メモ書き支援向け。
     本文は AsciiDoc。安定識別子は ULID `uid` を推奨する。
 
-    **ステータス:** 未実装（契約草案）。徒然 `kbmemo_site` への実装前提。
+    **ステータス:** 実装済み API の契約メモ。徒然 `kbmemo_site` の `/api/v1` と如意 `TsurezureClient` の接続を前提に保守する。
 
     関連: [API 要件](../tsuredure-api-requirements.md)
   contact:

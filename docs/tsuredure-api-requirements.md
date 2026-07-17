@@ -596,7 +596,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 - [x] 下書きメモを export / 検索対象に含めるか — 既定は除外、`include_drafts=true` の明示時だけ含める
 - [x] 削除メモの RAG 同期方式（`export/deletions` + chunk 削除）
 - [x] `visibility` が group のメモを API でどう扱うか — token account の `MemoPolicy::Scope` に従う
-- [x] Groonga 全文検索 — **PGroonga**（site コード済み。[手順](./tsuredure-pgroonga-search.md)。本番 `db:migrate` 待ち）
+- [x] Groonga 全文検索 — **PGroonga**（site DB 本番稼働済み。[手順](./tsuredure-pgroonga-search.md)）
 
 ---
 
@@ -611,7 +611,7 @@ export API は RAG 取込の正本。キーワード検索精度は PGroonga 化
 | P2b | RAG 注入・コンテキスト要約・トークン管理 | **完了** |
 | P3 | `export/deletions` | **完了** |
 | P3a | memo RAG webhook | Nyoy 受信側・徒然 delivery 実装済み。development E2E 確認済み（定期 checkpoint 同期で収束可） |
-| P3b | 徒然 PGroonga 検索 | **site 実装済み**（本番 migrate 待ち） |
+| P3b | 徒然 PGroonga 検索 | **完了**（site DB 本番稼働済み） |
 | P3c | API 書込 Markdown → AsciiDoc 変換 | **完了**（site 実装、本番 Pandoc 確認、如意 `TsurezureClient` 経路の smoke 確認済み） |
 
 ---
