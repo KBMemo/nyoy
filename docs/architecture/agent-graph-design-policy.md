@@ -370,6 +370,127 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
    - **MCP/Chat UI 共通の service を作る。** `AgentGraph::RunRetryPlanner` が可否・起点 checkpoint・次 node・理由を返し、実行する場合は `AgentGraph::RunRetryLauncher` が複製 run を作る。controller / MCP tool はこの service の結果だけを見る。
    - **最初の実装は Research Graph の複製 retry に限定する。** `AgentGraph::RunRetryPlanner` による dry-run を failed run 詳細で表示し、「retry 可能性」「起点 checkpoint」「次 node」「ブロック理由」を確認できるようにする。`AgentGraph::RunRetryLauncher` は複製 run を作成し、UI の retry ボタンと MCP `retry_research_graph` は `retryable` な dry-run の場合だけ実行できる。write 系 Graph は引き続き保留表示に留める。
 
+## 次期抽象化ロードマップ
+
+Observability と retry の骨子ができた後は、gem 化そのものではなく、gem 化可能な境界を Nyoy 内で先に固定する。目的は次の 3 つである。
+
+- 状態機械ランタイムを Nyoy 固有の Chat / Message / Tool / Cable から分離する
+- intent / draft / evidence / final などの LLM 役割を軽量モデルや別実装へ差し替えられるようにする
+- 新しい Workflow を既存 controller / job / MCP tools に case 文を増やさず追加できるようにする
+
+### Core / Nyoy 境界
+
+`AgentGraph::Core` は Rails / ActiveRecord / ActionCable / ChatTools を知らない状態機械ランタイムに寄せる。
+
+Core 候補:
+
+- `GraphDefinition`
+- `Edge`
+- `NodeResult`
+- `StateSchema`
+- `Runner` の純粋な実行ループ
+- node 実行契約
+- retry / checkpoint の抽象契約
+
+Nyoy 側に残すもの:
+
+- `AgentRun` / `AgentNodeRun` / `AgentCheckpoint` の永続化
+- `Chat` / `Message`
+- `ChatTools`
+- `ServiceConnection`
+- `ChatChannel` broadcast
+- MCP bridge
+- LLM client 実体
+- Research / MemoWrite / MemoUpdate / ImageUnderstanding の具体 node
+
+最初は gem を作らず、名前空間だけを分ける。`AgentGraph::Core` が Nyoy 固有定数を参照しなくなった時点で gem 化を再検討する。
+
+### Runtime Context
+
+Node が直接 `ChatTools::*`、`Chat`、`Message`、`Rails.logger`、`ChatChannel` を参照すると Core 化できない。共通 runner から `RuntimeContext` を渡し、Nyoy 固有処理は context 経由に寄せる。
+
+初期案:
+
+```ruby
+context.tool_registry
+context.model_roles
+context.persistence
+context.progress
+context.trace
+context.logger
+```
+
+Node は「何をしたいか」を context に依頼し、具体実装は Nyoy adapter が持つ。
+
+### Role Service Registry
+
+軽量モデルを試す対象は workflow 全体ではなく、役割単位で切る。
+
+標準 role:
+
+| role | 用途 |
+| --- | --- |
+| `intent` | Graph 起動判定、軽量分類 |
+| `planner` | plan 作成 |
+| `draft` | memo draft / answer draft 作成 |
+| `evidence_evaluator` | 根拠十分性の判定 |
+| `final_answer` | 最終回答生成 |
+| `vision` | 画像理解 |
+| `memo_writer` | メモ本文整形 |
+
+Node はモデル名や service class を直接選ばず、role を要求する。
+
+```ruby
+service = context.model_roles.fetch(:draft)
+result = service.call(state:, context:)
+```
+
+Nyoy 側の設定で role ごとの実装を切り替える。最初は Ruby object registry で十分とし、外部 gem plugin 形式は後回しにする。
+
+```ruby
+AgentGraph::RoleServices.register(:intent, AgentGraph::Nyoy::KeywordIntentService)
+AgentGraph::RoleServices.register(:draft, AgentGraph::Nyoy::LlmDraftService)
+```
+
+### Workflow Registry
+
+Workflow 追加時の public API を固定する。目標は、Graph を追加しても controller / job / broadcaster / MCP response に graph 名の分岐を増やさないこと。
+
+登録項目:
+
+```ruby
+AgentGraph::Registry.register(
+  key: "research",
+  graph: AgentGraph::ResearchGraph,
+  initial_state: AgentGraph::ResearchInitialState,
+  state_schema: AgentGraph::ResearchStateSchema,
+  intent: AgentGraph::ResearchIntent,
+  summary: AgentGraph::ResearchRunSummary,
+  retry: true
+)
+```
+
+中期的には workflow ごとの runner を減らし、共通 runner + workflow definition + runtime context で実行できる形へ寄せる。
+
+### 実装順
+
+1. `AgentGraph::Core` 名前空間を作り、`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を移す
+2. `Runner` から Nyoy 固有の永続化・broadcast・trace 呼び出しを洗い出し、`RuntimeContext` の候補 interface を作る
+3. intent / draft / final / evidence の呼び出し箇所を role service 経由にする
+4. `AgentGraph::Registry.register` の登録形式を public API として固定する
+5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する
+6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する
+
+### 再検討条件
+
+次の条件がそろったら gem 化を再評価する。
+
+- `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない
+- workflow 追加が `Registry.register` と node 定義の追加だけで済む
+- role service の差し替えで軽量モデルを複数試せる
+- checkpoint / retry の契約が Core から見て adapter interface になっている
+- Nyoy 固有 node と Core runtime のテストが分離できている
+
 ## 判断基準
 
 迷ったら次で判断する。
