@@ -129,7 +129,14 @@ PromptKnowledgeChunk.where(memo_uid: event.memo_uid).count
 
 ## 監視
 
-Nyoy の webhook event:
+Nyoy の webhook 状態:
+
+```bash
+cd ~/sites/nyoy
+bin/prod kbmemo:rag:webhook_status
+```
+
+詳細を console で確認する場合:
 
 ```ruby
 MemoRagWebhookEvent.order(id: :desc).limit(10).pluck(
