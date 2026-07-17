@@ -112,6 +112,8 @@ bin/mcp-call-tool run_image_understanding_graph \
   '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}'
 ```
 
+既定では MCP の `result.content[0].text` に入っている Graph payload を展開して表示する。外側の JSON-RPC レスポンスを確認したい場合は `--raw` を付ける。
+
 返却された `agent_run_id` を控える。UI で確認する場合は、同じ payload の `agent_run_path` を開く。
 
 ```bash

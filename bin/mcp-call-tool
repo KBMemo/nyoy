@@ -6,11 +6,12 @@ require "net/http"
 require "uri"
 
 def usage
-  warn "Usage: bin/mcp-call-tool TOOL_NAME [JSON_ARGUMENTS]"
+  warn "Usage: bin/mcp-call-tool [--raw] TOOL_NAME [JSON_ARGUMENTS]"
   warn %q(Example: bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}')
 end
 
 begin
+raw_output = ARGV.delete("--raw")
 tool_name = ARGV[0].to_s.strip
 if tool_name.empty?
   usage
@@ -54,7 +55,12 @@ response = http.request(request)
 
 begin
   payload = JSON.parse(response.body)
-  puts JSON.pretty_generate(payload)
+  text_payload = payload.dig("result", "content", 0, "text")
+  if raw_output || text_payload.to_s.empty?
+    puts JSON.pretty_generate(payload)
+  else
+    puts JSON.pretty_generate(JSON.parse(text_payload))
+  end
 rescue JSON::ParserError
   puts response.body
 end

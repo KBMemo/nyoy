@@ -131,6 +131,8 @@ bin/mcp-call-tool run_image_understanding_graph \
   '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}'
 ```
 
+`bin/mcp-call-tool` は既定で `result.content[0].text` の JSON payload を展開して表示する。JSON-RPC の外側レスポンスを確認する場合は `--raw` を付ける。
+
 ### 接続確認
 
 stdio は Cursor が子プロセスとして起動する経路に近い形で、JSON-RPC を標準入出力に流して確認できる。
