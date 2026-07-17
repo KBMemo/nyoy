@@ -6,12 +6,22 @@ require "net/http"
 require "uri"
 
 def usage
-  warn "Usage: bin/mcp-call-tool [--raw] TOOL_NAME [JSON_ARGUMENTS]"
+  warn "Usage: bin/mcp-call-tool [--raw] [--field FIELD] TOOL_NAME [JSON_ARGUMENTS]"
   warn %q(Example: bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}')
 end
 
 begin
 raw_output = ARGV.delete("--raw")
+field_index = ARGV.index("--field")
+field_name = nil
+if field_index
+  field_name = ARGV[field_index + 1].to_s
+  if field_name.empty?
+    warn "--field requires FIELD."
+    exit 1
+  end
+  ARGV.slice!(field_index, 2)
+end
 tool_name = ARGV[0].to_s.strip
 if tool_name.empty?
   usage
@@ -56,10 +66,16 @@ response = http.request(request)
 begin
   payload = JSON.parse(response.body)
   text_payload = payload.dig("result", "content", 0, "text")
-  if raw_output || text_payload.to_s.empty?
-    puts JSON.pretty_generate(payload)
+  output_payload = raw_output || text_payload.to_s.empty? ? payload : JSON.parse(text_payload)
+  if field_name
+    unless output_payload.is_a?(Hash) && output_payload.key?(field_name)
+      warn "Field not found: #{field_name}"
+      exit 1
+    end
+    value = output_payload[field_name]
+    puts(value.is_a?(Hash) || value.is_a?(Array) ? JSON.generate(value) : value)
   else
-    puts JSON.pretty_generate(JSON.parse(text_payload))
+    puts JSON.pretty_generate(output_payload)
   end
 rescue JSON::ParserError
   puts response.body

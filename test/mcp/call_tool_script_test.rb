@@ -42,6 +42,21 @@ class McpCallToolScriptTest < ActiveSupport::TestCase
     assert_equal "123", JSON.parse(payload.dig("result", "content", 0, "text"))["agent_run_id"].to_s
   end
 
+  test "field option prints one expanded payload field" do
+    stdout, stderr, status = run_script("--field", "agent_run_id", "run_image_understanding_graph", "{}")
+
+    assert status.success?, stderr
+    assert_equal "123", stdout.strip
+  end
+
+  test "field option fails when field is missing" do
+    stdout, stderr, status = run_script("--field", "missing", "run_image_understanding_graph", "{}")
+
+    assert_not status.success?
+    assert_empty stdout
+    assert_includes stderr, "Field not found: missing"
+  end
+
   test "requires tool name" do
     stdout, stderr, status = run_script_without_token
 

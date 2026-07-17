@@ -131,7 +131,7 @@ bin/mcp-call-tool run_image_understanding_graph \
   '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}'
 ```
 
-`bin/mcp-call-tool` は既定で `result.content[0].text` の JSON payload を展開して表示する。JSON-RPC の外側レスポンスを確認する場合は `--raw` を付ける。
+`bin/mcp-call-tool` は既定で `result.content[0].text` の JSON payload を展開して表示する。JSON-RPC の外側レスポンスを確認する場合は `--raw`、特定 field だけ取り出す場合は `--field agent_run_id` を付ける。
 
 ### 接続確認
 

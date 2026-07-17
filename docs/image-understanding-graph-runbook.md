@@ -114,10 +114,17 @@ bin/mcp-call-tool run_image_understanding_graph \
 
 既定では MCP の `result.content[0].text` に入っている Graph payload を展開して表示する。外側の JSON-RPC レスポンスを確認したい場合は `--raw` を付ける。
 
-返却された `agent_run_id` を控える。UI で確認する場合は、同じ payload の `agent_run_path` を開く。
+返却された `agent_run_id` を控える。シェル変数に入れる場合は `--field` を使う。
 
 ```bash
-bin/mcp-call-tool get_image_understanding_graph '{"agent_run_id":123}'
+AGENT_RUN_ID=$(bin/mcp-call-tool --field agent_run_id run_image_understanding_graph \
+  '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}')
+```
+
+UI で確認する場合は、同じ payload の `agent_run_path` を開く。
+
+```bash
+bin/mcp-call-tool get_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_ID}"
 ```
 
 期待:
@@ -161,7 +168,7 @@ bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説
 HTTP MCP retry 例:
 
 ```bash
-bin/mcp-call-tool retry_image_understanding_graph '{"agent_run_id":123}'
+bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_ID}"
 ```
 
 期待:
