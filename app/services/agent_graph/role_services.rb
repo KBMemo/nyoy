@@ -5,7 +5,8 @@ module AgentGraph
     DEFAULTS = {
       draft: -> { AgentGraph::RoleServices::EvidencePackDraft.new },
       evidence_evaluator: -> { AgentGraph::RoleServices::HeuristicEvidenceEvaluator.new },
-      final_answer: -> { AgentGraph::RoleServices::FinalAnswer.new }
+      final_answer: -> { AgentGraph::RoleServices::FinalAnswer.new },
+      intent: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
     }.freeze
 
     class << self
@@ -172,6 +173,36 @@ module AgentGraph
 
       def review(status:, reason:, plan:, target_urls: [])
         { status: status, reason: reason, plan: plan, target_urls: target_urls }
+      end
+    end
+
+    class DeterministicIntentRouter
+      def call(chat:, message:, text:)
+        normalized = text.to_s.strip
+        return nil if normalized.empty? && !message&.attachments&.attached?
+
+        memo_update = AgentGraph::MemoUpdateIntent.decision(normalized)
+        return intent(AgentGraph::MemoUpdateGraph::NAME, memo_update) if memo_update[:match]
+
+        memo_write = AgentGraph::MemoWriteIntent.decision(normalized)
+        return intent(AgentGraph::MemoWriteGraph::NAME, memo_write) if memo_write[:match]
+
+        image_understanding = AgentGraph::ImageUnderstandingIntent.decision(message)
+        return intent(AgentGraph::ImageUnderstandingGraph::NAME, image_understanding) if image_understanding[:match]
+
+        research = AgentGraph::ResearchIntent.decision(normalized)
+        return intent(AgentGraph::ResearchGraph::NAME, research) if research[:match]
+
+        nil
+      end
+
+      private
+
+      def intent(graph_name, intent_decision)
+        {
+          graph_name: graph_name,
+          intent_decision: intent_decision
+        }
       end
     end
   end

@@ -25,6 +25,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::HeuristicEvidenceEvaluator, service
   end
 
+  test "fetches default intent service" do
+    service = AgentGraph::RoleServices.fetch(:intent)
+
+    assert_instance_of AgentGraph::RoleServices::DeterministicIntentRouter, service
+  end
+
   test "temporarily overrides a role service" do
     custom = Object.new
 

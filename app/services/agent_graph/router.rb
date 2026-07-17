@@ -27,21 +27,10 @@ module AgentGraph
     def route(chat)
       message = latest_user_message(chat)
       text = message&.content.to_s.strip
-      return nil if text.blank? && !message&.attachments&.attached?
+      routed = RoleServices.fetch(:intent).call(chat: chat, message: message, text: text)
+      return nil unless routed
 
-      memo_update = MemoUpdateIntent.decision(text)
-      return decision(MemoUpdateGraph::NAME, memo_update) if memo_update[:match]
-
-      memo_write = MemoWriteIntent.decision(text)
-      return decision(MemoWriteGraph::NAME, memo_write) if memo_write[:match]
-
-      image_understanding = ImageUnderstandingIntent.decision(message)
-      return decision(ImageUnderstandingGraph::NAME, image_understanding) if image_understanding[:match]
-
-      research = ResearchIntent.decision(text)
-      return decision(ResearchGraph::NAME, research) if research[:match]
-
-      nil
+      decision(routed.fetch(:graph_name), routed.fetch(:intent_decision))
     end
 
     def latest_user_text(chat)

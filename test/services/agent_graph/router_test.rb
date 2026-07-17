@@ -10,6 +10,10 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     @chat = Chat.create!(model: model)
   end
 
+  teardown do
+    AgentGraph::RoleServices.reset!
+  end
+
   test "routes clear memo write turn to memo write graph" do
     add_user_message("この回答をメモに保存して")
 
@@ -117,6 +121,31 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
     add_user_message("ありがとう")
 
     assert_nil AgentGraph::Router.route(@chat)
+  end
+
+  test "uses intent role service" do
+    add_user_message("普通の文")
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |chat:, message:, text:|
+      calls << { chat: chat, message: message, text: text }
+      {
+        graph_name: AgentGraph::ResearchGraph::NAME,
+        intent_decision: { match: true, reason: "custom", hits: [ "role" ] }
+      }
+    end
+
+    AgentGraph::RoleServices.with(:intent, service) do
+      decision = AgentGraph::Router.route(@chat)
+
+      assert_equal AgentGraph::ResearchGraph::NAME, decision.graph_name
+      assert_equal "custom", decision.intent_decision[:reason]
+    end
+
+    assert_equal 1, calls.size
+    assert_equal @chat, calls.first.fetch(:chat)
+    assert_equal "普通の文", calls.first.fetch(:text)
+    assert_equal "普通の文", calls.first.fetch(:message).content
   end
 
   private
