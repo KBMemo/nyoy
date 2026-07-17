@@ -127,6 +127,8 @@ Graph 化後も、画像添付がある全ターンを必ず Graph にしない�
 
 ## 実運用確認
 
+詳細手順: [ImageUnderstanding Graph 実機確認 Runbook](../image-understanding-graph-runbook.md)
+
 自動テストで固定する範囲:
 
 - Chat 添付画像から `plan_image_understanding` → `finalize_image_answer` まで完了し、assistant message と AgentRun 履歴が残る

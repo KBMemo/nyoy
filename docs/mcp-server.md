@@ -174,4 +174,5 @@ curl -sS -X POST http://127.0.0.1:3000/mcp \
 
 - [エコシステム構成（Nyoy MCP 前提）](./architecture/nyoy-mcp.adoc)
 - [エコシステム ロードマップ](./ecosystem-roadmap.md)
+- [ImageUnderstanding Graph 実機確認 Runbook](./image-understanding-graph-runbook.md)
 - [徒然 API 要件](./tsuredure-api-requirements.md)
