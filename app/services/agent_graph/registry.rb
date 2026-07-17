@@ -164,6 +164,14 @@ module AgentGraph
         supersede_reason: "superseded by a newer image understanding run"
       )
       register(
+        key: DiagnosticGraph::NAME,
+        graph: DiagnosticGraph,
+        runner: DiagnosticGraphRunner,
+        summary: DiagnosticRunSummary,
+        failure_label: "Diagnostic Graph failed",
+        supersede_reason: "superseded by a newer diagnostic run"
+      )
+      register(
         key: MemoWriteGraph::NAME,
         graph: MemoWriteGraph,
         runner: MemoWriteGraphRunner,

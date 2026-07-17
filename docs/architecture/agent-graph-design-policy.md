@@ -478,7 +478,7 @@ AgentGraph::Registry.register(
 2. `Runner` から Nyoy 固有の永続化・broadcast・trace 呼び出しを洗い出し、`RuntimeContext` の候補 interface を作る（着手済み。cancellation / progress / approval / node call kwargs を context 経由にする）
 3. intent / draft / final / evidence の呼び出し箇所を role service 経由にする（着手済み。`RoleServices` を追加し、`intent` / `evidence_evaluator` / `draft` / `final_answer` role を既存実装 adapter 経由にする）
 4. `AgentGraph::Registry.register` の登録形式を public API として固定する（完了）
-5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する
+5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する（着手済み。Router 非接続の `DiagnosticGraph` で Registry 登録・実行・summary を検証）
 6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する
 
 ### 再検討条件

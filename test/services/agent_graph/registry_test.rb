@@ -9,12 +9,14 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
 
   test "returns runners for known graphs" do
     assert_equal AgentGraph::ResearchGraphRunner, AgentGraph::Registry.runner_for("research")
+    assert_equal AgentGraph::DiagnosticGraphRunner, AgentGraph::Registry.runner_for("diagnostic")
     assert_equal AgentGraph::MemoWriteGraphRunner, AgentGraph::Registry.runner_for("memo_write")
     assert_equal AgentGraph::MemoUpdateGraphRunner, AgentGraph::Registry.runner_for("memo_update")
   end
 
   test "builds graph definitions for known graphs" do
     assert_instance_of AgentGraph::ResearchGraph, AgentGraph::Registry.graph_for("research")
+    assert_instance_of AgentGraph::DiagnosticGraph, AgentGraph::Registry.graph_for("diagnostic")
     assert_instance_of AgentGraph::MemoWriteGraph, AgentGraph::Registry.graph_for("memo_write")
     assert_instance_of AgentGraph::MemoUpdateGraph, AgentGraph::Registry.graph_for("memo_update")
   end
@@ -62,6 +64,7 @@ class AgentGraphRegistryTest < ActiveSupport::TestCase
 
   test "returns summary classes for known graphs" do
     assert_equal AgentGraph::ResearchRunSummary, AgentGraph::Registry.summary_for("research")
+    assert_equal AgentGraph::DiagnosticRunSummary, AgentGraph::Registry.summary_for("diagnostic")
     assert_equal AgentGraph::MemoWriteRunSummary, AgentGraph::Registry.summary_for("memo_write")
     assert_equal AgentGraph::MemoUpdateRunSummary, AgentGraph::Registry.summary_for("memo_update")
   end
