@@ -521,7 +521,41 @@ AgentGraph::Registry.register(
 
 Rails adapter 側 factory として `ActiveRecordRuntimeContext` を追加し、launch / resume / retry の内部利用は `Runner.new(graph:, context:)` に移行した。互換のため `Runner.new(agent_run, graph:)` は残す。
 
-次は、`Runner` の互換 entrypoint を残す期間を決め、Core 化候補として `Runner` / `RuntimeContext` protocol の最小 public API を文書化する。
+### Runner / RuntimeContext protocol
+
+Core 化する場合の `Runner` entrypoint は次に固定する。
+
+```ruby
+AgentGraph::Runner.new(graph: graph, context: context).call
+```
+
+`Runner.new(agent_run, graph:)` は Nyoy 内の移行用互換 entrypoint とする。launch / resume / retry の本番経路は新 entrypoint へ移行済みのため、外部呼び出しがないことを確認し、Core 抽出に着手する直前に削除する。互換 entrypoint を Core gem の public API には含めない。
+
+`Runner` が要求する context の最小 protocol は次のとおりとする。
+
+| 責務 | method |
+| --- | --- |
+| 初期化・結果 | `validate_graph!`, `start_run!`, `result` |
+| 実行ループ | `check_cancelled!`, `current_node`, `running?`, `update_current_node!` |
+| node 監査 | `node_started!`, `create_node_run!`, `complete_node_run!`, `fail_node_run!` |
+| state・checkpoint | `state`, `apply_result!` |
+| node 呼び出し | `node_call_kwargs` |
+| 終了処理 | `finish_completed!`, `finish_failed!`, `finish_cancelled!`, `interrupt!` |
+| 取消例外の変換 | `cancelled_exception?` |
+
+この protocol は duck typing とし、Core は `RuntimeContext` の具象 class、ActiveRecord、Rails callback を要求しない。`store` / `signals` accessor と `clear_progress!` / `request_approval!` は Nyoy の `RuntimeContext` を構成するための API であり、Runner protocol には含めない。
+
+Nyoy の Rails adapter は次の分担を維持する。
+
+| adapter | 責務 |
+| --- | --- |
+| `ActiveRecordRunStore` | graph 検証、run/node/checkpoint 永続化、state merge、node kwargs、戻り値 |
+| `RailsRuntimeSignals` | cancellation、progress、approval の Rails/UI 副作用 |
+| `ActiveRecordRuntimeContext` | store と signals を組み合わせる factory |
+
+未確定なのは `node_call_kwargs` の境界である。現在は既存 node との互換性のため `state` / `run` / `chat` を返すが、`run` / `chat` は Nyoy 固有である。Core 抽出前に node invocation object または Nyoy node adapter へ移せるか検証する。
+
+次は、最小 protocol だけで Runner の実行テストを成立させ、`Runner` 自体を Rails model 非依存の Core 候補として判定する。
 
 ## 判断基準
 
