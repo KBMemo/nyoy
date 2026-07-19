@@ -31,6 +31,37 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::DeterministicIntentRouter, service
   end
 
+  test "selects a built in role profile" do
+    AgentGraph::RoleServices.select_profile(:draft, :llm)
+
+    assert_equal :llm, AgentGraph::RoleServices.profile_for(:draft)
+    assert_instance_of AgentGraph::RoleServices::LlmDraft, AgentGraph::RoleServices.fetch(:draft)
+  end
+
+  test "registers and selects a plugin role profile" do
+    custom = Object.new
+    AgentGraph::RoleServices.register_profile(:intent, :custom, -> { custom })
+    AgentGraph::RoleServices.select_profile(:intent, :custom)
+
+    assert_same custom, AgentGraph::RoleServices.fetch(:intent)
+  end
+
+  test "direct role override takes precedence over selected profile" do
+    custom = Object.new
+    AgentGraph::RoleServices.select_profile(:draft, :llm)
+    AgentGraph::RoleServices.register(:draft, custom)
+
+    assert_same custom, AgentGraph::RoleServices.fetch(:draft)
+  end
+
+  test "unknown profile raises an explicit error" do
+    error = assert_raises(KeyError) do
+      AgentGraph::RoleServices.select_profile(:draft, :missing)
+    end
+
+    assert_includes error.message, "unknown AgentGraph role service profile: draft.missing"
+  end
+
   test "temporarily overrides a role service" do
     custom = Object.new
 

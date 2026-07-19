@@ -2,11 +2,27 @@
 
 module AgentGraph
   module RoleServices
-    DEFAULTS = {
-      draft: -> { AgentGraph::RoleServices::EvidencePackDraft.new },
-      evidence_evaluator: -> { AgentGraph::RoleServices::HeuristicEvidenceEvaluator.new },
-      final_answer: -> { AgentGraph::RoleServices::FinalAnswer.new },
-      intent: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
+    DEFAULT_PROFILES = {
+      draft: :evidence_pack,
+      evidence_evaluator: :heuristic,
+      final_answer: :main,
+      intent: :deterministic
+    }.freeze
+
+    BUILTIN_PROFILES = {
+      draft: {
+        evidence_pack: -> { AgentGraph::RoleServices::EvidencePackDraft.new },
+        llm: -> { AgentGraph::RoleServices::LlmDraft.new }
+      },
+      evidence_evaluator: {
+        heuristic: -> { AgentGraph::RoleServices::HeuristicEvidenceEvaluator.new }
+      },
+      final_answer: {
+        main: -> { AgentGraph::RoleServices::FinalAnswer.new }
+      },
+      intent: {
+        deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
+      }
     }.freeze
 
     class << self
@@ -16,7 +32,26 @@ module AgentGraph
 
       def fetch(role)
         key = normalize(role)
-        registry.fetch(key) { default_for(key) }
+        registry.fetch(key) { service_for_profile(key, profile_for(key)) }
+      end
+
+      def register_profile(role, profile, factory = nil, &block)
+        callable = block || factory
+        raise ArgumentError, "role service profile factory must respond to call" unless callable.respond_to?(:call)
+
+        profile_registry[normalize(role)][normalize(profile)] = callable
+      end
+
+      def select_profile(role, profile)
+        role_key = normalize(role)
+        profile_key = normalize(profile)
+        factory_for(role_key, profile_key)
+        selected_profiles[role_key] = profile_key
+      end
+
+      def profile_for(role)
+        key = normalize(role)
+        selected_profiles.fetch(key) { DEFAULT_PROFILES.fetch(key) { unknown_role!(key) } }
       end
 
       def with(role, service)
@@ -34,6 +69,8 @@ module AgentGraph
 
       def reset!
         @registry = {}
+        @profile_registry = nil
+        @selected_profiles = {}
       end
 
       private
@@ -42,15 +79,33 @@ module AgentGraph
         @registry ||= {}
       end
 
+      def profile_registry
+        @profile_registry ||= BUILTIN_PROFILES.each_with_object({}) do |(role, profiles), copy|
+          copy[role] = profiles.dup
+        end
+      end
+
+      def selected_profiles
+        @selected_profiles ||= {}
+      end
+
       def normalize(role)
         role.to_sym
       end
 
-      def default_for(role)
-        factory = DEFAULTS.fetch(role) do
-          raise KeyError, "unknown AgentGraph role service: #{role}"
+      def service_for_profile(role, profile)
+        factory_for(role, profile).call
+      end
+
+      def factory_for(role, profile)
+        profiles = profile_registry.fetch(role) { unknown_role!(role) }
+        profiles.fetch(profile) do
+          raise KeyError, "unknown AgentGraph role service profile: #{role}.#{profile}"
         end
-        factory.call
+      end
+
+      def unknown_role!(role)
+        raise KeyError, "unknown AgentGraph role service: #{role}"
       end
     end
 
@@ -86,6 +141,12 @@ module AgentGraph
           "fetched_pages" => Array(evidence[:fetched_pages]).size,
           "errors" => Array(evidence[:errors]).size
         }
+      end
+    end
+
+    class LlmDraft
+      def call(state:, run:, chat:)
+        AgentGraph::EvidenceSynthesizer.new(chat).call(state)
       end
     end
 

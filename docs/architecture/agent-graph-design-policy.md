@@ -452,6 +452,19 @@ AgentGraph::RoleServices.register(:intent, AgentGraph::Nyoy::KeywordIntentServic
 AgentGraph::RoleServices.register(:draft, AgentGraph::Nyoy::LlmDraftService)
 ```
 
+role差し替えは、一時的なobject overrideと、設定可能なprofileを分ける。
+
+```ruby
+AgentGraph::RoleServices.register_profile(:draft, :experimental) do
+  ExperimentalDraftService.new
+end
+AgentGraph::RoleServices.select_profile(:draft, :experimental)
+```
+
+組み込みprofileは `intent.deterministic`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+
+次はprofile選択を環境変数またはAppSettingから読み込むNyoy設定adapterを追加し、再起動後も設定だけで `draft.evidence_pack` / `draft.llm` を切り替えられるようにする。
+
 ### Workflow Registry
 
 Workflow 追加時の public API を固定する。目標は、Graph を追加しても controller / job / broadcaster / MCP response に graph 名の分岐を増やさないこと。
