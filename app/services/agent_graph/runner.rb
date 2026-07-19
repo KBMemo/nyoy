@@ -4,14 +4,13 @@ module AgentGraph
   class Runner
     MAX_STEPS = 12
 
-    def initialize(agent_run, graph:, context: nil)
-      @run = agent_run
+    def initialize(agent_run = nil, graph:, context: nil)
       @graph = graph
-      @context = context || RuntimeContext.new(run: agent_run, graph: graph)
+      @context = context || build_context(agent_run, graph)
     end
 
     def call
-      raise ArgumentError, "agent run graph mismatch: #{@run.graph_name} != #{@graph.name}" if @run.graph_name != @graph.name
+      @context.validate_graph!
 
       @context.start_run!
 
@@ -32,7 +31,7 @@ module AgentGraph
       end
 
       @context.finish_failed!("max steps exceeded (#{MAX_STEPS})") if @context.running?
-      @run
+      @context.result
     rescue Cancelled
       @context.finish_cancelled!
       raise
@@ -47,6 +46,12 @@ module AgentGraph
     end
 
     private
+
+    def build_context(agent_run, graph)
+      raise ArgumentError, "agent_run is required when context is not provided" unless agent_run
+
+      RuntimeContext.new(run: agent_run, graph: graph)
+    end
 
     def execute_node(node_name)
       node = @graph.node_for(node_name)

@@ -9,6 +9,16 @@ module AgentGraph
       @graph = graph
     end
 
+    def validate_graph!
+      return if run.graph_name == graph.name
+
+      raise ArgumentError, "agent run graph mismatch: #{run.graph_name} != #{graph.name}"
+    end
+
+    def result
+      run
+    end
+
     def start_run!
       run.update!(
         status: "running",

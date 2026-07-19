@@ -9,6 +9,14 @@ module AgentGraph
       @signals = signals || RailsRuntimeSignals.new
     end
 
+    def validate_graph!
+      store.validate_graph!
+    end
+
+    def result
+      store.result
+    end
+
     def start_run!
       store.start_run!
     end

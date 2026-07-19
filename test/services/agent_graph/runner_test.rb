@@ -37,10 +37,11 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     )
     context = RecordingContext.new(run: run)
 
-    AgentGraph::Runner.new(run, graph: graph(name: "test_graph"), context: context).call
+    AgentGraph::Runner.new(graph: graph(name: "test_graph"), context: context).call
 
     assert_equal "completed", run.reload.status
     assert_equal [
+      :validate_graph,
       :start_run,
       :check_cancelled,
       [ :node_started, "start" ],
@@ -49,6 +50,14 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
       [ :apply_result, "start" ],
       :finish_completed
     ], context.events
+  end
+
+  test "requires agent run when runtime context is not provided" do
+    error = assert_raises(ArgumentError) do
+      AgentGraph::Runner.new(graph: graph(name: "test_graph"))
+    end
+
+    assert_equal "agent_run is required when context is not provided", error.message
   end
 
   test "finishes run as cancelled when runtime context raises graph cancellation" do
@@ -66,7 +75,7 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     end
 
     assert_equal "cancelled", run.reload.status
-    assert_equal [ :start_run, :check_cancelled, :finish_cancelled ], context.events
+    assert_equal [ :validate_graph, :start_run, :check_cancelled, :finish_cancelled ], context.events
     assert_empty run.agent_node_runs
   end
 
@@ -118,6 +127,14 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
       @run = run
       @cancel_on_check = cancel_on_check
       @events = []
+    end
+
+    def validate_graph!
+      @events << :validate_graph
+    end
+
+    def result
+      @run
     end
 
     def start_run!

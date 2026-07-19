@@ -500,7 +500,7 @@ AgentGraph::Registry.register(
 | レイヤ | 現状 | 次の判断 |
 | --- | --- | --- |
 | `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を保持 | pure Ruby gem 化候補 |
-| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化と node kwargs は `ActiveRecordRunStore`、UI/取消通知は `RailsRuntimeSignals` が担当。キャンセルは `AgentGraph::Cancelled` として扱う | Core runner と Rails runtime の分離を継続 |
+| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化・graph 検証・node kwargs は `ActiveRecordRunStore`、UI/取消通知は `RailsRuntimeSignals` が担当。キャンセルは `AgentGraph::Cancelled` として扱う | Core runner と Rails runtime の分離を継続 |
 | `RoleServices` | role 差し替え API は成立。既定実装は Nyoy の LLM / heuristic に依存 | Nyoy adapter 側に残す |
 | `Registry` | public `register` API は成立。標準 Graph 登録も同 API 経由 | Core API と Rails adapter API の境界を要検討 |
 | 具体 Graph / Node | Research / MemoWrite / MemoUpdate / ImageUnderstanding / Diagnostic は Nyoy の Chat / Tool / UI 依存を持つ | Nyoy 側に残す |
@@ -517,7 +517,9 @@ AgentGraph::Registry.register(
 
 `RuntimeContext` が公開していた `run` / `chat` / `graph` 参照も整理し、node call kwargs の生成は `ActiveRecordRunStore` に移した。これで `RuntimeContext` の公開面は、Runner が使う実行制御 API と adapter 注入点に寄っている。
 
-次は、`Runner` の初期化引数 `agent_run` と graph mismatch 検証が Core runner に残るべきか、Rails adapter runner に移すべきかを確認する。
+`Runner` の graph mismatch 検証と戻り値も `RuntimeContext` / `ActiveRecordRunStore` に寄せた。`Runner` 本体は `agent_run` を instance variable として保持せず、context protocol と graph definition だけを使う。新しい entrypoint として `Runner.new(graph:, context:)` も使える。
+
+次は、互換のために残っている `Runner.new(agent_run, graph:)` の呼び出しを Rails adapter 側 factory に寄せ、内部利用を `Runner.new(graph:, context:)` に移行できるか確認する。
 
 ## 判断基準
 

@@ -30,6 +30,25 @@ class AgentGraphActiveRecordRunStoreTest < ActiveSupport::TestCase
     assert_not_nil @run.started_at
   end
 
+  test "validates graph name against persisted run" do
+    assert_nothing_raised { @store.validate_graph! }
+
+    other_graph = AgentGraph::GraphDefinition.new(
+      name: "other_graph",
+      start_node: "start",
+      nodes: {},
+      edges: {}
+    )
+    store = AgentGraph::ActiveRecordRunStore.new(run: @run, graph: other_graph)
+
+    error = assert_raises(ArgumentError) { store.validate_graph! }
+    assert_equal "agent run graph mismatch: test_graph != other_graph", error.message
+  end
+
+  test "returns persisted run as execution result" do
+    assert_equal @run, @store.result
+  end
+
   test "creates node runs with scrubbed input snapshots" do
     node_run = @store.create_node_run!(
       node_name: "start",
