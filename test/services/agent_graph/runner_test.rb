@@ -40,7 +40,15 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     AgentGraph::Runner.new(run, graph: graph(name: "test_graph"), context: context).call
 
     assert_equal "completed", run.reload.status
-    assert_equal [ :check_cancelled, [ :node_started, "start" ], :clear_progress ], context.events
+    assert_equal [
+      :start_run,
+      :check_cancelled,
+      [ :node_started, "start" ],
+      [ :create_node_run, "start" ],
+      [ :complete_node_run, "start" ],
+      [ :apply_result, "start" ],
+      :finish_completed
+    ], context.events
   end
 
   private
@@ -68,6 +76,24 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
       @events = []
     end
 
+    def start_run!
+      @events << :start_run
+      @run.update!(status: "running", current_node: "start")
+    end
+
+    def current_node
+      @run.current_node
+    end
+
+    def running?
+      @run.running?
+    end
+
+    def update_current_node!(node_name)
+      @events << [ :update_current_node, node_name ]
+      @run.update!(current_node: node_name)
+    end
+
     def check_cancelled!
       @events << :check_cancelled
     end
@@ -76,8 +102,39 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
       @events << [ :node_started, node_name ]
     end
 
-    def clear_progress!
-      @events << :clear_progress
+    def create_node_run!(node_name:, input_state:)
+      @events << [ :create_node_run, node_name ]
+      @run.agent_node_runs.create!(
+        node_name: node_name,
+        status: "running",
+        input_snapshot: input_state,
+        started_at: Time.current
+      )
+    end
+
+    def complete_node_run!(node_run, result:)
+      @events << [ :complete_node_run, node_run.node_name ]
+      node_run.update!(
+        status: result.failed? ? "failed" : "completed",
+        output_snapshot: result.updates,
+        error_message: result.error,
+        finished_at: Time.current
+      )
+    end
+
+    def fail_node_run!(node_run, message:)
+      @events << [ :fail_node_run, node_run&.node_name, message ]
+      node_run&.update!(status: "failed", error_message: message, finished_at: Time.current)
+    end
+
+    def state
+      @run.state || {}
+    end
+
+    def apply_result!(node_name, result)
+      @events << [ :apply_result, node_name ]
+      @run.update!(state: state.deep_merge(result.updates))
+      @run.agent_checkpoints.create!(node_name: node_name, state: @run.state)
     end
 
     def request_approval!
@@ -86,6 +143,28 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
 
     def node_call_kwargs(state:)
       { state: state, run: @run, chat: @run.chat }
+    end
+
+    def finish_completed!
+      @events << :finish_completed
+      @run.update!(status: "completed", current_node: nil, finished_at: Time.current)
+    end
+
+    def interrupt!(node_name)
+      @events << [ :interrupt, node_name ]
+      @run.update!(status: "awaiting_approval", current_node: node_name, finished_at: nil)
+      request_approval!
+    end
+
+    def finish_failed!(message)
+      @events << [ :finish_failed, message ]
+      @run.update!(status: "failed", error_message: message.to_s, finished_at: Time.current)
+      @run
+    end
+
+    def finish_cancelled!
+      @events << :finish_cancelled
+      @run.update!(status: "cancelled", finished_at: Time.current, error_message: "cancelled")
     end
   end
 end
