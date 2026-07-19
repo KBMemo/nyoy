@@ -2,11 +2,18 @@
 
 module AgentGraph
   class RuntimeContext
-    attr_reader :run, :graph
+    attr_reader :store
 
-    def initialize(run:, graph:)
-      @run = run
-      @graph = graph
+    def initialize(run:, graph:, store: nil)
+      @store = store || ActiveRecordRunStore.new(run: run, graph: graph)
+    end
+
+    def run
+      store.run
+    end
+
+    def graph
+      store.graph
     end
 
     def chat
@@ -14,23 +21,19 @@ module AgentGraph
     end
 
     def start_run!
-      run.update!(
-        status: "running",
-        started_at: run.started_at || Time.current,
-        current_node: run.current_node.presence || graph.start_node
-      )
+      store.start_run!
     end
 
     def current_node
-      run.current_node
+      store.current_node
     end
 
     def running?
-      run.running?
+      store.running?
     end
 
     def update_current_node!(node_name)
-      run.update!(current_node: node_name)
+      store.update_current_node!(node_name)
     end
 
     def check_cancelled!
@@ -42,44 +45,23 @@ module AgentGraph
     end
 
     def create_node_run!(node_name:, input_state:)
-      run.agent_node_runs.create!(
-        node_name: node_name,
-        status: "running",
-        input_snapshot: scrub_null_bytes(input_state),
-        started_at: Time.current
-      )
+      store.create_node_run!(node_name: node_name, input_state: input_state)
     end
 
     def complete_node_run!(node_run, result:)
-      node_run.update!(
-        status: result.failed? ? "failed" : "completed",
-        output_snapshot: scrub_null_bytes({
-          updates: result.updates,
-          goto: result.goto,
-          interrupt: result.interrupt?,
-          error: result.error
-        }.compact),
-        error_message: result.error,
-        finished_at: Time.current
-      )
+      store.complete_node_run!(node_run, result: result)
     end
 
     def fail_node_run!(node_run, message:)
-      node_run&.update!(
-        status: "failed",
-        error_message: message.to_s,
-        finished_at: Time.current
-      )
+      store.fail_node_run!(node_run, message: message)
     end
 
     def state
-      run.state || {}
+      store.state
     end
 
     def apply_result!(node_name, result)
-      merged = scrub_null_bytes(state.deep_merge(result.updates))
-      run.update!(state: merged)
-      run.agent_checkpoints.create!(node_name: node_name, state: merged)
+      store.apply_result!(node_name, result)
     end
 
     def clear_progress!
@@ -100,51 +82,23 @@ module AgentGraph
 
     def finish_completed!
       clear_progress!
-      run.update!(
-        status: "completed",
-        current_node: nil,
-        finished_at: Time.current
-      )
+      store.finish_completed!
     end
 
     def interrupt!(node_name)
       clear_progress!
-      run.update!(
-        status: "awaiting_approval",
-        current_node: node_name,
-        finished_at: nil
-      )
+      store.interrupt!(node_name)
       request_approval!
     end
 
     def finish_failed!(message)
       clear_progress!
-      run.update!(
-        status: "failed",
-        error_message: message.to_s,
-        finished_at: Time.current
-      )
-      run
+      store.finish_failed!(message)
     end
 
     def finish_cancelled!
       clear_progress!
-      run.update!(status: "cancelled", finished_at: Time.current, error_message: "cancelled")
-    end
-
-    private
-
-    def scrub_null_bytes(value)
-      case value
-      when Hash
-        value.transform_values { |item| scrub_null_bytes(item) }
-      when Array
-        value.map { |item| scrub_null_bytes(item) }
-      when String
-        value.delete("\u0000")
-      else
-        value
-      end
+      store.finish_cancelled!
     end
   end
 end

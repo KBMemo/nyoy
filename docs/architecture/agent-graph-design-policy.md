@@ -488,7 +488,7 @@ AgentGraph::Registry.register(
 - `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない（達成）
 - workflow 追加が `Registry.register` と node 定義の追加だけで済む（`DiagnosticGraph` で検証済み）
 - role service の差し替えで軽量モデルを複数試せる（`intent` / `evidence_evaluator` / `draft` / `final_answer` は差し替え可能）
-- checkpoint / retry の契約が Core から見て adapter interface になっている（未達。`Runner` はまだ `AgentRun` / `AgentNodeRun` / `AgentCheckpoint` を直接更新する）
+- checkpoint / retry の契約が Core から見て adapter interface になっている（部分達成。`Runner` は `RuntimeContext` 経由、Rails 永続化は `ActiveRecordRunStore` に分離済み）
 - Nyoy 固有 node と Core runtime のテストが分離できている（部分達成。`AgentGraph::Core` test は独立、`Runner` は Rails model 依存）
 
 ### 再検討メモ
@@ -500,12 +500,12 @@ AgentGraph::Registry.register(
 | レイヤ | 現状 | 次の判断 |
 | --- | --- | --- |
 | `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を保持 | pure Ruby gem 化候補 |
-| `AgentGraph::Runner` | `RuntimeContext` は導入済みだが、`AgentRun` / node run / checkpoint 永続化を直接扱う | persistence adapter 抽象が必要 |
+| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化は `ActiveRecordRunStore` が担当 | Core runner と Rails runtime の分離を継続 |
 | `RoleServices` | role 差し替え API は成立。既定実装は Nyoy の LLM / heuristic に依存 | Nyoy adapter 側に残す |
 | `Registry` | public `register` API は成立。標準 Graph 登録も同 API 経由 | Core API と Rails adapter API の境界を要検討 |
 | 具体 Graph / Node | Research / MemoWrite / MemoUpdate / ImageUnderstanding / Diagnostic は Nyoy の Chat / Tool / UI 依存を持つ | Nyoy 側に残す |
 
-次に実装するなら、`Runner` から persistence を剥がすために `RuntimeContext` へ次の責務を移す。
+`Runner` から persistence を剥がすため、次の責務は `RuntimeContext` / `ActiveRecordRunStore` に移した。
 
 - run status 更新
 - current node 更新
@@ -513,7 +513,7 @@ AgentGraph::Registry.register(
 - checkpoint 作成
 - state merge / scrub
 
-これにより、Core runner は「node を実行し、結果から次 node を決める」だけになり、Rails adapter runner は現在の `AgentRun` 永続化を担当できる。
+これにより、`Runner` は「node を実行し、結果から次 node を決める」処理に近づいた。次は `RuntimeContext` 自体に残る `ChatResponseControl` / `ProgressBroadcaster` / `ApprovalBroadcaster` 依存を、Rails runtime adapter として明示的に分離できるか確認する。
 
 ## 判断基準
 
