@@ -555,7 +555,9 @@ Nyoy の Rails adapter は次の分担を維持する。
 
 未確定なのは `node_call_kwargs` の境界である。現在は既存 node との互換性のため `state` / `run` / `chat` を返すが、`run` / `chat` は Nyoy 固有である。Core 抽出前に node invocation object または Nyoy node adapter へ移せるか検証する。
 
-次は、最小 protocol だけで Runner の実行テストを成立させ、`Runner` 自体を Rails model 非依存の Core 候補として判定する。
+最小 protocol だけを実装する in-memory context と、`state` だけを受け取る node で Runner の実行テストが成立した。Runner に残っていた ActiveSupport の `blank?` / `deep_dup` 依存も純粋 Ruby の処理へ置き換えたため、`Runner` 自体は Rails model 非依存の Core 候補と判断する。
+
+次は `Runner` を `AgentGraph::Core` へ移し、旧 `AgentGraph::Runner` を互換 alias にする。その後、`node_call_kwargs` を Core protocol に残すか、node invocation adapter として分離するかを検討する。
 
 ## 判断基準
 

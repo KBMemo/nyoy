@@ -18,7 +18,7 @@ module AgentGraph
         @context.check_cancelled!
 
         node_name = @context.current_node
-        break @context.finish_completed! if node_name.blank?
+        break @context.finish_completed! if empty_node_name?(node_name)
 
         result = execute_node(node_name)
         @context.apply_result!(node_name, result)
@@ -61,7 +61,7 @@ module AgentGraph
 
       node_run = @context.create_node_run!(node_name: node_name, input_state: @context.state)
 
-      result = node.call(**@context.node_call_kwargs(state: @context.state.deep_dup))
+      result = node.call(**@context.node_call_kwargs(state: deep_dup(@context.state)))
 
       @context.complete_node_run!(node_run, result: result)
 
@@ -77,6 +77,25 @@ module AgentGraph
       return result.goto if result.explicit_goto?
 
       @graph.next_node_for(node_name, @context.state)
+    end
+
+    def empty_node_name?(node_name)
+      node_name.nil? || (node_name.respond_to?(:empty?) && node_name.empty?)
+    end
+
+    def deep_dup(value)
+      case value
+      when Hash
+        value.each_with_object({}) do |(key, item), copy|
+          copy[deep_dup(key)] = deep_dup(item)
+        end
+      when Array
+        value.map { |item| deep_dup(item) }
+      else
+        value.dup
+      end
+    rescue TypeError
+      value
     end
   end
 end
