@@ -51,6 +51,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
       assert_equal "main", meta["source"]
       assert_equal main.model_id, meta["model_id"]
       assert_equal "考えたこと", meta["thinking"]
+      assert_equal "main", meta["fallback"]
     ensure
       AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
       AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)
@@ -83,6 +84,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
       assert_equal [ light.model_id ], calls
       assert_includes draft, "調査結果"
       assert_equal "template", meta["source"]
+      assert_equal "template", meta["fallback"]
     ensure
       AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
       AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)

@@ -46,6 +46,8 @@ class AgentGraphNodesSynthesizeDraftTest < ActiveSupport::TestCase
       "fetched_pages" => 1,
       "errors" => 1
     }, result.updates.dig("draft_synthesis", "evidence"))
+    assert_equal "draft", result.updates.dig("draft_synthesis", "role")
+    assert_equal "evidence_pack", result.updates.dig("draft_synthesis", "profile")
   end
 
   test "uses draft role service" do
@@ -76,6 +78,7 @@ class AgentGraphNodesSynthesizeDraftTest < ActiveSupport::TestCase
       assert_equal true, result.updates.fetch("draft_truncated")
       assert_equal "short thought", result.updates.fetch("draft_thinking")
       assert_equal "test", result.updates.dig("draft_synthesis", "source")
+      assert_equal "override", result.updates.dig("draft_synthesis", "profile")
       assert_equal "not_required", result.updates.fetch("approval")
     end
 
@@ -99,6 +102,7 @@ class AgentGraphNodesSynthesizeDraftTest < ActiveSupport::TestCase
       assert result.failed?
       assert_equal "empty draft", result.error
       assert_equal "EMPTY_DRAFT", result.updates.dig("errors", 0, "code")
+      assert_equal "override", result.updates.dig("draft_synthesis", "profile")
     end
   end
 end

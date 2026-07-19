@@ -92,7 +92,10 @@ class AgentNodeRunTest < ActiveSupport::TestCase
         "updates" => {
           "draft" => "draft",
           "draft_synthesis" => {
+            "role" => "draft",
+            "profile" => "llm",
             "source" => "evidence_pack",
+            "fallback" => "template",
             "evidence" => {
               "memo" => 1,
               "search_results" => 2,
@@ -106,7 +109,9 @@ class AgentNodeRunTest < ActiveSupport::TestCase
 
     assert_equal [
       "updates: draft, draft_synthesis",
+      "profile: draft.llm",
       "source: evidence_pack",
+      "fallback: template",
       "memo: 1",
       "search: 2",
       "fetched: 1",

@@ -61,6 +61,11 @@ module AgentGraph
         profile_registry.fetch(key) { unknown_role!(key) }.keys.freeze
       end
 
+      def active_profile_for(role)
+        key = normalize(role)
+        registry.key?(key) ? :override : profile_for(key)
+      end
+
       def with(role, service)
         key = normalize(role)
         previous = registry.fetch(key, :__missing__)

@@ -37,7 +37,7 @@ module AgentGraph
         return [
           fallback_answer(evidence),
           false,
-          { "source" => "template", "model_id" => nil }
+          { "source" => "template", "model_id" => nil, "fallback" => "template" }
         ]
       end
 
@@ -45,9 +45,14 @@ module AgentGraph
       draft = compose_draft(llm_answer, evidence)
       used = if llm_answer.present?
                (meta || {}).merge("source" => meta&.dig("source") || "main")
-             else
-               { "source" => "template", "model_id" => nil, "thinking" => nil }
-             end
+      else
+               (meta || {}).merge(
+                 "source" => "template",
+                 "model_id" => nil,
+                 "thinking" => nil,
+                 "fallback" => "template"
+               )
+      end
 
       [ draft, truncated == true, used.stringify_keys ]
     end
@@ -68,7 +73,9 @@ module AgentGraph
     private
 
     def synthesize_with_fallback(evidence)
+      attempts = 0
       candidates(evidence_models).each do |model, source|
+        attempts += 1
         answer, thinking, truncated = ask_model(model, evidence)
         next if answer.blank?
 
@@ -78,7 +85,8 @@ module AgentGraph
           {
             "source" => source,
             "model_id" => model.model_id,
-            "thinking" => thinking.presence
+            "thinking" => thinking.presence,
+            "fallback" => attempts > 1 ? source : nil
           }
         ]
       end
@@ -263,9 +271,9 @@ module AgentGraph
       memo = evidence[:memo].to_s.strip
       lines << if memo.present?
                  "メモ抜粋:\n#{memo.truncate(800)}\n"
-               else
+      else
                  "メモ抜粋: （該当なし）\n"
-               end
+      end
 
       if evidence[:search_results].any?
         lines << "検索結果:"

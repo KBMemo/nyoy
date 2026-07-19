@@ -467,7 +467,9 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」から選択できる。LLMドラフト用modelとfallbackも同じ画面に置き、profile未指定時は環境変数、さらに未指定なら `evidence_pack` を使う。
 
-次は `draft.llm` の実機比較に必要な観測項目を整理し、profile・model・fallback結果がAgentNodeRunに一貫して残るか確認する。
+`synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
+
+次は `evidence_pack` / `llm` を同一質問で比較する実運用手順をrunbook化し、応答時間・使用model・fallback・最終回答品質を確認できるようにする。
 
 ### Workflow Registry
 

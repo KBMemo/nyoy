@@ -34,8 +34,14 @@ class AgentNodeRun < ApplicationRecord
     return [] unless synthesis.is_a?(Hash)
 
     parts = []
+    if synthesis["profile"].present?
+      role = synthesis["role"].presence
+      profile = [ role, synthesis["profile"] ].compact.join(".")
+      parts << "profile: #{profile}"
+    end
     parts << "llm: #{synthesis["model_id"]}" if synthesis["model_id"].present?
     parts << "source: #{synthesis["source"]}" if synthesis["source"].present?
+    parts << "fallback: #{synthesis["fallback"]}" if synthesis["fallback"].present?
     parts.concat(evidence_summary(synthesis["evidence"]))
     parts.concat(llama_cache_summary(synthesis["llama_cache"]))
     parts.concat(usage_summary(synthesis["usage"]))

@@ -11,7 +11,10 @@ module AgentGraph
           run: run,
           chat: chat
         )
-        meta = (meta || {}).stringify_keys
+        meta = (meta || {}).stringify_keys.merge(
+          "role" => "draft",
+          "profile" => AgentGraph::RoleServices.active_profile_for(:draft).to_s
+        )
 
         if draft.blank?
           return AgentGraph::NodeResult.fail(
@@ -21,7 +24,8 @@ module AgentGraph
                 "node" => "synthesize_draft",
                 "code" => "EMPTY_DRAFT",
                 "message" => "evidence pack produced no content"
-              } ]
+              } ],
+              "draft_synthesis" => meta
             }
           )
         end
