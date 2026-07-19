@@ -90,6 +90,10 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
       @events << [ :check_cancelled, run.id ]
     end
 
+    def cancelled_exception?(error)
+      error.is_a?(AgentGraph::Cancelled)
+    end
+
     def node_started!(run, node_name)
       @events << [ :node_started, run.id, node_name ]
     end

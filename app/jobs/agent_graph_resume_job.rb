@@ -18,7 +18,7 @@ class AgentGraphResumeJob < ApplicationJob
         AgentGraph::Error.new(completed.error_message.presence || failure_label(run))
       )
     end
-  rescue ChatResponseControl::Cancelled
+  rescue ChatResponseControl::Cancelled, AgentGraph::Cancelled
     ChatCancellationBroadcaster.call(chat)
   rescue StandardError => e
     Rails.logger.error("AgentGraphResumeJob failed for run=#{agent_run_id}: #{e.full_message}")

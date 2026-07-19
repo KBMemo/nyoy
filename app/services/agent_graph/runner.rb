@@ -33,10 +33,15 @@ module AgentGraph
 
       @context.finish_failed!("max steps exceeded (#{MAX_STEPS})") if @context.running?
       @run
-    rescue ChatResponseControl::Cancelled
+    rescue Cancelled
       @context.finish_cancelled!
       raise
     rescue StandardError => e
+      if @context.cancelled_exception?(e)
+        @context.finish_cancelled!
+        raise Cancelled
+      end
+
       @context.finish_failed!(e.message)
       raise
     end
@@ -58,6 +63,8 @@ module AgentGraph
       result
     rescue StandardError => e
       @context.fail_node_run!(node_run, message: e.message)
+      raise Cancelled if @context.cancelled_exception?(e)
+
       NodeResult.fail(e.message)
     end
 

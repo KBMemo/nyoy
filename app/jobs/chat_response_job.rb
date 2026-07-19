@@ -80,7 +80,7 @@ class ChatResponseJob < ApplicationJob
     elsif message
       broadcast_assistant_message!(message, stream_state: stream_state)
     end
-  rescue ChatResponseControl::Cancelled
+  rescue ChatResponseControl::Cancelled, AgentGraph::Cancelled
     finalize_cancellation(chat, message, stream_state)
   rescue StandardError => e
     # Everything here is turned into a friendly chat bubble, so log the real

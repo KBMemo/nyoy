@@ -41,6 +41,10 @@ module AgentGraph
       signals.check_cancelled!(run)
     end
 
+    def cancelled_exception?(error)
+      error.is_a?(Cancelled) || signals.cancelled_exception?(error)
+    end
+
     def node_started!(node_name)
       signals.node_started!(run, node_name)
     end

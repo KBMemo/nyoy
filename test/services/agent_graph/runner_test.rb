@@ -51,13 +51,50 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     ], context.events
   end
 
+  test "finishes run as cancelled when runtime context raises graph cancellation" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: "test_graph",
+      status: "pending",
+      current_node: "start",
+      state: {}
+    )
+    context = RecordingContext.new(run: run, cancel_on_check: true)
+
+    assert_raises(AgentGraph::Cancelled) do
+      AgentGraph::Runner.new(run, graph: graph(name: "test_graph"), context: context).call
+    end
+
+    assert_equal "cancelled", run.reload.status
+    assert_equal [ :start_run, :check_cancelled, :finish_cancelled ], context.events
+    assert_empty run.agent_node_runs
+  end
+
+  test "converts legacy chat cancellation raised by node into graph cancellation" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: "test_graph",
+      status: "pending",
+      current_node: "start",
+      state: {}
+    )
+
+    assert_raises(AgentGraph::Cancelled) do
+      AgentGraph::Runner.new(run, graph: graph(name: "test_graph", node: LegacyCancellingNode.new)).call
+    end
+
+    assert_equal "cancelled", run.reload.status
+    assert_equal "cancelled", run.error_message
+    assert_equal "failed", run.agent_node_runs.last.status
+  end
+
   private
 
-  def graph(name:)
+  def graph(name:, node: Node.new)
     AgentGraph::GraphDefinition.new(
       name: name,
       start_node: "start",
-      nodes: { "start" => Node.new },
+      nodes: { "start" => node },
       edges: { "start" => AgentGraph::Edge.end }
     )
   end
@@ -68,11 +105,18 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  class LegacyCancellingNode
+    def call(state:, run:, chat:)
+      raise ChatResponseControl::Cancelled
+    end
+  end
+
   class RecordingContext
     attr_reader :events
 
-    def initialize(run:)
+    def initialize(run:, cancel_on_check: false)
       @run = run
+      @cancel_on_check = cancel_on_check
       @events = []
     end
 
@@ -96,6 +140,11 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
 
     def check_cancelled!
       @events << :check_cancelled
+      raise AgentGraph::Cancelled if @cancel_on_check
+    end
+
+    def cancelled_exception?(error)
+      error.is_a?(AgentGraph::Cancelled)
     end
 
     def node_started!(node_name)
