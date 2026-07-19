@@ -54,7 +54,7 @@ module AgentGraph
         @context.node_started!(node_name)
 
         node_run = @context.create_node_run!(node_name: node_name, input_state: @context.state)
-        result = node.call(**@context.node_call_kwargs(state: deep_dup(@context.state)))
+        result = @context.invoke_node(node, state: deep_dup(@context.state))
         @context.complete_node_run!(node_run, result: result)
 
         result

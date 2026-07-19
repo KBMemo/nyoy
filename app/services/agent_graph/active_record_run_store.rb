@@ -74,14 +74,6 @@ module AgentGraph
       run.state || {}
     end
 
-    def node_call_kwargs(state:)
-      {
-        state: state,
-        run: run,
-        chat: run.chat
-      }
-    end
-
     def apply_result!(node_name, result)
       merged = scrub_null_bytes(state.deep_merge(result.updates))
       run.update!(state: merged)

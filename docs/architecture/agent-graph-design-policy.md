@@ -539,7 +539,7 @@ AgentGraph::Runner.new(graph: graph, context: context).call
 | 実行ループ | `check_cancelled!`, `current_node`, `running?`, `update_current_node!` |
 | node 監査 | `node_started!`, `create_node_run!`, `complete_node_run!`, `fail_node_run!` |
 | state・checkpoint | `state`, `apply_result!` |
-| node 呼び出し | `node_call_kwargs` |
+| node 呼び出し | `invoke_node` |
 | 終了処理 | `finish_completed!`, `finish_failed!`, `finish_cancelled!`, `interrupt!` |
 | 取消例外の変換 | `cancelled_exception?` |
 
@@ -553,11 +553,11 @@ Nyoy の Rails adapter は次の分担を維持する。
 | `RailsRuntimeSignals` | cancellation、progress、approval の Rails/UI 副作用 |
 | `ActiveRecordRuntimeContext` | store と signals を組み合わせる factory |
 
-未確定なのは `node_call_kwargs` の境界である。現在は既存 node との互換性のため `state` / `run` / `chat` を返すが、`run` / `chat` は Nyoy 固有である。Core 抽出前に node invocation object または Nyoy node adapter へ移せるか検証する。
+Core Runner は `invoke_node(node, state:)` だけを要求し、node の具体的な keyword arguments を知らない。Nyoy の `RuntimeContext` が既存 node 向けの `state` / `run` / `chat` を組み立てる。これにより、純粋 Ruby context は `state` だけを渡し、別 adapter は独自の依存を注入できる。
 
 最小 protocol だけを実装する in-memory context と、`state` だけを受け取る node で Runner の実行テストが成立した。Runner に残っていた ActiveSupport の `blank?` / `deep_dup` 依存も純粋 Ruby の処理へ置き換え、`Runner` / `Cancelled` を `AgentGraph::Core` へ移した。旧定数は互換 alias として残している。
 
-次は、`node_call_kwargs` を Core protocol に残すか、node invocation adapter として分離するかを検討する。
+次は Core protocol の method 数を見直し、node 監査と lifecycle 永続化をより小さな adapter interface にまとめる価値があるか検討する。
 
 ## 判断基準
 

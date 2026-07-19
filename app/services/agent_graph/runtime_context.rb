@@ -73,8 +73,8 @@ module AgentGraph
       signals.request_approval!(run)
     end
 
-    def node_call_kwargs(state:)
-      store.node_call_kwargs(state: state)
+    def invoke_node(node, state:)
+      node.call(state: state, run: run, chat: run.chat)
     end
 
     def finish_completed!

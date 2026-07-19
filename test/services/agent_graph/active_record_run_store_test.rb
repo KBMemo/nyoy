@@ -59,16 +59,6 @@ class AgentGraphActiveRecordRunStoreTest < ActiveSupport::TestCase
     assert_equal({ "text" => "ab", "nested" => [ "cd" ] }, node_run.input_snapshot)
   end
 
-  test "builds legacy node call kwargs from rails run context" do
-    state = { "foo" => "bar" }
-
-    assert_equal({
-      state: state,
-      run: @run,
-      chat: @chat
-    }, @store.node_call_kwargs(state: state))
-  end
-
   test "applies node results and checkpoints scrubbed state" do
     result = AgentGraph::NodeResult.new(updates: { "answer" => "ok\u0000" })
 

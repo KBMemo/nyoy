@@ -105,8 +105,8 @@ class AgentGraphRunnerProtocolTest < Minitest::Test
       @state = deep_merge(state, result.updates)
     end
 
-    def node_call_kwargs(state:)
-      { state: state }
+    def invoke_node(node, state:)
+      node.call(state: state)
     end
 
     def finish_completed!

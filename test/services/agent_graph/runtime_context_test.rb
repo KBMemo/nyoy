@@ -21,15 +21,19 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
     )
   end
 
-  test "exposes legacy node call kwargs from the runtime boundary" do
+  test "invokes legacy node with rails runtime arguments" do
     context = AgentGraph::RuntimeContext.new(run: @run, graph: @graph)
     state = { "foo" => "bar" }
+    node = RecordingNode.new
 
+    result = context.invoke_node(node, state: state)
+
+    assert_equal :called, result
     assert_equal({
       state: state,
       run: @run,
       chat: @chat
-    }, context.node_call_kwargs(state: state))
+    }, node.arguments)
   end
 
   test "delegates runtime signals through injected adapter" do
@@ -98,6 +102,15 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
 
     def request_approval!(run)
       @events << [ :request_approval, run.id ]
+    end
+  end
+
+  class RecordingNode
+    attr_reader :arguments
+
+    def call(state:, run:, chat:)
+      @arguments = { state: state, run: run, chat: chat }
+      :called
     end
   end
 end
