@@ -51,7 +51,14 @@ module AgentGraph
 
       def profile_for(role)
         key = normalize(role)
-        selected_profiles.fetch(key) { DEFAULT_PROFILES.fetch(key) { unknown_role!(key) } }
+        selected_profiles.fetch(key) do
+          configured_profile(key) || DEFAULT_PROFILES.fetch(key) { unknown_role!(key) }
+        end
+      end
+
+      def profile_names(role)
+        key = normalize(role)
+        profile_registry.fetch(key) { unknown_role!(key) }.keys.freeze
       end
 
       def with(role, service)
@@ -87,6 +94,10 @@ module AgentGraph
 
       def selected_profiles
         @selected_profiles ||= {}
+      end
+
+      def configured_profile(role)
+        AgentGraph::RoleServiceConfiguration.profile_for(role)
       end
 
       def normalize(role)

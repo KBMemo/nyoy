@@ -463,7 +463,9 @@ AgentGraph::RoleServices.select_profile(:draft, :experimental)
 
 組み込みprofileは `intent.deterministic`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
-次はprofile選択を環境変数またはAppSettingから読み込むNyoy設定adapterを追加し、再起動後も設定だけで `draft.evidence_pack` / `draft.llm` を切り替えられるようにする。
+profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
+
+次は設定画面に `draft` profile選択を追加し、`evidence_pack` / `llm` と調査ドラフト用modelの関係を同じ画面で操作できるようにする。
 
 ### Workflow Registry
 

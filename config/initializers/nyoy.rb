@@ -63,6 +63,12 @@ Rails.application.config.x.nyoy.tap do |config|
   config.style_plan_connection_key = ENV.fetch("STYLE_PLAN_CONNECTION_KEY", "llama_cpp")
   # UI（設定 → 既定モデル）未設定時のフォールバック。DB の app_settings が優先される。
   config.default_chat_connection_key = ENV.fetch("DEFAULT_CHAT_CONNECTION_KEY", "llama_cpp")
+  config.agent_graph_role_profiles = {
+    "draft" => ENV["AGENT_GRAPH_DRAFT_PROFILE"],
+    "evidence_evaluator" => ENV["AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE"],
+    "final_answer" => ENV["AGENT_GRAPH_FINAL_ANSWER_PROFILE"],
+    "intent" => ENV["AGENT_GRAPH_INTENT_PROFILE"]
+  }.compact
   config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
   config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
   config.openai_api_key = ENV["OPENAI_API_KEY"]
