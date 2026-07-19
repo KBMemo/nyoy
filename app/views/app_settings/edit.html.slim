@@ -53,6 +53,20 @@
           |  現在:
           code.nyoy-monospace.ml-1 = @app_setting.default_llm_sampling_preset_key
 
+    fieldset
+      legend class="#{kb_label} mb-1" 調査ドラフト方式
+      p#agent-graph-draft-profile-help.mt-1.text-sm.kb-text-muted
+        | 既定設定は環境変数に従い、未設定時は根拠パックを使います。現在の有効値:
+        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:draft)
+      .mt-2.space-y-2
+        - @research_draft_profile_options.each do |label, value|
+          label.flex.min-h-10.items-center.gap-2
+            = form.radio_button :agent_graph_draft_profile,
+                value,
+                class: "kb-control-accent",
+                aria: { describedby: "agent-graph-draft-profile-help" }
+            span.text-sm.kb-text-secondary = label
+
     div
       = form.label :research_draft_model_id, "調査ドラフト用モデル", class: "#{kb_label} mb-1"
       = form.select :research_draft_model_id,
@@ -60,7 +74,7 @@
           { include_blank: "チャットと同じ（未設定）" },
           class: kb_field_input_classes
       p.mt-1.text-sm.kb-text-muted
-        | Research Graph のドラフト合成だけ、チャット本体より軽いモデルに切り替えられます。
+        | LLM ドラフトを選んだ場合に使います。未設定時はチャットと同じモデルです。
 
     div
       = form.label :research_draft_fallback, "調査ドラフト失敗時", class: "#{kb_label} mb-1"

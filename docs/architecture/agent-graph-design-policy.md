@@ -465,7 +465,9 @@ AgentGraph::RoleServices.select_profile(:draft, :experimental)
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
-次は設定画面に `draft` profile選択を追加し、`evidence_pack` / `llm` と調査ドラフト用modelの関係を同じ画面で操作できるようにする。
+設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」から選択できる。LLMドラフト用modelとfallbackも同じ画面に置き、profile未指定時は環境変数、さらに未指定なら `evidence_pack` を使う。
+
+次は `draft.llm` の実機比較に必要な観測項目を整理し、profile・model・fallback結果がAgentNodeRunに一貫して残るか確認する。
 
 ### Workflow Registry
 

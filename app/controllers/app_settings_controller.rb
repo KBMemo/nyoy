@@ -23,6 +23,11 @@ class AppSettingsController < ApplicationController
     @connection_options = StylePlanModelCatalog.options_for_select
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
     @research_draft_model_options = research_draft_model_options
+    @research_draft_profile_options = [
+      [ "既定設定", "" ],
+      [ "根拠パック", "evidence_pack" ],
+      [ "LLM ドラフト", "llm" ]
+    ]
     @research_draft_fallback_options = [
       [ "メインモデルで再試行 → だめならテンプレ", "main" ],
       [ "テンプレのみ（メインは使わない）", "template" ]
@@ -46,6 +51,7 @@ class AppSettingsController < ApplicationController
       :default_chat_connection_key,
       :default_style_plan_connection_key,
       :default_llm_sampling_preset_key,
+      :agent_graph_draft_profile,
       :research_draft_model_id,
       :research_draft_fallback
     ).to_h.transform_values { |value| value.to_s.presence }

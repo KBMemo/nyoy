@@ -42,7 +42,7 @@ class AgentGraphRoleServiceConfigurationTest < ActiveSupport::TestCase
   end
 
   test "configured unknown profile fails explicitly when fetched" do
-    AppSetting.create!(agent_graph_role_profiles: { "draft" => "missing" })
+    Rails.application.config.x.nyoy.agent_graph_role_profiles = { "draft" => "missing" }
 
     error = assert_raises(KeyError) { AgentGraph::RoleServices.fetch(:draft) }
     assert_includes error.message, "unknown AgentGraph role service profile: draft.missing"

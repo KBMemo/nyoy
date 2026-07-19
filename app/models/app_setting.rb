@@ -11,6 +11,7 @@ class AppSetting < ApplicationRecord
   validate :sampling_preset_key_must_be_available
   validate :research_draft_model_must_be_available
   validate :research_draft_fallback_must_be_allowed
+  validate :agent_graph_role_profiles_must_be_available
 
   class << self
     def instance
@@ -82,6 +83,23 @@ class AppSetting < ApplicationRecord
     end
   end
 
+  def agent_graph_draft_profile
+    agent_graph_role_profiles.to_h["draft"].to_s.presence
+  end
+
+  def agent_graph_draft_profile=(profile)
+    profiles = agent_graph_role_profiles.to_h.stringify_keys
+    value = profile.to_s.presence
+
+    if value
+      profiles["draft"] = value
+    else
+      profiles.delete("draft")
+    end
+
+    self.agent_graph_role_profiles = profiles
+  end
+
   private
 
   def normalize_research_draft_fallback
@@ -117,6 +135,17 @@ class AppSetting < ApplicationRecord
     return if RESEARCH_DRAFT_FALLBACKS.include?(value)
 
     errors.add(:research_draft_fallback, "は main か template を選んでください")
+  end
+
+  def agent_graph_role_profiles_must_be_available
+    agent_graph_role_profiles.to_h.each do |role, profile|
+      available = AgentGraph::RoleServices.profile_names(role)
+      next if available.include?(profile.to_s.to_sym)
+
+      errors.add(:agent_graph_role_profiles, "#{role}.#{profile} は登録されていません")
+    rescue KeyError
+      errors.add(:agent_graph_role_profiles, "#{role} は登録されていない role です")
+    end
   end
 
   def validate_connection_key(attribute, keys)
