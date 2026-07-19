@@ -38,11 +38,15 @@ module AgentGraph
         state: @state
       )
 
-      Runner.new(run, graph: @graph).call
+      Runner.new(graph: @graph, context: runtime_context(run)).call
       run.reload
     end
 
     private
+
+    def runtime_context(run)
+      ActiveRecordRuntimeContext.build(run: run, graph: @graph)
+    end
 
     def supersede_pending_approvals!
       return if @supersede_reason.blank?

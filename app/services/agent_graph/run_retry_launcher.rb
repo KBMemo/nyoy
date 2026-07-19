@@ -26,11 +26,15 @@ module AgentGraph
         state: retry_state(plan)
       )
 
-      Runner.new(retry_run, graph: graph).call
+      Runner.new(graph: graph, context: runtime_context(retry_run, graph)).call
       retry_run.reload
     end
 
     private
+
+    def runtime_context(run, graph)
+      ActiveRecordRuntimeContext.build(run: run, graph: graph)
+    end
 
     def retry_state(plan)
       (plan.checkpoint.state || {}).deep_dup.merge(

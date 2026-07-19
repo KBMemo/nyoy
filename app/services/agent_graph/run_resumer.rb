@@ -28,8 +28,14 @@ module AgentGraph
       raise ArgumentError, "decision required" unless VALID_DECISIONS.include?(@decision)
 
       @agent_run.merge_state!("approval" => @decision)
-      Runner.new(@agent_run, graph: @graph).call
+      Runner.new(graph: @graph, context: runtime_context).call
       @agent_run.reload
+    end
+
+    private
+
+    def runtime_context
+      ActiveRecordRuntimeContext.build(run: @agent_run, graph: @graph)
     end
   end
 end
