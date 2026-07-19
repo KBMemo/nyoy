@@ -9,18 +9,6 @@ module AgentGraph
       @signals = signals || RailsRuntimeSignals.new
     end
 
-    def run
-      store.run
-    end
-
-    def graph
-      store.graph
-    end
-
-    def chat
-      run.chat
-    end
-
     def start_run!
       store.start_run!
     end
@@ -78,11 +66,7 @@ module AgentGraph
     end
 
     def node_call_kwargs(state:)
-      {
-        state: state,
-        run: run,
-        chat: chat
-      }
+      store.node_call_kwargs(state: state)
     end
 
     def finish_completed!
@@ -104,6 +88,12 @@ module AgentGraph
     def finish_cancelled!
       clear_progress!
       store.finish_cancelled!
+    end
+
+    private
+
+    def run
+      store.run
     end
   end
 end

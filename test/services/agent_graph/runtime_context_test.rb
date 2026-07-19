@@ -32,12 +32,6 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
     }, context.node_call_kwargs(state: state))
   end
 
-  test "chat is resolved through the run" do
-    context = AgentGraph::RuntimeContext.new(run: @run, graph: @graph)
-
-    assert_equal @chat, context.chat
-  end
-
   test "delegates runtime signals through injected adapter" do
     signals = RecordingSignals.new
     context = AgentGraph::RuntimeContext.new(run: @run, graph: @graph, signals: signals)
