@@ -597,13 +597,15 @@ Ruby baseline は公開前に Ruby 3.2 から Nyoy 採用 version までの stan
 
 移行は次の順で行う。
 
-1. path gem の skeleton、version、standalone test command を追加する
+1. path gem の skeleton、version、standalone test command を追加する（完了）
 2. Core 実装と protocol test を package 内へ移す
 3. Nyoy の Gemfile と互換 alias を package entrypoint に接続する
 4. Rails回帰、Zeitwerk、package 単体testを通す
 5. 第二の利用者または独立release要件が現れた時点で repository 分離と `1.0.0` 条件を再検討する
 
-次は 1 として、実装を移動しない skeleton だけを追加し、path gem を単体で build/test できる基盤を作る。
+path gem の skeleton は `0.1.0` として追加し、現時点で保証済みの Ruby 4.0.3 を `required_ruby_version` に指定した。package はまだ version 定数だけを公開し、Nyoy の Core 実装とは接続しない。
+
+次は 2 として、Core 実装と Rails boot なしの protocol test を package 内へ移す。移動後も Nyoy 側の単一 entrypoint と互換 alias は維持する。
 
 ## 判断基準
 
