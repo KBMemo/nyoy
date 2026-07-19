@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
-require_relative "../../../app/services/agent_graph/core"
+require "agent_graph/core"
 
 class AgentGraphRunnerProtocolTest < Minitest::Test
   def test_runs_with_an_in_memory_context_and_state_only_nodes

@@ -559,7 +559,7 @@ Core Runner は `invoke_node(node, state:)` だけを要求し、node の具体�
 
 Core protocol は node 監査、state/checkpoint、lifecycle を含むため method 数は多いが、Runner が保証する更新順序を一つの execution context に閉じる利点がある。現段階では複数の小さな adapter へ分割せず、`ContextProtocol` で契約を固定する。ActiveRecord 以外の永続化 backend、または監査なしの in-memory backend を実運用に導入する時点で、store / observer / invoker 分割を再評価する。
 
-Core の単一 entrypoint として `app/services/agent_graph/core.rb` を追加した。Rails autoload なしでもこのファイルだけを require すれば、次の public constants を利用できる。
+Core の単一 entrypoint は `packages/agent_graph-core/lib/agent_graph/core.rb` へ移した。Rails autoload なしでも `require "agent_graph/core"` だけで、次の public constants を利用できる。
 
 - `AgentGraph::Core::Cancelled`
 - `AgentGraph::Core::ContextProtocol`
@@ -598,14 +598,16 @@ Ruby baseline は公開前に Ruby 3.2 から Nyoy 採用 version までの stan
 移行は次の順で行う。
 
 1. path gem の skeleton、version、standalone test command を追加する（完了）
-2. Core 実装と protocol test を package 内へ移す
+2. Core 実装と protocol test を package 内へ移す（完了）
 3. Nyoy の Gemfile と互換 alias を package entrypoint に接続する
 4. Rails回帰、Zeitwerk、package 単体testを通す
 5. 第二の利用者または独立release要件が現れた時点で repository 分離と `1.0.0` 条件を再検討する
 
-path gem の skeleton は `0.1.0` として追加し、現時点で保証済みの Ruby 4.0.3 を `required_ruby_version` に指定した。package はまだ version 定数だけを公開し、Nyoy の Core 実装とは接続しない。
+path gem の skeleton は `0.1.0` として追加し、現時点で保証済みの Ruby 4.0.3 を `required_ruby_version` に指定した。Core 実装と Rails boot なしの Runner protocol test は package 内へ移動済みである。
 
-次は 2 として、Core 実装と Rails boot なしの protocol test を package 内へ移す。移動後も Nyoy 側の単一 entrypoint と互換 alias は維持する。
+Nyoy 側の `app/services/agent_graph/core.rb` は移行中の bridge として package entrypoint を直接 require し、`AgentGraph::{Runner,Edge,...}` の互換 alias は維持する。
+
+次は 3 として、Nyoy の Gemfile に path gem を登録し、bridge の filesystem 相対参照を通常の `require "agent_graph/core"` に置き換える。
 
 ## 判断基準
 

@@ -2,7 +2,7 @@
 
 Pure Ruby state-machine runtime extracted from Nyoy.
 
-This package is currently a private, vendored path gem. Its public API and implementation will move here incrementally before any standalone release.
+This package is currently a private, vendored path gem. It contains the graph definition, transition result, state schema, execution runner, and runtime context protocol. Rails persistence and application workflows remain in Nyoy.
 
 ## Development
 
