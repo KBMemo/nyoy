@@ -488,19 +488,19 @@ AgentGraph::Registry.register(
 - `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない（達成）
 - workflow 追加が `Registry.register` と node 定義の追加だけで済む（`DiagnosticGraph` で検証済み）
 - role service の差し替えで軽量モデルを複数試せる（`intent` / `evidence_evaluator` / `draft` / `final_answer` は差し替え可能）
-- checkpoint / retry の契約が Core から見て adapter interface になっている（部分達成。`Runner` は `RuntimeContext` 経由、Rails 永続化は `ActiveRecordRunStore` に分離済み）
-- Nyoy 固有 node と Core runtime のテストが分離できている（部分達成。`AgentGraph::Core` test は独立、`Runner` は Rails model 依存）
+- checkpoint / retry の契約が Core から見て adapter interface になっている（達成。`Core::Runner` は context protocol のみを要求し、Rails 永続化は `ActiveRecordRunStore` に分離済み）
+- Nyoy 固有 node と Core runtime のテストが分離できている（達成。`Core::Runner` は Rails boot なしの in-memory context test を持つ）
 
 ### 再検討メモ
 
-現時点では、純粋 Ruby gem として切り出せるのは `AgentGraph::Core` の小さな状態機械部品に限られる。`Runner` 以降は Rails adapter として扱うのが現実的である。
+現時点では、状態機械部品と実行ループを `AgentGraph::Core` の純粋 Ruby gem 候補として切り出せる。永続化、UI signal、具体 node は引き続き Rails adapter として扱う。
 
 候補:
 
 | レイヤ | 現状 | 次の判断 |
 | --- | --- | --- |
-| `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を保持 | pure Ruby gem 化候補 |
-| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化・graph 検証・node kwargs は `ActiveRecordRunStore`、UI/取消通知は `RailsRuntimeSignals` が担当。Rails 経路は `ActiveRecordRuntimeContext` で組み立てる。キャンセルは `AgentGraph::Cancelled` として扱う | Core runner と Rails runtime の分離を継続 |
+| `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` / `Runner` / `Cancelled` を保持 | pure Ruby gem 化候補 |
+| `AgentGraph::Runner` | `Core::Runner` の互換 alias。Rails 経路は `ActiveRecordRuntimeContext` を明示注入する | 新規コードは `Core::Runner` または互換 alias に context を必須指定する |
 | `RoleServices` | role 差し替え API は成立。既定実装は Nyoy の LLM / heuristic に依存 | Nyoy adapter 側に残す |
 | `Registry` | public `register` API は成立。標準 Graph 登録も同 API 経由 | Core API と Rails adapter API の境界を要検討 |
 | 具体 Graph / Node | Research / MemoWrite / MemoUpdate / ImageUnderstanding / Diagnostic は Nyoy の Chat / Tool / UI 依存を持つ | Nyoy 側に残す |
@@ -529,7 +529,7 @@ Core 化する場合の `Runner` entrypoint は次に固定する。
 AgentGraph::Runner.new(graph: graph, context: context).call
 ```
 
-`Runner.new(agent_run, graph:)` は Nyoy 内の移行用互換 entrypoint とする。launch / resume / retry の本番経路は新 entrypoint へ移行済みのため、外部呼び出しがないことを確認し、Core 抽出に着手する直前に削除する。互換 entrypoint を Core gem の public API には含めない。
+旧 `Runner.new(agent_run, graph:)` は本番経路と repository 内の呼び出しがないことを確認して削除した。`AgentGraph::Runner` 定数自体は `AgentGraph::Core::Runner` の互換 alias として残す。
 
 `Runner` が要求する context の最小 protocol は次のとおりとする。
 
@@ -555,9 +555,9 @@ Nyoy の Rails adapter は次の分担を維持する。
 
 未確定なのは `node_call_kwargs` の境界である。現在は既存 node との互換性のため `state` / `run` / `chat` を返すが、`run` / `chat` は Nyoy 固有である。Core 抽出前に node invocation object または Nyoy node adapter へ移せるか検証する。
 
-最小 protocol だけを実装する in-memory context と、`state` だけを受け取る node で Runner の実行テストが成立した。Runner に残っていた ActiveSupport の `blank?` / `deep_dup` 依存も純粋 Ruby の処理へ置き換えたため、`Runner` 自体は Rails model 非依存の Core 候補と判断する。
+最小 protocol だけを実装する in-memory context と、`state` だけを受け取る node で Runner の実行テストが成立した。Runner に残っていた ActiveSupport の `blank?` / `deep_dup` 依存も純粋 Ruby の処理へ置き換え、`Runner` / `Cancelled` を `AgentGraph::Core` へ移した。旧定数は互換 alias として残している。
 
-次は `Runner` を `AgentGraph::Core` へ移し、旧 `AgentGraph::Runner` を互換 alias にする。その後、`node_call_kwargs` を Core protocol に残すか、node invocation adapter として分離するかを検討する。
+次は、`node_call_kwargs` を Core protocol に残すか、node invocation adapter として分離するかを検討する。
 
 ## 判断基準
 

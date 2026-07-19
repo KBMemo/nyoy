@@ -29,5 +29,7 @@ class AgentGraphCoreTest < ActiveSupport::TestCase
     assert_same AgentGraph::Core::Edge, AgentGraph::Edge
     assert_same AgentGraph::Core::NodeResult, AgentGraph::NodeResult
     assert_same AgentGraph::Core::StateSchema, AgentGraph::StateSchema
+    assert_same AgentGraph::Core::Cancelled, AgentGraph::Cancelled
+    assert_same AgentGraph::Core::Runner, AgentGraph::Runner
   end
 end

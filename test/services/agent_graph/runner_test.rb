@@ -17,8 +17,12 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
       state: {}
     )
 
+    actual_graph = graph(name: "actual_graph")
     error = assert_raises(ArgumentError) do
-      AgentGraph::Runner.new(run, graph: graph(name: "actual_graph")).call
+      AgentGraph::Runner.new(
+        graph: actual_graph,
+        context: AgentGraph::ActiveRecordRuntimeContext.build(run: run, graph: actual_graph)
+      ).call
     end
 
     assert_equal "agent run graph mismatch: expected_graph != actual_graph", error.message
@@ -52,12 +56,12 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     ], context.events
   end
 
-  test "requires agent run when runtime context is not provided" do
+  test "requires runtime context" do
     error = assert_raises(ArgumentError) do
       AgentGraph::Runner.new(graph: graph(name: "test_graph"))
     end
 
-    assert_equal "agent_run is required when context is not provided", error.message
+    assert_match(/missing keyword: :context/, error.message)
   end
 
   test "finishes run as cancelled when runtime context raises graph cancellation" do
@@ -71,7 +75,7 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     context = RecordingContext.new(run: run, cancel_on_check: true)
 
     assert_raises(AgentGraph::Cancelled) do
-      AgentGraph::Runner.new(run, graph: graph(name: "test_graph"), context: context).call
+      AgentGraph::Runner.new(graph: graph(name: "test_graph"), context: context).call
     end
 
     assert_equal "cancelled", run.reload.status
@@ -89,7 +93,11 @@ class AgentGraphRunnerTest < ActiveSupport::TestCase
     )
 
     assert_raises(AgentGraph::Cancelled) do
-      AgentGraph::Runner.new(run, graph: graph(name: "test_graph", node: LegacyCancellingNode.new)).call
+      legacy_graph = graph(name: "test_graph", node: LegacyCancellingNode.new)
+      AgentGraph::Runner.new(
+        graph: legacy_graph,
+        context: AgentGraph::ActiveRecordRuntimeContext.build(run: run, graph: legacy_graph)
+      ).call
     end
 
     assert_equal "cancelled", run.reload.status
