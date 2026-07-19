@@ -38,6 +38,23 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
     assert_equal @chat, context.chat
   end
 
+  test "delegates runtime signals through injected adapter" do
+    signals = RecordingSignals.new
+    context = AgentGraph::RuntimeContext.new(run: @run, graph: @graph, signals: signals)
+
+    context.check_cancelled!
+    context.node_started!("start")
+    context.clear_progress!
+    context.request_approval!
+
+    assert_equal [
+      [ :check_cancelled, @run.id ],
+      [ :node_started, @run.id, "start" ],
+      [ :clear_progress, @run.id ],
+      [ :request_approval, @run.id ]
+    ], signals.events
+  end
+
   test "creates node runs with scrubbed input snapshots" do
     context = AgentGraph::RuntimeContext.new(run: @run, graph: @graph)
 
@@ -60,5 +77,29 @@ class AgentGraphRuntimeContextTest < ActiveSupport::TestCase
     checkpoint = @run.agent_checkpoints.last
     assert_equal "start", checkpoint.node_name
     assert_equal({ "answer" => "ok" }, checkpoint.state)
+  end
+
+  class RecordingSignals
+    attr_reader :events
+
+    def initialize
+      @events = []
+    end
+
+    def check_cancelled!(run)
+      @events << [ :check_cancelled, run.id ]
+    end
+
+    def node_started!(run, node_name)
+      @events << [ :node_started, run.id, node_name ]
+    end
+
+    def clear_progress!(run)
+      @events << [ :clear_progress, run.id ]
+    end
+
+    def request_approval!(run)
+      @events << [ :request_approval, run.id ]
+    end
   end
 end

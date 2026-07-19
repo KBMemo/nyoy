@@ -2,10 +2,11 @@
 
 module AgentGraph
   class RuntimeContext
-    attr_reader :store
+    attr_reader :store, :signals
 
-    def initialize(run:, graph:, store: nil)
+    def initialize(run:, graph:, store: nil, signals: nil)
       @store = store || ActiveRecordRunStore.new(run: run, graph: graph)
+      @signals = signals || RailsRuntimeSignals.new
     end
 
     def run
@@ -37,11 +38,11 @@ module AgentGraph
     end
 
     def check_cancelled!
-      ChatResponseControl.check!(run.chat_id)
+      signals.check_cancelled!(run)
     end
 
     def node_started!(node_name)
-      ProgressBroadcaster.started!(chat, node_name, agent_run: run)
+      signals.node_started!(run, node_name)
     end
 
     def create_node_run!(node_name:, input_state:)
@@ -65,11 +66,11 @@ module AgentGraph
     end
 
     def clear_progress!
-      ProgressBroadcaster.clear!(chat)
+      signals.clear_progress!(run)
     end
 
     def request_approval!
-      ApprovalBroadcaster.request!(run.reload)
+      signals.request_approval!(run)
     end
 
     def node_call_kwargs(state:)

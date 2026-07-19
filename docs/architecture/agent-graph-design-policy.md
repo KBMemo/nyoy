@@ -500,7 +500,7 @@ AgentGraph::Registry.register(
 | レイヤ | 現状 | 次の判断 |
 | --- | --- | --- |
 | `AgentGraph::Core` | Rails 非依存。`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を保持 | pure Ruby gem 化候補 |
-| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化は `ActiveRecordRunStore` が担当 | Core runner と Rails runtime の分離を継続 |
+| `AgentGraph::Runner` | `RuntimeContext` 経由で実行制御し、Rails 永続化は `ActiveRecordRunStore`、UI/取消通知は `RailsRuntimeSignals` が担当 | Core runner と Rails runtime の分離を継続 |
 | `RoleServices` | role 差し替え API は成立。既定実装は Nyoy の LLM / heuristic に依存 | Nyoy adapter 側に残す |
 | `Registry` | public `register` API は成立。標準 Graph 登録も同 API 経由 | Core API と Rails adapter API の境界を要検討 |
 | 具体 Graph / Node | Research / MemoWrite / MemoUpdate / ImageUnderstanding / Diagnostic は Nyoy の Chat / Tool / UI 依存を持つ | Nyoy 側に残す |
@@ -513,7 +513,9 @@ AgentGraph::Registry.register(
 - checkpoint 作成
 - state merge / scrub
 
-これにより、`Runner` は「node を実行し、結果から次 node を決める」処理に近づいた。次は `RuntimeContext` 自体に残る `ChatResponseControl` / `ProgressBroadcaster` / `ApprovalBroadcaster` 依存を、Rails runtime adapter として明示的に分離できるか確認する。
+これにより、`Runner` は「node を実行し、結果から次 node を決める」処理に近づいた。`RuntimeContext` 自体に残っていた `ChatResponseControl` / `ProgressBroadcaster` / `ApprovalBroadcaster` 依存も `RailsRuntimeSignals` へ分離した。
+
+次は、`RuntimeContext` が保持している `run` / `chat` / `graph` 参照を node call kwargs と Rails adapter の都合として整理し、Core runner から見える interface をさらに小さくできるか確認する。
 
 ## 判断基準
 
