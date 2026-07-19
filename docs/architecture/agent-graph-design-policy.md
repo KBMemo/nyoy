@@ -609,7 +609,9 @@ Nyoy は `gem "agent_graph-core", path: "packages/agent_graph-core"` を通常�
 
 package単体test、gem build、Bundler経由のRails boot、Zeitwerk、Graph回帰はすべて通過した。これにより、Nyoy内のpath gem移行は完了とする。repository分離は手順5の条件が成立するまで行わない。
 
-次は package のstandalone testをNyoyのCIに組み込み、Rails testだけが成功してCore単体testが見落とされる状態を防ぐ。
+package のstandalone testはCIの独立した `core-test` jobで実行する。DB、Node、Rails bootを必要とせず、Rails testだけが成功してCore単体testが見落とされる状態を防ぐ。
+
+Core / Nyoy境界とpath gem化はここで一区切りとする。次は当初の目的へ戻り、role serviceごとの軽量モデル差し替えを設定から選択できる境界を検証する。
 
 ## 判断基準
 
