@@ -559,7 +559,17 @@ Core Runner は `invoke_node(node, state:)` だけを要求し、node の具体�
 
 Core protocol は node 監査、state/checkpoint、lifecycle を含むため method 数は多いが、Runner が保証する更新順序を一つの execution context に閉じる利点がある。現段階では複数の小さな adapter へ分割せず、`ContextProtocol` で契約を固定する。ActiveRecord 以外の永続化 backend、または監査なしの in-memory backend を実運用に導入する時点で、store / observer / invoker 分割を再評価する。
 
-次は Core gem 候補ファイルの require 順と public constants を一つの entrypoint で読み込めるようにし、Rails autoload なしで利用できる最小構成を作る。
+Core の単一 entrypoint として `app/services/agent_graph/core.rb` を追加した。Rails autoload なしでもこのファイルだけを require すれば、次の public constants を利用できる。
+
+- `AgentGraph::Core::Cancelled`
+- `AgentGraph::Core::ContextProtocol`
+- `AgentGraph::Core::Edge`
+- `AgentGraph::Core::GraphDefinition`
+- `AgentGraph::Core::NodeResult`
+- `AgentGraph::Core::Runner`
+- `AgentGraph::Core::StateSchema`
+
+次は Core 候補を `app/services` 外へ物理分離する前に、gem の最小ファイル構成と namespace / versioning 方針を文書化し、Nyoy 内 vendored library として試せる構成を検討する。
 
 ## 判断基準
 

@@ -3,6 +3,16 @@
 require "test_helper"
 
 class AgentGraphCoreTest < ActiveSupport::TestCase
+  test "core entrypoint exposes the public constants" do
+    assert AgentGraph::Core.const_defined?(:Cancelled, false)
+    assert AgentGraph::Core.const_defined?(:ContextProtocol, false)
+    assert AgentGraph::Core.const_defined?(:Edge, false)
+    assert AgentGraph::Core.const_defined?(:GraphDefinition, false)
+    assert AgentGraph::Core.const_defined?(:NodeResult, false)
+    assert AgentGraph::Core.const_defined?(:Runner, false)
+    assert AgentGraph::Core.const_defined?(:StateSchema, false)
+  end
+
   test "core graph definition uses string keys without ActiveSupport helpers" do
     graph = AgentGraph::Core::GraphDefinition.new(
       name: :sample,

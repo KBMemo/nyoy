@@ -1,15 +1,7 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
-require_relative "../../../app/services/agent_graph/core/node_result"
-require_relative "../../../app/services/agent_graph/core/edge"
-require_relative "../../../app/services/agent_graph/core/graph_definition"
-require_relative "../../../app/services/agent_graph/core/cancelled"
-require_relative "../../../app/services/agent_graph/core/context_protocol"
-require_relative "../../../app/services/agent_graph/core/runner"
-require_relative "../../../app/services/agent_graph/node_result"
-require_relative "../../../app/services/agent_graph/cancelled"
-require_relative "../../../app/services/agent_graph/runner"
+require_relative "../../../app/services/agent_graph/core"
 
 class AgentGraphRunnerProtocolTest < Minitest::Test
   def test_runs_with_an_in_memory_context_and_state_only_nodes
@@ -30,7 +22,7 @@ class AgentGraphRunnerProtocolTest < Minitest::Test
       }
     )
 
-    result = AgentGraph::Runner.new(graph: graph, context: context).call
+    result = AgentGraph::Core::Runner.new(graph: graph, context: context).call
 
     assert_same context, result
     assert_equal "completed", context.status
@@ -55,13 +47,13 @@ class AgentGraphRunnerProtocolTest < Minitest::Test
   class PrepareNode
     def call(state:)
       state["nested"]["input"] = "mutated copy"
-      AgentGraph::NodeResult.next(updates: { prepared: true })
+      AgentGraph::Core::NodeResult.next(updates: { prepared: true })
     end
   end
 
   class FinishNode
     def call(state:)
-      AgentGraph::NodeResult.end(updates: { answer: state["prepared"] ? "done" : "missing" })
+      AgentGraph::Core::NodeResult.end(updates: { answer: state["prepared"] ? "done" : "missing" })
     end
   end
 
@@ -98,7 +90,7 @@ class AgentGraphRunnerProtocolTest < Minitest::Test
     def check_cancelled!; end
 
     def cancelled_exception?(error)
-      error.is_a?(AgentGraph::Cancelled)
+      error.is_a?(AgentGraph::Core::Cancelled)
     end
 
     def node_started!(_node_name); end
