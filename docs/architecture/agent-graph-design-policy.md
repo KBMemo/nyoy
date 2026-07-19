@@ -599,15 +599,17 @@ Ruby baseline は公開前に Ruby 3.2 から Nyoy 採用 version までの stan
 
 1. path gem の skeleton、version、standalone test command を追加する（完了）
 2. Core 実装と protocol test を package 内へ移す（完了）
-3. Nyoy の Gemfile と互換 alias を package entrypoint に接続する
-4. Rails回帰、Zeitwerk、package 単体testを通す
+3. Nyoy の Gemfile と互換 alias を package entrypoint に接続する（完了）
+4. Rails回帰、Zeitwerk、package 単体testを通す（完了）
 5. 第二の利用者または独立release要件が現れた時点で repository 分離と `1.0.0` 条件を再検討する
 
 path gem の skeleton は `0.1.0` として追加し、現時点で保証済みの Ruby 4.0.3 を `required_ruby_version` に指定した。Core 実装と Rails boot なしの Runner protocol test は package 内へ移動済みである。
 
-Nyoy 側の `app/services/agent_graph/core.rb` は移行中の bridge として package entrypoint を直接 require し、`AgentGraph::{Runner,Edge,...}` の互換 alias は維持する。
+Nyoy は `gem "agent_graph-core", path: "packages/agent_graph-core"` を通常のBundler依存として読み込む。`app/services/agent_graph/core.rb` は `require "agent_graph/core"` するbridgeとし、`AgentGraph::{Runner,Edge,...}` の互換 alias は維持する。別repositoryへ分離する場合はGemfileの `path:` を `git:` / `tag:` またはversion指定へ置き換えればよい。
 
-次は 3 として、Nyoy の Gemfile に path gem を登録し、bridge の filesystem 相対参照を通常の `require "agent_graph/core"` に置き換える。
+package単体test、gem build、Bundler経由のRails boot、Zeitwerk、Graph回帰はすべて通過した。これにより、Nyoy内のpath gem移行は完了とする。repository分離は手順5の条件が成立するまで行わない。
+
+次は package のstandalone testをNyoyのCIに組み込み、Rails testだけが成功してCore単体testが見落とされる状態を防ぐ。
 
 ## 判断基準
 

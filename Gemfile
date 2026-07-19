@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+gem "agent_graph-core", path: "packages/agent_graph-core"
+
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.3"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
