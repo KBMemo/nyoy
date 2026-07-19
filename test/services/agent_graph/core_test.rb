@@ -24,6 +24,12 @@ class AgentGraphCoreTest < ActiveSupport::TestCase
     assert_equal({ "foo" => { "bar" => [ { "baz" => "qux" } ] } }, result.updates)
   end
 
+  test "core context protocol exposes the runner contract" do
+    assert_includes AgentGraph::Core::ContextProtocol::REQUIRED_METHODS, :invoke_node
+    assert_includes AgentGraph::Core::ContextProtocol::REQUIRED_METHODS, :apply_result!
+    assert_includes AgentGraph::Core::ContextProtocol::REQUIRED_METHODS, :finish_completed!
+  end
+
   test "legacy constants point to core classes" do
     assert_same AgentGraph::Core::GraphDefinition, AgentGraph::GraphDefinition
     assert_same AgentGraph::Core::Edge, AgentGraph::Edge

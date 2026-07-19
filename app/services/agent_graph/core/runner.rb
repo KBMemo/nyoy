@@ -7,7 +7,7 @@ module AgentGraph
 
       def initialize(graph:, context:)
         @graph = graph
-        @context = context
+        @context = ContextProtocol.validate!(context)
       end
 
       def call

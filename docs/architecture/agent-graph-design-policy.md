@@ -519,7 +519,7 @@ AgentGraph::Registry.register(
 
 `Runner` の graph mismatch 検証と戻り値も `RuntimeContext` / `ActiveRecordRunStore` に寄せた。`Runner` 本体は `agent_run` を instance variable として保持せず、context protocol と graph definition だけを使う。新しい entrypoint として `Runner.new(graph:, context:)` も使える。
 
-Rails adapter 側 factory として `ActiveRecordRuntimeContext` を追加し、launch / resume / retry の内部利用は `Runner.new(graph:, context:)` に移行した。互換のため `Runner.new(agent_run, graph:)` は残す。
+Rails adapter 側 factory として `ActiveRecordRuntimeContext` を追加し、launch / resume / retry の内部利用は `Runner.new(graph:, context:)` に移行した。旧 `Runner.new(agent_run, graph:)` は Core 移動時に削除した。
 
 ### Runner / RuntimeContext protocol
 
@@ -543,13 +543,13 @@ AgentGraph::Runner.new(graph: graph, context: context).call
 | 終了処理 | `finish_completed!`, `finish_failed!`, `finish_cancelled!`, `interrupt!` |
 | 取消例外の変換 | `cancelled_exception?` |
 
-この protocol は duck typing とし、Core は `RuntimeContext` の具象 class、ActiveRecord、Rails callback を要求しない。`store` / `signals` accessor と `clear_progress!` / `request_approval!` は Nyoy の `RuntimeContext` を構成するための API であり、Runner protocol には含めない。
+この protocol は duck typing とし、`Core::ContextProtocol` が Runner 初期化時に必須 method の有無を検証する。Core は `RuntimeContext` の具象 class、ActiveRecord、Rails callback を要求しない。`store` / `signals` accessor と `clear_progress!` / `request_approval!` は Nyoy の `RuntimeContext` を構成するための API であり、Runner protocol には含めない。
 
 Nyoy の Rails adapter は次の分担を維持する。
 
 | adapter | 責務 |
 | --- | --- |
-| `ActiveRecordRunStore` | graph 検証、run/node/checkpoint 永続化、state merge、node kwargs、戻り値 |
+| `ActiveRecordRunStore` | graph 検証、run/node/checkpoint 永続化、state merge、戻り値 |
 | `RailsRuntimeSignals` | cancellation、progress、approval の Rails/UI 副作用 |
 | `ActiveRecordRuntimeContext` | store と signals を組み合わせる factory |
 
@@ -557,7 +557,9 @@ Core Runner は `invoke_node(node, state:)` だけを要求し、node の具体�
 
 最小 protocol だけを実装する in-memory context と、`state` だけを受け取る node で Runner の実行テストが成立した。Runner に残っていた ActiveSupport の `blank?` / `deep_dup` 依存も純粋 Ruby の処理へ置き換え、`Runner` / `Cancelled` を `AgentGraph::Core` へ移した。旧定数は互換 alias として残している。
 
-次は Core protocol の method 数を見直し、node 監査と lifecycle 永続化をより小さな adapter interface にまとめる価値があるか検討する。
+Core protocol は node 監査、state/checkpoint、lifecycle を含むため method 数は多いが、Runner が保証する更新順序を一つの execution context に閉じる利点がある。現段階では複数の小さな adapter へ分割せず、`ContextProtocol` で契約を固定する。ActiveRecord 以外の永続化 backend、または監査なしの in-memory backend を実運用に導入する時点で、store / observer / invoker 分割を再評価する。
+
+次は Core gem 候補ファイルの require 順と public constants を一つの entrypoint で読み込めるようにし、Rails autoload なしで利用できる最小構成を作る。
 
 ## 判断基準
 

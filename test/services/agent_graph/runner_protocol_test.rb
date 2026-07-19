@@ -5,6 +5,7 @@ require_relative "../../../app/services/agent_graph/core/node_result"
 require_relative "../../../app/services/agent_graph/core/edge"
 require_relative "../../../app/services/agent_graph/core/graph_definition"
 require_relative "../../../app/services/agent_graph/core/cancelled"
+require_relative "../../../app/services/agent_graph/core/context_protocol"
 require_relative "../../../app/services/agent_graph/core/runner"
 require_relative "../../../app/services/agent_graph/node_result"
 require_relative "../../../app/services/agent_graph/cancelled"
@@ -38,6 +39,17 @@ class AgentGraphRunnerProtocolTest < Minitest::Test
     assert_equal true, context.state["prepared"]
     assert_equal "done", context.state["answer"]
     assert_equal [ "prepare", "finish" ], context.completed_nodes
+  end
+
+  def test_rejects_an_incomplete_context_before_execution
+    error = assert_raises(ArgumentError) do
+      AgentGraph::Core::Runner.new(graph: Object.new, context: Object.new)
+    end
+
+    assert_includes error.message, "invalid AgentGraph context"
+    assert_includes error.message, "validate_graph!"
+    assert_includes error.message, "invoke_node"
+    assert_includes error.message, "finish_cancelled!"
   end
 
   class PrepareNode
