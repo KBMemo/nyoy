@@ -569,7 +569,41 @@ Core の単一 entrypoint として `app/services/agent_graph/core.rb` を追加
 - `AgentGraph::Core::Runner`
 - `AgentGraph::Core::StateSchema`
 
-次は Core 候補を `app/services` 外へ物理分離する前に、gem の最小ファイル構成と namespace / versioning 方針を文書化し、Nyoy 内 vendored library として試せる構成を検討する。
+### Core gem packaging 方針
+
+配布名は暫定で `agent_graph-core`、require path は `agent_graph/core`、Ruby namespace は既存の `AgentGraph::Core` を維持する。Rails engine にはせず、runtime dependency を持たない pure Ruby gem とする。ActiveRecord adapter、RoleServices、Registry、具体 workflow/node は含めない。
+
+最初から別 repository へ切り出さず、Nyoy repository 内の path gem として次の構成を作る。
+
+```text
+packages/agent_graph-core/
+  agent_graph-core.gemspec
+  lib/agent_graph/core.rb
+  lib/agent_graph/core/version.rb
+  lib/agent_graph/core/*.rb
+  test/*_test.rb
+```
+
+Nyoy は Gemfile から `gem "agent_graph-core", path: "packages/agent_graph-core"` として読み込み、`app/services/agent_graph/{runner,edge,...}.rb` の互換 alias は Nyoy adapter 側に残す。これにより、Core の require、gemspec、standalone test が Nyoy の Rails boot に暗黙依存していないことを継続検証できる。
+
+versioning は Semantic Versioning に従い、private path gem の初期 version を `0.1.0` とする。`1.0.0` までは minor update でも破壊的変更を許容するが、次は breaking change として changelog に明記する。
+
+- public constant の削除・rename
+- `Runner` initializer / 戻り値の変更
+- `ContextProtocol::REQUIRED_METHODS` の追加・削除・意味変更
+- `NodeResult` / `Edge` の遷移 semantics 変更
+
+Ruby baseline は公開前に Ruby 3.2 から Nyoy 採用 version までの standalone test matrix で決める。現時点で保証できるのは Nyoy の `.ruby-version` にある Ruby 4.0.3 のみであり、gemspec の `required_ruby_version` を推測で広げない。
+
+移行は次の順で行う。
+
+1. path gem の skeleton、version、standalone test command を追加する
+2. Core 実装と protocol test を package 内へ移す
+3. Nyoy の Gemfile と互換 alias を package entrypoint に接続する
+4. Rails回帰、Zeitwerk、package 単体testを通す
+5. 第二の利用者または独立release要件が現れた時点で repository 分離と `1.0.0` 条件を再検討する
+
+次は 1 として、実装を移動しない skeleton だけを追加し、path gem を単体で build/test できる基盤を作る。
 
 ## 判断基準
 
