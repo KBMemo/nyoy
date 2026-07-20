@@ -115,6 +115,15 @@ start/restartのready待ち後、Nyoyはdata planeの`/props`を取得し、swit
 
 終了時は `active=false`、`enabled=false` へ復元済み。
 
+2026-07-21の起動直後Runtime検証:
+
+| server | operation | 結果 | Runtime | 所要時間 |
+| --- | --- | --- | --- | --- |
+| `qwen3.5-2b-ud-q4-k-xl` | `start`（ID 10） | `succeeded` / ready | Alias一致、`total_slots=1` | 4.09秒 |
+| 同上 | `stop`（ID 11） | `succeeded` / stopped | 対象外 | 0.18秒 |
+
+対象はbindingなし、開始時 `stopped / active=false / enabled=false`。definitionに明示的な`SLOTS`がないため、runtime slot数が正であることを確認する経路を実行した。start operationのsnapshotはserverのallowlist済み状態と `runtime.model_alias` / `runtime.total_slots`だけを保持し、model pathやsystemd出力を含まない。終了時は `stopped / active=false / enabled=false`へ復元済み。
+
 ## 5. Definition CRUD smoke test
 
 未使用portと一時server IDを使い、モデルは起動しない。
