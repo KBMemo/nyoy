@@ -24,6 +24,8 @@ module AgentGraph
 
     # Nodes that actually call an LLM (show model name in the progress panel).
     LLM_NODES = %w[draft_memo finalize_answer finalize_reply].freeze
+    MAX_THINKING_BROADCAST_CHARS = 16_000
+    TRUNCATED_THINKING_PREFIX = "…\n".freeze
 
     class << self
       def started!(chat, node_name, agent_run: nil)
@@ -55,7 +57,7 @@ module AgentGraph
 
       # Live thinking for finalize_answer (does not replace the panel / clock).
       def thinking!(chat, text)
-        body = text.to_s
+        body = bounded_thinking(text)
         return if body.blank?
 
         ChatChannel.broadcast_to(chat, {
@@ -82,6 +84,13 @@ module AgentGraph
       end
 
       private
+
+      def bounded_thinking(text)
+        body = text.to_s
+        return body if body.length <= MAX_THINKING_BROADCAST_CHARS
+
+        "#{TRUNCATED_THINKING_PREFIX}#{body.last(MAX_THINKING_BROADCAST_CHARS)}"
+      end
 
       def label_for(node_name)
         node = node_name.to_s

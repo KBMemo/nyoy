@@ -24,4 +24,16 @@ class AgentGraphThinkingProgressTest < ActiveSupport::TestCase
     assert_equal "a", payloads.first["text"]
     assert_equal "abc", payloads.last["text"]
   end
+
+  test "flush does not repeat the latest broadcast" do
+    progress = AgentGraph::ThinkingProgress.new(@chat)
+
+    payloads = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      progress.push("complete")
+      progress.flush("complete")
+    end
+
+    assert_equal 1, payloads.size
+    assert_equal "complete", payloads.first["text"]
+  end
 end

@@ -178,4 +178,4 @@ bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:draft)'
 
 全llm runで `profile=llm`、`model_id=qwen3.5-4b`、`source=light`、fallbackなしを確認した。速度は `evidence_pack` が約0.005秒、llmは約5〜17秒だった。3件中2件で根拠のない具体化があり、現時点では `evidence_pack` を既定のまま維持する。
 
-HTTP MCPの通常経路も run 70 で確認した。`evidence_pack` から最終回答まで完了したが、全体242.95秒のうち最終回答生成が242.27秒（5,023 output tokens）を占めた。長い調査では `MCP_HTTP_READ_TIMEOUT=600` を使用する。また、思考ストリームの累積broadcastが大量のDB queryとpayloadを生成したため、更新頻度・保持量の制限は別課題として扱う。
+HTTP MCPの通常経路も run 70 で確認した。`evidence_pack` から最終回答まで完了したが、全体242.95秒のうち最終回答生成が242.27秒（5,023 output tokens）を占めた。長い調査では `MCP_HTTP_READ_TIMEOUT=600` を使用する。この実測で判明した思考ストリームの過剰な累積broadcastには、ライブ更新を1秒間隔、送信本文を末尾16,000文字に制限する対策を追加した。保存される最終的な思考全文は制限しない。

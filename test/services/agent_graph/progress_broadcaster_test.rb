@@ -118,6 +118,20 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
     end
   end
 
+  test "thinking bounds live payload while preserving the latest text" do
+    limit = AgentGraph::ProgressBroadcaster::MAX_THINKING_BROADCAST_CHARS
+    text = "old" + ("x" * limit) + "latest"
+
+    payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
+      AgentGraph::ProgressBroadcaster.thinking!(@chat, text)
+    end.last
+
+    assert payload["text"].start_with?(AgentGraph::ProgressBroadcaster::TRUNCATED_THINKING_PREFIX)
+    assert payload["text"].end_with?("latest")
+    assert_operator payload["text"].length, :<=, limit + 2
+    assert_not_includes payload["text"], "old"
+  end
+
   test "prompts broadcasts system and user text without replacing the panel" do
     payload = capture_broadcasts(ChatChannel.broadcasting_for(@chat)) do
       AgentGraph::ProgressBroadcaster.prompts!(
