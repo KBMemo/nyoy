@@ -41,6 +41,12 @@ class LlamaSwitchdClient
     request_json("/v1/servers/#{escape_path_component(id)}")
   end
 
+  %i[start stop restart enable disable].each do |action|
+    define_method("#{action}_server") do |id|
+      request_json("/v1/servers/#{escape_path_component(id)}/#{action}", method: Net::HTTP::Post)
+    end
+  end
+
   private
 
   def validate_configuration!
@@ -50,13 +56,13 @@ class LlamaSwitchdClient
     raise Error, "llama-switchd の API トークンが未設定です" if @api_token.blank?
   end
 
-  def request_json(path, authenticated: true)
+  def request_json(path, authenticated: true, method: Net::HTTP::Get)
     uri = @base_uri.dup
     uri.path = [ @base_uri.path.to_s.sub(%r{/\z}, ""), path ].join
     uri.query = nil
     uri.fragment = nil
 
-    request = Net::HTTP::Get.new(uri)
+    request = method.new(uri)
     request["Accept"] = "application/json"
     request["Authorization"] = "Bearer #{@api_token}" if authenticated
 

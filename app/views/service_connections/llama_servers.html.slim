@@ -32,6 +32,7 @@
               th.p-2.text-left 状態
               th.p-2.text-left 起動設定
               th.p-2.text-left Source
+              th.p-2.text-left 操作
           tbody
             - @inventory.servers.each do |server|
               tr.border-b
@@ -47,6 +48,21 @@
                   - if server["restart_required"]
                     span.kb-badge.kb-badge-muted.ml-2 再起動待ち
                 td.p-2.nyoy-monospace.break-all = server["source"]
+                td.p-2
+                  - active_operation = @active_llama_server_operations[server["id"]]
+                  - if active_operation
+                    span.kb-status-warning = active_operation.status_label
+                  - else
+                    .flex.flex-wrap.items-center.gap-2
+                      - if server["active"]
+                        = button_to "停止", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "stop" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} を停止しますか？" } }
+                        = button_to "再起動", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "restart" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} を再起動しますか？" } }
+                      - else
+                        = button_to "起動", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "start" }, class: kb_btn_secondary_sm
+                      - if server["enabled"]
+                        = button_to "自動起動を無効化", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "disable" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} の自動起動を無効にしますか？" } }
+                      - else
+                        = button_to "自動起動を有効化", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "enable" }, class: kb_btn_secondary_sm
 
     section.mb-6
       h2 class=kb_section_title Nyoy 接続との差分
@@ -98,3 +114,30 @@
                 = model["suggested_id"]
                 - if model["configured_as"].present?
                   = " / 使用中: #{model['configured_as'].join(', ')}"
+
+    section.mt-6
+      h2 class=kb_section_title 操作履歴
+      - if @llama_server_operations.any?
+        .mt-3.overflow-x-auto
+          table.w-full.text-sm
+            thead
+              tr.border-b
+                th.p-2.text-left 受付日時
+                th.p-2.text-left Server
+                th.p-2.text-left 操作
+                th.p-2.text-left 状態
+                th.p-2.text-left 結果
+            tbody
+              - @llama_server_operations.each do |operation|
+                tr.border-b
+                  td.p-2 = l(operation.created_at, format: :short)
+                  td.p-2.nyoy-monospace = operation.managed_server_id
+                  td.p-2 = operation.action_label
+                  td.p-2 = operation.status_label
+                  td.p-2
+                    - if operation.error_message.present?
+                      span.kb-status-danger = operation.error_message
+                    - elsif operation.finished_at
+                      span.kb-text-muted = "完了 #{l(operation.finished_at, format: :short)}"
+      - else
+        p.mt-2.text-sm.kb-text-muted 操作履歴はありません。

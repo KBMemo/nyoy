@@ -51,6 +51,22 @@ class LlamaSwitchdClientTest < ActiveSupport::TestCase
     assert_equal "/v1/servers/main%20model", request.uri.path
   end
 
+  test "posts lifecycle action" do
+    response = json_response("200", { ok: true })
+    request = nil
+
+    with_http_response(response) do |http|
+      http.define_singleton_method(:request) do |incoming|
+        request = incoming
+        response
+      end
+      client.restart_server("main")
+    end
+
+    assert_instance_of Net::HTTP::Post, request
+    assert_equal "/v1/servers/main/restart", request.uri.path
+  end
+
   test "raises typed error for upstream failure" do
     response = json_response("401", { ok: false, error: "unauthorized" })
 

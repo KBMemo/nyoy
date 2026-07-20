@@ -11,11 +11,28 @@ class ServiceConnectionsController < ApplicationController
 
   def llama_servers
     @switchd_connection = ServiceConnection.find_by(key: "llama_switchd")
+    @llama_server_operations = @switchd_connection&.llama_server_operations&.recent&.limit(30) || []
+    @active_llama_server_operations = @llama_server_operations.select(&:active?).index_by(&:managed_server_id)
     return unless @switchd_connection&.enabled?
 
     @inventory = LlamaSwitchdInventory.new(@switchd_connection).call
   rescue LlamaSwitchdClient::Error => e
     @inventory_error = e.message
+  end
+
+  def operate_llama_server
+    connection = ServiceConnection.find_by!(key: "llama_switchd", enabled: true)
+    operation = connection.llama_server_operations.create!(
+      managed_server_id: params.require(:managed_server_id),
+      action: params.require(:server_action),
+      request_payload: {}
+    )
+    LlamaServerOperationJob.perform_later(operation.id)
+    redirect_to llama_servers_service_connections_path, notice: "#{operation.managed_server_id} の #{operation.action} を受け付けました。"
+  rescue ActiveRecord::RecordNotUnique
+    redirect_to llama_servers_service_connections_path, alert: "このサーバーでは別の操作を実行中です。"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to llama_servers_service_connections_path, alert: e.record.errors.full_messages.to_sentence
   end
 
   def bind_llama_server

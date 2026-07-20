@@ -36,6 +36,7 @@ Rails.application.routes.draw do
     collection do
       post :seed_missing
       get :llama_servers
+      post :operate_llama_server
     end
     member do
       patch :bind_llama_server

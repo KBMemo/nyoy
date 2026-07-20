@@ -76,6 +76,33 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     LlamaSwitchdClient.define_singleton_method(:new, original) if defined?(original)
   end
 
+  test "operate llama server queues allowed action" do
+    assert_enqueued_jobs 1, only: LlamaServerOperationJob do
+      post operate_llama_server_service_connections_path, params: {
+        managed_server_id: "main",
+        server_action: "restart"
+      }
+    end
+
+    assert_redirected_to llama_servers_service_connections_path
+    operation = LlamaServerOperation.order(:id).last
+    assert_equal "main", operation.managed_server_id
+    assert_equal "restart", operation.action
+    assert_equal "queued", operation.status
+  end
+
+  test "operate llama server rejects unsupported action" do
+    assert_no_difference -> { LlamaServerOperation.count } do
+      post operate_llama_server_service_connections_path, params: {
+        managed_server_id: "main",
+        server_action: "delete"
+      }
+    end
+
+    assert_redirected_to llama_servers_service_connections_path
+    assert_match(/Action/, flash[:alert])
+  end
+
   test "update connection" do
     connection = service_connections(:vision_llama)
 

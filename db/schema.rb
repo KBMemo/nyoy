@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_010000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_020000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -204,6 +204,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_010000) do
     t.integer "width", default: 768, null: false
     t.index ["status"], name: "index_img2img_generations_on_status"
     t.index ["style_id"], name: "index_img2img_generations_on_style_id"
+  end
+
+  create_table "llama_server_operations", force: :cascade do |t|
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.string "managed_server_id", null: false
+    t.jsonb "request_payload", default: {}, null: false
+    t.jsonb "response_snapshot", default: {}, null: false
+    t.bigint "service_connection_id", null: false
+    t.datetime "started_at"
+    t.string "status", default: "queued", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_llama_server_operations_on_created_at"
+    t.index ["service_connection_id", "managed_server_id"], name: "index_active_llama_server_operations", unique: true, where: "((status)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying])::text[]))"
+    t.index ["service_connection_id"], name: "index_llama_server_operations_on_service_connection_id"
   end
 
   create_table "llm_sampling_presets", force: :cascade do |t|
@@ -493,6 +510,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_010000) do
   add_foreign_key "image_generations", "render_presets", column: "refine_render_preset_id"
   add_foreign_key "image_generations", "sd_model_profiles"
   add_foreign_key "image_generations", "sd_prompt_templates"
+  add_foreign_key "llama_server_operations", "service_connections"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
