@@ -20,7 +20,11 @@ class AgentGraphLlmResearchPlannerTest < ActiveSupport::TestCase
     calls = []
     planner.define_singleton_method(:classify) do |model, question, chat|
       calls << { model: model, question: question, chat: chat }
-      { "need_web" => true, "need_memo" => false }
+      [
+        { "need_web" => true, "need_memo" => false },
+        { "cache_prompt" => true, "slot_id" => 2, "slot_count" => 4 },
+        { "input_tokens" => 80, "output_tokens" => 12, "cached_tokens" => 60 }
+      ]
     end
 
     plan, metadata = planner.call(
@@ -36,6 +40,9 @@ class AgentGraphLlmResearchPlannerTest < ActiveSupport::TestCase
     assert_equal "light", metadata["source"]
     assert_equal "gpt-oss", metadata["model_id"]
     assert_nil metadata["fallback"]
+    assert_equal true, metadata.dig("llama_cache", "cache_prompt")
+    assert_equal 2, metadata.dig("llama_cache", "slot_id")
+    assert_equal 60, metadata.dig("usage", "cached_tokens")
     assert_equal 1, calls.size
     assert_equal "gpt-oss", calls.first.fetch(:model).model_id
     assert_equal "https://example.com の仕様を確認してから保存して", calls.first.fetch(:question)

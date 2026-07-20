@@ -131,7 +131,17 @@ class AgentNodeRunTest < ActiveSupport::TestCase
             "profile" => "llm",
             "source" => "deterministic",
             "model_id" => "qwen3.5-4b",
-            "fallback" => "deterministic"
+            "fallback" => "deterministic",
+            "llama_cache" => {
+              "cache_prompt" => true,
+              "slot_id" => 1,
+              "slot_count" => 4
+            },
+            "usage" => {
+              "input_tokens" => 80,
+              "output_tokens" => 12,
+              "cached_tokens" => 60
+            }
           }
         }
       }
@@ -142,7 +152,12 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "profile: planner.llm",
       "llm: qwen3.5-4b",
       "source: deterministic",
-      "fallback: deterministic"
+      "fallback: deterministic",
+      "cache_prompt",
+      "slot: 1/4",
+      "in: 80",
+      "out: 12",
+      "cached: 60"
     ], node_run.output_summary
   end
 end

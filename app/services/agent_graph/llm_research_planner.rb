@@ -19,8 +19,9 @@ module AgentGraph
       model = AppSetting.research_planner_model
       return fallback_result(baseline, model, "planner model is not configured") unless model
 
-      plan = merge_classification(baseline, classify(model, state.fetch("question").to_s, chat))
-      [ plan, metadata(source: "light", model: model) ]
+      classification, llama_cache, usage = classify(model, state.fetch("question").to_s, chat)
+      plan = merge_classification(baseline, classification)
+      [ plan, metadata(source: "light", model: model, llama_cache: llama_cache, usage: usage) ]
     rescue StandardError => e
       Rails.logger.warn("AgentGraph::LlmResearchPlanner failed: #{e.class}: #{e.message}")
       fallback_result(baseline || fallback_plan(state: state, run: run, chat: chat), model, e.message)
@@ -36,6 +37,7 @@ module AgentGraph
       )
       ChatLlmSettings.defaults_for(model: model).apply!(llm)
       ChatLlamaCache.apply!(llm, chat: chat, model: model, slot_key: "agent_graph:planner:#{chat.id}:#{model.model_id}")
+      llama_cache = llm.instance_variable_get(:@nyoy_llama_cache_metadata) || {}
       llm.with_temperature(0)
       params = (llm.instance_variable_get(:@params) || {}).dup
       template_kwargs = params.delete(:chat_template_kwargs) || params.delete("chat_template_kwargs") || {}
@@ -46,8 +48,16 @@ module AgentGraph
       )
       llm.with_instructions(SYSTEM_PROMPT)
 
-      response = llm.ask("質問:\n#{question}")
-      parse_classification(response.content.to_s)
+      usage = {}
+      response = llm.ask("質問:\n#{question}") do |chunk|
+        usage.merge!(ChatUsageAttributes.from(chunk))
+      end
+      usage = ChatUsageAttributes.from(response) if usage.empty?
+      [
+        parse_classification(response.content.to_s),
+        llama_cache.stringify_keys,
+        usage.stringify_keys
+      ]
     end
 
     def parse_classification(content)
@@ -77,12 +87,14 @@ module AgentGraph
       [ plan, metadata(source: "deterministic", model: model, fallback: "deterministic", error: error) ]
     end
 
-    def metadata(source:, model:, fallback: nil, error: nil)
+    def metadata(source:, model:, fallback: nil, error: nil, llama_cache: nil, usage: nil)
       {
         "source" => source,
         "model_id" => model&.model_id,
         "fallback" => fallback,
-        "error" => error
+        "error" => error,
+        "llama_cache" => llama_cache.presence,
+        "usage" => usage.presence
       }.compact
     end
   end

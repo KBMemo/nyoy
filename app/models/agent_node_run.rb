@@ -33,7 +33,9 @@ class AgentNodeRun < ApplicationRecord
   def planning_summary(planning)
     return [] unless planning.is_a?(Hash)
 
-    metadata_summary(planning)
+    metadata_summary(planning) +
+      llama_cache_summary(planning["llama_cache"]) +
+      usage_summary(planning["usage"])
   end
 
   def synthesis_summary(updates)

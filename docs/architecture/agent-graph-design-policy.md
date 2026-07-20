@@ -461,7 +461,7 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallbackをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
@@ -474,6 +474,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。`planner.llm` profileは実装済み。
 
 2026-07-20 のdevelopment実測では `qwen3.5-4b` を使い、3件すべて `source=light`、fallbackなしだった。Rails 8.1の技術質問とヤマレコURL質問は、決定規則の `need_web=false` からLLM分類の `need_web=true` へ改善した。過去の登山計画メモ質問は `need_web=false, need_memo=true` を維持した。分類時間は約2.7〜5.4秒。最初のResearch Graph実測（run 77〜79）では、URL質問に対してLLMが根拠のない地域名を検索語へ混入し、無関係ページを取得した。このためLLMの責務を要否分類だけへ縮小し、検索語は決定規則へ固定した。過去形の「保存した」がsensitiveになる誤判定も決定規則側で修正した。修正後のrun 80〜82では誤検索語とsensitive誤判定は解消したが、明示URLよりWeb検索が先行したため、routingとevidence評価を明示URL取得優先へ変更した。run 84では `plan_research → fetch_urls → evaluate_evidence → synthesize_draft → finalize_answer` で完了し、Web検索なしで指定URLだけを取得した。
+
+plannerのllama.cpp cache観測はrun 88〜89で確認した。同じChat・同じ質問を連続実行し、いずれもslot `0/1`、`input_tokens=121`、`cached_tokens=95`、`output_tokens=20` をplanning metadataとNode履歴要約へ記録できた。
 
 ### Workflow Registry
 
