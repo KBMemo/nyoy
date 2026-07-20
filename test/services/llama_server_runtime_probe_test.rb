@@ -38,4 +38,21 @@ class LlamaServerRuntimeProbeTest < ActiveSupport::TestCase
 
     assert_equal "down", result["main"].error
   end
+
+  test "probes through the configured public host" do
+    urls = []
+    factory = lambda do |base_url|
+      urls << base_url
+      Object.new.tap { |client| client.define_singleton_method(:props) { {} } }
+    end
+    probe = LlamaServerRuntimeProbe.new(
+      control_url: "https://switchd.internal:11335/control",
+      public_host: "llm-data.example.net",
+      client_factory: factory
+    )
+
+    probe.call([ { "id" => "main", "port" => 10010, "ready" => true } ])
+
+    assert_equal [ "https://llm-data.example.net:10010" ], urls
+  end
 end

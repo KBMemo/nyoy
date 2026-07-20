@@ -5,6 +5,31 @@ require "test_helper"
 class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_llama_server_admin }
 
+  test "updates llama switchd public host" do
+    connection = service_connections(:llama_switchd)
+
+    patch service_connection_path(connection), params: {
+      service_connection: connection.attributes.slice("name", "base_url", "enabled", "sort_order").merge(
+        llama_switchd_settings: { public_host: "llm-data.example.net" }
+      )
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    assert_equal "llm-data.example.net", connection.reload.llama_switchd_settings.public_host
+  end
+
+  test "edits llama switchd public host" do
+    connection = service_connections(:llama_switchd)
+    connection.assign_llama_switchd_settings(public_host: "llm-data.example.net")
+    connection.save!
+
+    get edit_service_connection_path(connection)
+
+    assert_response :success
+    assert_select "input[name='service_connection[llama_switchd_settings][public_host]'][value='llm-data.example.net']"
+    assert_select "#llama-switchd-public-host-hint"
+  end
+
   test "index lists connections" do
     get service_connections_path
 

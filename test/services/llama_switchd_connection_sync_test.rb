@@ -35,4 +35,24 @@ class LlamaSwitchdConnectionSyncTest < ActiveSupport::TestCase
       LlamaSwitchdConnectionSync.new(connection).call
     end
   end
+
+  test "uses manager public host for the data plane URL" do
+    manager = service_connections(:llama_switchd)
+    manager.assign_llama_switchd_settings(public_host: "llm-data.example.net")
+    manager.save!
+    connection = service_connections(:llama_cpp)
+    connection.update!(manager_connection: manager, managed_server_id: "main")
+    original = LlamaSwitchdClient.method(:new)
+    client = Object.new
+    client.define_singleton_method(:get_server) do |_id|
+      { "server" => { "port" => 10110, "alias" => "main-alias" } }
+    end
+    LlamaSwitchdClient.define_singleton_method(:new) { |**| client }
+
+    LlamaSwitchdConnectionSync.new(connection).call
+
+    assert_equal "http://llm-data.example.net:10110", connection.reload.base_url
+  ensure
+    LlamaSwitchdClient.define_singleton_method(:new, original) if defined?(original)
+  end
 end

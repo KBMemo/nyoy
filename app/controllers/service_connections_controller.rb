@@ -86,6 +86,7 @@ class ServiceConnectionsController < ApplicationController
     @service_connection = ServiceConnection.new(service_connection_params)
     apply_searfront_settings!(@service_connection)
     apply_prompt_conversion_settings!(@service_connection)
+    apply_llama_switchd_settings!(@service_connection)
     @custom_llm = @service_connection.custom_llm?
     @available_keys = ServiceConnection.available_keys unless @custom_llm
 
@@ -110,6 +111,7 @@ class ServiceConnectionsController < ApplicationController
     @service_connection.assign_attributes(service_connection_params)
     apply_searfront_settings!(@service_connection)
     apply_prompt_conversion_settings!(@service_connection)
+    apply_llama_switchd_settings!(@service_connection)
 
     if @service_connection.save
       redirect_to @service_connection, notice: "接続を更新しました。"
@@ -232,6 +234,13 @@ class ServiceConnectionsController < ApplicationController
         *LlmSamplingParams::KEYS
       )
     )
+  end
+
+  def apply_llama_switchd_settings!(connection)
+    return unless connection.key.to_s == "llama_switchd"
+
+    attrs = params.dig(:service_connection, :llama_switchd_settings)
+    connection.assign_llama_switchd_settings(attrs.present? ? attrs.permit(:public_host) : {})
   end
 
   def load_sampling_presets

@@ -19,7 +19,10 @@ class LlamaSwitchdInventory
       base_url: connection.base_url,
       api_token: connection.api_token
     )
-    @runtime_probe = runtime_probe || LlamaServerRuntimeProbe.new(control_url: connection.base_url)
+    @runtime_probe = runtime_probe || LlamaServerRuntimeProbe.new(
+      control_url: connection.base_url,
+      public_host: connection.llama_switchd_settings.public_host
+    )
   end
 
   def call

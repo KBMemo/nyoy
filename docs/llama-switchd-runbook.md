@@ -25,6 +25,26 @@ curl -fsS \
 
 Nyoyでは「設定 → 接続」を開き、管理トークンで認証してから「LLMサーバー」を開く。トークンはブラウザセッションへ保存せず、認証時刻とトークンのfingerprintだけを暗号化Cookieへ保持する。トークン変更後は再認証が必要になる。
 
+### Control APIとdata planeが別hostの場合
+
+`llama_switchd` 接続の編集画面で「公開ホスト」に、Nyoyから各llama-serverへ到達するhost名またはIPを設定する。
+
+```text
+管理API URL: https://switchd.internal.example:11335
+公開ホスト:  llm-data.example.net
+server PORT: 10010
+実効URL:     https://llm-data.example.net:10010
+```
+
+公開ホストにはscheme、port、pathを含めない。未設定時は管理API URLのhostを使う。設定後は次の順で確認する。
+
+1. 「LLMサーバー」を開き、ready serverのRuntime欄が取得できることを確認する
+2. 管理対象接続の「URL・Aliasを同期」を実行する
+3. 接続URLが公開ホストとserver PORTの組み合わせになったことを確認する
+4. 「整合チェック」を実行し、`runtime_probe_failed` と `port_drift` がないことを確認する
+
+切り戻す場合は公開ホストを空欄にして更新し、再度「URL・Aliasを同期」を実行する。llama-server定義やswitchd control URLは変更されない。
+
 確認項目:
 
 - switchd server一覧が表示される

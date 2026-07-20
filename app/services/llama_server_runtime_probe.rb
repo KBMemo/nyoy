@@ -3,8 +3,9 @@
 class LlamaServerRuntimeProbe
   Result = Struct.new(:server_id, :model_alias, :model_path, :total_slots, :error, keyword_init: true)
 
-  def initialize(control_url:, client_factory: nil)
+  def initialize(control_url:, public_host: nil, client_factory: nil)
     @control_uri = URI.parse(control_url)
+    @public_host = public_host
     @client_factory = client_factory || ->(base_url) { LlamaCppClient.new(base_url: base_url) }
   end
 
@@ -32,12 +33,7 @@ class LlamaServerRuntimeProbe
   end
 
   def data_plane_url(port)
-    uri = @control_uri.dup
-    uri.port = Integer(port)
-    uri.path = ""
-    uri.query = nil
-    uri.fragment = nil
-    uri.to_s.sub(%r{/\z}, "")
+    LlamaServerEndpoint.build(control_url: @control_uri.to_s, public_host: @public_host, port: port)
   end
 
   def positive_integer(value)

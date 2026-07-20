@@ -14,6 +14,9 @@
     dd.nyoy-monospace = @service_connection.key
     dt.font-medium.kb-text-secondary URL
     dd.nyoy-monospace = @service_connection.base_url
+    - if @service_connection.key == "llama_switchd"
+      dt.font-medium.kb-text-secondary llama-server公開ホスト
+      dd.nyoy-monospace = @service_connection.llama_switchd_settings.public_host.presence || "管理APIと同じ"
     - if @service_connection.server_model.present?
       dt.font-medium.kb-text-secondary モデル
       dd.nyoy-monospace = @service_connection.server_model

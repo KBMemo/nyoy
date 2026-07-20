@@ -47,6 +47,7 @@ class ServiceConnection < ApplicationRecord
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validate :key_must_be_allowed
   validate :manager_must_be_llama_switchd
+  validate :llama_switchd_settings_must_be_valid
   validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
   validates :api_token, presence: true, if: -> { openai_chat_enabled? && !openai_environment_api_token? }
   validates :server_model, presence: true, if: :custom_llm?
@@ -108,6 +109,16 @@ class ServiceConnection < ApplicationRecord
     PromptConversionSettings.from(settings)
   end
 
+  def llama_switchd_settings
+    LlamaSwitchdSettings.from(settings)
+  end
+
+  def assign_llama_switchd_settings(attrs)
+    return unless key.to_s == "llama_switchd"
+
+    self.settings = LlamaSwitchdSettings.merge_into(settings, attrs)
+  end
+
   def assign_openai_chat_model_settings(attrs)
     return unless openai?
 
@@ -158,6 +169,13 @@ class ServiceConnection < ApplicationRecord
     return if manager_connection.nil? || manager_connection.key == "llama_switchd"
 
     errors.add(:manager_connection, "は llama_switchd 接続を指定してください")
+  end
+
+  def llama_switchd_settings_must_be_valid
+    return unless key.to_s == "llama_switchd"
+    return if llama_switchd_settings.valid?
+
+    errors.add(:settings, "の公開ホストはportを含まないホスト名またはIPで指定してください")
   end
 
   def key_must_be_allowed

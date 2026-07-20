@@ -86,4 +86,24 @@ class ServiceConnectionTest < ActiveSupport::TestCase
   ensure
     Rails.application.config.x.nyoy.openai_api_key = original
   end
+
+  test "stores a valid llama switchd public host" do
+    connection = service_connections(:llama_switchd)
+
+    connection.assign_llama_switchd_settings(public_host: "llm-data.example.net")
+
+    assert connection.valid?
+    assert_equal "llm-data.example.net", connection.llama_switchd_settings.public_host
+  end
+
+  test "rejects a llama switchd public host containing a port or path" do
+    connection = service_connections(:llama_switchd)
+
+    [ "llm-data.example.net:80", "llm-data.example.net:10010", "llm-data.example.net/path" ].each do |public_host|
+      connection.assign_llama_switchd_settings(public_host: public_host)
+
+      assert_not connection.valid?
+      assert connection.errors[:settings].any?
+    end
+  end
 end

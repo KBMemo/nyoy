@@ -15,7 +15,7 @@ class LlamaSwitchdConnectionSync
     raise LlamaSwitchdClient::Error, "llama-switchd API 応答に server 情報がありません" unless server.is_a?(Hash)
 
     @connection.update!(
-      base_url: data_plane_url(manager.base_url, server.fetch("port")),
+      base_url: data_plane_url(manager, server.fetch("port")),
       server_model: server.fetch("alias")
     )
     @connection
@@ -23,14 +23,13 @@ class LlamaSwitchdConnectionSync
 
   private
 
-  def data_plane_url(control_url, port)
-    uri = URI.parse(control_url)
-    uri.path = ""
-    uri.query = nil
-    uri.fragment = nil
-    uri.port = Integer(port)
-    uri.to_s.sub(%r{/\z}, "")
-  rescue URI::InvalidURIError, ArgumentError, TypeError => e
-    raise LlamaSwitchdClient::Error, "llama-server URL を構成できません: #{e.message}"
+  def data_plane_url(manager, port)
+    LlamaServerEndpoint.build(
+      control_url: manager.base_url,
+      public_host: manager.llama_switchd_settings.public_host,
+      port: port
+    )
+  rescue LlamaServerEndpoint::Error => e
+    raise LlamaSwitchdClient::Error, e.message
   end
 end

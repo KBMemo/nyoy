@@ -100,6 +100,15 @@
           input#service_connection_searfront_settings_max_fetches_per_turn.kb-input.kb-field-input type="number" name="service_connection[searfront_settings][max_fetches_per_turn]" value=searx.max_fetches_per_turn min=1 max=10 step=1
           p.mt-1.text-sm.kb-text-muted 推奨 3。fetch_url は結果を見てから1件ずつ実行されます。
 
+  - if service_connection.key.to_s == "llama_switchd"
+    - switchd_settings = service_connection.llama_switchd_settings
+    fieldset.kb-card.p-4.space-y-3
+      legend class=kb_section_title llama-server接続設定
+      div
+        label class="#{kb_label} mb-1" for="service_connection_llama_switchd_settings_public_host" 公開ホスト
+        input#service_connection_llama_switchd_settings_public_host type="text" name="service_connection[llama_switchd_settings][public_host]" value=switchd_settings.public_host placeholder="llm-host.example.net" autocomplete="off" class=kb_field_input_classes aria-describedby="llama-switchd-public-host-hint"
+        p#llama-switchd-public-host-hint.mt-1.text-sm.kb-text-muted 未設定時は管理API URLのホストを使用します。schemeとportは入力しません。
+
   - if service_connection.supports_prompt_conversion_settings?
     - pcs = service_connection.prompt_conversion_settings
     - presets = @llm_sampling_presets || LlmSamplingPreset.enabled.ordered

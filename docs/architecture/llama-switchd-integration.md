@@ -82,7 +82,9 @@ managed_server_id      string, nullable
 | sampling defaults | 用途別 `ServiceConnection` | `settings.prompt_conversion` |
 | AgentGraph role assignment | Nyoy | `AppSetting.agent_graph_role_profiles`等 |
 
-実効URLは `switchd.base_url` のscheme/hostとdefinitionの`PORT`から構成する。definitionの`HOST`がloopbackの場合でも、Nyoyから到達するhostはswitchd hostを使う。特殊なNAT構成に備え、将来 `public_host` overrideをcontrol connection設定へ追加できる余地を残す。
+実効URLは `switchd.base_url` のscheme、control connectionの `settings.llama_switchd.public_host`、definitionの`PORT`から構成する。`public_host` 未設定時は `switchd.base_url` のhostを使う。definitionの`HOST`はprocessのlisten addressであり、Nyoyからの接続先判定には使わない。
+
+URL構成は `LlamaServerEndpoint` に集約し、接続同期とruntime probeで同じ規則を使う。これにより、switchd control APIと各llama-server data planeが別hostにある構成、DNS名を分離する構成、NAT越しの構成を扱える。`public_host` はhost名またはIPだけを保持し、schemeとportの上書きは許可しない。
 
 ## 5. API client
 
