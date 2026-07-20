@@ -7,9 +7,12 @@ Nyoy は `llama-switchd` をcontrol plane、各 `llama-server`をdata planeと�
 ```bash
 LLAMA_SWITCHD_URL=http://balvenie:11335
 LLAMA_SWITCHD_TOKEN=replace-with-secret
+LLAMA_SERVER_ADMIN_TOKEN=replace-with-a-separate-secret
 ```
 
-トークンは `env.development` またはproduction secretへ設定し、Git管理対象へ入れない。remote hostから使う場合、switchdの `LLAMA_SWITCHD_LISTEN` はNyoy hostから到達できるIPを指定する。
+トークンは `env.development` またはproduction secretへ設定し、Git管理対象へ入れない。`LLAMA_SERVER_ADMIN_TOKEN` は接続設定とLLMサーバー管理画面の認証に使い、switchd API tokenとは別の値にする。未設定時は移行互換として `MCP_API_TOKEN` を使う。認証済みセッションの既定期限は12時間で、`LLAMA_SERVER_ADMIN_SESSION_TTL`（秒）により変更できる。
+
+Kamalでは `LLAMA_SERVER_ADMIN_TOKEN` を `.kamal/secrets` から解決する。`config/deploy.yml` の `env.secret` には登録済みである。remote hostから使う場合、switchdの `LLAMA_SWITCHD_LISTEN` はNyoy hostから到達できるIPを指定する。
 
 ## 2. 疎通確認
 
@@ -20,13 +23,30 @@ curl -fsS \
   "$LLAMA_SWITCHD_URL/v1/servers"
 ```
 
-Nyoyでは「設定 → 接続 → LLMサーバー」を開く。
+Nyoyでは「設定 → 接続」を開き、管理トークンで認証してから「LLMサーバー」を開く。トークンはブラウザセッションへ保存せず、認証時刻とトークンのfingerprintだけを暗号化Cookieへ保持する。トークン変更後は再認証が必要になる。
 
 確認項目:
 
 - switchd server一覧が表示される
 - ready serverのRuntime欄にalias、model path、slotsが表示される
 - Runtime Alias不一致またはRuntime取得失敗がない
+
+### 管理認証のスモークテスト
+
+デプロイ後、Nyoyへ到達できる端末から非破壊の認証確認を実行する。
+
+```bash
+export NYOY_URL=https://nyoy.kbmemo.net
+export LLAMA_SERVER_ADMIN_TOKEN='production-admin-token'
+bin/verify-llama-server-admin
+```
+
+`LLAMA_SERVER_ADMIN_TOKEN` が未設定の場合、スクリプトもアプリと同様に `MCP_API_TOKEN` へfallbackする。トークンは `curl` のコマンドライン引数へ渡さない。次の4項目が `PASS` になればよい。
+
+- 未認証の管理画面アクセスが拒否される
+- ログイン画面とCSRF tokenを取得できる
+- 認証後に接続管理画面へ到達できる
+- ログアウト後に管理画面が再度拒否される
 
 ## 3. 接続binding
 

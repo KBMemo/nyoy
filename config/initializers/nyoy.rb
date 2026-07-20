@@ -88,6 +88,9 @@ Rails.application.config.x.nyoy.tap do |config|
   legacy_openai_key = nil if legacy_openai_key == "local"
   config.openai_api_key = ENV["OPENAI_CHAT_API_KEY"].to_s.strip.presence || legacy_openai_key
   config.mcp_api_token = ENV["MCP_API_TOKEN"]
+  # A dedicated token is preferred. MCP_API_TOKEN remains a migration fallback.
+  config.llama_server_admin_token = ENV["LLAMA_SERVER_ADMIN_TOKEN"].presence || config.mcp_api_token
+  config.llama_server_admin_session_ttl = ENV.fetch("LLAMA_SERVER_ADMIN_SESSION_TTL", 12.hours.to_i).to_i.seconds
   # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
   config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
   config.sd_model_loras = {

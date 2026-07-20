@@ -3,6 +3,8 @@
 require "test_helper"
 
 class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_llama_server_admin }
+
   test "index lists connections" do
     get service_connections_path
 

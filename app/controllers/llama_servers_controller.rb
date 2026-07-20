@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class LlamaServersController < ApplicationController
+  include LlamaServerAdminAuthentication
+
+  before_action :require_llama_server_admin!
   before_action :set_switchd_connection
 
   def new

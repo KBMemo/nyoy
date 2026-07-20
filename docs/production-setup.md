@@ -329,6 +329,17 @@ NYOY_HEALTH_URL=https://nyoy.kbmemo.net/up \
 bin/deploy
 ```
 
+LLMサーバー管理認証を変更した場合は、デプロイ後に非破壊スモークテストを実行します。
+
+```bash
+set -a
+source .env.production
+set +a
+NYOY_URL=https://nyoy.kbmemo.net bin/verify-llama-server-admin
+```
+
+詳細は [llama-switchd 運用 Runbook](./llama-switchd-runbook.md) を参照してください。
+
 ## 7. トラブルシュート
 
 | 症状 | 確認 |

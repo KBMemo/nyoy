@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ServiceConnectionsController < ApplicationController
+  include LlamaServerAdminAuthentication
+
+  before_action :require_llama_server_admin!
   before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models load_sampling bind_llama_server sync_llama_server]
   before_action :load_sampling_presets, only: %i[new create edit update]
 

@@ -41,6 +41,7 @@ env:
   secret:
     - RAILS_MASTER_KEY
     - MCP_API_TOKEN
+    - LLAMA_SERVER_ADMIN_TOKEN
     - MEMO_RAG_WEBHOOK_SECRET
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.

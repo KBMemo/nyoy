@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+base_url="${NYOY_URL:-http://127.0.0.1:3109}"
+admin_token="${LLAMA_SERVER_ADMIN_TOKEN:-${MCP_API_TOKEN:-}}"
+
+if [[ -z "$admin_token" ]]; then
+  echo "LLAMA_SERVER_ADMIN_TOKEN or MCP_API_TOKEN is required" >&2
+  exit 1
+fi
+
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir"' EXIT
+cookie_jar="$work_dir/cookies"
+headers="$work_dir/headers"
+body="$work_dir/body"
+
+request() {
+  curl --silent --show-error \
+    --cookie "$cookie_jar" \
+    --cookie-jar "$cookie_jar" \
+    --dump-header "$headers" \
+    --output "$body" \
+    --write-out "%{http_code}" \
+    "$@"
+}
+
+location_header() {
+  awk 'BEGIN { IGNORECASE=1 } /^location:/ { sub(/^[^:]+:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit }' "$headers"
+}
+
+status="$(request "$base_url/service_connections")"
+[[ "$status" == "302" ]] || { echo "FAIL: unauthenticated request returned HTTP $status" >&2; exit 1; }
+[[ "$(location_header)" == */llama_server_admin_session/new ]] || { echo "FAIL: unauthenticated request did not redirect to sign-in" >&2; exit 1; }
+echo "PASS: unauthenticated management request is rejected"
+
+status="$(request "$base_url/llama_server_admin_session/new")"
+[[ "$status" == "200" ]] || { echo "FAIL: sign-in page returned HTTP $status" >&2; exit 1; }
+csrf_token="$(sed -n 's/.*<meta name="csrf-token" content="\([^"]*\)".*/\1/p' "$body" | head -1)"
+[[ -n "$csrf_token" ]] || { echo "FAIL: CSRF token was not found" >&2; exit 1; }
+echo "PASS: sign-in page is available"
+
+status="$(printf '%s' "$admin_token" | request \
+  --request POST \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "authenticity_token=$csrf_token" \
+  --data-urlencode "token@-" \
+  "$base_url/llama_server_admin_session")"
+[[ "$status" == "302" ]] || { echo "FAIL: sign-in returned HTTP $status" >&2; exit 1; }
+[[ "$(location_header)" == */service_connections ]] || { echo "FAIL: sign-in did not return to the management page" >&2; exit 1; }
+
+status="$(request "$base_url/service_connections")"
+[[ "$status" == "200" ]] || { echo "FAIL: authenticated management request returned HTTP $status" >&2; exit 1; }
+echo "PASS: authenticated management request succeeds"
+
+status="$(request \
+  --request DELETE \
+  --header "X-CSRF-Token: $csrf_token" \
+  "$base_url/llama_server_admin_session")"
+[[ "$status" == "302" ]] || { echo "FAIL: sign-out returned HTTP $status" >&2; exit 1; }
+
+status="$(request "$base_url/service_connections")"
+[[ "$status" == "302" ]] || { echo "FAIL: signed-out request returned HTTP $status" >&2; exit 1; }
+echo "PASS: sign-out invalidates the management session"

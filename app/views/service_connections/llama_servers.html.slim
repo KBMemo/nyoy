@@ -6,6 +6,7 @@
     = button_to "整合チェック", reconcile_llama_servers_service_connections_path, method: :post, class: kb_btn_secondary_sm
     = link_to "定義を作成", new_llama_server_path, class: kb_btn_primary_sm
     = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
+    = button_to "管理ログアウト", llama_server_admin_session_path, method: :delete, class: kb_btn_secondary_sm
 
 - unless @switchd_connection
   .kb-alert.kb-alert-danger

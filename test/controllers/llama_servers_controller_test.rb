@@ -3,6 +3,8 @@
 require "test_helper"
 
 class LlamaServersControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_llama_server_admin }
+
   test "new renders typed definition form" do
     with_client(fake_client) do
       get new_llama_server_path

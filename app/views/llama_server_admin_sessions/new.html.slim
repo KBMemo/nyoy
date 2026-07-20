@@ -1,0 +1,10 @@
+- content_for :title, "LLMサーバー管理認証 | Nyoy"
+
+.mx-auto.max-w-md
+  h1.text-2xl.font-bold LLMサーバー管理認証
+
+  = form_with url: llama_server_admin_session_path, class: "mt-6 space-y-5" do |form|
+    .space-y-2
+      = form.label :token, "管理トークン", for: "current-password", class: "block text-sm font-medium"
+      = form.password_field :token, id: "current-password", required: true, autofocus: true, autocomplete: "current-password", enterkeyhint: "done", class: kb_field_input_classes
+    = form.submit "認証する", class: kb_btn_primary_sm

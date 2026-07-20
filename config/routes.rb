@@ -48,6 +48,7 @@ Rails.application.routes.draw do
     end
   end
   resources :llama_servers, only: %i[new create edit update destroy]
+  resource :llama_server_admin_session, only: %i[new create destroy]
   resources :llm_sampling_presets
   resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles
