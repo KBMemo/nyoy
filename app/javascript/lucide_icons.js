@@ -1,7 +1,8 @@
-import { createIcons, Settings } from "lucide"
+import { createIcons, RefreshCw, Settings } from "lucide"
 
 const LUCIDE_ICONS = {
-  Settings
+  Settings,
+  RefreshCw
 }
 
 export function renderLucideIcons() {

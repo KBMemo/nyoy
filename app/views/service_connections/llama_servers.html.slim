@@ -8,6 +8,23 @@
     = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
     = button_to "管理ログアウト", llama_server_admin_session_path, method: :delete, class: kb_btn_secondary_sm
 
+.mb-5.flex.flex-wrap.items-end.gap-3 data-controller="llama-server-monitor" data-llama-server-monitor-url-value=llama_servers_service_connections_path data-llama-server-monitor-interval-value="4000"
+  div
+    label class="#{kb_label} mb-1" for="llama-server-query" サーバー検索
+    input#llama-server-query type="search" placeholder="ID / Alias" autocomplete="off" class=kb_field_input_classes data-llama-server-monitor-target="serverQuery" data-action="input->llama-server-monitor#filter"
+  div
+    label class="#{kb_label} mb-1" for="llama-operation-status" 操作状態
+    select#llama-operation-status class=kb_field_input_classes data-llama-server-monitor-target="operationStatus" data-action="change->llama-server-monitor#filter"
+      option value="" すべて
+      - LlamaServerOperation::STATUSES.each do |status|
+        option value=status = LlamaServerOperation::STATUS_LABELS.fetch(status)
+  button type="button" class=kb_btn_secondary_sm title="表示を更新" data-llama-server-monitor-target="refreshButton" data-action="llama-server-monitor#refresh"
+    i data-lucide="refresh-cw" aria-hidden="true"
+    span.sr-only 表示を更新
+  span.text-xs.kb-text-muted data-llama-server-monitor-target="status"
+
+#llama-server-refresh-state data-active=(@active_llama_server_operations.any? ? "true" : "false") hidden=true
+
 - unless @switchd_connection
   .kb-alert.kb-alert-danger
     | llama_switchd 接続がありません。「接続」で組み込み接続を登録してください。
@@ -24,7 +41,7 @@
   - if @inventory_error
     .kb-alert.kb-alert-danger = @inventory_error
   - if @inventory
-    section.kb-card.p-4.mb-6
+    section#llama-server-reconciliation.kb-card.p-4.mb-6
       .flex.flex-wrap.items-center.justify-between.gap-2
         h2 class=kb_section_title 整合状態
         - if @latest_llama_server_reconciliation
@@ -47,7 +64,7 @@
               - if finding["usages"].present?
                 span.kb-text-muted.ml-2 = "用途: #{finding['usages'].join(', ')}"
 
-    section.mb-6
+    section#llama-server-inventory.mb-6
       h2 class=kb_section_title 管理中のサーバー
       .mt-3.overflow-x-auto
         table.w-full.text-sm
@@ -63,7 +80,7 @@
               th.p-2.text-left 操作
           tbody
             - @inventory.servers.each do |server|
-              tr.border-b
+              tr.border-b data-llama-server-row=true data-filter-text="#{server['id']} #{server['alias']}"
                 td.p-2.nyoy-monospace = server["id"]
                 td.p-2.nyoy-monospace = server["alias"]
                 td.p-2.text-right.nyoy-monospace = server["port"]
@@ -107,7 +124,7 @@
                       - unless server["active"] || server["enabled"]
                         = button_to "定義を削除", llama_server_path(server["id"]), method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { data: { turbo_confirm: "#{server['id']} の定義を削除しますか？" } }
 
-    section.mb-6
+    section#llama-server-connections.mb-6
       h2 class=kb_section_title Nyoy 接続との差分
       .mt-3.overflow-x-auto
         table.w-full.text-sm
@@ -145,7 +162,7 @@
                       span.text-xs.kb-text-muted = "紐付け済み: #{connection.managed_server_id}"
                       = button_to "URL・Aliasを同期", sync_llama_server_service_connection_path(connection), method: :post, class: kb_btn_secondary_sm
 
-    section
+    section#llama-server-models
       h2 class=kb_section_title 検出モデル
       p.mt-2.text-sm.kb-text-secondary = "#{@inventory.models.size} 件"
       - if @inventory.models.any?
@@ -158,7 +175,7 @@
                 - if model["configured_as"].present?
                   = " / 使用中: #{model['configured_as'].join(', ')}"
 
-    section.mt-6
+    section#llama-server-operations.mt-6
       h2 class=kb_section_title 操作履歴
       - if @llama_server_operations.any?
         .mt-3.overflow-x-auto
@@ -172,7 +189,7 @@
                 th.p-2.text-left 結果
             tbody
               - @llama_server_operations.each do |operation|
-                tr.border-b
+                tr.border-b data-llama-operation-row=true data-status=operation.status
                   td.p-2 = l(operation.created_at, format: :short)
                   td.p-2.nyoy-monospace = operation.managed_server_id
                   td.p-2 = operation.action_label

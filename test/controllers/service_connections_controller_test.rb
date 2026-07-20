@@ -51,6 +51,11 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "LLM サーバー"
     assert_match "main-model", response.body
+    assert_select "[data-controller='llama-server-monitor']"
+    assert_select "input[data-llama-server-monitor-target='serverQuery']"
+    assert_select "select[data-llama-server-monitor-target='operationStatus']"
+    assert_select "#llama-server-refresh-state[data-active='false']"
+    assert_select "tr[data-llama-server-row][data-filter-text*='main-model']"
   ensure
     LlamaSwitchdInventory.define_method(:call, original) if defined?(original)
   end
