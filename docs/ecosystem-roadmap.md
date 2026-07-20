@@ -257,6 +257,7 @@ gantt
 
 ### 推奨
 
+- llama-server接続は [llama-switchd integration](./architecture/llama-switchd-integration.md) のPhase 1から着手し、read-only inventoryで現在のport/alias不一致を確認してからbindingする
 - webhook を本番投入する場合は、[Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md) に沿って site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
 
 ### 完了（Phase 6）
