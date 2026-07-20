@@ -50,6 +50,12 @@ bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice
 export RESEARCH_QUESTION='https://example.com/ の内容を確認し、要点と注意点を根拠付きで説明して'
 ```
 
+`bin/mcp-call-tool` の応答待ち時間は既定で300秒。長い調査では必要に応じて延長する。
+
+```bash
+export MCP_HTTP_READ_TIMEOUT=600
+```
+
 比較対象はdraft生成だけであり、検索結果や取得ページが変わったrunは品質比較から除外する。AgentRun詳細の `search_results` / `fetched_pages` 件数とURLも確認する。
 
 ## 3. `evidence_pack` を実行する
@@ -159,3 +165,17 @@ bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:draft)'
 ```
 
 期待するprofileと一致しない場合は、`AppSetting.instance.agent_graph_role_profiles` と `AGENT_GRAPH_DRAFT_PROFILE` の両方を確認する。
+
+## 実測記録（2026-07-20、development）
+
+`qwen3.5-4b` を軽量modelに指定し、上記3質問で比較した。run 71〜76は検索・取得・draft生成を通常どおり実行し、比較対象外の最終回答だけ `FinalAnswerSynthesizer.force_passthrough` で省略した。設定は比較後に `evidence_pack` へ復旧済み。
+
+| 質問 | evidence_pack | llm | llm draft時間 | 判定 |
+| --- | --- | --- | ---: | --- |
+| ヤマレコ 天城山 | run 71 / 0.006秒 | run 74 / 11.006秒 | 11.006秒 | llmが標高・地域・起点を根拠なく補完 |
+| Rails 8.1 Active Job retry | run 72 / 0.005秒 | run 75 / 16.786秒 | 16.786秒 | llmが存在しない、または不正確なAPI例を生成 |
+| llama.cpp prompt cache | run 73 / 0.005秒 | run 76 / 5.027秒 | 5.027秒 | llmは根拠不足を正しく明示 |
+
+全llm runで `profile=llm`、`model_id=qwen3.5-4b`、`source=light`、fallbackなしを確認した。速度は `evidence_pack` が約0.005秒、llmは約5〜17秒だった。3件中2件で根拠のない具体化があり、現時点では `evidence_pack` を既定のまま維持する。
+
+HTTP MCPの通常経路も run 70 で確認した。`evidence_pack` から最終回答まで完了したが、全体242.95秒のうち最終回答生成が242.27秒（5,023 output tokens）を占めた。長い調査では `MCP_HTTP_READ_TIMEOUT=600` を使用する。また、思考ストリームの累積broadcastが大量のDB queryとpayloadを生成したため、更新頻度・保持量の制限は別課題として扱う。

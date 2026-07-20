@@ -81,13 +81,29 @@ class McpCallToolScriptTest < ActiveSupport::TestCase
     assert_includes stderr, "JSON_ARGUMENTS must be a JSON object"
   end
 
+  test "rejects invalid http timeout" do
+    stdout, stderr, status = run_script_with_env(
+      { "MCP_HTTP_READ_TIMEOUT" => "0" },
+      "run_image_understanding_graph",
+      "{}"
+    )
+
+    assert_not status.success?
+    assert_empty stdout
+    assert_includes stderr, "MCP_HTTP_READ_TIMEOUT must be a positive integer"
+  end
+
   private
 
   def run_script(*args)
+    run_script_with_env({}, *args)
+  end
+
+  def run_script_with_env(extra_env, *args)
     env = {
       "NYOY_MCP_URL" => @url,
       "MCP_API_TOKEN" => "test-token"
-    }
+    }.merge(extra_env)
     Open3.capture3(env, Rails.root.join("bin/mcp-call-tool").to_s, *args, chdir: Rails.root.to_s)
   end
 

@@ -5,6 +5,16 @@ require "json"
 require "net/http"
 require "uri"
 
+def timeout_from_env(name, default)
+  value = Integer(ENV.fetch(name, default.to_s), 10)
+  raise ArgumentError unless value.positive?
+
+  value
+rescue ArgumentError
+  warn "#{name} must be a positive integer (seconds)."
+  exit 1
+end
+
 def usage
   warn "Usage: bin/mcp-call-tool [--raw] [--field FIELD] TOOL_NAME [JSON_ARGUMENTS]"
   warn %q(Example: bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説明して","tsuzura_media_id":"01J..."}')
@@ -61,6 +71,8 @@ request.body = JSON.generate(
 
 http = Net::HTTP.new(uri.host, uri.port)
 http.use_ssl = uri.scheme == "https"
+http.open_timeout = timeout_from_env("MCP_HTTP_OPEN_TIMEOUT", 10)
+http.read_timeout = timeout_from_env("MCP_HTTP_READ_TIMEOUT", 300)
 response = http.request(request)
 
 begin
