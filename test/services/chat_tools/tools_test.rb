@@ -105,6 +105,30 @@ class ChatToolsTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
   end
 
+  test "web_search limits long result snippets" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:search) do |**|
+      {
+        "results" => [
+          { "title" => "Long", "url" => "https://example.com/long", "content" => "あ" * 2_000 },
+          { "title" => "Short", "url" => "https://example.com/short", "content" => "短い" }
+        ]
+      }
+    end
+    original_web_search_client = ChatTools::Registry.method(:web_search_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client) { fake_client }
+
+    result = ChatTools::WebSearch.new.execute(q: "ruby")
+
+    assert_operator result.dig("results", 0, "content").length, :<=, ChatTools::WebSearch::MAX_SNIPPET_CHARS
+    assert_equal true, result.dig("results", 0, "content_truncated")
+    assert_nil result.dig("results", 1, "content_truncated")
+    assert_equal 1, result["truncated_result_count"]
+    assert_equal ChatTools::WebSearch::MAX_SNIPPET_CHARS, result["result_content_limit"]
+  ensure
+    ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
+  end
+
   test "web search query history survives graph budget restoration" do
     budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
     assert_nil budget.consume_search!(query: "Ruby Rails")

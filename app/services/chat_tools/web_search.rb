@@ -2,6 +2,8 @@
 
 module ChatTools
   class WebSearch < RubyLLM::Tool
+    MAX_SNIPPET_CHARS = 600
+
     description "Web を検索して最新情報や参考 URL を探す。ニュース、技術情報、用語の確認などに使う。1回の応答で何度も繰り返さない。"
 
     def initialize(budget: nil)
@@ -21,12 +23,34 @@ module ChatTools
       end
 
       payload = client.search(q: q, limit: limit)
-      annotate_empty_results(filter_pdf_results(payload))
+      annotate_empty_results(limit_result_content(filter_pdf_results(payload)))
     rescue SearfrontClient::Error, SearxngClient::Error => e
       ToolResponse.error(tool: "web_search", message: e.message)
     end
 
     private
+
+    def limit_result_content(payload)
+      truncated_count = 0
+      results = Array(payload["results"]).map do |result|
+        next result unless result.is_a?(Hash)
+
+        content = result["content"].to_s
+        next result if content.length <= MAX_SNIPPET_CHARS
+
+        truncated_count += 1
+        result.merge(
+          "content" => content.truncate(MAX_SNIPPET_CHARS, omission: "…"),
+          "content_truncated" => true
+        )
+      end
+
+      payload.merge(
+        "results" => results,
+        "result_content_limit" => MAX_SNIPPET_CHARS,
+        "truncated_result_count" => truncated_count
+      )
+    end
 
     def annotate_empty_results(payload)
       return payload if Array(payload["results"]).any?

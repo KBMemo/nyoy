@@ -37,6 +37,7 @@ module ChatTools
 
     WEB_TOOLS_INSTRUCTIONS = <<~TEXT.squish
       web_search（searfront）で Web 検索、fetch_url で HTML/テキスト本文の短いプレビューを取得できます。
+      web_search の content は URL 選定用の短いスニペットです。content_truncated: true の結果で詳細が必要な場合だけ fetch_url を使ってください。
       fetch_url は content_preview のみ返し、truncated: true のときは search_fetched_page(page_id, query) で続きを探します。
       fetch_url は一度に1件の URL だけ指定します（複数 URL を同時に並べない）。結果を受け取ってから、必要なら次の URL を fetch_url で取得できます。
       ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
