@@ -253,7 +253,6 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
-| 運用 | 本番管理認証スモーク | 非破壊スクリプトとrunbookは実装済み | deploy後に`bin/verify-llama-server-admin`の4項目が本番でPASS |
 | 運用 | 外部alert E2E | Webhook adapter、再試行、単体テストは実装済み | 本番通知先を設定し、異常注入と復旧の2通知を受信確認 |
 
 `public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。

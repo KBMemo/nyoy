@@ -68,6 +68,13 @@ bin/verify-llama-server-admin
 - 認証後に接続管理画面へ到達できる
 - ログアウト後に管理画面が再度拒否される
 
+2026-07-21 本番確認:
+
+- deploy revision: `4464d4c`
+- `https://nyoy.kbmemo.net/up`: HTTP 200
+- 未認証拒否、ログイン画面、認証後アクセス、ログアウト後拒否: 4項目すべてPASS
+- 専用 `LLAMA_SERVER_ADMIN_TOKEN` は未設定のため、移行fallbackの `MCP_API_TOKEN` で確認
+
 ## 3. 接続binding
 
 1. Nyoy接続の現在のportとswitchd server候補を比較する

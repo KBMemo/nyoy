@@ -41,6 +41,12 @@ sudo apt-get install -y build-essential libssl-dev libreadline-dev zlib1g-dev \
 # rbenv + ruby-build が未導入ならインストール（既存環境に合わせて省略可）
 ```
 
+system packageのNodeを使わずNVMで管理する場合は、default aliasを設定する。`scripts/production_env.sh`はsystem Nodeが見つからないときだけ `~/.nvm/nvm.sh` を読み込む。
+
+```bash
+nvm alias default 22
+```
+
 ### 1.2 Ruby 4.0.3
 
 ```bash

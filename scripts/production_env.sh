@@ -15,6 +15,13 @@ if [[ -d "${RBENV_ROOT}/bin" ]]; then
   eval "$(rbenv init - bash)"
 fi
 
+export NVM_DIR="${NVM_DIR:-${HOME}/.nvm}"
+if ! command -v node >/dev/null 2>&1 && [[ -s "${NVM_DIR}/nvm.sh" ]]; then
+  # shellcheck source=/dev/null
+  source "${NVM_DIR}/nvm.sh"
+  nvm use --silent default >/dev/null
+fi
+
 ENV_FILE="${APP_ROOT}/.env.production"
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "missing ${ENV_FILE}" >&2
