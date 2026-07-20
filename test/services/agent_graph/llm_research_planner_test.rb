@@ -20,7 +20,7 @@ class AgentGraphLlmResearchPlannerTest < ActiveSupport::TestCase
     calls = []
     planner.define_singleton_method(:classify) do |model, question, chat|
       calls << { model: model, question: question, chat: chat }
-      { "need_web" => true, "need_memo" => false, "queries" => [ "official API specification" ] }
+      { "need_web" => true, "need_memo" => false }
     end
 
     plan, metadata = planner.call(
@@ -55,16 +55,16 @@ class AgentGraphLlmResearchPlannerTest < ActiveSupport::TestCase
     assert_includes metadata["error"], "not configured"
   end
 
-  test "validates planner JSON types and limits queries" do
+  test "validates planner JSON boolean types" do
     planner = AgentGraph::LlmResearchPlanner.new
     parsed = planner.send(
       :parse_classification,
-      '{"need_web":true,"need_memo":false,"queries":["a","b","c","d"]}'
+      '{"need_web":true,"need_memo":false}'
     )
 
-    assert_equal [ "a", "b", "c" ], parsed["queries"]
+    assert_equal({ "need_web" => true, "need_memo" => false }, parsed)
     assert_raises(ArgumentError) do
-      planner.send(:parse_classification, '{"need_web":"yes","need_memo":false,"queries":["a"]}')
+      planner.send(:parse_classification, '{"need_web":"yes","need_memo":false}')
     end
   end
 end

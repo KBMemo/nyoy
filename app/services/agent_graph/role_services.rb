@@ -213,6 +213,7 @@ module AgentGraph
       def needs_initial_search?(state, budget)
         state.dig("plan", "need_web") &&
           Array(state["search_results"]).empty? &&
+          Array(state["fetched_pages"]).empty? &&
           search_budget_available?(budget)
       end
 
@@ -315,7 +316,7 @@ module AgentGraph
           "need_web" => web_likely?(question),
           "queries" => AgentGraph::SearchQueryNormalizer.queries_for(question),
           "fetch_urls" => extract_urls(question).first(3),
-          "sensitive" => question.match?(SENSITIVE_PATTERN)
+          "sensitive" => sensitive?(question)
         }
         [ plan, { "source" => "deterministic", "model_id" => nil, "fallback" => nil } ]
       end
@@ -328,6 +329,14 @@ module AgentGraph
 
       def web_likely?(question)
         question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース|調べ|調査|出典|根拠|検索/)
+      end
+
+      def sensitive?(question)
+        historical_save = question.match?(/保存した|保存済み|保存され(た|ている)/)
+        explicit_write = question.match?(/保存して|保存する|保存を/)
+        return false if historical_save && !explicit_write
+
+        question.match?(SENSITIVE_PATTERN)
       end
     end
   end

@@ -75,6 +75,17 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal "synthesize_draft", result.updates.dig("evidence_review", "next_node")
   end
 
+  test "does not search when an explicit URL page was already fetched" do
+    result = node.call(state: state(
+      plan: { "need_web" => true },
+      fetched_pages: [ { "url" => "https://example.com/page", "content_preview" => "page body" } ],
+      budget: { "searches_used" => 0, "max_searches" => 2, "fetches_used" => 1, "max_fetches" => 2 }
+    ), run: nil, chat: nil)
+
+    assert_equal "sufficient", result.updates.dig("evidence_review", "status")
+    assert_equal "synthesize_draft", result.updates.dig("evidence_review", "next_node")
+  end
+
   test "marks evidence limited when retrieval was attempted and no budget remains" do
     result = node.call(state: state(
       plan: { "need_web" => true },

@@ -8,16 +8,16 @@ module AgentGraph
     def after_plan(plan)
       plan = plan || {}
       return "recall_memos" if plan["need_memo"]
-      return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
+      return "search_web" if plan["need_web"]
 
       "evaluate_evidence"
     end
 
     def after_recall(state)
       plan = state["plan"] || {}
-      return "search_web" if plan["need_web"]
       return "fetch_urls" if Array(plan["fetch_urls"]).any?
+      return "search_web" if plan["need_web"]
 
       "evaluate_evidence"
     end

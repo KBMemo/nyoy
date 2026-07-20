@@ -52,6 +52,16 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_equal "deterministic", metadata["source"]
   end
 
+  test "deterministic planner does not treat a historical saved memo reference as sensitive" do
+    plan, = AgentGraph::RoleServices.fetch(:planner).call(
+      state: { "question" => "先週保存した登山計画メモの要点をまとめて" },
+      run: nil,
+      chat: nil
+    )
+
+    assert_equal false, plan["sensitive"]
+  end
+
   test "selects a built in role profile" do
     AgentGraph::RoleServices.select_profile(:draft, :llm)
 

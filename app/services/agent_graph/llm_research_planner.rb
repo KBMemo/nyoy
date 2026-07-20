@@ -7,8 +7,7 @@ module AgentGraph
       あなたは調査経路の分類器です。質問に答えず、JSON objectだけを返してください。
       need_webは、最新情報、外部仕様、技術文書、固有のWebページなど、メモ以外の確認が必要ならtrueです。
       need_memoは、ユーザー固有の過去メモが回答に役立つ可能性がある場合だけtrueです。
-      queriesはWeb検索またはメモ検索に使える簡潔な文字列を最大3件返してください。
-      出力keyはneed_web, need_memo, queriesだけです。
+      出力keyはneed_web, need_memoだけです。検索語や回答本文は出力しないでください。
     TEXT
 
     def initialize(fallback: RoleServices::DeterministicResearchPlanner.new)
@@ -55,10 +54,7 @@ module AgentGraph
       json = LlamaJsonParser.repair_truncated(LlamaJsonParser.normalize(content))
       need_web = strict_boolean(json, "need_web")
       need_memo = strict_boolean(json, "need_memo")
-      queries = Array(json["queries"]).map(&:to_s).map(&:strip).reject(&:blank?).uniq.first(3)
-      raise ArgumentError, "planner queries are missing" if queries.empty?
-
-      { "need_web" => need_web, "need_memo" => need_memo, "queries" => queries }
+      { "need_web" => need_web, "need_memo" => need_memo }
     end
 
     def strict_boolean(json, key)

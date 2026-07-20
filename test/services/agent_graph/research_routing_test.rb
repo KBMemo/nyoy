@@ -3,11 +3,14 @@
 require "test_helper"
 
 class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
-  test "after_plan prefers recall then search then fetch" do
+  test "after_plan prefers recall then explicit URL fetch then search" do
     assert_equal "recall_memos", AgentGraph::ResearchRouting.after_plan("need_memo" => true, "need_web" => true)
     assert_equal "search_web", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => true)
     assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_plan(
       "need_memo" => false, "need_web" => false, "fetch_urls" => [ "https://example.com" ]
+    )
+    assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_plan(
+      "need_memo" => false, "need_web" => true, "fetch_urls" => [ "https://example.com" ]
     )
     assert_equal "evaluate_evidence", AgentGraph::ResearchRouting.after_plan("need_memo" => false, "need_web" => false)
   end
@@ -15,6 +18,15 @@ class AgentGraphResearchRoutingTest < ActiveSupport::TestCase
   test "after_recall falls through to evidence evaluation" do
     assert_equal "evaluate_evidence", AgentGraph::ResearchRouting.after_recall(
       "plan" => { "need_web" => false, "fetch_urls" => [] }
+    )
+  end
+
+  test "after_recall fetches explicit URLs before web search" do
+    assert_equal "fetch_urls", AgentGraph::ResearchRouting.after_recall(
+      "plan" => {
+        "need_web" => true,
+        "fetch_urls" => [ "https://example.com" ]
+      }
     )
   end
 
