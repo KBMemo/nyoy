@@ -283,7 +283,7 @@ gantt
 ### 次期 Agent Graph
 
 - ImageUnderstanding Graph — Chat 添付経路、MCP tools、独立 UI Graph 化、`tsuzura_media_id` MCP 経路、retry 表示確認は実装済み。独立 UI / Chat 添付 / vision 障害 retry は development 実機で確認済み（`docs/image-understanding-graph-runbook.md` 確認ログ）。
-- 次は gem 化そのものではなく、`AgentGraph::Core` / Nyoy adapter 境界、role service registry、workflow registry の抽象化を Nyoy 内で進める（[Agent Graph 設計方針](./architecture/agent-graph-design-policy.md#次期抽象化ロードマップ)）。
+- `AgentGraph::Core` はRails非依存のprivate path gemへ分離済み。workflow registryと全標準roleの差し替え境界を検証し、別repository化は第二利用者または独立release要件が発生するまで保留する（[分離再評価](./architecture/agent-graph-core-extraction-assessment.md)）。
 
 ### 運用・メンテ
 

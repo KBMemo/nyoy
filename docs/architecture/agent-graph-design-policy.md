@@ -524,7 +524,7 @@ AgentGraph::Registry.register(
 3. intent / planner / draft / final / evidence / vision / memo writer の呼び出し箇所を role service 経由にする（完了。全標準roleを既存実装adapter経由にし、`vision`と`memo_writer`も実Graphでobject overrideを検証済み）
 4. `AgentGraph::Registry.register` の登録形式を public API として固定する（完了）
 5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する（完了。Router 非接続の `DiagnosticGraph` で Registry 登録・実行・summary を検証）
-6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する（次段階）
+6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する（完了。private path gemを維持し、別repository化は第二利用者または独立release要件まで保留）
 
 ### 再検討条件
 
@@ -657,6 +657,8 @@ package単体test、gem build、Bundler経由のRails boot、Zeitwerk、Graph回
 package のstandalone testはCIの独立した `core-test` jobで実行する。DB、Node、Rails bootを必要とせず、Rails testだけが成功してCore単体testが見落とされる状態を防ぐ。
 
 Core / Nyoy境界とpath gem化はここで一区切りとする。次は当初の目的へ戻り、role serviceごとの軽量モデル差し替えを設定から選択できる境界を検証する。
+
+全標準roleの接続と主要profileの実運用確認後に再評価し、Coreはprivate path gemのまま維持すると決定した。技術的な抽出条件は成立しているが、第二利用者、独立release要件、公開license、Ruby version matrixが未確定である。判断根拠と再評価triggerは [AgentGraph Core 分離再評価](./agent-graph-core-extraction-assessment.md) に記録する。
 
 ## 判断基準
 
