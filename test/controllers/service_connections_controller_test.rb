@@ -103,6 +103,14 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/許可されていない/, flash[:alert])
   end
 
+  test "reconcile llama servers enqueues reconciliation" do
+    assert_enqueued_jobs 1, only: LlamaServerReconciliationJob do
+      post reconcile_llama_servers_service_connections_path
+    end
+
+    assert_redirected_to llama_servers_service_connections_path
+  end
+
   test "update connection" do
     connection = service_connections(:vision_llama)
 

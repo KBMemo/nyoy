@@ -8,6 +8,7 @@ class ServiceConnection < ApplicationRecord
            dependent: :nullify,
            inverse_of: :manager_connection
   has_many :llama_server_operations, dependent: :destroy
+  has_many :llama_server_reconciliations, dependent: :destroy
   BUILTIN_KEYS = %w[
     llama_cpp
     gpt_oss

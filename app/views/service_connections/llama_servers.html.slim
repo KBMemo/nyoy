@@ -3,6 +3,7 @@
 .mb-6.flex.flex-wrap.items-center.justify-between.gap-3
   h1 class=kb_page_title LLM サーバー
   .flex.flex-wrap.items-center.gap-2
+    = button_to "整合チェック", reconcile_llama_servers_service_connections_path, method: :post, class: kb_btn_secondary_sm
     = link_to "定義を作成", new_llama_server_path, class: kb_btn_primary_sm
     = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
 
@@ -22,6 +23,29 @@
   - if @inventory_error
     .kb-alert.kb-alert-danger = @inventory_error
   - if @inventory
+    section.kb-card.p-4.mb-6
+      .flex.flex-wrap.items-center.justify-between.gap-2
+        h2 class=kb_section_title 整合状態
+        - if @latest_llama_server_reconciliation
+          span.text-xs.kb-text-muted = l(@latest_llama_server_reconciliation.checked_at, format: :short)
+      - reconciliation = @latest_llama_server_reconciliation
+      - if reconciliation.nil?
+        p.mt-2.text-sm.kb-text-muted まだ整合チェックを実行していません。
+      - elsif reconciliation.status == "failed"
+        .kb-alert.kb-alert-danger.mt-3 = reconciliation.error_message
+      - elsif reconciliation.healthy?
+        p.mt-2.text-sm.kb-status-success binding済み接続に差分はありません。
+      - else
+        ul.mt-3.space-y-2
+          - reconciliation.findings.each do |finding|
+            li.text-sm
+              span.kb-status-warning = finding["message"]
+              span.nyoy-monospace.ml-2 = finding["server_id"]
+              - if finding["connection_key"].present?
+                span.kb-text-muted.ml-2 = finding["connection_key"]
+              - if finding["usages"].present?
+                span.kb-text-muted.ml-2 = "用途: #{finding['usages'].join(', ')}"
+
     section.mb-6
       h2 class=kb_section_title 管理中のサーバー
       .mt-3.overflow-x-auto

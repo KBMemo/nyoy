@@ -16,8 +16,14 @@ production:
   memo_knowledge_ingest:
     class: MemoKnowledgeIngestJob
     schedule: every hour at minute 30
+  llama_server_reconciliation:
+    class: LlamaServerReconciliationJob
+    schedule: every 15 minutes
 
 development:
   memo_knowledge_ingest:
     class: MemoKnowledgeIngestJob
     schedule: every 6 hours
+  llama_server_reconciliation:
+    class: LlamaServerReconciliationJob
+    schedule: every hour

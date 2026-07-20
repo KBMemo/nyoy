@@ -13,11 +13,18 @@ class ServiceConnectionsController < ApplicationController
     @switchd_connection = ServiceConnection.find_by(key: "llama_switchd")
     @llama_server_operations = @switchd_connection&.llama_server_operations&.recent&.limit(30) || []
     @active_llama_server_operations = @llama_server_operations.select(&:active?).index_by(&:managed_server_id)
+    @latest_llama_server_reconciliation = @switchd_connection&.llama_server_reconciliations&.recent&.first
     return unless @switchd_connection&.enabled?
 
     @inventory = LlamaSwitchdInventory.new(@switchd_connection).call
   rescue LlamaSwitchdClient::Error => e
     @inventory_error = e.message
+  end
+
+  def reconcile_llama_servers
+    ServiceConnection.find_by!(key: "llama_switchd", enabled: true)
+    LlamaServerReconciliationJob.perform_later
+    redirect_to llama_servers_service_connections_path, notice: "LLMサーバーの整合チェックを受け付けました。"
   end
 
   def operate_llama_server

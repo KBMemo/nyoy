@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -219,8 +219,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_020000) do
     t.string "status", default: "queued", null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_llama_server_operations_on_created_at"
-    t.index ["service_connection_id", "managed_server_id"], name: "index_active_llama_server_operations", unique: true, where: "((status)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying])::text[]))"
+    t.index ["service_connection_id", "managed_server_id"], name: "index_active_llama_server_operations", unique: true, where: "((status)::text = ANY (ARRAY[('queued'::character varying)::text, ('running'::character varying)::text]))"
     t.index ["service_connection_id"], name: "index_llama_server_operations_on_service_connection_id"
+  end
+
+  create_table "llama_server_reconciliations", force: :cascade do |t|
+    t.datetime "checked_at", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.jsonb "findings", default: [], null: false
+    t.jsonb "server_snapshot", default: [], null: false
+    t.bigint "service_connection_id", null: false
+    t.string "status", null: false
+    t.datetime "updated_at", null: false
+    t.index ["checked_at"], name: "index_llama_server_reconciliations_on_checked_at"
+    t.index ["service_connection_id"], name: "index_llama_server_reconciliations_on_service_connection_id"
   end
 
   create_table "llm_sampling_presets", force: :cascade do |t|
@@ -511,6 +524,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_020000) do
   add_foreign_key "image_generations", "sd_model_profiles"
   add_foreign_key "image_generations", "sd_prompt_templates"
   add_foreign_key "llama_server_operations", "service_connections"
+  add_foreign_key "llama_server_reconciliations", "service_connections"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
