@@ -16,7 +16,7 @@ module ChatTools
     param :limit, type: "integer", desc: "最大件数（省略時は接続設定の既定。最大 10）", required: false
 
     def execute(q:, limit: nil)
-      if (error = @budget.consume_search!)
+      if (error = @budget.consume_search!(query: q))
         return error
       end
 

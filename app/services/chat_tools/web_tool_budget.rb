@@ -19,7 +19,8 @@ module ChatTools
         max_fetches: positive(budget["max_fetches"], settings.max_fetches_per_turn),
         searches: budget["searches_used"].to_i,
         fetches: budget["fetches_used"].to_i,
-        fetched_urls: Array(budget["fetched_urls"])
+        fetched_urls: Array(budget["fetched_urls"]),
+        searched_queries: Array(budget["searched_queries"])
       )
     end
 
@@ -29,7 +30,7 @@ module ChatTools
     end
     private_class_method :positive
 
-    def initialize(max_searches:, max_fetches:, searches: 0, fetches: 0, fetched_urls: [])
+    def initialize(max_searches:, max_fetches:, searches: 0, fetches: 0, fetched_urls: [], searched_queries: [])
       @max_searches = max_searches
       @max_fetches = max_fetches
       @searches = searches.to_i
@@ -38,6 +39,11 @@ module ChatTools
       Array(fetched_urls).each do |url|
         key = normalize_url(url)
         @fetched_urls[key] = true if key.present?
+      end
+      @searched_queries = {}
+      Array(searched_queries).each do |query|
+        key = normalize_query(query)
+        @searched_queries[key] = true if key.present?
       end
       @mutex = Mutex.new
     end
@@ -50,14 +56,29 @@ module ChatTools
         "fetches_used" => @fetches,
         "max_searches" => @max_searches,
         "max_fetches" => @max_fetches,
-        "fetched_urls" => @fetched_urls.keys
+        "fetched_urls" => @fetched_urls.keys,
+        "searched_queries" => @searched_queries.keys
       }
     end
 
-    def consume_search!
+    def consume_search!(query: nil)
       @mutex.synchronize do
+        normalized_query = normalize_query(query)
+        if normalized_query.present? && @searched_queries.key?(normalized_query)
+          return ToolResponse.error(
+            tool: "web_search",
+            code: "QUERY_ALREADY_SEARCHED",
+            retryable: false,
+            message: "この検索クエリは既に実行済みです。結果は再送しません。",
+            next_action: "同じクエリを再検索せず、既に得た検索結果で回答するか、必要性が明確な別のクエリを使ってください。"
+          )
+        end
+
         @searches += 1
-        return nil if @searches <= @max_searches
+        if @searches <= @max_searches
+          @searched_queries[normalized_query] = true if normalized_query.present?
+          return nil
+        end
 
         ToolResponse.limit_reached(
           tool: "web_search",
@@ -106,6 +127,12 @@ module ChatTools
       uri.to_s
     rescue StandardError
       url.to_s.strip
+    end
+
+    def normalize_query(query)
+      query.to_s.unicode_normalize(:nfkc).downcase.squish
+    rescue Encoding::CompatibilityError, ArgumentError
+      query.to_s.downcase.squish
     end
   end
 end

@@ -81,6 +81,41 @@ class ChatToolsTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
   end
 
+  test "web_search rejects an equivalent query repeated in one turn" do
+    calls = []
+    fake_client = Object.new
+    fake_client.define_singleton_method(:search) do |**kwargs|
+      calls << kwargs
+      { "results" => [ { "title" => "Ruby", "url" => "https://ruby-lang.org" } ] }
+    end
+    original_web_search_client = ChatTools::Registry.method(:web_search_client)
+    ChatTools::Registry.define_singleton_method(:web_search_client) { fake_client }
+
+    budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
+    tool = ChatTools::WebSearch.new(budget: budget)
+
+    tool.execute(q: "Ruby  Rails")
+    duplicate = tool.execute(q: "ruby rails")
+
+    assert_match(/TOOL_ERROR/, duplicate)
+    assert_match(/QUERY_ALREADY_SEARCHED/, duplicate)
+    assert_equal 1, calls.size
+    assert_equal 1, budget.searches
+  ensure
+    ChatTools::Registry.define_singleton_method(:web_search_client, original_web_search_client) if defined?(original_web_search_client)
+  end
+
+  test "web search query history survives graph budget restoration" do
+    budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
+    assert_nil budget.consume_search!(query: "Ruby Rails")
+
+    restored = ChatTools::WebToolBudget.from_graph_budget(budget.to_graph_budget)
+    duplicate = restored.consume_search!(query: "ruby  rails")
+
+    assert_match(/QUERY_ALREADY_SEARCHED/, duplicate)
+    assert_equal [ "ruby rails" ], restored.to_graph_budget["searched_queries"]
+  end
+
   test "fetch_url returns page preview json" do
     calls = []
     fake_fetcher = Object.new

@@ -31,6 +31,7 @@ module ChatTools
       添付画像の視覚的内容（写っているもの・文字・見た目）→ analyze_image。
       画像が添付されていても、質問がテキストだけで答えられるなら analyze_image は使わない。
       複数のツールが必要なら順序よく組み合わせてよい。同じ URL や同じクエリを無駄に繰り返さない。
+      ユーザーが URL を明示した場合は web_search を挟まず fetch_url で直接取得する。
       ツールは一度に1つずつ呼び、結果を受け取ってから次を判断する（同時に複数の呼び出しを並べない）。
     TEXT
 
@@ -40,6 +41,7 @@ module ChatTools
       fetch_url は一度に1件の URL だけ指定します（複数 URL を同時に並べない）。結果を受け取ってから、必要なら次の URL を fetch_url で取得できます。
       ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
       CODE: URL_ALREADY_FETCHED / FETCH_LIMIT_EXCEEDED / SEARCH_LIMIT_EXCEEDED は再試行禁止です。
+      CODE: QUERY_ALREADY_SEARCHED も再試行禁止です。同じ検索結果を使って回答してください。
       検索はクエリを絞って少ない回数で済ませ、本文取得は必要な HTML ページだけに限定してください。
       PDF は取得対象外です（検索結果の PDF はスキップされます）。PDF 以外の HTML を選んでください。
       fetch_url は公開 Web の http/https URL のみ取得できます。
