@@ -80,6 +80,8 @@
               th.p-2.text-left 操作
           tbody
             - @inventory.servers.each do |server|
+              - usage_descriptions = (@llama_server_usages || {})[server["id"]] || []
+              - usage_warning = usage_descriptions.any? ? " 影響用途: #{usage_descriptions.join(' / ')}" : ""
               tr.border-b data-llama-server-row=true data-filter-text="#{server['id']} #{server['alias']}"
                 td.p-2.nyoy-monospace = server["id"]
                 td.p-2.nyoy-monospace = server["alias"]
@@ -111,7 +113,7 @@
                   - else
                     .flex.flex-wrap.items-center.gap-2
                       - if server["active"]
-                        = button_to "停止", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "stop" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} を停止しますか？" } }
+                        = button_to "停止", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "stop", acknowledge_usage: (usage_descriptions.any? ? "1" : nil) }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} を停止しますか？#{usage_warning}" } }
                         = button_to "再起動", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "restart" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} を再起動しますか？" } }
                       - else
                         = button_to "起動", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "start" }, class: kb_btn_secondary_sm
@@ -122,7 +124,7 @@
                     .mt-2.flex.flex-wrap.items-center.gap-2
                       = link_to "定義を編集", edit_llama_server_path(server["id"]), class: "kb-chrome-link text-sm"
                       - unless server["active"] || server["enabled"]
-                        = button_to "定義を削除", llama_server_path(server["id"]), method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { data: { turbo_confirm: "#{server['id']} の定義を削除しますか？" } }
+                        = button_to "定義を削除", llama_server_path(server["id"]), method: :delete, params: { acknowledge_usage: (usage_descriptions.any? ? "1" : nil) }, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { data: { turbo_confirm: "#{server['id']} の定義を削除しますか？#{usage_warning}" } }
 
     section#llama-server-connections.mb-6
       h2 class=kb_section_title Nyoy 接続との差分

@@ -174,7 +174,7 @@ queued -> running -> succeeded
 - 同じmanaged serverへのmutating operationはNyoy側でも1件に制限
 - upstreamもmutationを直列化するが、UIの二重送信防止と監査のためNyoy側operationを持つ
 - start/restart成功後はswitchdのready待ちとdefinition/status保存まで行う。`/props`の即時検証は残課題
-- stop/deleteの用途参照警告は残課題。現状はserver IDによる一般確認と、deleteの状態制約だけを適用
+- stop/deleteは紐付いた有効な接続と既定Chat・AgentGraph role等の用途を確認文へ表示し、controllerでも明示確認値を要求する
 - deleteはupstreamの「stoppedかつdisabled」を満たす場合だけ表示する
 
 AgentGraphの状態機械へは入れない。これはAI workflowではなく、管理操作の短いjob state machineとして独立させる。
@@ -244,7 +244,7 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 
 1. [x] 定期reconciliation
 2. [x] alias/port driftのWebhook通知と同一異常抑止
-3. [ ] roleが参照するserverのstop/delete操作前警告
+3. [x] roleや有効な接続が参照するserverのstop/delete操作前警告
 4. [x] freshなreconciliation snapshotによりready serverだけをChat model選択肢へ表示
 5. [x] 管理UIのトークン認証
 6. [x] operation/reconciliation履歴の定期削除
@@ -253,7 +253,6 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
-| 高 | stop/delete時の用途参照警告 | reconciliation findingには既定Chat・AgentGraph role等の用途を含むが、操作確認はserver IDだけ | 対象serverを参照する用途名を確認文へ表示し、controller側でも確認済み入力を要求する |
 | 中 | start/restart直後のruntime検証 | switchdのready待ちとserver detail保存までは実施。`/props`は画面再取得・次回reconciliationで確認 | operation jobが`model_alias`と`total_slots`を確認し、安全なruntime snapshotまたは検証失敗を記録する |
 | 運用 | 本番管理認証スモーク | 非破壊スクリプトとrunbookは実装済み | deploy後に`bin/verify-llama-server-admin`の4項目が本番でPASS |
 | 運用 | 外部alert E2E | Webhook adapter、再試行、単体テストは実装済み | 本番通知先を設定し、異常注入と復旧の2通知を受信確認 |

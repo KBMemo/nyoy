@@ -20,6 +20,9 @@ class ServiceConnectionsController < ApplicationController
     return unless @switchd_connection&.enabled?
 
     @inventory = LlamaSwitchdInventory.new(@switchd_connection).call
+    @llama_server_usages = @inventory.servers.to_h do |server|
+      [ server["id"], LlamaServerUsageResolver.descriptions_for_server(@switchd_connection, server["id"]) ]
+    end
   rescue LlamaSwitchdClient::Error => e
     @inventory_error = e.message
   end
@@ -35,6 +38,11 @@ class ServiceConnectionsController < ApplicationController
     action = params.require(:server_action)
     unless action.in?(LlamaServerOperation::LIFECYCLE_ACTIONS)
       redirect_to llama_servers_service_connections_path, alert: "許可されていないサーバー操作です。"
+      return
+    end
+    usages = LlamaServerUsageResolver.descriptions_for_server(connection, params.require(:managed_server_id))
+    if action == "stop" && usages.any? && !usage_acknowledged?
+      redirect_to llama_servers_service_connections_path, alert: "使用中のサーバーを停止するには影響用途の確認が必要です。"
       return
     end
     operation = connection.llama_server_operations.create!(
@@ -178,6 +186,10 @@ class ServiceConnectionsController < ApplicationController
   end
 
   private
+
+  def usage_acknowledged?
+    ActiveModel::Type::Boolean.new.cast(params[:acknowledge_usage])
+  end
 
   def set_service_connection
     @service_connection = ServiceConnection.find(params[:id])

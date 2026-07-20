@@ -38,6 +38,10 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "llama servers shows read only inventory" do
+    service_connections(:llama_cpp).update!(
+      manager_connection: service_connections(:llama_switchd),
+      managed_server_id: "main"
+    )
     result = LlamaSwitchdInventory::Result.new(
       servers: [ { "id" => "main", "alias" => "main-model", "port" => 10010, "state" => "ready" } ],
       models: [],
@@ -56,6 +60,9 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-llama-server-monitor-target='operationStatus']"
     assert_select "#llama-server-refresh-state[data-active='false']"
     assert_select "tr[data-llama-server-row][data-filter-text*='main-model']"
+    assert_select "form[action='#{llama_server_path('main')}'][data-turbo-confirm*='既定Chat']" do
+      assert_select "input[name='acknowledge_usage'][value='1']"
+    end
   ensure
     LlamaSwitchdInventory.define_method(:call, original) if defined?(original)
   end
@@ -121,6 +128,35 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "main", operation.managed_server_id
     assert_equal "restart", operation.action
     assert_equal "queued", operation.status
+  end
+
+  test "stop requires acknowledgement when an enabled connection uses the server" do
+    manager = service_connections(:llama_switchd)
+    service_connections(:llama_cpp).update!(manager_connection: manager, managed_server_id: "main")
+
+    assert_no_difference -> { LlamaServerOperation.count } do
+      post operate_llama_server_service_connections_path, params: {
+        managed_server_id: "main",
+        server_action: "stop"
+      }
+    end
+
+    assert_match "影響用途の確認", flash[:alert]
+  end
+
+  test "stop queues after acknowledging bound connection usages" do
+    manager = service_connections(:llama_switchd)
+    service_connections(:llama_cpp).update!(manager_connection: manager, managed_server_id: "main")
+
+    assert_difference -> { LlamaServerOperation.count }, 1 do
+      post operate_llama_server_service_connections_path, params: {
+        managed_server_id: "main",
+        server_action: "stop",
+        acknowledge_usage: "1"
+      }
+    end
+
+    assert_redirected_to llama_servers_service_connections_path
   end
 
   test "operate llama server rejects unsupported action" do

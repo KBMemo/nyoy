@@ -45,6 +45,11 @@ class LlamaServersController < ApplicationController
       redirect_to llama_servers_service_connections_path, alert: "削除前にサーバーを停止し、自動起動を無効化してください。"
       return
     end
+    usages = LlamaServerUsageResolver.descriptions_for_server(@switchd_connection, params[:id])
+    if usages.any? && !usage_acknowledged?
+      redirect_to llama_servers_service_connections_path, alert: "使用中のサーバー定義を削除するには影響用途の確認が必要です。"
+      return
+    end
 
     enqueue_operation!("delete", params[:id], {})
     redirect_to llama_servers_service_connections_path, notice: "#{params[:id]} の定義削除を受け付けました。"
@@ -55,6 +60,10 @@ class LlamaServersController < ApplicationController
   end
 
   private
+
+  def usage_acknowledged?
+    ActiveModel::Type::Boolean.new.cast(params[:acknowledge_usage])
+  end
 
   def set_switchd_connection
     @switchd_connection = ServiceConnection.find_by!(key: "llama_switchd", enabled: true)

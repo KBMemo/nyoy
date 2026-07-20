@@ -62,6 +62,28 @@ class LlamaServersControllerTest < ActionDispatch::IntegrationTest
     assert_match(/停止/, flash[:alert])
   end
 
+  test "destroy requires acknowledgement when an enabled connection uses the server" do
+    manager = service_connections(:llama_switchd)
+    service_connections(:llama_cpp).update!(manager_connection: manager, managed_server_id: "main")
+
+    assert_no_difference -> { LlamaServerOperation.count } do
+      with_client(fake_client) { delete llama_server_path("main") }
+    end
+
+    assert_match "影響用途の確認", flash[:alert]
+  end
+
+  test "destroy queues after acknowledging bound connection usages" do
+    manager = service_connections(:llama_switchd)
+    service_connections(:llama_cpp).update!(manager_connection: manager, managed_server_id: "main")
+
+    assert_difference -> { LlamaServerOperation.count }, 1 do
+      with_client(fake_client) { delete llama_server_path("main"), params: { acknowledge_usage: "1" } }
+    end
+
+    assert_redirected_to llama_servers_service_connections_path
+  end
+
   private
 
   def valid_params

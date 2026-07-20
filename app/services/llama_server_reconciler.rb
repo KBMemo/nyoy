@@ -2,13 +2,6 @@
 
 class LlamaServerReconciler
   SNAPSHOT_KEYS = %w[id alias port state ready active enabled restart_required].freeze
-  MODEL_USAGES = {
-    research_draft_model: "AgentGraph draft",
-    research_planner_model: "AgentGraph planner",
-    agent_graph_intent_model: "AgentGraph intent",
-    evidence_evaluator_model: "AgentGraph evidence evaluator",
-    final_answer_model: "AgentGraph final answer"
-  }.freeze
 
   def initialize(connection, client: nil, runtime_probe: nil)
     @connection = connection
@@ -116,16 +109,7 @@ class LlamaServerReconciler
   end
 
   def usage_labels(connection)
-    labels = []
-    labels << "既定Chat" if AppSetting.default_chat_connection_key == connection.key
-    labels << "style plan" if AppSetting.default_style_plan_connection_key == connection.key
-    labels << "画像理解" if connection.key == "vision_llama"
-    labels << "埋め込み" if connection.key == "embeddings"
-    MODEL_USAGES.each do |resolver, label|
-      model = AppSetting.public_send(resolver)
-      labels << label if model&.metadata&.dig("connection_key") == connection.key
-    end
-    labels
+    LlamaServerUsageResolver.labels_for(connection)
   end
 
   def prune_history
