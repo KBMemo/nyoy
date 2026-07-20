@@ -17,6 +17,8 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal true, result.updates.dig("plan", "need_web")
     assert_equal 1, result.updates.dig("evidence_review", "attempts")
     assert_equal "search_web", result.updates.dig("evidence_review", "next_node")
+    assert_equal "evidence_evaluator", result.updates.dig("evidence_review", "role")
+    assert_equal "heuristic", result.updates.dig("evidence_review", "profile")
   end
 
   test "requests page fetch for unfetched search result urls" do
@@ -133,6 +135,37 @@ class AgentGraphNodesEvaluateEvidenceTest < ActiveSupport::TestCase
     assert_equal true, calls.first.fetch(:state).dig("plan", "need_web")
     assert_equal :run, calls.first.fetch(:run)
     assert_equal :chat, calls.first.fetch(:chat)
+  end
+
+  test "records evaluator profile and optional runtime metadata" do
+    service = Object.new
+    service.define_singleton_method(:call) do |**|
+      [
+        {
+          status: "sufficient",
+          reason: "LLM review",
+          plan: {},
+          target_urls: []
+        },
+        {
+          "source" => "light",
+          "model_id" => "tiny",
+          "fallback" => "heuristic",
+          "usage" => { "input_tokens" => 40, "cached_tokens" => 25 }
+        }
+      ]
+    end
+
+    AgentGraph::RoleServices.with(:evidence_evaluator, service) do
+      result = node.call(state: state, run: nil, chat: nil)
+      review = result.updates.fetch("evidence_review")
+
+      assert_equal "override", review.fetch("profile")
+      assert_equal "light", review.fetch("source")
+      assert_equal "tiny", review.fetch("model_id")
+      assert_equal "heuristic", review.fetch("fallback")
+      assert_equal 25, review.dig("usage", "cached_tokens")
+    end
   end
 
   private

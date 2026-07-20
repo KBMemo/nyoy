@@ -20,6 +20,7 @@ class AgentNodeRun < ApplicationRecord
     if updates.is_a?(Hash) && updates.any?
       parts << "updates: #{updates.keys.join(", ")}"
       parts.concat(planning_summary(updates["planning"]))
+      parts.concat(evaluation_summary(updates["evidence_review"]))
       parts.concat(synthesis_summary(updates))
     end
     parts << "goto: #{output_snapshot["goto"]}" if output_snapshot["goto"].present?
@@ -48,6 +49,14 @@ class AgentNodeRun < ApplicationRecord
     parts.concat(usage_summary(synthesis["usage"]))
     parts << "truncated" if updates["truncated"] == true || updates["draft_truncated"] == true
     parts
+  end
+
+  def evaluation_summary(review)
+    return [] unless review.is_a?(Hash)
+
+    metadata_summary(review) +
+      llama_cache_summary(review["llama_cache"]) +
+      usage_summary(review["usage"])
   end
 
   def metadata_summary(metadata)

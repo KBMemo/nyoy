@@ -471,6 +471,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
 
+`evaluate_evidence` は `evidence_review` に `role` と実効 `profile` を常に保存する。evaluator serviceはreview単体に加えて `[review, metadata]` を返せるものとし、`model_id`、`source`、`fallback`、llama cache、token usageをstateとAgentNodeRun要約へ引き継ぐ。これによりheuristicの判断規則を維持したまま、将来の軽量LLM profileを同じ観測契約で比較できる。
+
 `evidence_pack` / `llm` を同一質問で比較する実運用手順は [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md) にまとめた。応答時間・使用model・fallback・evidence差・最終回答品質を記録し、終了後に設定を復旧する。
 
 draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。`planner.llm` profileは実装済み。

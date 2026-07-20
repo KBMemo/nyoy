@@ -160,4 +160,38 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "cached: 60"
     ], node_run.output_summary
   end
+
+  test "output_summary reports evidence evaluator metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "evaluate_evidence",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "evidence_review" => {
+            "status" => "sufficient",
+            "role" => "evidence_evaluator",
+            "profile" => "llm",
+            "source" => "light",
+            "model_id" => "tiny",
+            "fallback" => "heuristic",
+            "llama_cache" => { "cache_prompt" => true, "slot_id" => 0, "slot_count" => 2 },
+            "usage" => { "input_tokens" => 40, "output_tokens" => 8, "cached_tokens" => 25 }
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: evidence_review",
+      "profile: evidence_evaluator.llm",
+      "llm: tiny",
+      "source: light",
+      "fallback: heuristic",
+      "cache_prompt",
+      "slot: 0/2",
+      "in: 40",
+      "out: 8",
+      "cached: 25"
+    ], node_run.output_summary
+  end
 end
