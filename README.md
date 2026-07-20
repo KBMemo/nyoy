@@ -95,6 +95,9 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `LLAMA_SWITCHD_URL` | llama-switchd 管理 API | `http://balvenie:11335` |
 | `LLAMA_SWITCHD_TOKEN` | llama-switchd 認証トークン | （未設定） |
 | `LLAMA_SERVER_AVAILABILITY_MAX_AGE` | Chat候補のready判定に使う整合snapshotの有効秒数 | `7200` |
+| `LLAMA_SERVER_OPERATION_RETENTION_DAYS` | 完了operation履歴の保持日数 | `30` |
+| `LLAMA_SERVER_OPERATION_MAX_COUNT` | switchd接続ごとの完了operation最大件数 | `1000` |
+| `LLAMA_SERVER_RECONCILIATION_MAX_COUNT` | switchd接続ごとの整合履歴最大件数 | `100` |
 | `LLAMA_MODEL` | style 計画等のモデル名 | `gemma-4-e4b-it-qat-ud-q4-k-xl` |
 | `GPT_OSS_MODEL` | Chat 用 GPT-OSS モデル名 | `gpt-oss` |
 | `GPT_OSS_LLAMA_CPP_URL` | GPT-OSS 専用 URL（省略時は `LLAMA_CPP_URL`） | （未設定） |

@@ -19,6 +19,9 @@ production:
   llama_server_reconciliation:
     class: LlamaServerReconciliationJob
     schedule: every 15 minutes
+  llama_server_maintenance:
+    class: LlamaServerMaintenanceJob
+    schedule: every day at 3:20am
 
 development:
   memo_knowledge_ingest:
@@ -27,3 +30,6 @@ development:
   llama_server_reconciliation:
     class: LlamaServerReconciliationJob
     schedule: every hour
+  llama_server_maintenance:
+    class: LlamaServerMaintenanceJob
+    schedule: every day at 3:20am

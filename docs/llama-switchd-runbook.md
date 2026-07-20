@@ -97,6 +97,8 @@ productionでは15分ごと、developmentでは1時間ごとに実行する。�
 
 自動同期・自動再起動は行わない。
 
+operation履歴は完了後30日かつ最新1000件、reconciliation履歴は最新100件を保持する。queued/running operationはmaintenanceの削除対象外。
+
 ## 7. 障害時
 
 ### switchdへ接続できない

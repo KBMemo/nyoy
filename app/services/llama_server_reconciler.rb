@@ -126,7 +126,8 @@ class LlamaServerReconciler
   end
 
   def prune_history
-    ids = @connection.llama_server_reconciliations.recent.offset(100).pluck(:id)
+    max_count = [ Rails.application.config.x.nyoy.llama_server_reconciliation_max_count.to_i, 1 ].max
+    ids = @connection.llama_server_reconciliations.recent.offset(max_count).pluck(:id)
     @connection.llama_server_reconciliations.where(id: ids).delete_all if ids.any?
   end
 end
