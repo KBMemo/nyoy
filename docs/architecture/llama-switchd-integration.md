@@ -39,6 +39,8 @@ Upstream:
 
 2026-07-21 の development DB では `llama_cpp` と `gpt_oss` がともに `http://balvenie:10011` を指している一方、10011 の実体は Gemma 4 だった。`llama_cpp.server_model`、`gpt_oss.server_model`、実 `/props.model_alias` も一致していない。したがって、既存レコードをポートだけで自動 binding してはならない。
 
+同日のinventory確認後、development・productionの`gpt_oss`を`gpt-oss-20b`へbindingし、port `10014`、Alias `gpt-oss-20b`へ同期した。旧`llm_gemma4_e4b_mtp`接続は無効化し、参照がなくなったLFM2.5 serverも停止・自動起動無効化した。
+
 ## 3. 責務境界
 
 ### 3.1 Control connection
@@ -253,7 +255,8 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
-| 運用 | 外部alert通知先の常設 | 本番runtimeと一時localhost受信器でwarning/recovered、Bearer、冪等キーのE2Eは確認済み。常設URL/tokenは未設定 | 通知先を選定して本番envへ設定し、実際の異常・復旧通知を受信確認 |
+| 運用 | production残接続のbinding | `gpt_oss`は完了。`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`は未binding | Runtime Aliasを確認し、4接続を個別にbinding・同期してreconciliationをhealthy化 |
+| 運用 | 外部alert通知先の常設 | 本番runtimeと一時localhost受信器でwarning/recovered、Bearer、冪等キーのE2Eは確認済み。既存インフラに適合する常設受信先はなかった | 通知先を選定して本番envへ設定し、実際の異常・復旧通知を受信確認 |
 
 `public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。
 

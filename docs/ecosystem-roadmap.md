@@ -249,7 +249,7 @@ gantt
 | 4 | ~~徒然 Groonga 検索~~ | キーワード RAG 精度 | **決定:** PGroonga（徒然 DB）。[実装手順](./tsuredure-pgroonga-search.md) |
 | 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
 | 6 | マルチ Workspace 開発 | site + nyoy | OpenAPI 契約 + マルチルート推奨 |
-| 7 | Chat `reasoning_effort` 等 | 体感レイテンシ | **設定化済み、gpt-oss 実測待ち。** [確認手順](./chat-reasoning-effort-runbook.md) |
+| 7 | ~~Chat `reasoning_effort` 等~~ | 体感レイテンシ | **実測完了。** `low`と未指定に再現性のある差がないため既定値は維持。[確認記録](./chat-reasoning-effort-runbook.md) |
 
 ---
 
@@ -257,7 +257,8 @@ gantt
 
 ### 推奨
 
-- llama-server接続は [llama-switchd integration](./architecture/llama-switchd-integration.md) のPhase 1から着手し、read-only inventoryで現在のport/alias不一致を確認してからbindingする
+- llama-switchd Phase 1〜5は実装済み。productionの`gpt_oss`はbinding済みで、残る4接続はRuntime Aliasを確認して個別にbinding・同期する
+- LLM server外部alertは配送E2Eまで確認済み。常設通知先の選定後、productionへURL/tokenを設定して実通知を確認する
 - webhook を本番投入する場合は、[Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md) に沿って site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
 
 ### 完了（Phase 6）

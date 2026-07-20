@@ -99,7 +99,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 優先度は「体感への影響」ベース。実装判断は別途。
 
-### 4.1 `reasoning_effort` の設定化（実装済み、実測待ち）
+### 4.1 `reasoning_effort` の設定化（実装・GPT-OSS実測済み）
 
 | 項目 | 内容 |
 |------|------|
@@ -110,7 +110,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 優先順位は既存サンプリング設定と同じく、アプリ既定プリセット → 接続プロファイル → チャット個別設定（後勝ち）。`FinalAnswerSynthesizer` の main profile にも有効なチャット設定として伝播する。比較手順と記録方法は [Chat reasoning_effort 実運用確認 Runbook](./chat-reasoning-effort-runbook.md) を参照する。
 
-2026-07-20 の確認時点では `gpt_oss` 接続先に Gemma 4 がロードされていたため、gpt-oss での速度・品質比較は保留した。
+2026-07-21に`gpt_oss`をport `10014`の`gpt-oss-20b`へ切り替え、A1/A2/B1/B2を実測した。coldなA1を除くと最初の生成chunkは664–729 ms、総時間は14.9–16.0秒で、`low`と未指定に再現性のある差はなかった。既定値は変更しない。詳細は [Chat reasoning_effort 実運用確認 Runbook](./chat-reasoning-effort-runbook.md) を参照する。
 
 ### 4.2 ツール往復コストの抑制
 
@@ -137,7 +137,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 狙い | Chat 以外の LLM 呼び出しが sticky slot の KV を evict しないようにする |
 | リスク源 | `ChatHistorySummarizer` / `MemoKnowledgeChunkCompressor`（LLM 圧縮は既定オフ）、style plan、その他 `LlamaCppClient` |
 | 案 | Chat 専用インスタンス、slot 帯の分離、非 Chat 呼び出しに別 `id_slot` 方針 |
-| メモ | `gpt_oss` URL 未設定時は `llama_cpp` にフォールバックするため同居しやすい |
+| メモ | `gpt_oss`は専用port `10014`へbinding済み。URL未設定時だけ`llama_cpp`へフォールバックする |
 
 `total_slots >= 2` の場合、末尾 `LLAMA_AUX_SLOT_COUNT` slotsをAgentGraphのintent・planner・draft・evidence evaluator・final answer用に予約し、通常Chatは残りのslotだけを使う。補助処理同士の衝突より、対話のsticky cache保護を優先する。`LLAMA_AUX_SLOT_COUNT=0`で従来どおり全slot共有へ戻せる。
 
