@@ -19,6 +19,7 @@ class AgentNodeRun < ApplicationRecord
     updates = output_snapshot["updates"]
     if updates.is_a?(Hash) && updates.any?
       parts << "updates: #{updates.keys.join(", ")}"
+      parts.concat(planning_summary(updates["planning"]))
       parts.concat(synthesis_summary(updates))
     end
     parts << "goto: #{output_snapshot["goto"]}" if output_snapshot["goto"].present?
@@ -29,23 +30,34 @@ class AgentNodeRun < ApplicationRecord
 
   private
 
+  def planning_summary(planning)
+    return [] unless planning.is_a?(Hash)
+
+    metadata_summary(planning)
+  end
+
   def synthesis_summary(updates)
     synthesis = updates["final_synthesis"] || updates["draft_synthesis"]
     return [] unless synthesis.is_a?(Hash)
 
-    parts = []
-    if synthesis["profile"].present?
-      role = synthesis["role"].presence
-      profile = [ role, synthesis["profile"] ].compact.join(".")
-      parts << "profile: #{profile}"
-    end
-    parts << "llm: #{synthesis["model_id"]}" if synthesis["model_id"].present?
-    parts << "source: #{synthesis["source"]}" if synthesis["source"].present?
-    parts << "fallback: #{synthesis["fallback"]}" if synthesis["fallback"].present?
+    parts = metadata_summary(synthesis)
     parts.concat(evidence_summary(synthesis["evidence"]))
     parts.concat(llama_cache_summary(synthesis["llama_cache"]))
     parts.concat(usage_summary(synthesis["usage"]))
     parts << "truncated" if updates["truncated"] == true || updates["draft_truncated"] == true
+    parts
+  end
+
+  def metadata_summary(metadata)
+    parts = []
+    if metadata["profile"].present?
+      role = metadata["role"].presence
+      profile = [ role, metadata["profile"] ].compact.join(".")
+      parts << "profile: #{profile}"
+    end
+    parts << "llm: #{metadata["model_id"]}" if metadata["model_id"].present?
+    parts << "source: #{metadata["source"]}" if metadata["source"].present?
+    parts << "fallback: #{metadata["fallback"]}" if metadata["fallback"].present?
     parts
   end
 

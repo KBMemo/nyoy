@@ -461,7 +461,7 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallbackをstateの `planning` に記録する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallbackをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 

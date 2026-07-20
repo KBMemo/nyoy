@@ -118,4 +118,31 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "errors: 0"
     ], node_run.output_summary
   end
+
+  test "output_summary reports planner metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "plan_research",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "plan" => { "need_web" => true },
+          "planning" => {
+            "role" => "planner",
+            "profile" => "llm",
+            "source" => "deterministic",
+            "model_id" => "qwen3.5-4b",
+            "fallback" => "deterministic"
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: plan, planning",
+      "profile: planner.llm",
+      "llm: qwen3.5-4b",
+      "source: deterministic",
+      "fallback: deterministic"
+    ], node_run.output_summary
+  end
 end
