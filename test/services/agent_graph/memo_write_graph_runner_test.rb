@@ -20,6 +20,8 @@ class AgentGraphMemoWriteGraphRunnerTest < ActiveSupport::TestCase
       assert run.state["draft"].present?
       assert_equal "今日のメモ", run.state.dig("memo_draft", "title")
       assert_includes run.state.dig("memo_draft", "body"), "内容の本体"
+      assert_equal "memo_writer", run.state.dig("memo_draft_meta", "role")
+      assert_equal "deterministic", run.state.dig("memo_draft_meta", "profile")
 
       completed = AgentGraph::MemoWriteGraphRunner.resume(run, decision: "approved")
       assert completed.completed?, -> { completed.error_message }

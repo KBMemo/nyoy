@@ -44,6 +44,43 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_equal :main, AgentGraph::RoleServices.active_profile_for(:vision)
   end
 
+  test "deterministic memo writer builds create and update drafts" do
+    service = AgentGraph::RoleServices.fetch(:memo_writer)
+    create_draft, create_display, create_metadata = service.call(
+      action: :create,
+      state: { "source_title" => "Title", "source_body" => "Body" },
+      run: nil,
+      chat: nil
+    )
+    update_draft, update_display, update_metadata = service.call(
+      action: :update,
+      state: {
+        "memo_ref" => "42",
+        "original_memo" => { "title" => "Existing", "updated_at" => "2026-07-16T00:00:00Z" },
+        "plan" => { "mode" => "append" },
+        "source_body" => "Added"
+      },
+      run: nil,
+      chat: nil
+    )
+
+    assert_equal({ "action" => "create", "title" => "Title", "body" => "Body" }, create_draft)
+    assert_equal "### Title\n\nBody", create_display
+    assert_equal "deterministic", create_metadata.fetch("source")
+    assert_equal "Added", update_draft.fetch("append_body")
+    assert_equal "2026-07-16T00:00:00Z", update_draft.fetch("updated_at")
+    assert_includes update_display, "本文末尾に追記"
+    assert_equal "deterministic", update_metadata.fetch("source")
+  end
+
+  test "memo writer rejects an unknown action" do
+    error = assert_raises(ArgumentError) do
+      AgentGraph::RoleServices.fetch(:memo_writer).call(action: :delete, state: {}, run: nil, chat: nil)
+    end
+
+    assert_includes error.message, "unsupported memo writer action"
+  end
+
   test "deterministic planner preserves the research plan contract" do
     plan, metadata = AgentGraph::RoleServices.fetch(:planner).call(
       state: { "question" => "https://example.com を調べて、公開前に確認してから保存" },

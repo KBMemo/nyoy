@@ -20,6 +20,8 @@ class AgentGraphMemoUpdateGraphRunnerTest < ActiveSupport::TestCase
         assert_equal "2026-07-16T00:00:00Z", calls.first[:updated_at]
         assert_equal "追記本文", calls.first[:append_body]
         assert_nil calls.first[:body]
+        assert_equal "memo_writer", run.state.dig("memo_draft_meta", "role")
+        assert_equal "deterministic", run.state.dig("memo_draft_meta", "profile")
       end
     end
   end

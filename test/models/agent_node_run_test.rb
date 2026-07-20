@@ -225,4 +225,28 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "out: 20"
     ], node_run.output_summary
   end
+
+  test "output_summary reports memo writer metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "draft_memo",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "memo_draft" => { "action" => "create" },
+          "draft" => "draft",
+          "memo_draft_meta" => {
+            "role" => "memo_writer",
+            "profile" => "deterministic",
+            "source" => "deterministic"
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: memo_draft, draft, memo_draft_meta",
+      "profile: memo_writer.deterministic",
+      "source: deterministic"
+    ], node_run.output_summary
+  end
 end

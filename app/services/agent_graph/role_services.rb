@@ -7,6 +7,7 @@ module AgentGraph
       evidence_evaluator: :heuristic,
       final_answer: :main,
       intent: :deterministic,
+      memo_writer: :deterministic,
       planner: :deterministic,
       vision: :main
     }.freeze
@@ -26,6 +27,9 @@ module AgentGraph
       intent: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new },
         hybrid_llm: -> { AgentGraph::HybridLlmIntentRouter.new }
+      },
+      memo_writer: {
+        deterministic: -> { AgentGraph::RoleServices::DeterministicMemoWriter.new }
       },
       planner: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new },
@@ -146,6 +150,59 @@ module AgentGraph
       def call(image:, mime_type:, prompt:, state:, run:, chat:)
         analysis = VisionChatService.new.analyze(image: image, mime_type: mime_type, prompt: prompt)
         [ analysis, { "model_id" => NyoyConnectionStore.server_model(:vision_llama) } ]
+      end
+    end
+
+    class DeterministicMemoWriter
+      def call(action:, state:, run:, chat:)
+        case action.to_s
+        when "create" then create_draft(state)
+        when "update" then update_draft(state)
+        else raise ArgumentError, "unsupported memo writer action: #{action}"
+        end
+      end
+
+      private
+
+      def create_draft(state)
+        title = state["source_title"].to_s.strip.presence || "無題メモ"
+        body = state["source_body"].to_s.strip
+        memo_draft = { "action" => "create", "title" => title, "body" => body }
+        draft = "### #{title}\n\n#{body}"
+        [ memo_draft, draft, { "source" => "deterministic" } ]
+      end
+
+      def update_draft(state)
+        memo_ref = state["memo_ref"].to_s
+        original = state["original_memo"].is_a?(Hash) ? state["original_memo"] : {}
+        mode = state.dig("plan", "mode").to_s == "replace" ? "replace" : "append"
+        body = state["source_body"].to_s
+        title = state["source_title"].to_s.presence
+        memo_draft = {
+          "action" => "update",
+          "mode" => mode,
+          "memo_ref" => memo_ref,
+          "updated_at" => original["updated_at"].to_s,
+          "title" => title,
+          "body" => mode == "replace" ? body : nil,
+          "append_body" => mode == "append" ? body : nil
+        }.compact
+        [ memo_draft, format_update_draft(original, memo_draft), { "source" => "deterministic" } ]
+      end
+
+      def format_update_draft(original, draft)
+        title = original["title"].presence || draft["memo_ref"]
+        mode_label = draft["mode"] == "replace" ? "本文を置換" : "本文末尾に追記"
+        body = draft["body"].presence || draft["append_body"].presence || "(本文変更なし)"
+        [
+          "### #{title}",
+          "",
+          "- 対象: `#{draft["memo_ref"]}`",
+          "- 操作: #{mode_label}",
+          draft["title"].present? ? "- 新タイトル: #{draft["title"]}" : nil,
+          "",
+          body
+        ].compact.join("\n")
       end
     end
 

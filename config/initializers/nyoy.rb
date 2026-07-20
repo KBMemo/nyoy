@@ -68,6 +68,7 @@ Rails.application.config.x.nyoy.tap do |config|
     "evidence_evaluator" => ENV["AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE"],
     "final_answer" => ENV["AGENT_GRAPH_FINAL_ANSWER_PROFILE"],
     "intent" => ENV["AGENT_GRAPH_INTENT_PROFILE"],
+    "memo_writer" => ENV["AGENT_GRAPH_MEMO_WRITER_PROFILE"],
     "planner" => ENV["AGENT_GRAPH_PLANNER_PROFILE"],
     "vision" => ENV["AGENT_GRAPH_VISION_PROFILE"]
   }.compact
