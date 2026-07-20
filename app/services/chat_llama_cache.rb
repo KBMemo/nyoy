@@ -39,7 +39,9 @@ module ChatLlamaCache
       enabled: enabled,
       cache_prompt: cache_prompt?,
       slot_id: slot_id,
-      slot_count: count
+      slot_count: count,
+      slot_pool: slot_pool_for(count, slot_key),
+      auxiliary_slot_count: auxiliary_slot_count(count)
     }
   end
 
@@ -62,7 +64,9 @@ module ChatLlamaCache
       enabled: false,
       cache_prompt: false,
       slot_id: nil,
-      slot_count: nil
+      slot_count: nil,
+      slot_pool: nil,
+      auxiliary_slot_count: nil
     }
   end
 
@@ -74,10 +78,29 @@ module ChatLlamaCache
     count = slot_count_for(chat, model: model)
     return nil if count.to_i <= 0
 
-    return Zlib.crc32(slot_key.to_s) % count if slot_key.present?
+    reserved = auxiliary_slot_count(count)
+    if slot_key.present?
+      return Zlib.crc32(slot_key.to_s) % count if reserved.zero?
+
+      return count - reserved + (Zlib.crc32(slot_key.to_s) % reserved)
+    end
     return nil unless chat&.id
 
-    chat.id.to_i % count
+    chat.id.to_i % (count - reserved)
+  end
+
+  def auxiliary_slot_count(total_slots)
+    total = total_slots.to_i
+    return 0 if total <= 1
+
+    configured = Rails.application.config.x.nyoy.llama_aux_slot_count.to_i
+    configured.clamp(0, total - 1)
+  end
+
+  def slot_pool_for(total_slots, slot_key)
+    return "chat" if slot_key.blank?
+
+    auxiliary_slot_count(total_slots).positive? ? "auxiliary" : "shared"
   end
 
   def slot_count_for(chat, model: nil)

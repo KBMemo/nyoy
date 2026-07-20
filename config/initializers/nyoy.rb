@@ -19,6 +19,8 @@ Rails.application.config.x.nyoy.tap do |config|
   config.llama_read_timeout = ENV.fetch("LLAMA_READ_TIMEOUT", 300).to_i
   # 通常は GET /props の total_slots を使う。ここは props 取得失敗時のフォールバック（0 で無効）。
   config.llama_slot_count = ENV.fetch("LLAMA_SLOT_COUNT", "0").to_i
+  # total_slots >= 2 のとき末尾から補助 LLM 用に予約し、通常 Chat の KV cache を保護する。
+  config.llama_aux_slot_count = ENV.fetch("LLAMA_AUX_SLOT_COUNT", "1").to_i
   config.llama_cache_prompt = ENV.fetch("LLAMA_CACHE_PROMPT", "true") == "true"
   config.default_sd_models = ENV.fetch(
     "SDCPP_DEFAULT_MODELS",

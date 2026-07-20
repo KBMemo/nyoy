@@ -8,6 +8,8 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
     @original_slots = Rails.application.config.x.nyoy.llama_slot_count
     @original_cache = Rails.application.config.x.nyoy.llama_cache_prompt
+    @original_aux_slots = Rails.application.config.x.nyoy.llama_aux_slot_count
+    Rails.application.config.x.nyoy.llama_aux_slot_count = 1
     @original_llama_new = LlamaCppClient.method(:new)
     ChatLlamaCache.clear_props_cache!
   end
@@ -15,6 +17,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
   teardown do
     Rails.application.config.x.nyoy.llama_slot_count = @original_slots
     Rails.application.config.x.nyoy.llama_cache_prompt = @original_cache
+    Rails.application.config.x.nyoy.llama_aux_slot_count = @original_aux_slots
     ChatLlamaCache.clear_props_cache!
     LlamaCppClient.define_singleton_method(:new, @original_llama_new)
   end
@@ -24,7 +27,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     stub_props_total_slots(8)
 
     assert_equal 8, ChatLlamaCache.slot_count_for(@chat)
-    assert_equal @chat.id % 8, ChatLlamaCache.slot_id_for(@chat)
+    assert_equal @chat.id % 7, ChatLlamaCache.slot_id_for(@chat)
   end
 
   test "applies cache_prompt and id_slot from props" do
@@ -37,13 +40,15 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
 
     params = llm_chat.instance_variable_get(:@params)
     assert_equal true, params[:cache_prompt]
-    assert_equal @chat.id % 4, params[:id_slot]
+    assert_equal @chat.id % 3, params[:id_slot]
     assert_equal true, params.dig(:stream_options, :include_usage)
     metadata = llm_chat.instance_variable_get(:@nyoy_llama_cache_metadata)
     assert_equal true, metadata[:enabled]
     assert_equal true, metadata[:cache_prompt]
-    assert_equal @chat.id % 4, metadata[:slot_id]
+    assert_equal @chat.id % 3, metadata[:slot_id]
     assert_equal 4, metadata[:slot_count]
+    assert_equal "chat", metadata[:slot_pool]
+    assert_equal 1, metadata[:auxiliary_slot_count]
   end
 
   test "metadata reports disabled for OpenAI connection" do
@@ -85,19 +90,31 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
 
     assert_equal true, metadata[:enabled]
     assert_equal true, metadata[:cache_prompt]
-    assert_equal @chat.id % 6, metadata[:slot_id]
+    assert_equal @chat.id % 5, metadata[:slot_id]
     assert_equal 6, metadata[:slot_count]
   ensure
     model&.destroy!
   end
 
-  test "slot key gives a stable purpose-specific slot" do
+  test "slot key uses the reserved auxiliary pool" do
     Rails.application.config.x.nyoy.llama_slot_count = 0
+    Rails.application.config.x.nyoy.llama_aux_slot_count = 2
     stub_props_total_slots(8)
 
     metadata = ChatLlamaCache.metadata_for(@chat, slot_key: "agent_graph:final:#{@chat.id}")
 
-    assert_equal Zlib.crc32("agent_graph:final:#{@chat.id}") % 8, metadata[:slot_id]
+    assert_includes 6..7, metadata[:slot_id]
+    assert_equal "auxiliary", metadata[:slot_pool]
+    assert_equal 2, metadata[:auxiliary_slot_count]
+  end
+
+  test "single-slot server shares slot zero because isolation is impossible" do
+    stub_props_total_slots(1)
+
+    assert_equal 0, ChatLlamaCache.slot_id_for(@chat)
+    assert_equal 0, ChatLlamaCache.slot_id_for(@chat, slot_key: "agent_graph:final:#{@chat.id}")
+    assert_equal 0, ChatLlamaCache.auxiliary_slot_count(1)
+    assert_equal "shared", ChatLlamaCache.metadata_for(@chat, slot_key: "agent_graph:final:#{@chat.id}")[:slot_pool]
   end
 
   test "falls back to LLAMA_SLOT_COUNT when props fails" do
@@ -105,7 +122,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
     stub_props_error
 
     assert_equal 3, ChatLlamaCache.slot_count_for(@chat)
-    assert_equal @chat.id % 3, ChatLlamaCache.slot_id_for(@chat)
+    assert_equal @chat.id % 2, ChatLlamaCache.slot_id_for(@chat)
   end
 
   test "omits id_slot when props and fallback are unavailable" do

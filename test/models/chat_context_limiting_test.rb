@@ -48,9 +48,11 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
   test "to_llm enables llama prompt cache with sticky slot" do
     @chat.messages.create!(role: :user, content: "hello")
     original_slots = Rails.application.config.x.nyoy.llama_slot_count
+    original_aux_slots = Rails.application.config.x.nyoy.llama_aux_slot_count
     original_cache = Rails.application.config.x.nyoy.llama_cache_prompt
     original_llama_new = LlamaCppClient.method(:new)
     Rails.application.config.x.nyoy.llama_slot_count = 0
+    Rails.application.config.x.nyoy.llama_aux_slot_count = 1
     Rails.application.config.x.nyoy.llama_cache_prompt = true
     ChatLlamaCache.clear_props_cache!
 
@@ -67,9 +69,10 @@ class ChatContextLimitingIntegrationTest < ActiveSupport::TestCase
     params = llm.instance_variable_get(:@params)
 
     assert_equal true, params[:cache_prompt]
-    assert_equal @chat.id % 4, params[:id_slot]
+    assert_equal @chat.id % 3, params[:id_slot]
   ensure
     Rails.application.config.x.nyoy.llama_slot_count = original_slots
+    Rails.application.config.x.nyoy.llama_aux_slot_count = original_aux_slots
     Rails.application.config.x.nyoy.llama_cache_prompt = original_cache
     ChatLlamaCache.clear_props_cache!
     LlamaCppClient.define_singleton_method(:new, original_llama_new) if defined?(original_llama_new)

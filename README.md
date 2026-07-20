@@ -98,6 +98,7 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `LLAMA_JSON_SCHEMA` | llama.cpp へ JSON Schema 制約を送る | `true` |
 | `LLAMA_READ_TIMEOUT` | llama.cpp 読み取りタイムアウト（秒） | `300` |
 | `LLAMA_SLOT_COUNT` | `/props` の `total_slots` 取得失敗時のフォールバック（0 で無効） | `0` |
+| `LLAMA_AUX_SLOT_COUNT` | 複数 slot 時に AgentGraph 等へ予約する末尾 slot 数 | `1` |
 | `LLAMA_CACHE_PROMPT` | `cache_prompt: true` を送り KV cache を再利用 | `true` |
 | `VISION_LLAMA_CPP_URL` | 画像理解用 llama.cpp | `http://balvenie:10021` |
 | `VISION_LLAMA_MODEL` | 画像理解モデル | `qwen2.5-vl-3b` |

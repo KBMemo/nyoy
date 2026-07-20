@@ -35,7 +35,7 @@ Chat（`chats` / `messages` / `ChatResponseJob`）の応答レイテンシ改善
 - `total_slots` は `GET /props` から取得（TTL キャッシュ）。失敗時のみ `LLAMA_SLOT_COUNT` フォールバック
 - RubyLLM は履歴全文を送る契約のまま。キャッシュは **プレフィックス一致時の prefill 再計算を省略**するだけで、ペイロードサイズは減らない
 
-設定: `LLAMA_CACHE_PROMPT`（既定 `true`）、`LLAMA_SLOT_COUNT`（既定 `0` = props のみ）
+設定: `LLAMA_CACHE_PROMPT`（既定 `true`）、`LLAMA_SLOT_COUNT`（既定 `0` = props のみ）、`LLAMA_AUX_SLOT_COUNT`（既定 `1`）
 
 ### 2.2 キャッシュフレンドリなメッセージ順
 
@@ -139,6 +139,10 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 案 | Chat 専用インスタンス、slot 帯の分離、非 Chat 呼び出しに別 `id_slot` 方針 |
 | メモ | `gpt_oss` URL 未設定時は `llama_cpp` にフォールバックするため同居しやすい |
 
+`total_slots >= 2` の場合、末尾 `LLAMA_AUX_SLOT_COUNT` slotsをAgentGraphのintent・planner・draft・evidence evaluator・final answer用に予約し、通常Chatは残りのslotだけを使う。補助処理同士の衝突より、対話のsticky cache保護を優先する。`LLAMA_AUX_SLOT_COUNT=0`で従来どおり全slot共有へ戻せる。
+
+2026-07-20 のdevelopment確認では、登録された全llama-serverが`total_slots=1`だった。この状態ではpool分離は不可能であり、通常Chatと同じ接続を使う補助LLMはslot 0を共有する。実運用で分離を効かせるには対象llama-serverを`--parallel 2`以上で起動し、`/props`の`total_slots`増加を確認する。
+
 ### 4.4 サーバ側のモデル常駐
 
 | 項目 | 内容 |
@@ -182,6 +186,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 |----------|------|------|
 | `LLAMA_CACHE_PROMPT` | `true` | KV cache 再利用 |
 | `LLAMA_SLOT_COUNT` | `0` | `/props` 失敗時の slot 数フォールバック |
+| `LLAMA_AUX_SLOT_COUNT` | `1` | 複数 slot 時に補助 LLM へ予約する末尾 slot 数 |
 | `MEMO_RAG_ENABLED` | `true` | メモ RAG 全体の有効化 |
 | `MEMO_RAG_MODE` | `tool` | `tool` / `inject` |
 | `MAIN_LLM_TOOL_MODE` | `restricted` | 通常 Chat のメインLLMに渡すツール範囲（既定は読み取り系のみ） |
