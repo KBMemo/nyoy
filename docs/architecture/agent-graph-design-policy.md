@@ -477,6 +477,8 @@ draft profileのdevelopment実機比較では、軽量modelが根拠不足時に
 
 plannerのllama.cpp cache観測はrun 88〜89で確認した。同じChat・同じ質問を連続実行し、いずれもslot `0/1`、`input_tokens=121`、`cached_tokens=95`、`output_tokens=20` をplanning metadataとNode履歴要約へ記録できた。
 
+profile比較、明示URL経路、cache、障害注入の再現手順は [AgentGraph Planner Profile 実運用 Runbook](../agent-graph-planner-profile-runbook.md) にまとめた。run 90ではplanner modelを到達不能にし、AgentRunを失敗させず `source=deterministic / fallback=deterministic` へ移行することを確認した。
+
 ### Workflow Registry
 
 Workflow 追加時の public API を固定する。目標は、Graph を追加しても controller / job / broadcaster / MCP response に graph 名の分岐を増やさないこと。

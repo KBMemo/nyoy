@@ -315,6 +315,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 - [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 - [Nyoy MCP アーキテクチャ](./architecture/nyoy-mcp.adoc)
 - [Agent Graph Image Understanding](./architecture/agent-graph-image-understanding.md)
+- [AgentGraph Planner Profile 実運用 Runbook](./agent-graph-planner-profile-runbook.md)
 - [Memo RAG Webhook 設計](./architecture/memo-rag-webhook.md)
 - [Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md)
 - [パラメータ指定タブ画像生成設計](./architecture/parameter-tab-image-generation.md)
