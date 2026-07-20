@@ -91,6 +91,8 @@ Rails.application.config.x.nyoy.tap do |config|
   # A dedicated token is preferred. MCP_API_TOKEN remains a migration fallback.
   config.llama_server_admin_token = ENV["LLAMA_SERVER_ADMIN_TOKEN"].presence || config.mcp_api_token
   config.llama_server_admin_session_ttl = ENV.fetch("LLAMA_SERVER_ADMIN_SESSION_TTL", 12.hours.to_i).to_i.seconds
+  config.llama_server_alert_webhook_url = ENV["LLAMA_SERVER_ALERT_WEBHOOK_URL"]
+  config.llama_server_alert_webhook_token = ENV["LLAMA_SERVER_ALERT_WEBHOOK_TOKEN"]
   # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
   config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
   config.sd_model_loras = {

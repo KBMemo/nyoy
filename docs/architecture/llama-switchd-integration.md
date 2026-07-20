@@ -16,6 +16,8 @@ Nyoy のローカル LLM 接続を、手入力した URL と model alias の集�
 
 Nyoyの接続設定とLLMサーバー管理UIは `LLAMA_SERVER_ADMIN_TOKEN` で保護する。ブラウザでの照合成功後は、認証時刻とトークンfingerprintを暗号化セッションへ保持する。管理トークンはswitchdへ転送せず、switchd API用の `LLAMA_SWITCHD_TOKEN` と責務を分ける。
 
+Reconciliationの外部通知は汎用JSON Webhook adapterへ分離する。reconciliation保存後に別jobをenqueueし、通知先障害で整合チェック自体を失敗させない。通知判定は直前履歴との状態・finding identity比較で行い、定期実行による同一異常の連続通知を抑止する。
+
 Upstream:
 
 - [llama-tools README](https://github.com/knb/llama-tools)

@@ -119,6 +119,50 @@ productionでは15分ごと、developmentでは1時間ごとに実行する。�
 
 operation履歴は完了後30日かつ最新1000件、reconciliation履歴は最新100件を保持する。queued/running operationはmaintenanceの削除対象外。
 
+### 外部アラート
+
+`LLAMA_SERVER_ALERT_WEBHOOK_URL` を設定すると、定期・手動reconciliationの結果を汎用JSON Webhookへ非同期通知する。Bearer認証が必要な通知先では `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN` も設定する。
+
+```bash
+LLAMA_SERVER_ALERT_WEBHOOK_URL=https://alerts.example.com/hooks/nyoy
+LLAMA_SERVER_ALERT_WEBHOOK_TOKEN=replace-with-secret
+```
+
+通知条件:
+
+- 初回チェックが `warning` または `failed`
+- `healthy` / `warning` / `failed` の状態が変化
+- `warning` の finding code・接続key・server IDが変化
+- 異常状態から `healthy` へ復旧
+
+同一内容の `warning` と連続する `failed` は再通知しない。配信は別のSolid Queue jobで最大5回再試行し、失敗してもreconciliation履歴の保存には影響しない。受信側は `Idempotency-Key: nyoy-llama-reconciliation-<id>` を使って再試行を重複排除できる。
+
+payload例:
+
+```json
+{
+  "event": "llama_server.reconciliation.warning",
+  "environment": "production",
+  "reconciliation_id": 123,
+  "status": "warning",
+  "previous_status": "healthy",
+  "checked_at": "2026-07-21T04:30:00+09:00",
+  "findings": [
+    {
+      "code": "server_not_ready",
+      "connection_key": "llama_cpp",
+      "server_id": "main",
+      "message": "server状態はstoppedです",
+      "usages": ["既定Chat"]
+    }
+  ],
+  "error_message": null,
+  "management_path": "/service_connections/llama_servers"
+}
+```
+
+通知を停止するときは `LLAMA_SERVER_ALERT_WEBHOOK_URL` を削除してNyoyを再起動する。reconciliation自体は継続する。
+
 ## 7. 障害時
 
 ### switchdへ接続できない
@@ -144,3 +188,11 @@ ssh balvenie 'journalctl --user -u llama-server@SERVER_ID.service -n 100 --no-pa
 ### operationが実行待ちのまま
 
 Solid Queue workerが起動しているか確認する。Web process内でstart/restartを同期実行しない。
+
+### 外部アラートが届かない
+
+1. 実行環境に `LLAMA_SERVER_ALERT_WEBHOOK_URL` がexportされているか確認する
+2. Solid Queueのdefault queue workerが動いているか確認する
+3. Nyoyログで `LlamaServerAlertJob` とHTTP statusを確認する
+4. 受信側がBearer tokenとJSON payloadを受理しているか確認する
+5. 同一異常の継続は意図的に抑止されるため、最新2件のreconciliationを比較する

@@ -134,6 +134,11 @@ DB_CABLE_NAME=nyoy_production_cable
 
 # 外部 AI サービス（balvenie 等、ネットワーク到達可能な URL に変更）
 LLAMA_CPP_URL=http://balvenie:10010
+LLAMA_SWITCHD_URL=http://balvenie:11335
+LLAMA_SWITCHD_TOKEN=...
+LLAMA_SERVER_ADMIN_TOKEN=...
+# LLAMA_SERVER_ALERT_WEBHOOK_URL=https://alerts.example.com/hooks/nyoy
+# LLAMA_SERVER_ALERT_WEBHOOK_TOKEN=...
 GPT_OSS_LLAMA_CPP_URL=http://balvenie:10012
 VISION_LLAMA_CPP_URL=http://balvenie:10021
 EMBEDDINGS_URL=http://balvenie:10020
