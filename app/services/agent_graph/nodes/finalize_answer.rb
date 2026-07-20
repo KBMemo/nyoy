@@ -15,7 +15,10 @@ module AgentGraph
           run: run,
           chat: chat
         )
-        meta = (meta || {}).stringify_keys
+        meta = (meta || {}).stringify_keys.merge(
+          "role" => "final_answer",
+          "profile" => AgentGraph::RoleServices.active_profile_for(:final_answer).to_s
+        )
 
         if answer.blank? || meta["source"] == "error"
           return AgentGraph::NodeResult.fail(

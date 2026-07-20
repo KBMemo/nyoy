@@ -54,6 +54,8 @@ class AgentNodeRunTest < ActiveSupport::TestCase
           "final_answer" => "answer",
           "truncated" => true,
           "final_synthesis" => {
+            "role" => "final_answer",
+            "profile" => "main",
             "source" => "main",
             "model_id" => "gpt-oss",
             "llama_cache" => {
@@ -73,6 +75,7 @@ class AgentNodeRunTest < ActiveSupport::TestCase
 
     assert_equal [
       "updates: final_answer, truncated, final_synthesis",
+      "profile: final_answer.main",
       "llm: gpt-oss",
       "source: main",
       "cache_prompt",

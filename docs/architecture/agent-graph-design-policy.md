@@ -343,7 +343,7 @@ Graph の骨子は成立したため、次は新しい抽象を増やすより�
 4. LLM 呼び出し metadata を node に寄せる（完了）
    - draft / final で使った model、prompt、thinking、truncated、cache slot、token usage を `AgentNodeRun.output_snapshot` または state meta に統一的に残す
    - 通常チャットの message stats と Graph 実行 stats の見え方を揃える
-   - `final_synthesis`: `source`、`model_id`、`thinking`、`system_prompt`、`user_prompt`、`llama_cache`、`usage` を保存する
+   - `final_synthesis`: `role`、実効`profile`、`source`、`model_id`、`thinking`、`system_prompt`、`user_prompt`、`llama_cache`、`usage` を保存する
    - `draft_synthesis`: 現行の `evidence_pack` 実装では LLM を呼ばないため、`source` と evidence 件数（memo/search/fetched/errors）を保存する
    - `AgentNodeRun#output_summary` は synthesis metadata を要約し、詳細 JSON を開く前に model/cache/token/evidence の概要を見せる
 
@@ -470,6 +470,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」、`planner` profileを「既定設定 / 決定規則 / LLM分類」、`intent` profileを「既定設定 / 決定規則 / 決定規則 + LLM調査判定」から選択できる。各roleの軽量modelは独立して指定する。profile未指定時は環境変数、さらに未指定なら `draft=evidence_pack`、`planner=deterministic`、`intent=deterministic` を使う。
 
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
+
+`finalize_answer` は成功・失敗の両方で `final_synthesis` に `role=final_answer` と実効profileを保存する。組み込み実装は`main`、直接object overrideは`override`としてAgentNodeRun要約へ表示する。
 
 `evaluate_evidence` は `evidence_review` に `role` と実効 `profile` を常に保存する。evaluator serviceはreview単体に加えて `[review, metadata]` を返せるものとし、`model_id`、`source`、`fallback`、llama cache、token usageをstateとAgentNodeRun要約へ引き継ぐ。これによりheuristicの判断規則を維持したまま、将来の軽量LLM profileを同じ観測契約で比較できる。
 

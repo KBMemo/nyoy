@@ -45,6 +45,8 @@ class AgentGraphNodesFinalizeAnswerTest < ActiveSupport::TestCase
       assert_includes result.error, "モデルサーバーに接続できません"
       assert_includes result.error, "起動しているか確認"
       assert_equal 0, @chat.messages.where(role: :assistant).count
+      assert_equal "final_answer", result.updates.dig("final_synthesis", "role")
+      assert_equal "override", result.updates.dig("final_synthesis", "profile")
     end
   end
 
@@ -77,11 +79,26 @@ class AgentGraphNodesFinalizeAnswerTest < ActiveSupport::TestCase
       assert_equal "role service answer", message.content
       assert_equal "reasoning", message.thinking_text
       assert_equal "test", result.updates.dig("final_synthesis", "source")
+      assert_equal "final_answer", result.updates.dig("final_synthesis", "role")
+      assert_equal "override", result.updates.dig("final_synthesis", "profile")
     end
 
     assert_equal 1, calls.size
     assert_equal "調べて", calls.first.fetch(:state).fetch("question")
     assert_equal @run, calls.first.fetch(:run)
     assert_equal @chat, calls.first.fetch(:chat)
+  end
+
+  test "records the built in final answer profile" do
+    previous = AgentGraph::FinalAnswerSynthesizer.force_passthrough
+    AgentGraph::FinalAnswerSynthesizer.force_passthrough = true
+
+    result = AgentGraph::Nodes::FinalizeAnswer.new.call(state: @run.state, run: @run, chat: @chat)
+
+    assert result.finished?
+    assert_equal "final_answer", result.updates.dig("final_synthesis", "role")
+    assert_equal "main", result.updates.dig("final_synthesis", "profile")
+  ensure
+    AgentGraph::FinalAnswerSynthesizer.force_passthrough = previous
   end
 end
