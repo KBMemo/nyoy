@@ -141,7 +141,34 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 
 `total_slots >= 2` の場合、末尾 `LLAMA_AUX_SLOT_COUNT` slotsをAgentGraphのintent・planner・draft・evidence evaluator・final answer用に予約し、通常Chatは残りのslotだけを使う。補助処理同士の衝突より、対話のsticky cache保護を優先する。`LLAMA_AUX_SLOT_COUNT=0`で従来どおり全slot共有へ戻せる。
 
-2026-07-20 のdevelopment確認では、登録された全llama-serverが`total_slots=1`だった。この状態ではpool分離は不可能であり、通常Chatと同じ接続を使う補助LLMはslot 0を共有する。実運用で分離を効かせるには対象llama-serverを`--parallel 2`以上で起動し、`/props`の`total_slots`増加を確認する。
+2026-07-20 の初回development確認では、登録された全llama-serverが`total_slots=1`だった。その後`--parallel 2`で再起動し、全6接続で`total_slots=2`を確認した。Nyoyの割当は通常Chat=`slot 0 / pool chat`、AgentGraph補助LLM=`slot 1 / pool auxiliary`となり、全接続で分離できた。
+
+再起動や構成変更後は次のコマンドで実効割当を確認する。
+
+```bash
+bin/rails runner - <<'RUBY'
+ChatLlamaCache.clear_props_cache!
+ServiceConnection.chat_backends.enabled.order(:key).each do |connection|
+  model = Model.find_by(provider: "openai", model_id: connection.server_model)
+  next unless model
+
+  chat = Chat.new(id: 101, model: model)
+  normal = ChatLlamaCache.metadata_for(chat, model: model)
+  auxiliary = ChatLlamaCache.metadata_for(
+    chat,
+    model: model,
+    slot_key: "agent_graph:final:101:#{model.model_id}"
+  )
+  puts JSON.generate(
+    key: connection.key,
+    total_slots: normal[:slot_count],
+    chat_slot: normal[:slot_id],
+    auxiliary_slot: auxiliary[:slot_id],
+    separated: normal[:slot_id] != auxiliary[:slot_id]
+  )
+end
+RUBY
+```
 
 ### 4.4 サーバ側のモデル常駐
 
@@ -150,6 +177,8 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 狙い | idle unload がある場合の cold start をインフラ側で根絶 |
 | 案 | llama-server の常駐設定（unload 無効化等） |
 | メモ | サーバ設定は Nyoy リポジトリ外。クライアント側の 5 分 ping（`LlamaWarmupJob`）は廃止済み |
+
+2026-07-20、`--parallel 2`での再起動後に5つのユニークなサーバーURLを確認し、すべて`is_sleeping=false`、`endpoint_slots=true`、`total_slots=2`だった。起動直後の常駐・slot endpointは正常。idle unloadが無効であることの確定には、サーバー設定の確認または長時間アイドル後に`is_sleeping=false`のままかと1通目のTTFTを再確認する。
 
 ### 4.5 効果の小さい項目
 
