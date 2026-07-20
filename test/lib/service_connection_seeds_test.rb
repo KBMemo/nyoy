@@ -42,6 +42,7 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
   end
 
   test "sync_from_env preserves enabled when env lacks token but DB has one" do
+    original = Rails.application.config.x.nyoy.openai_api_key
     service_connections(:openai).update!(api_token: "ui_token", enabled: true)
     Rails.application.config.x.nyoy.openai_api_key = nil
 
@@ -51,10 +52,11 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
     assert record.enabled?
     assert_equal "ui_token", record.api_token
   ensure
-    Rails.application.config.x.nyoy.openai_api_key = ENV["OPENAI_API_KEY"]
+    Rails.application.config.x.nyoy.openai_api_key = original
   end
 
   test "sync_from_env updates api token when env provides one" do
+    original = Rails.application.config.x.nyoy.openai_api_key
     service_connections(:openai).update!(api_token: "old_token", enabled: false)
     Rails.application.config.x.nyoy.openai_api_key = "env_token"
 
@@ -64,6 +66,18 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
     assert_equal "env_token", record.api_token
     assert_not record.enabled?
   ensure
-    Rails.application.config.x.nyoy.openai_api_key = ENV["OPENAI_API_KEY"]
+    Rails.application.config.x.nyoy.openai_api_key = original
+  end
+
+  test "local compatibility token does not enable the OpenAI connection" do
+    original = Rails.application.config.x.nyoy.openai_api_key
+    Rails.application.config.x.nyoy.openai_api_key = "local"
+
+    definition = ServiceConnectionSeeds.definitions.find { |item| item[:key] == "openai" }
+
+    assert_nil definition[:api_token]
+    assert_equal false, definition[:enabled]
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = original
   end
 end

@@ -164,9 +164,9 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 項目 | 内容 |
 |------|------|
 | 狙い | ローカル llama-server 互換用のダミー API キーと、実 OpenAI API キーの扱いを分離する |
-| 現状 | `.env.example` は llama-server 互換 API 用に `OPENAI_API_KEY=local` を示している。一方、OpenAI 組み込み接続の seed は `OPENAI_API_KEY` が present なら OpenAI 接続を有効化する |
-| リスク | `.env.example` をコピーして seed すると、実 OpenAI 接続が token `local` で有効化され、ChatGPT モデル選択が出るが API 呼び出しは失敗する |
-| 案 | 実 OpenAI 用の env 名を分ける、または `sk-` など実キーらしい値のときだけ OpenAI 接続を自動有効化する |
+| 対応 | 実OpenAI用を `OPENAI_CHAT_API_KEY`、llama-server互換用を `OPENAI_API_KEY=local` に分離 |
+| 互換性 | `OPENAI_CHAT_API_KEY` 未設定時は、`local` 以外の従来 `OPENAI_API_KEY` を実OpenAIキーとして受け付ける |
+| seed | `local` はOpenAI接続のtokenとして保存せず、新規接続を有効化しない |
 | 併せて検討 | UI では OpenAI 接続の有効化に DB `api_token` が必須だが、実行時・モデル取得時は env fallback も見る。env-only 運用を許すなら validation と UI 表示も揃える |
 
 ### 4.7 再計測チェックリスト

@@ -78,6 +78,8 @@ module ServiceConnectionSeeds
 
   def definitions
     config = Rails.application.config.x.nyoy
+    openai_api_key = config.openai_api_key.to_s.strip.presence
+    openai_api_key = nil if openai_api_key == "local"
 
     [
       {
@@ -99,8 +101,8 @@ module ServiceConnectionSeeds
         name: "OpenAI（ChatGPT）",
         base_url: config.openai_url,
         server_model: config.openai_chat_model,
-        api_token: config.openai_api_key,
-        enabled: config.openai_api_key.present?,
+        api_token: openai_api_key,
+        enabled: openai_api_key.present?,
         notes: "OpenAI API（ChatGPT）。API キーを設定し「モデル取得」で利用可能モデルを同期してください。",
         settings: { "chat_models" => [] }
       },

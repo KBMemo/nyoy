@@ -76,7 +76,11 @@ Rails.application.config.x.nyoy.tap do |config|
   }.compact
   config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
   config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
-  config.openai_api_key = ENV["OPENAI_API_KEY"]
+  # OPENAI_API_KEY is also used as the local llama-server compatibility token.
+  # Prefer a dedicated real OpenAI key and accept the legacy variable unless it is the local sentinel.
+  legacy_openai_key = ENV["OPENAI_API_KEY"].to_s.strip.presence
+  legacy_openai_key = nil if legacy_openai_key == "local"
+  config.openai_api_key = ENV["OPENAI_CHAT_API_KEY"].to_s.strip.presence || legacy_openai_key
   config.mcp_api_token = ENV["MCP_API_TOKEN"]
   # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
   config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
