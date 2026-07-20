@@ -157,7 +157,51 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)
   end
 
+  test "final answer accepts an explicit light model and cache slot" do
+    model = @chat.model_association
+    slot_key = "agent_graph:final_light:#{@chat.id}:#{model.model_id}"
+    synthesizer = AgentGraph::FinalAnswerSynthesizer.new(
+      @chat,
+      model: model,
+      source: "light",
+      cache_slot_key: slot_key
+    )
+    llm = fake_llm(content: "軽量モデルの最終回答")
+    context = Object.new
+    context.define_singleton_method(:chat) { |**| llm }
+
+    cache_calls = []
+    original_context_for = ChatModelCatalog.method(:context_for)
+    original_cache_apply = ChatLlamaCache.method(:apply!)
+    ChatModelCatalog.define_singleton_method(:context_for) { |_| context }
+    ChatLlamaCache.define_singleton_method(:apply!) do |llm_chat, chat:, model: nil, slot_key: nil|
+      cache_calls << { llm: llm_chat, chat: chat, model: model, slot_key: slot_key }
+      llm_chat
+    end
+
+    answer, _truncated, meta = synthesizer.send(:ask_main_model, evidence)
+
+    assert_equal "軽量モデルの最終回答", answer
+    assert_equal "light", meta.fetch("source")
+    assert_equal model.model_id, meta.fetch("model_id")
+    assert_equal slot_key, cache_calls.sole.fetch(:slot_key)
+  ensure
+    ChatModelCatalog.define_singleton_method(:context_for, original_context_for)
+    ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)
+  end
+
   private
+
+  def evidence
+    {
+      question: "質問",
+      memo: nil,
+      search_results: [],
+      fetched_pages: [],
+      evidence_review: {},
+      errors: []
+    }
+  end
 
   def fake_llm(content:)
     llm = Object.new
@@ -166,6 +210,7 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
       @params = params
       self
     end
+    llm.define_singleton_method(:with_temperature) { |_| self }
     llm.define_singleton_method(:with_instructions) { |_| self }
     llm.define_singleton_method(:ask) do |_prompt, &block|
       chunk = Struct.new(:content, :thinking, :finish_reason).new(content, nil, nil)

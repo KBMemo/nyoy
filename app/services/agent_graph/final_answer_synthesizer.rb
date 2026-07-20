@@ -21,8 +21,11 @@ module AgentGraph
       <think> などの思考タグは出力せず、返答本文だけを書いてください。
     TEXT
 
-    def initialize(chat)
+    def initialize(chat, model: nil, source: "main", cache_slot_key: nil)
       @chat = chat
+      @model = model
+      @source = source
+      @cache_slot_key = cache_slot_key
       @draft_helper = EvidenceSynthesizer.new(chat)
     end
 
@@ -55,7 +58,7 @@ module AgentGraph
     private
 
     def ask_main_model(evidence)
-      model = @chat.model_association
+      model = @model || @chat.model_association
       return [ nil, false, { "error" => "no chat model" } ] unless model
 
       llm_context = ChatModelCatalog.context_for(model)
@@ -64,8 +67,8 @@ module AgentGraph
         provider: model.provider.to_sym,
         assume_model_exists: true
       )
-      ChatLlmSettings.apply!(llm, chat: @chat)
-      ChatLlamaCache.apply!(llm, chat: @chat, model: model, slot_key: "agent_graph:final:#{@chat.id}")
+      apply_llm_settings!(llm, model)
+      ChatLlamaCache.apply!(llm, chat: @chat, model: model, slot_key: cache_slot_key)
       llama_cache = llm.instance_variable_get(:@nyoy_llama_cache_metadata) || {}
       llm.with_instructions(FINAL_SYSTEM)
 
@@ -101,7 +104,7 @@ module AgentGraph
         answer,
         truncated_by_length || @draft_helper.length_truncated_response?(response),
         {
-          "source" => "main",
+          "source" => @source,
           "model_id" => model.model_id,
           "thinking" => thinking.presence,
           "system_prompt" => FINAL_SYSTEM,
@@ -115,6 +118,18 @@ module AgentGraph
         "AgentGraph::FinalAnswerSynthesizer LLM failed model=#{model&.model_id}: #{e.class}: #{e.message}"
       )
       [ nil, false, { "error" => "#{e.class}: #{e.message}", "model_id" => model&.model_id } ]
+    end
+
+    def apply_llm_settings!(llm, model)
+      if @model
+        ChatLlmSettings.defaults_for(model: model).apply!(llm)
+      else
+        ChatLlmSettings.apply!(llm, chat: @chat)
+      end
+    end
+
+    def cache_slot_key
+      @cache_slot_key || "agent_graph:final:#{@chat.id}"
     end
 
     def live_thinking_text(streamed_thinking, streamed_content)
@@ -167,9 +182,9 @@ module AgentGraph
       memo = evidence[:memo].to_s.strip
       lines << if memo.present?
                  "メモ抜粋:\n#{memo.truncate(500)}\n"
-               else
+      else
                  "メモ抜粋: （該当なし）\n"
-               end
+      end
 
       if evidence[:search_results].any?
         lines << "検索結果:"

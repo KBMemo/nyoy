@@ -86,6 +86,29 @@
         | 軽量モデルが失敗・空応答のときのフォールバックです。未設定時も最終手段は根拠パックのテンプレです。
 
     fieldset
+      legend class="#{kb_label} mb-1" 最終回答方式
+      p#agent-graph-final-answer-profile-help.mt-1.text-sm.kb-text-muted
+        | 調査結果からユーザー向けの完成した回答を生成します。現在の有効値:
+        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:final_answer)
+      .mt-2.space-y-2
+        - @final_answer_profile_options.each do |label, value|
+          label.flex.min-h-10.items-center.gap-2
+            = form.radio_button :agent_graph_final_answer_profile,
+                value,
+                class: "kb-control-accent",
+                aria: { describedby: "agent-graph-final-answer-profile-help" }
+            span.text-sm.kb-text-secondary = label
+
+    div
+      = form.label :final_answer_model_id, "最終回答用軽量モデル", class: "#{kb_label} mb-1"
+      = form.select :final_answer_model_id,
+          grouped_options_for_select(@final_answer_model_options, @app_setting.final_answer_model_id),
+          { include_blank: "未設定（メインモデルへフォールバック）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | 軽量モデル方式を選んだ場合に使います。失敗・空応答時はチャットのメインモデルで再試行します。
+
+    fieldset
       legend class="#{kb_label} mb-1" 調査計画方式
       p#agent-graph-planner-profile-help.mt-1.text-sm.kb-text-muted
         | 質問ごとにメモ・Web調査の要否を判定します。現在の有効値:

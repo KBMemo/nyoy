@@ -22,7 +22,8 @@ module AgentGraph
         llm: -> { AgentGraph::LlmEvidenceEvaluator.new }
       },
       final_answer: {
-        main: -> { AgentGraph::RoleServices::FinalAnswer.new }
+        main: -> { AgentGraph::RoleServices::FinalAnswer.new },
+        light: -> { AgentGraph::RoleServices::LightFinalAnswer.new }
       },
       intent: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new },
@@ -143,6 +144,54 @@ module AgentGraph
     class FinalAnswer
       def call(state:, run:, chat:)
         AgentGraph::FinalAnswerSynthesizer.new(chat).call(state)
+      end
+    end
+
+    class LightFinalAnswer
+      def initialize(fallback: FinalAnswer.new, synthesizer_class: FinalAnswerSynthesizer)
+        @fallback = fallback
+        @synthesizer_class = synthesizer_class
+      end
+
+      def call(state:, run:, chat:)
+        model = AppSetting.final_answer_model
+        return fallback_result(state: state, run: run, chat: chat, error: "final answer model is not configured") unless model
+
+        result = synthesize_light(state: state, chat: chat, model: model)
+        answer, = result
+        return result if answer.present?
+
+        fallback_result(
+          state: state,
+          run: run,
+          chat: chat,
+          error: result.third.to_h["error"],
+          model: model
+        )
+      end
+
+      private
+
+      def synthesize_light(state:, chat:, model:)
+        @synthesizer_class.new(
+          chat,
+          model: model,
+          source: "light",
+          cache_slot_key: "agent_graph:final_light:#{chat.id}:#{model.model_id}"
+        ).call(state)
+      rescue StandardError => e
+        Rails.logger.warn("AgentGraph::RoleServices::LightFinalAnswer failed: #{e.class}: #{e.message}")
+        [ nil, false, { "source" => "error", "error" => e.message, "model_id" => model.model_id } ]
+      end
+
+      def fallback_result(state:, run:, chat:, error:, model: nil)
+        answer, truncated, metadata = @fallback.call(state: state, run: run, chat: chat)
+        metadata = metadata.to_h.stringify_keys.merge(
+          "fallback" => "main",
+          "fallback_error" => error,
+          "light_model_id" => model&.model_id
+        ).compact
+        [ answer, truncated, metadata ]
       end
     end
 

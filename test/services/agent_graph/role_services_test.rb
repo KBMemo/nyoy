@@ -125,6 +125,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::LlmEvidenceEvaluator, AgentGraph::RoleServices.fetch(:evidence_evaluator)
   end
 
+  test "selects light final answer profile" do
+    AgentGraph::RoleServices.select_profile(:final_answer, :light)
+
+    assert_instance_of AgentGraph::RoleServices::LightFinalAnswer, AgentGraph::RoleServices.fetch(:final_answer)
+  end
+
   test "selects hybrid llm intent profile" do
     AgentGraph::RoleServices.select_profile(:intent, :hybrid_llm)
 

@@ -112,6 +112,23 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_includes setting.errors[:evidence_evaluator_model_id], "は有効なチャットモデルを選んでください"
   end
 
+  test "final answer model and profile are independently configurable" do
+    setting = AppSetting.instance
+    setting.update!(final_answer_model_id: "gpt-oss", agent_graph_final_answer_profile: "light")
+
+    assert_equal "gpt-oss", AppSetting.final_answer_model.model_id
+    assert_equal "light", setting.reload.agent_graph_final_answer_profile
+    assert_equal({ "final_answer" => "light" }, setting.agent_graph_role_profiles)
+  end
+
+  test "rejects unknown final answer model" do
+    setting = AppSetting.instance
+    setting.final_answer_model_id = "missing-model"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:final_answer_model_id], "は有効なチャットモデルを選んでください"
+  end
+
   test "intent model and profile are independently configurable" do
     setting = AppSetting.instance
     setting.update!(agent_graph_intent_model_id: "gpt-oss", agent_graph_intent_profile: "hybrid_llm")
