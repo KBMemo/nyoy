@@ -32,6 +32,14 @@ vision_llama:
   enabled: true
   sort_order: 2
 
+llama_switchd:
+  key: llama_switchd
+  name: llama-switchd
+  base_url: http://balvenie:11335
+  api_token: switchd_test_token
+  enabled: true
+  sort_order: 3
+
 embeddings:
   key: embeddings
   name: bge-m3

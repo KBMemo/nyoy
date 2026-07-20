@@ -1,12 +1,40 @@
 # frozen_string_literal: true
 
 class ServiceConnectionsController < ApplicationController
-  before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models load_sampling]
+  before_action :set_service_connection, only: %i[show edit update destroy refresh_models openai_chat_models load_sampling bind_llama_server sync_llama_server]
   before_action :load_sampling_presets, only: %i[new create edit update]
 
   def index
     @service_connections = ServiceConnection.ordered
     @missing_builtin_keys = ServiceConnection.available_keys
+  end
+
+  def llama_servers
+    @switchd_connection = ServiceConnection.find_by(key: "llama_switchd")
+    return unless @switchd_connection&.enabled?
+
+    @inventory = LlamaSwitchdInventory.new(@switchd_connection).call
+  rescue LlamaSwitchdClient::Error => e
+    @inventory_error = e.message
+  end
+
+  def bind_llama_server
+    manager = ServiceConnection.find_by!(key: "llama_switchd", enabled: true)
+    server_id = params.require(:managed_server_id)
+    servers = LlamaSwitchdClient.new(base_url: manager.base_url, api_token: manager.api_token).list_servers
+    raise LlamaSwitchdClient::Error, "指定した switchd server がありません" unless servers.any? { |server| server["id"] == server_id }
+
+    @service_connection.update!(manager_connection: manager, managed_server_id: server_id)
+    redirect_to llama_servers_service_connections_path, notice: "#{@service_connection.name} を #{server_id} に紐付けました。"
+  rescue LlamaSwitchdClient::Error => e
+    redirect_to llama_servers_service_connections_path, alert: e.message
+  end
+
+  def sync_llama_server
+    LlamaSwitchdConnectionSync.new(@service_connection).call
+    redirect_to llama_servers_service_connections_path, notice: "#{@service_connection.name} の URL と Alias を同期しました。"
+  rescue LlamaSwitchdClient::Error, ActiveRecord::RecordInvalid => e
+    redirect_to llama_servers_service_connections_path, alert: e.message
   end
 
   def show

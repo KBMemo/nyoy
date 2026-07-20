@@ -35,8 +35,11 @@ Rails.application.routes.draw do
   resources :service_connections do
     collection do
       post :seed_missing
+      get :llama_servers
     end
     member do
+      patch :bind_llama_server
+      post :sync_llama_server
       post :refresh_models
       post :load_sampling
       patch :openai_chat_models

@@ -10,6 +10,72 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_match service_connections(:llama_cpp).name, response.body
   end
 
+  test "llama servers shows read only inventory" do
+    result = LlamaSwitchdInventory::Result.new(
+      servers: [ { "id" => "main", "alias" => "main-model", "port" => 10010, "state" => "ready" } ],
+      models: [],
+      connections: []
+    )
+    original = LlamaSwitchdInventory.instance_method(:call)
+    LlamaSwitchdInventory.define_method(:call) { result }
+
+    get llama_servers_service_connections_path
+
+    assert_response :success
+    assert_select "h1", text: "LLM サーバー"
+    assert_match "main-model", response.body
+  ensure
+    LlamaSwitchdInventory.define_method(:call, original) if defined?(original)
+  end
+
+  test "llama servers reports switchd errors" do
+    original = LlamaSwitchdInventory.instance_method(:call)
+    LlamaSwitchdInventory.define_method(:call) { raise LlamaSwitchdClient::Error, "switchd unavailable" }
+
+    get llama_servers_service_connections_path
+
+    assert_response :success
+    assert_match "switchd unavailable", response.body
+  ensure
+    LlamaSwitchdInventory.define_method(:call, original) if defined?(original)
+  end
+
+  test "bind llama server stores binding without changing connection values" do
+    connection = service_connections(:llama_cpp)
+    original_url = connection.base_url
+    original_model = connection.server_model
+    original = LlamaSwitchdClient.method(:new)
+    client = Object.new
+    client.define_singleton_method(:list_servers) { [ { "id" => "main" } ] }
+    LlamaSwitchdClient.define_singleton_method(:new) { |**| client }
+
+    patch bind_llama_server_service_connection_path(connection), params: { managed_server_id: "main" }
+
+    assert_redirected_to llama_servers_service_connections_path
+    connection.reload
+    assert_equal service_connections(:llama_switchd), connection.manager_connection
+    assert_equal "main", connection.managed_server_id
+    assert_equal original_url, connection.base_url
+    assert_equal original_model, connection.server_model
+  ensure
+    LlamaSwitchdClient.define_singleton_method(:new, original) if defined?(original)
+  end
+
+  test "bind llama server rejects unknown server" do
+    connection = service_connections(:llama_cpp)
+    original = LlamaSwitchdClient.method(:new)
+    client = Object.new
+    client.define_singleton_method(:list_servers) { [] }
+    LlamaSwitchdClient.define_singleton_method(:new) { |**| client }
+
+    patch bind_llama_server_service_connection_path(connection), params: { managed_server_id: "missing" }
+
+    assert_redirected_to llama_servers_service_connections_path
+    assert_nil connection.reload.managed_server_id
+  ensure
+    LlamaSwitchdClient.define_singleton_method(:new, original) if defined?(original)
+  end
+
   test "update connection" do
     connection = service_connections(:vision_llama)
 

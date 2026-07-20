@@ -1,0 +1,100 @@
+- content_for :title, "LLM サーバー"
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title LLM サーバー
+  = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
+
+- unless @switchd_connection
+  .kb-alert.kb-alert-danger
+    | llama_switchd 接続がありません。「接続」で組み込み接続を登録してください。
+- else
+  .kb-card.p-4.mb-4
+    dl.grid.gap-2.text-sm class="sm:grid-cols-[auto_1fr]"
+      dt.font-medium.kb-text-secondary 管理 API
+      dd.nyoy-monospace = @switchd_connection.base_url
+      dt.font-medium.kb-text-secondary 状態
+      dd = @switchd_connection.enabled? ? "有効" : "無効"
+
+  - unless @switchd_connection.enabled?
+    .kb-alert.kb-alert-danger llama_switchd 接続が無効です。トークンを設定して有効化してください。
+  - if @inventory_error
+    .kb-alert.kb-alert-danger = @inventory_error
+  - if @inventory
+    section.mb-6
+      h2 class=kb_section_title 管理中のサーバー
+      .mt-3.overflow-x-auto
+        table.w-full.text-sm
+          thead
+            tr.border-b
+              th.p-2.text-left ID
+              th.p-2.text-left Alias
+              th.p-2.text-right Port
+              th.p-2.text-left 状態
+              th.p-2.text-left 起動設定
+              th.p-2.text-left Source
+          tbody
+            - @inventory.servers.each do |server|
+              tr.border-b
+                td.p-2.nyoy-monospace = server["id"]
+                td.p-2.nyoy-monospace = server["alias"]
+                td.p-2.text-right.nyoy-monospace = server["port"]
+                td.p-2
+                  = server["state"]
+                  - if server["ready"]
+                    span.kb-badge.kb-badge-muted.ml-2 ready
+                td.p-2
+                  = server["enabled"] ? "enabled" : "disabled"
+                  - if server["restart_required"]
+                    span.kb-badge.kb-badge-muted.ml-2 再起動待ち
+                td.p-2.nyoy-monospace.break-all = server["source"]
+
+    section.mb-6
+      h2 class=kb_section_title Nyoy 接続との差分
+      .mt-3.overflow-x-auto
+        table.w-full.text-sm
+          thead
+            tr.border-b
+              th.p-2.text-left 接続
+              th.p-2.text-left 現在値
+              th.p-2.text-left switchd
+              th.p-2.text-left 判定
+          tbody
+            - @inventory.connections.each do |comparison|
+              - connection = comparison.connection
+              - server = comparison.server
+              tr.border-b
+                td.p-2
+                  = link_to connection.name, connection, class: "kb-chrome-link"
+                  .nyoy-monospace.text-xs.kb-text-muted = connection.key
+                td.p-2
+                  .nyoy-monospace = connection.base_url
+                  .nyoy-monospace.text-xs.kb-text-muted = connection.server_model.presence || "alias 未設定"
+                td.p-2
+                  - if server
+                    .nyoy-monospace = "#{server['id']} :#{server['port']}"
+                    .nyoy-monospace.text-xs.kb-text-muted = server["alias"]
+                  - else
+                    span.kb-text-muted 候補なし
+                td.p-2
+                  - labels = { exact: "一致", port_only: "Alias 不一致", alias_only: "Port 不一致", unmatched: "未対応" }
+                  span class=(comparison.status == :exact ? "kb-status-success" : "kb-status-warning") = labels.fetch(comparison.status)
+                  = form_with url: bind_llama_server_service_connection_path(connection), method: :patch, class: "mt-2 flex items-center gap-2" do
+                    = select_tag :managed_server_id, options_for_select(@inventory.servers.map { |item| ["#{item['id']} (:#{item['port']})", item["id"]] }, connection.managed_server_id || server&.dig("id")), class: kb_field_input_classes
+                    = submit_tag "紐付け", class: kb_btn_secondary_sm
+                  - if connection.managed_server_id.present?
+                    .mt-2.flex.items-center.gap-2
+                      span.text-xs.kb-text-muted = "紐付け済み: #{connection.managed_server_id}"
+                      = button_to "URL・Aliasを同期", sync_llama_server_service_connection_path(connection), method: :post, class: kb_btn_secondary_sm
+
+    section
+      h2 class=kb_section_title 検出モデル
+      p.mt-2.text-sm.kb-text-secondary = "#{@inventory.models.size} 件"
+      - if @inventory.models.any?
+        ul.mt-3.divide-y
+          - @inventory.models.each do |model|
+            li.py-2.text-sm
+              .nyoy-monospace.break-all = model["path"]
+              .text-xs.kb-text-muted
+                = model["suggested_id"]
+                - if model["configured_as"].present?
+                  = " / 使用中: #{model['configured_as'].join(', ')}"

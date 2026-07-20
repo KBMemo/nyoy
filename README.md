@@ -92,6 +92,8 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | 変数 | 説明 | デフォルト |
 |------|------|-----------|
 | `LLAMA_CPP_URL` | llama.cpp の URL | `http://balvenie:10010` |
+| `LLAMA_SWITCHD_URL` | llama-switchd 管理 API | `http://balvenie:11335` |
+| `LLAMA_SWITCHD_TOKEN` | llama-switchd 認証トークン | （未設定） |
 | `LLAMA_MODEL` | style 計画等のモデル名 | `gemma-4-12b-it-vision-mtp` |
 | `GPT_OSS_MODEL` | Chat 用 GPT-OSS モデル名 | `gpt-oss` |
 | `GPT_OSS_LLAMA_CPP_URL` | GPT-OSS 専用 URL（省略時は `LLAMA_CPP_URL`） | （未設定） |

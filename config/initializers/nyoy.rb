@@ -6,6 +6,8 @@ Rails.application.config.x.nyoy.tap do |config|
   config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-12b-it-vision-mtp")
   config.gpt_oss_llama_cpp_url = ENV["GPT_OSS_LLAMA_CPP_URL"]
   config.gpt_oss_model = ENV.fetch("GPT_OSS_MODEL", "gpt-oss")
+  config.llama_switchd_url = ENV.fetch("LLAMA_SWITCHD_URL", "http://balvenie:11335")
+  config.llama_switchd_token = ENV["LLAMA_SWITCHD_TOKEN"]
   config.vision_llama_cpp_url = ENV.fetch("VISION_LLAMA_CPP_URL", "http://balvenie:10021")
   config.vision_llama_model = ENV.fetch("VISION_LLAMA_MODEL", "qwen2.5-vl-3b")
   config.sd_cpp_url = ENV.fetch("SDCPP_SERVER_URL", "http://balvenie:11234")

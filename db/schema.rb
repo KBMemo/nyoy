@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_20_173000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -457,6 +457,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_173000) do
     t.datetime "created_at", null: false
     t.boolean "enabled", default: true, null: false
     t.string "key", null: false
+    t.string "managed_server_id"
+    t.bigint "manager_connection_id"
     t.string "name", null: false
     t.text "notes"
     t.string "server_model"
@@ -465,6 +467,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_173000) do
     t.datetime "updated_at", null: false
     t.index ["enabled"], name: "index_service_connections_on_enabled"
     t.index ["key"], name: "index_service_connections_on_key", unique: true
+    t.index ["manager_connection_id", "managed_server_id"], name: "index_service_connections_on_manager_and_server"
   end
 
   create_table "tool_calls", force: :cascade do |t|
@@ -498,5 +501,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_173000) do
   add_foreign_key "prompt_style_models", "prompt_styles"
   add_foreign_key "prompt_style_models", "sd_model_profiles"
   add_foreign_key "sd_prompt_templates", "sd_model_profiles"
+  add_foreign_key "service_connections", "service_connections", column: "manager_connection_id"
   add_foreign_key "tool_calls", "messages"
 end

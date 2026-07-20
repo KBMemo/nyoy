@@ -107,6 +107,14 @@ module ServiceConnectionSeeds
         settings: { "chat_models" => [] }
       },
       {
+        key: "llama_switchd",
+        name: "llama-switchd",
+        base_url: config.llama_switchd_url,
+        api_token: config.llama_switchd_token,
+        enabled: config.llama_switchd_token.present?,
+        notes: "llama-server の検出・起動管理 API"
+      },
+      {
         key: "vision_llama",
         name: "Qwen2.5-VL",
         base_url: config.vision_llama_cpp_url,

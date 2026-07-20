@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class ServiceConnection < ApplicationRecord
+  belongs_to :manager_connection, class_name: "ServiceConnection", optional: true
+  has_many :managed_connections,
+           class_name: "ServiceConnection",
+           foreign_key: :manager_connection_id,
+           dependent: :nullify,
+           inverse_of: :manager_connection
   BUILTIN_KEYS = %w[
     llama_cpp
     gpt_oss
@@ -9,6 +15,7 @@ class ServiceConnection < ApplicationRecord
     embeddings
     sd_cpp
     sd_switchd
+    llama_switchd
     kbmemo
     tsuzura
     searfront
@@ -26,6 +33,7 @@ class ServiceConnection < ApplicationRecord
     "embeddings" => "埋め込み API",
     "sd_cpp" => "sd.cpp サーバー",
     "sd_switchd" => "sd.cpp switchd",
+    "llama_switchd" => "llama-switchd",
     "kbmemo" => "徒然（KBMemo API）",
     "tsuzura" => "葛籠（KBMemo Media API）",
     "searfront" => "searfront（Web 検索）",
@@ -36,6 +44,7 @@ class ServiceConnection < ApplicationRecord
   validates :key, uniqueness: true
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validate :key_must_be_allowed
+  validate :manager_must_be_llama_switchd
   validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
   validates :api_token, presence: true, if: -> { openai_chat_enabled? && !openai_environment_api_token? }
   validates :server_model, presence: true, if: :custom_llm?
@@ -142,6 +151,12 @@ class ServiceConnection < ApplicationRecord
   end
 
   private
+
+  def manager_must_be_llama_switchd
+    return if manager_connection.nil? || manager_connection.key == "llama_switchd"
+
+    errors.add(:manager_connection, "は llama_switchd 接続を指定してください")
+  end
 
   def key_must_be_allowed
     return if key.blank?
