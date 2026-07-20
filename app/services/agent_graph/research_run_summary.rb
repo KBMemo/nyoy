@@ -5,6 +5,7 @@ module AgentGraph
     def build
       common_fields.merge(
         question: state["question"],
+        routing: state["routing"] || {},
         draft: state["draft"],
         final_answer: state["final_answer"],
         approval: state["approval"],

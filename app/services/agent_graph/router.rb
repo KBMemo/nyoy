@@ -45,10 +45,17 @@ module AgentGraph
       Decision.new(
         graph_name: graph_name,
         runner: Registry.runner_for(graph_name),
-        args: {},
+        args: runner_args(graph_name, intent_decision),
         intent_decision: intent_decision
       )
     end
+
+    def runner_args(graph_name, intent_decision)
+      return {} unless graph_name == ResearchGraph::NAME
+
+      { routing: intent_decision }
+    end
+    private_class_method :runner_args
     private_class_method :decision
   end
 end

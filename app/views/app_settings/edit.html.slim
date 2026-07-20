@@ -108,5 +108,28 @@
       p.mt-1.text-sm.kb-text-muted
         | LLM分類を選んだ場合に使います。失敗時は決定規則へ戻ります。
 
+    fieldset
+      legend class="#{kb_label} mb-1" Graph起動判定方式
+      p#agent-graph-intent-profile-help.mt-1.text-sm.kb-text-muted
+        | 決定規則で未判定の通常テキストをResearch Graphへ昇格するか判定します。現在の有効値:
+        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:intent)
+      .mt-2.space-y-2
+        - @agent_graph_intent_profile_options.each do |label, value|
+          label.flex.min-h-10.items-center.gap-2
+            = form.radio_button :agent_graph_intent_profile,
+                value,
+                class: "kb-control-accent",
+                aria: { describedby: "agent-graph-intent-profile-help" }
+            span.text-sm.kb-text-secondary = label
+
+    div
+      = form.label :agent_graph_intent_model_id, "Graph起動判定用モデル", class: "#{kb_label} mb-1"
+      = form.select :agent_graph_intent_model_id,
+          grouped_options_for_select(@agent_graph_intent_model_options, @app_setting.agent_graph_intent_model_id),
+          { include_blank: "未設定（決定規則のみ）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | LLM調査判定を選んだ場合に使います。失敗・不正応答時は通常チャットへ戻ります。
+
     div
       = form.submit "保存", class: kb_btn_primary_sm

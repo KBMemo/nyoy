@@ -461,11 +461,13 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+組み込みprofileは `intent.deterministic` / `intent.hybrid_llm`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`intent.hybrid_llm` は決定規則を先に実行し、未判定かつ添付なし・明示的な非調査turnでない通常テキストについて、Research Graphへ昇格するかだけを軽量modelに判定させる。メモ書込・更新・画像理解のGraph選択はLLMへ許可しない。positive判定のprofile・model・cache・usageはResearch stateの `routing` とrun summaryへ保存する。失敗・不正応答・model未設定時は通常chatへ戻る。
+
+`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
-設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」、`planner` profileを「既定設定 / 決定規則 / LLM分類」から選択できる。draftとplannerは軽量modelを独立して指定する。profile未指定時は環境変数、さらに未指定ならそれぞれ `evidence_pack` / `deterministic` を使う。
+設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」、`planner` profileを「既定設定 / 決定規則 / LLM分類」、`intent` profileを「既定設定 / 決定規則 / 決定規則 + LLM調査判定」から選択できる。各roleの軽量modelは独立して指定する。profile未指定時は環境変数、さらに未指定なら `draft=evidence_pack`、`planner=deterministic`、`intent=deterministic` を使う。
 
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
 
@@ -478,6 +480,8 @@ draft profileのdevelopment実機比較では、軽量modelが根拠不足時に
 plannerのllama.cpp cache観測はrun 88〜89で確認した。同じChat・同じ質問を連続実行し、いずれもslot `0/1`、`input_tokens=121`、`cached_tokens=95`、`output_tokens=20` をplanning metadataとNode履歴要約へ記録できた。
 
 profile比較、明示URL経路、cache、障害注入の再現手順は [AgentGraph Planner Profile 実運用 Runbook](../agent-graph-planner-profile-runbook.md) にまとめた。run 90ではplanner modelを到達不能にし、AgentRunを失敗させず `source=deterministic / fallback=deterministic` へ移行することを確認した。
+
+`intent.hybrid_llm` はrun 91で実機確認した。決定規則では未判定だった「Rails Active Job retry設計の要点は？」をResearch Graphへ昇格し、`routing.profile=hybrid_llm`、model `qwen3.5-4b`、input 139、cached 114、output 13をAgentRunへ保存した。明示的な調査質問は決定規則だけで約0.01秒、挨拶はLLMを呼ばず約0.003秒で判定した。
 
 ### Workflow Registry
 

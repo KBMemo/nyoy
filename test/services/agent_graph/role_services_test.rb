@@ -75,6 +75,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::LlmResearchPlanner, AgentGraph::RoleServices.fetch(:planner)
   end
 
+  test "selects hybrid llm intent profile" do
+    AgentGraph::RoleServices.select_profile(:intent, :hybrid_llm)
+
+    assert_instance_of AgentGraph::HybridLlmIntentRouter, AgentGraph::RoleServices.fetch(:intent)
+  end
+
   test "registers and selects a plugin role profile" do
     custom = Object.new
     AgentGraph::RoleServices.register_profile(:intent, :custom, -> { custom })

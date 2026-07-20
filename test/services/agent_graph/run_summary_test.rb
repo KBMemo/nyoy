@@ -16,6 +16,7 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
       current_node: "finalize_answer",
       state: {
         "question" => "根拠を調べて",
+        "routing" => { "profile" => "hybrid_llm", "model_id" => "tiny" },
         "draft" => "draft",
         "final_answer" => "answer",
         "approval" => nil,
@@ -35,6 +36,7 @@ class AgentGraphRunSummaryTest < ActiveSupport::TestCase
     assert_equal run.id, summary[:agent_run_id]
     assert_equal @chat.id, summary[:chat_id]
     assert_equal "根拠を調べて", summary[:question]
+    assert_equal({ "profile" => "hybrid_llm", "model_id" => "tiny" }, summary[:routing])
     assert_equal "answer", summary[:final_answer]
     assert_equal({ "need_web" => true }, summary[:plan])
     assert_equal({ "status" => "limited", "reason" => "no more retrieval" }, summary[:evidence_review])

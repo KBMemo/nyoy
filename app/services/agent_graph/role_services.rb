@@ -22,7 +22,8 @@ module AgentGraph
         main: -> { AgentGraph::RoleServices::FinalAnswer.new }
       },
       intent: {
-        deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
+        deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new },
+        hybrid_llm: -> { AgentGraph::HybridLlmIntentRouter.new }
       },
       planner: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new },

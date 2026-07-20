@@ -2,8 +2,8 @@
 
 module AgentGraph
   class ResearchGraphRunner
-    def self.call(chat, question: nil, auto_approve: false)
-      new(chat, question: question, auto_approve: auto_approve).call
+    def self.call(chat, question: nil, auto_approve: false, routing: nil)
+      new(chat, question: question, auto_approve: auto_approve, routing: routing).call
     end
 
     def self.resume(agent_run, decision:)
@@ -20,10 +20,11 @@ module AgentGraph
       call(chat, question: question, auto_approve: auto_approve)
     end
 
-    def initialize(chat, question: nil, auto_approve: false)
+    def initialize(chat, question: nil, auto_approve: false, routing: nil)
       @chat = chat
       @question = question.to_s.strip.presence
       @auto_approve = auto_approve
+      @routing = routing
     end
 
     def call
@@ -35,7 +36,8 @@ module AgentGraph
         state: ResearchInitialState.build(
           chat: @chat,
           question: question,
-          auto_approve: @auto_approve
+          auto_approve: @auto_approve,
+          routing: @routing
         )
       )
     end

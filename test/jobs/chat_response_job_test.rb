@@ -134,10 +134,10 @@ class ChatResponseJobTest < ActiveJob::TestCase
     @chat.update!(response_state: "running")
     @chat.messages.create!(role: :user, content: "調査日の根拠はどこから？")
 
-    called = false
+    called = nil
     original = AgentGraph::ResearchGraphRunner.method(:call)
-    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat|
-      called = true
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat, **kwargs|
+      called = { chat: chat, kwargs: kwargs }
       chat.messages.create!(role: :assistant, content: "graph answer")
       AgentRun.create!(
         chat: chat,
@@ -152,7 +152,8 @@ class ChatResponseJobTest < ActiveJob::TestCase
       ChatResponseJob.perform_now(@chat.id)
     end
 
-    assert called
+    assert_equal @chat, called.fetch(:chat)
+    assert_equal "strong", called.dig(:kwargs, :routing, :reason)
     assert_equal "idle", @chat.reload.response_state
     assert_equal "graph answer", @chat.messages.where(role: :assistant).order(:id).last.content
   ensure
@@ -164,7 +165,7 @@ class ChatResponseJobTest < ActiveJob::TestCase
     @chat.messages.create!(role: :user, content: "調査の根拠は？")
 
     original = AgentGraph::ResearchGraphRunner.method(:call)
-    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat|
+    AgentGraph::ResearchGraphRunner.define_singleton_method(:call) do |chat, **|
       AgentRun.create!(
         chat: chat,
         graph_name: "research",

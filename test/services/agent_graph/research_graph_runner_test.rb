@@ -45,6 +45,20 @@ class AgentGraphResearchGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  test "records router intent metadata in initial state" do
+    stub_recall(context: "メモ抜粋") do
+      stub_synthesize_without_llm do
+        run = AgentGraph::ResearchGraphRunner.call(
+          @chat,
+          routing: { reason: "llm_research_escalation", model_id: "tiny" }
+        )
+
+        assert_equal "llm_research_escalation", run.state.dig("routing", "reason")
+        assert_equal "tiny", run.state.dig("routing", "model_id")
+      end
+    end
+  end
+
   test "sensitive plan also finalizes without approval" do
     @chat.messages.destroy_all
     @chat.messages.create!(role: :user, content: "調査日の根拠を調べて確認してから答えて")

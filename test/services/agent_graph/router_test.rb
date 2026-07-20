@@ -140,6 +140,7 @@ class AgentGraphRouterTest < ActiveSupport::TestCase
 
       assert_equal AgentGraph::ResearchGraph::NAME, decision.graph_name
       assert_equal "custom", decision.intent_decision[:reason]
+      assert_equal({ routing: decision.intent_decision }, decision.args)
     end
 
     assert_equal 1, calls.size

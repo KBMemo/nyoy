@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_20_143000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_20_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -85,6 +85,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_143000) do
   end
 
   create_table "app_settings", force: :cascade do |t|
+    t.string "agent_graph_intent_model_id"
     t.jsonb "agent_graph_role_profiles", default: {}, null: false
     t.datetime "created_at", null: false
     t.string "default_chat_connection_key"

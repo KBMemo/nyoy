@@ -4,11 +4,12 @@ module AgentGraph
   module ResearchInitialState
     module_function
 
-    def build(chat:, question:, auto_approve: false)
+    def build(chat:, question:, auto_approve: false, routing: nil)
       ResearchStateSchema.validate!({
         "question" => question.to_s,
         "chat_id" => chat.id,
         "intent" => "research",
+        "routing" => routing.to_h.deep_stringify_keys,
         "plan" => {},
         "planning" => {},
         "memo_context" => nil,

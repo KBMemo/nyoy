@@ -14,12 +14,17 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     state = AgentGraph::ResearchInitialState.build(
       chat: @chat,
       question: "根拠を調べて",
-      auto_approve: true
+      auto_approve: true,
+      routing: { reason: "llm_research_escalation", model_id: "tiny" }
     )
 
     assert_equal "根拠を調べて", state["question"]
     assert_equal @chat.id, state["chat_id"]
     assert_equal "research", state["intent"]
+    assert_equal({
+      "reason" => "llm_research_escalation",
+      "model_id" => "tiny"
+    }, state["routing"])
     assert_equal AgentGraph::ResearchGraph::START, state["next_node"]
     assert_equal true, state["auto_approve"]
     assert_equal({}, state["plan"])

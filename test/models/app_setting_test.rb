@@ -95,6 +95,23 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_includes setting.errors[:research_planner_model_id], "は有効なチャットモデルを選んでください"
   end
 
+  test "intent model and profile are independently configurable" do
+    setting = AppSetting.instance
+    setting.update!(agent_graph_intent_model_id: "gpt-oss", agent_graph_intent_profile: "hybrid_llm")
+
+    assert_equal "gpt-oss", AppSetting.agent_graph_intent_model.model_id
+    assert_equal "hybrid_llm", setting.reload.agent_graph_intent_profile
+    assert_equal({ "intent" => "hybrid_llm" }, setting.agent_graph_role_profiles)
+  end
+
+  test "rejects unknown intent model" do
+    setting = AppSetting.instance
+    setting.agent_graph_intent_model_id = "missing-model"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:agent_graph_intent_model_id], "は有効なチャットモデルを選んでください"
+  end
+
   test "stores draft role profile through virtual attribute" do
     setting = AppSetting.instance
     setting.agent_graph_draft_profile = "llm"

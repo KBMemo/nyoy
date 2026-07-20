@@ -11,6 +11,7 @@ class AppSetting < ApplicationRecord
   validate :sampling_preset_key_must_be_available
   validate :research_draft_model_must_be_available
   validate :research_planner_model_must_be_available
+  validate :agent_graph_intent_model_must_be_available
   validate :research_draft_fallback_must_be_allowed
   validate :agent_graph_role_profiles_must_be_available
 
@@ -54,6 +55,13 @@ class AppSetting < ApplicationRecord
 
     def research_planner_model
       model_id = instance.research_planner_model_id.to_s.presence
+      return nil if model_id.blank?
+
+      Model.find_by(provider: "openai", model_id: model_id)
+    end
+
+    def agent_graph_intent_model
+      model_id = instance.agent_graph_intent_model_id.to_s.presence
       return nil if model_id.blank?
 
       Model.find_by(provider: "openai", model_id: model_id)
@@ -119,6 +127,17 @@ class AppSetting < ApplicationRecord
     self.agent_graph_role_profiles = profiles
   end
 
+  def agent_graph_intent_profile
+    agent_graph_role_profiles.to_h["intent"].to_s.presence
+  end
+
+  def agent_graph_intent_profile=(profile)
+    profiles = agent_graph_role_profiles.to_h.stringify_keys
+    value = profile.to_s.presence
+    value ? profiles["intent"] = value : profiles.delete("intent")
+    self.agent_graph_role_profiles = profiles
+  end
+
   private
 
   def normalize_research_draft_fallback
@@ -154,6 +173,13 @@ class AppSetting < ApplicationRecord
     return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
 
     errors.add(:research_planner_model_id, "は有効なチャットモデルを選んでください")
+  end
+
+  def agent_graph_intent_model_must_be_available
+    model_id = agent_graph_intent_model_id.to_s.presence
+    return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
+
+    errors.add(:agent_graph_intent_model_id, "は有効なチャットモデルを選んでください")
   end
 
   def research_draft_fallback_must_be_allowed
