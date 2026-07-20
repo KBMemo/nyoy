@@ -2,7 +2,9 @@
 
 .mb-6.flex.flex-wrap.items-center.justify-between.gap-3
   h1 class=kb_page_title LLM サーバー
-  = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
+  .flex.flex-wrap.items-center.gap-2
+    = link_to "定義を作成", new_llama_server_path, class: kb_btn_primary_sm
+    = link_to "接続へ戻る", service_connections_path, class: kb_btn_secondary_sm
 
 - unless @switchd_connection
   .kb-alert.kb-alert-danger
@@ -63,6 +65,10 @@
                         = button_to "自動起動を無効化", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "disable" }, class: kb_btn_secondary_sm, form: { data: { turbo_confirm: "#{server['id']} の自動起動を無効にしますか？" } }
                       - else
                         = button_to "自動起動を有効化", operate_llama_server_service_connections_path, method: :post, params: { managed_server_id: server["id"], server_action: "enable" }, class: kb_btn_secondary_sm
+                    .mt-2.flex.flex-wrap.items-center.gap-2
+                      = link_to "定義を編集", edit_llama_server_path(server["id"]), class: "kb-chrome-link text-sm"
+                      - unless server["active"] || server["enabled"]
+                        = button_to "定義を削除", llama_server_path(server["id"]), method: :delete, class: "kb-chrome-link text-sm nyoy-inline-delete-btn", form: { data: { turbo_confirm: "#{server['id']} の定義を削除しますか？" } }
 
     section.mb-6
       h2 class=kb_section_title Nyoy 接続との差分

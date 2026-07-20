@@ -1,0 +1,72 @@
+- content_for :title, title
+
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title = title
+  = link_to "LLM サーバーへ戻る", llama_servers_service_connections_path, class: kb_btn_secondary_sm
+
+= form_with model: definition, url: url, method: method, class: "max-w-3xl space-y-5" do |form|
+  - if definition.errors.any?
+    .kb-alert.kb-alert-danger role="alert"
+      ul.list-disc.pl-5
+        - definition.errors.full_messages.each do |message|
+          li = message
+  - if @models_error
+    .kb-alert.kb-alert-danger = @models_error
+
+  fieldset.kb-card.p-4.space-y-4
+    legend class=kb_section_title 識別とモデル
+    div
+      = form.label :server_id, "Server ID（必須）", class: "#{kb_label} mb-1"
+      = form.text_field :server_id, required: true, readonly: editing, pattern: "[a-z0-9][a-z0-9._-]{0,63}", maxlength: 64, class: kb_field_input_classes
+    fieldset.space-y-2
+      legend class=kb_label モデル取得元
+      label.flex.items-center.gap-2
+        = form.radio_button :source_type, "model", class: "kb-control-accent"
+        span ローカルGGUF
+      label.flex.items-center.gap-2
+        = form.radio_button :source_type, "hf_repo", class: "kb-control-accent"
+        span Hugging Face repository
+    div
+      = form.label :model, "MODEL path", class: "#{kb_label} mb-1"
+      = form.text_field :model, list: "llama-model-paths", class: kb_field_input_classes
+      datalist#llama-model-paths
+        - @models.each do |model|
+          option value=model["path"] = model["suggested_id"]
+    div
+      = form.label :hf_repo, "HF_REPO", class: "#{kb_label} mb-1"
+      = form.text_field :hf_repo, class: kb_field_input_classes, placeholder: "org/model-GGUF:Q4_K_M"
+
+  fieldset.kb-card.p-4.space-y-4
+    legend class=kb_section_title 接続と容量
+    .grid.gap-4 class="sm:grid-cols-2"
+      div
+        = form.label :port, "PORT（必須）", class: "#{kb_label} mb-1"
+        = form.number_field :port, required: true, min: 1, max: 65535, inputmode: "numeric", class: kb_field_input_classes
+      div
+        = form.label :server_alias, "ALIAS", class: "#{kb_label} mb-1"
+        = form.text_field :server_alias, class: kb_field_input_classes
+      div
+        = form.label :host, "HOST", class: "#{kb_label} mb-1"
+        = form.text_field :host, class: kb_field_input_classes, placeholder: "0.0.0.0"
+      - { ctx_size: "CTX_SIZE", slots: "SLOTS", batch_size: "BATCH_SIZE", ubatch_size: "UBATCH_SIZE", threads: "THREADS", threads_batch: "THREADS_BATCH", n_gpu_layers: "N_GPU_LAYERS" }.each do |attribute, label|
+        div
+          = form.label attribute, label, class: "#{kb_label} mb-1"
+          = form.number_field attribute, min: (attribute == :n_gpu_layers ? nil : 1), inputmode: "numeric", class: kb_field_input_classes
+
+  fieldset.kb-card.p-4.space-y-4
+    legend class=kb_section_title 実行オプション
+    .grid.gap-4 class="sm:grid-cols-2"
+      - { device: "DEVICE", flash_attn: "FLASH_ATTN", mmproj: "MMPROJ", draft: "DRAFT", device_draft: "DEVICE_DRAFT", spec_type: "SPEC_TYPE" }.each do |attribute, label|
+        div
+          = form.label attribute, label, class: "#{kb_label} mb-1"
+          = form.text_field attribute, class: kb_field_input_classes
+      div
+        = form.label :spec_draft_n_max, "SPEC_DRAFT_N_MAX", class: "#{kb_label} mb-1"
+        = form.number_field :spec_draft_n_max, min: 1, inputmode: "numeric", class: kb_field_input_classes
+    .flex.flex-wrap.gap-4
+      - { embedding: "EMBEDDING", jinja: "JINJA", mmproj_offload: "MMPROJ_OFFLOAD" }.each do |attribute, label|
+        label.flex.items-center.gap-2
+          = form.check_box attribute, class: "kb-control-accent"
+          span = label
+
+  = form.submit(editing ? "定義更新を予約" : "定義作成を予約", class: kb_btn_primary_sm)

@@ -17,7 +17,7 @@ class LlamaServerOperationTest < ActiveSupport::TestCase
     operation = LlamaServerOperation.new(
       service_connection: service_connections(:llama_cpp),
       managed_server_id: "main/model",
-      action: "delete"
+      action: "shell"
     )
 
     assert_not operation.valid?

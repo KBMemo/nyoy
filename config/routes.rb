@@ -46,6 +46,7 @@ Rails.application.routes.draw do
       patch :openai_chat_models
     end
   end
+  resources :llama_servers, only: %i[new create edit update destroy]
   resources :llm_sampling_presets
   resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles

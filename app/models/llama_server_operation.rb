@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 class LlamaServerOperation < ApplicationRecord
-  ACTIONS = %w[start stop restart enable disable].freeze
+  DEFINITION_ACTIONS = %w[create update delete].freeze
+  LIFECYCLE_ACTIONS = %w[start stop restart enable disable].freeze
+  ACTIONS = (DEFINITION_ACTIONS + LIFECYCLE_ACTIONS).freeze
   STATUSES = %w[queued running succeeded failed].freeze
   ACTIVE_STATUSES = %w[queued running].freeze
   ACTION_LABELS = {
     "start" => "起動", "stop" => "停止", "restart" => "再起動",
-    "enable" => "自動起動を有効化", "disable" => "自動起動を無効化"
+    "enable" => "自動起動を有効化", "disable" => "自動起動を無効化",
+    "create" => "定義作成", "update" => "定義更新", "delete" => "定義削除"
   }.freeze
   STATUS_LABELS = {
     "queued" => "待機中", "running" => "実行中", "succeeded" => "成功", "failed" => "失敗"

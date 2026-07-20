@@ -41,6 +41,20 @@ class LlamaSwitchdClient
     request_json("/v1/servers/#{escape_path_component(id)}")
   end
 
+  def create_server(id: nil, values:)
+    payload = { values: values }
+    payload[:id] = id if id.present?
+    request_json("/v1/servers", method: Net::HTTP::Post, payload: payload)
+  end
+
+  def update_server(id, values:)
+    request_json("/v1/servers/#{escape_path_component(id)}", method: Net::HTTP::Patch, payload: { values: values })
+  end
+
+  def delete_server(id)
+    request_json("/v1/servers/#{escape_path_component(id)}", method: Net::HTTP::Delete)
+  end
+
   %i[start stop restart enable disable].each do |action|
     define_method("#{action}_server") do |id|
       request_json("/v1/servers/#{escape_path_component(id)}/#{action}", method: Net::HTTP::Post)
@@ -56,7 +70,7 @@ class LlamaSwitchdClient
     raise Error, "llama-switchd の API トークンが未設定です" if @api_token.blank?
   end
 
-  def request_json(path, authenticated: true, method: Net::HTTP::Get)
+  def request_json(path, authenticated: true, method: Net::HTTP::Get, payload: nil)
     uri = @base_uri.dup
     uri.path = [ @base_uri.path.to_s.sub(%r{/\z}, ""), path ].join
     uri.query = nil
@@ -65,6 +79,10 @@ class LlamaSwitchdClient
     request = method.new(uri)
     request["Accept"] = "application/json"
     request["Authorization"] = "Bearer #{@api_token}" if authenticated
+    if payload
+      request["Content-Type"] = "application/json"
+      request.body = JSON.generate(payload)
+    end
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == "https"

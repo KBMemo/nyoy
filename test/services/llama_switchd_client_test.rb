@@ -67,6 +67,23 @@ class LlamaSwitchdClientTest < ActiveSupport::TestCase
     assert_equal "/v1/servers/main/restart", request.uri.path
   end
 
+  test "patches typed server values as json" do
+    response = json_response("200", { ok: true, id: "main" })
+    request = nil
+
+    with_http_response(response) do |http|
+      http.define_singleton_method(:request) do |incoming|
+        request = incoming
+        response
+      end
+      client.update_server("main", values: { "SLOTS" => 4 })
+    end
+
+    assert_instance_of Net::HTTP::Patch, request
+    assert_equal({ "values" => { "SLOTS" => 4 } }, JSON.parse(request.body))
+    assert_equal "application/json", request["Content-Type"]
+  end
+
   test "raises typed error for upstream failure" do
     response = json_response("401", { ok: false, error: "unauthorized" })
 

@@ -100,7 +100,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to llama_servers_service_connections_path
-    assert_match(/Action/, flash[:alert])
+    assert_match(/許可されていない/, flash[:alert])
   end
 
   test "update connection" do

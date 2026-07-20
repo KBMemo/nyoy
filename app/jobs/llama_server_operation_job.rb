@@ -9,8 +9,7 @@ class LlamaServerOperationJob < ApplicationJob
 
     connection = operation.service_connection
     client = LlamaSwitchdClient.new(base_url: connection.base_url, api_token: connection.api_token)
-    client.public_send("#{operation.action}_server", operation.managed_server_id)
-    detail = client.get_server(operation.managed_server_id)
+    detail = execute(client, operation)
     operation.update!(
       status: "succeeded",
       response_snapshot: safe_snapshot(detail),
@@ -21,6 +20,23 @@ class LlamaServerOperationJob < ApplicationJob
   end
 
   private
+
+  def execute(client, operation)
+    case operation.action
+    when "create"
+      client.create_server(id: operation.managed_server_id, values: operation.request_payload.fetch("values"))
+      client.get_server(operation.managed_server_id)
+    when "update"
+      client.update_server(operation.managed_server_id, values: operation.request_payload.fetch("values"))
+      client.get_server(operation.managed_server_id)
+    when "delete"
+      response = client.delete_server(operation.managed_server_id)
+      { "server" => { "id" => response["id"], "deleted" => response["deleted"] } }
+    else
+      client.public_send("#{operation.action}_server", operation.managed_server_id)
+      client.get_server(operation.managed_server_id)
+    end
+  end
 
   def mark_running(operation)
     operation.with_lock do
@@ -37,7 +53,7 @@ class LlamaServerOperationJob < ApplicationJob
 
     server.slice(
       "id", "alias", "port", "state", "ready", "active", "enabled",
-      "configured_revision", "launched_revision", "launched_at", "restart_required"
+      "configured_revision", "launched_revision", "launched_at", "restart_required", "deleted"
     )
   end
 end

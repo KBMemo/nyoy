@@ -22,9 +22,14 @@ class ServiceConnectionsController < ApplicationController
 
   def operate_llama_server
     connection = ServiceConnection.find_by!(key: "llama_switchd", enabled: true)
+    action = params.require(:server_action)
+    unless action.in?(LlamaServerOperation::LIFECYCLE_ACTIONS)
+      redirect_to llama_servers_service_connections_path, alert: "許可されていないサーバー操作です。"
+      return
+    end
     operation = connection.llama_server_operations.create!(
       managed_server_id: params.require(:managed_server_id),
-      action: params.require(:server_action),
+      action: action,
       request_payload: {}
     )
     LlamaServerOperationJob.perform_later(operation.id)

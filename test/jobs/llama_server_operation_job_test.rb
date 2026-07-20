@@ -39,6 +39,23 @@ class LlamaServerOperationJobTest < ActiveJob::TestCase
     assert operation.finished_at
   end
 
+  test "creates definition and stores resulting status" do
+    operation = LlamaServerOperation.create!(
+      service_connection: service_connections(:llama_switchd),
+      managed_server_id: "new-model",
+      action: "create",
+      request_payload: { "values" => { "MODEL" => "/models/new.gguf", "PORT" => 10150 } }
+    )
+    client = Object.new
+    client.define_singleton_method(:create_server) { |id:, values:| raise unless id == "new-model" && values["PORT"] == 10150 }
+    client.define_singleton_method(:get_server) { |_id| { "server" => { "id" => "new-model", "state" => "stopped" } } }
+
+    with_client(client) { LlamaServerOperationJob.perform_now(operation.id) }
+
+    assert_equal "succeeded", operation.reload.status
+    assert_equal "stopped", operation.response_snapshot["state"]
+  end
+
   private
 
   def create_operation(action:)
