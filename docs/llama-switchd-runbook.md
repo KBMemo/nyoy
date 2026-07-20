@@ -109,6 +109,17 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 用途確認後、正しいserver IDへbindingし「URL・Aliasを同期」する。特に`gpt_oss`と`llm_gemma4_e4b_mtp`は用途と実体が入れ替わって見えるため、portだけで確定しない。
 
+2026-07-21 `gpt_oss` 切替:
+
+- `gpt-oss-20b` serverをport `10014`で自動起動有効化・起動
+- 初回起動は約11.8 GBのGGUF取得に約18分を要し、switchdの120秒ready待ちはHTTP 504になったが、systemd processは取得と起動を継続した
+- `/health`、`/props.model_alias=gpt-oss-20b`、`total_slots=1`を確認後、`gpt_oss`をserverへbindingしてURL・Aliasを同期
+- `gpt_oss`は`http://balvenie:10014`、Alias `gpt-oss-20b`、有効
+- `llm_gemma4_e4b_mtp`接続は無効化。現在この接続が参照しているLFM2.5 serverは、他用途への影響を避けて停止していない
+- reconciliation ID 8は`healthy`、findingなし
+
+大きな未キャッシュモデルではstart APIがtimeoutしても、直ちにstopや再startを行わない。server detailの`active`、systemd状態、対象unitのjournal、download中ファイル、data plane portを確認し、processが進行中ならready化を待つ。
+
 ## 4. Lifecycle smoke test
 
 既存ワークロードへ影響しないstopped / disabledの小型モデルを使う。
