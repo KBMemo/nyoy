@@ -475,6 +475,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `evidence_evaluator.llm` はheuristicを先に実行し、検索・取得が必要な場合と予算上限に達した場合はその判断を変更しない。取得ページまたはメモがありheuristicが`sufficient`とした場合だけ、軽量modelへ根拠内容の十分性をbooleanで判定させる。不十分なら追加検索語を生成せず`limited`として最終回答へ進み、model未設定・接続失敗・不正JSON時はheuristicへfallbackする。入力する根拠JSONは12,000文字に制限する。
 
+内容判定、cache、障害fallbackの再現手順とdevelopment実測値は [AgentGraph Evidence Evaluator Profile 実運用 Runbook](../agent-graph-evidence-evaluator-profile-runbook.md) にまとめた。`qwen3.5-4b`では関連根拠を`sufficient`、無関係根拠を`limited`と判定し、同一入力2回目にcached tokens 109を確認した。
+
 `evidence_pack` / `llm` を同一質問で比較する実運用手順は [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md) にまとめた。応答時間・使用model・fallback・evidence差・最終回答品質を記録し、終了後に設定を復旧する。
 
 draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。`planner.llm` profileは実装済み。
