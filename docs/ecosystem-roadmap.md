@@ -249,7 +249,7 @@ gantt
 | 4 | ~~徒然 Groonga 検索~~ | キーワード RAG 精度 | **決定:** PGroonga（徒然 DB）。[実装手順](./tsuredure-pgroonga-search.md) |
 | 5 | MCP 利用者 | 認可設計 | 個人利用のため当面は API キー 1 本 |
 | 6 | マルチ Workspace 開発 | site + nyoy | OpenAPI 契約 + マルチルート推奨 |
-| 7 | Chat `reasoning_effort` 等 | 体感レイテンシ | 生成側が支配的。[検討案件](./chat-performance.md#4-検討案件未着手) |
+| 7 | Chat `reasoning_effort` 等 | 体感レイテンシ | **設定化済み、gpt-oss 実測待ち。** [確認手順](./chat-reasoning-effort-runbook.md) |
 
 ---
 
