@@ -10,6 +10,7 @@ module AgentGraph
         "chat_id" => chat.id,
         "intent" => "research",
         "plan" => {},
+        "planning" => {},
         "memo_context" => nil,
         "search_results" => [],
         "fetched_pages" => [],

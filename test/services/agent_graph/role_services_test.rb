@@ -31,6 +31,26 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::DeterministicIntentRouter, service
   end
 
+  test "fetches default planner service" do
+    service = AgentGraph::RoleServices.fetch(:planner)
+
+    assert_instance_of AgentGraph::RoleServices::DeterministicResearchPlanner, service
+  end
+
+  test "deterministic planner preserves the research plan contract" do
+    plan = AgentGraph::RoleServices.fetch(:planner).call(
+      state: { "question" => "https://example.com を調べて、公開前に確認してから保存" },
+      run: nil,
+      chat: nil
+    )
+
+    assert_equal true, plan["need_memo"]
+    assert_equal true, plan["need_web"]
+    assert_equal true, plan["sensitive"]
+    assert_equal [ "https://example.com" ], plan["fetch_urls"]
+    assert plan["queries"].any?
+  end
+
   test "selects a built in role profile" do
     AgentGraph::RoleServices.select_profile(:draft, :llm)
 

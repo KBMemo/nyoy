@@ -23,6 +23,7 @@ class AgentGraphInitialStateTest < ActiveSupport::TestCase
     assert_equal AgentGraph::ResearchGraph::START, state["next_node"]
     assert_equal true, state["auto_approve"]
     assert_equal({}, state["plan"])
+    assert_equal({}, state["planning"])
     assert_equal [], state["search_results"]
     assert_equal [], state["fetched_pages"]
     assert_equal({}, state["evidence_review"])

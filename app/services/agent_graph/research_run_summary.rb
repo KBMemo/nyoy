@@ -10,6 +10,7 @@ module AgentGraph
         approval: state["approval"],
         assistant_message_id: state["assistant_message_id"],
         plan: state["plan"],
+        planning: state["planning"] || {},
         evidence_review: state["evidence_review"] || {},
         budget: state["budget"] || {},
         errors: state["errors"]

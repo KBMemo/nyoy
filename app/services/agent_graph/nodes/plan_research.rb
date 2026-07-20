@@ -3,65 +3,29 @@
 module AgentGraph
   module Nodes
     class PlanResearch
-      URL_PATTERN = %r{https?://[^\s<>\]]+}i
-
-      # HITL when the turn implies write/publish/confirm-before-answer.
-      SENSITIVE_PATTERN = Regexp.union(
-        /保存/,
-        /メモに/,
-        /徒然/,
-        /書き込/,
-        /更新して/,
-        /公開/,
-        /投稿/,
-        /送信/,
-        /確認してから/,
-        /承認してから/,
-        /ドラフト(を)?確認/,
-        /\bpublish\b/i,
-        /\bsave\b/i,
-        /update[_ ]?memo/i,
-        /create[_ ]?memo/i
-      )
-
       def call(state:, run:, chat:)
-        question = state.fetch("question").to_s
-        urls = extract_urls(question)
-        queries = AgentGraph::SearchQueryNormalizer.queries_for(
-          question
+        plan = AgentGraph::RoleServices.fetch(:planner).call(
+          state: state,
+          run: run,
+          chat: chat
         )
-
-        plan = {
-          "need_memo" => true,
-          "need_web" => web_likely?(question),
-          "queries" => queries,
-          "fetch_urls" => urls.first(3),
-          "sensitive" => sensitive?(question)
-        }
+        plan = plan.to_h.stringify_keys
 
         AgentGraph::NodeResult.next(
           AgentGraph::ResearchRouting.after_plan(plan),
           updates: {
             "intent" => "research",
             "plan" => plan,
+            "planning" => {
+              "role" => "planner",
+              "profile" => AgentGraph::RoleServices.active_profile_for(:planner).to_s
+            },
             "budget" => default_budget(state)
           }
         )
       end
 
       private
-
-      def extract_urls(question)
-        question.scan(URL_PATTERN).map { |url| url.sub(/[),.]+$/, "") }.uniq
-      end
-
-      def web_likely?(question)
-        question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース|調べ|調査|出典|根拠|検索/)
-      end
-
-      def sensitive?(question)
-        question.match?(SENSITIVE_PATTERN)
-      end
 
       def default_budget(state)
         settings = SearfrontSettings.load

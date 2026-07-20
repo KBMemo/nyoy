@@ -461,7 +461,7 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+組み込みprofileは `intent.deterministic`、`planner.deterministic`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profileをstateの `planning` に記録する。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
@@ -471,7 +471,7 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `evidence_pack` / `llm` を同一質問で比較する実運用手順は [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md) にまとめた。応答時間・使用model・fallback・evidence差・最終回答品質を記録し、終了後に設定を復旧する。
 
-次はrunbookに沿ったdevelopment実機比較を行い、軽量model profileを既定候補にできるか判断する。
+draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。次は `planner.llm` profileを追加し、技術質問でWeb調査が必要かを軽量modelで判定できるか比較する。
 
 ### Workflow Registry
 

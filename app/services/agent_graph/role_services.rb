@@ -6,7 +6,8 @@ module AgentGraph
       draft: :evidence_pack,
       evidence_evaluator: :heuristic,
       final_answer: :main,
-      intent: :deterministic
+      intent: :deterministic,
+      planner: :deterministic
     }.freeze
 
     BUILTIN_PROFILES = {
@@ -22,6 +23,9 @@ module AgentGraph
       },
       intent: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
+      },
+      planner: {
+        deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new }
       }
     }.freeze
 
@@ -280,6 +284,48 @@ module AgentGraph
           graph_name: graph_name,
           intent_decision: intent_decision
         }
+      end
+    end
+
+    class DeterministicResearchPlanner
+      URL_PATTERN = %r{https?://[^\s<>\]]+}i
+      SENSITIVE_PATTERN = Regexp.union(
+        /保存/,
+        /メモに/,
+        /徒然/,
+        /書き込/,
+        /更新して/,
+        /公開/,
+        /投稿/,
+        /送信/,
+        /確認してから/,
+        /承認してから/,
+        /ドラフト(を)?確認/,
+        /\bpublish\b/i,
+        /\bsave\b/i,
+        /update[_ ]?memo/i,
+        /create[_ ]?memo/i
+      )
+
+      def call(state:, run:, chat:)
+        question = state.fetch("question").to_s
+        {
+          "need_memo" => true,
+          "need_web" => web_likely?(question),
+          "queries" => AgentGraph::SearchQueryNormalizer.queries_for(question),
+          "fetch_urls" => extract_urls(question).first(3),
+          "sensitive" => question.match?(SENSITIVE_PATTERN)
+        }
+      end
+
+      private
+
+      def extract_urls(question)
+        question.scan(URL_PATTERN).map { |url| url.sub(/[),.]+$/, "") }.uniq
+      end
+
+      def web_likely?(question)
+        question.match?(/最新|ニュース|Web|ウェブ|ネット|公式|規格|リリース|調べ|調査|出典|根拠|検索/)
       end
     end
   end

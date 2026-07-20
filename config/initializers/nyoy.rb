@@ -67,7 +67,8 @@ Rails.application.config.x.nyoy.tap do |config|
     "draft" => ENV["AGENT_GRAPH_DRAFT_PROFILE"],
     "evidence_evaluator" => ENV["AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE"],
     "final_answer" => ENV["AGENT_GRAPH_FINAL_ANSWER_PROFILE"],
-    "intent" => ENV["AGENT_GRAPH_INTENT_PROFILE"]
+    "intent" => ENV["AGENT_GRAPH_INTENT_PROFILE"],
+    "planner" => ENV["AGENT_GRAPH_PLANNER_PROFILE"]
   }.compact
   config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
   config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
