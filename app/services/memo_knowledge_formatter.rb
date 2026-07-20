@@ -21,22 +21,60 @@ class MemoKnowledgeFormatter
   def format(chunks)
     return nil if chunks.blank?
 
-    lines = [START_MARKER, PREAMBLE]
-    chunks.each do |chunk|
-      entry = entry_for(chunk)
-      candidate = lines.join("\n\n") + "\n\n" + entry
-      break if candidate.length > @max_chars && lines.length > 1
+    lines = [ START_MARKER, PREAMBLE ]
+    grouped_chunks(chunks).each do |group|
+      entry = entry_for_group(group)
+      if formatted_length(lines + [ entry, END_MARKER ]) > @max_chars
+        remaining = remaining_entry_chars(lines)
+        lines << entry.first(remaining) if remaining.positive?
+        break
+      end
 
       lines << entry
-      break if candidate.length >= @max_chars
     end
 
     lines << END_MARKER
-    text = lines.join("\n\n")
-    text.length > @max_chars ? text[0, @max_chars] : text
+    lines.join("\n\n")
   end
 
   private
+
+  def formatted_length(lines)
+    lines.join("\n\n").length
+  end
+
+  def remaining_entry_chars(lines)
+    fixed = formatted_length(lines + [ "", END_MARKER ])
+    [ @max_chars - fixed, 0 ].max
+  end
+
+  def grouped_chunks(chunks)
+    groups = {}
+    chunks.each_with_index do |chunk, index|
+      uid = memo_uid(chunk)
+      key = uid.present? ? [ :memo, uid ] : [ :chunk, index ]
+      groups[key] ||= []
+      groups[key] << chunk
+    end
+    groups.values
+  end
+
+  def entry_for_group(group)
+    return entry_for(group.first) if group.one?
+
+    first = group.first
+    lines = [ "[memo:#{memo_uid(first)}] #{first.title}" ]
+    unless first.is_a?(MemoKnowledgeChunkCompressor::CompressedChunk)
+      updated_at = first.metadata["memo_updated_at"] || first.metadata[:memo_updated_at]
+      lines << "updated_at: #{updated_at}" if updated_at.present?
+    end
+    lines.concat(group.map { |chunk| chunk.body.to_s }.uniq)
+    lines.join("\n")
+  end
+
+  def memo_uid(chunk)
+    chunk.metadata["memo_uid"] || chunk.metadata[:memo_uid]
+  end
 
   def entry_for(chunk)
     if chunk.is_a?(MemoKnowledgeChunkCompressor::CompressedChunk)
@@ -48,7 +86,7 @@ class MemoKnowledgeFormatter
 
   def format_compressed(chunk)
     uid = chunk.metadata["memo_uid"] || chunk.metadata[:memo_uid]
-    lines = ["[memo:#{uid}] #{chunk.title}"]
+    lines = [ "[memo:#{uid}] #{chunk.title}" ]
     lines << chunk.body
     lines.join("\n")
   end
