@@ -55,7 +55,23 @@ class LlamaSwitchdClient
     request_json("/v1/servers/#{escape_path_component(id)}", method: Net::HTTP::Delete)
   end
 
-  %i[start stop restart enable disable].each do |action|
+  %i[start restart].each do |action|
+    define_method("#{action}_server") do |id, timeout_seconds: 120|
+      timeout = Integer(timeout_seconds)
+      raise Error, "timeout_seconds は1〜600秒で指定してください" unless timeout.between?(1, 600)
+
+      request_json(
+        "/v1/servers/#{escape_path_component(id)}/#{action}",
+        method: Net::HTTP::Post,
+        payload: { timeout_seconds: timeout },
+        read_timeout: timeout + 10
+      )
+    rescue ArgumentError, TypeError
+      raise Error, "timeout_seconds は1〜600秒で指定してください"
+    end
+  end
+
+  %i[stop enable disable].each do |action|
     define_method("#{action}_server") do |id|
       request_json("/v1/servers/#{escape_path_component(id)}/#{action}", method: Net::HTTP::Post)
     end
@@ -70,7 +86,7 @@ class LlamaSwitchdClient
     raise Error, "llama-switchd の API トークンが未設定です" if @api_token.blank?
   end
 
-  def request_json(path, authenticated: true, method: Net::HTTP::Get, payload: nil)
+  def request_json(path, authenticated: true, method: Net::HTTP::Get, payload: nil, read_timeout: @read_timeout)
     uri = @base_uri.dup
     uri.path = [ @base_uri.path.to_s.sub(%r{/\z}, ""), path ].join
     uri.query = nil
@@ -87,7 +103,7 @@ class LlamaSwitchdClient
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == "https"
     http.open_timeout = @open_timeout
-    http.read_timeout = @read_timeout
+    http.read_timeout = read_timeout
     response = http.request(request)
     payload = JSON.parse(response.body)
 

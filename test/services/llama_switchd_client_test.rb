@@ -54,8 +54,10 @@ class LlamaSwitchdClientTest < ActiveSupport::TestCase
   test "posts lifecycle action" do
     response = json_response("200", { ok: true })
     request = nil
+    read_timeout = nil
 
     with_http_response(response) do |http|
+      http.define_singleton_method(:read_timeout=) { |value| read_timeout = value }
       http.define_singleton_method(:request) do |incoming|
         request = incoming
         response
@@ -65,6 +67,16 @@ class LlamaSwitchdClientTest < ActiveSupport::TestCase
 
     assert_instance_of Net::HTTP::Post, request
     assert_equal "/v1/servers/main/restart", request.uri.path
+    assert_equal({ "timeout_seconds" => 120 }, JSON.parse(request.body))
+    assert_equal 130, read_timeout
+  end
+
+  test "rejects invalid lifecycle timeout" do
+    error = assert_raises(LlamaSwitchdClient::Error) do
+      client.start_server("main", timeout_seconds: 0)
+    end
+
+    assert_match(/1〜600秒/, error.message)
   end
 
   test "patches typed server values as json" do

@@ -19,6 +19,8 @@ Upstream:
 - [llama-tools README](https://github.com/knb/llama-tools)
 - [server management design](https://github.com/knb/llama-tools/blob/main/docs/server-management-design.md)
 
+運用確認は [llama-switchd 運用 Runbook](../llama-switchd-runbook.md) を参照する。
+
 ## 2. 現状の問題
 
 現在の `ServiceConnection` は次の値を単独で保持する。

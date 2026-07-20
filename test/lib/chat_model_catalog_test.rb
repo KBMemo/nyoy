@@ -11,6 +11,20 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
     assert_equal "gpt-oss", definitions.find { |d| d.connection_key == "gpt_oss" }.model_id
   end
 
+  test "definitions exclude bound server that is not ready" do
+    connection = service_connections(:llama_cpp)
+    manager = service_connections(:llama_switchd)
+    connection.update!(manager_connection: manager, managed_server_id: "main")
+    manager.llama_server_reconciliations.create!(
+      status: "warning",
+      server_snapshot: [ { "id" => "main", "ready" => false } ],
+      checked_at: Time.current
+    )
+
+    assert_not_includes ChatModelCatalog.definitions.map(&:connection_key), "llama_cpp"
+    assert_includes ChatModelCatalog.configured_definitions.map(&:connection_key), "llama_cpp"
+  end
+
   test "context_for uses connection store url" do
     ChatModelCatalog.seed!
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")

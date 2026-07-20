@@ -6,15 +6,25 @@ module ChatModelCatalog
   module_function
 
   def definitions
+    available_chat_backends.flat_map do |connection|
+      definitions_for(connection)
+    end
+  end
+
+  def configured_definitions
     ServiceConnection.chat_backends.enabled.ordered.flat_map do |connection|
-      model_ids_for(connection).filter_map do |model_id|
-        ModelDefinition.new(
-          model_id: model_id,
-          name: display_name(connection, model_id),
-          api_base: connection.base_url,
-          connection_key: connection.key
-        )
-      end
+      definitions_for(connection)
+    end
+  end
+
+  def definitions_for(connection)
+    model_ids_for(connection).filter_map do |model_id|
+      ModelDefinition.new(
+        model_id: model_id,
+        name: display_name(connection, model_id),
+        api_base: connection.base_url,
+        connection_key: connection.key
+      )
     end
   end
 
@@ -40,7 +50,7 @@ module ChatModelCatalog
   def grouped_model_options
     seed! if ServiceConnection.chat_backends.enabled.any?
 
-    ServiceConnection.chat_backends.enabled.ordered.filter_map do |connection|
+    available_chat_backends.filter_map do |connection|
       model_ids = model_ids_for(connection)
       next if model_ids.empty?
 
@@ -91,6 +101,12 @@ module ChatModelCatalog
     8192
   end
 
+  def available_chat_backends
+    ServiceConnection.chat_backends.enabled.ordered.select do |connection|
+      LlamaServerAvailability.available?(connection)
+    end
+  end
+
   def n_ctx_from_props(base_url)
     base = base_url.to_s.sub(%r{/\z}, "")
     return nil if base.blank?
@@ -106,18 +122,18 @@ module ChatModelCatalog
   def context_for(model_record)
     connection_key = model_record&.metadata&.dig("connection_key")
     api_base = if connection_key.present?
-                 NyoyConnectionStore.url(connection_key)
-               else
-                 model_record&.metadata&.dig("api_base")
-               end
+      NyoyConnectionStore.url(connection_key)
+    else
+      model_record&.metadata&.dig("api_base")
+    end
     api_base = api_base.presence || NyoyConnectionStore.url(:llama_cpp)
     normalized = api_base.sub(%r{/\z}, "")
 
     api_key = if connection_key == "openai"
-                NyoyConnectionStore.api_token(:openai).presence || RubyLLM.config.openai_api_key
-              else
-                RubyLLM.config.openai_api_key
-              end
+      NyoyConnectionStore.api_token(:openai).presence || RubyLLM.config.openai_api_key
+    else
+      RubyLLM.config.openai_api_key
+    end
 
     config = RubyLLM::Configuration.new
     config.openai_api_base = "#{normalized}/v1"

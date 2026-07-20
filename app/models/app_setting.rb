@@ -183,7 +183,7 @@ class AppSetting < ApplicationRecord
   end
 
   def connection_keys_must_be_available
-    keys = StylePlanModelCatalog.connection_keys
+    keys = ChatModelCatalog.configured_definitions.map(&:connection_key).uniq
     validate_connection_key(:default_chat_connection_key, keys)
     validate_connection_key(:default_style_plan_connection_key, keys)
   end

@@ -33,6 +33,22 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_equal "gpt_oss", AppSetting.default_style_plan_connection_key
   end
 
+  test "keeps stored connection valid while its bound server is stopped" do
+    connection = service_connections(:llama_cpp)
+    manager = service_connections(:llama_switchd)
+    connection.update!(manager_connection: manager, managed_server_id: "main")
+    manager.llama_server_reconciliations.create!(
+      status: "warning",
+      server_snapshot: [ { "id" => "main", "ready" => false } ],
+      checked_at: Time.current
+    )
+    setting = AppSetting.instance
+    setting.default_chat_connection_key = "llama_cpp"
+
+    assert setting.valid?
+    assert_not_includes StylePlanModelCatalog.connection_keys, "llama_cpp"
+  end
+
   test "rejects unknown connection keys" do
     setting = AppSetting.instance
     setting.default_chat_connection_key = "missing_backend"
