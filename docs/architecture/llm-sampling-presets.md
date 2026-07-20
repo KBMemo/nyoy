@@ -10,6 +10,8 @@
 
 `enable_thinking` は接続のプロンプト変換（`chat_template_kwargs`）向け。チャットの `llm_params` には載せない。
 
+`reasoning_effort` は `low` / `medium` / `high` の列挙値として扱う。未指定または不正値はリクエストへ含めないため、対応していないモデルでは設定しない。
+
 ## API（エージェント向け土台）
 
 ```

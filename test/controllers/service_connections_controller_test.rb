@@ -44,6 +44,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
           temperature: "0.15",
           top_p: "0.8",
           max_tokens: "700",
+          reasoning_effort: "high",
           enable_thinking: "false"
         }
       }
@@ -55,6 +56,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_in_delta 0.15, pcs.temperature
     assert_in_delta 0.8, pcs.top_p
     assert_equal 700, pcs.max_tokens
+    assert_equal "high", pcs.reasoning_effort
     assert_equal "false", pcs.enable_thinking
   end
 

@@ -43,12 +43,13 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     ChatLlmSettings.from(
       "temperature" => "0.7",
       "top_p" => "0.95",
-      "top_k" => "30"
+      "top_k" => "30",
+      "reasoning_effort" => "medium"
     ).apply!(llm_chat)
 
     assert_in_delta 0.7, llm_chat.instance_variable_get(:@temperature)
     assert_equal(
-      { cache_prompt: true, id_slot: 2, top_p: 0.95, top_k: 30 },
+      { cache_prompt: true, id_slot: 2, top_p: 0.95, top_k: 30, reasoning_effort: "medium" },
       llm_chat.instance_variable_get(:@params)
     )
   end

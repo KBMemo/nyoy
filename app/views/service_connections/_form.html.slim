@@ -142,6 +142,12 @@
             div class="w-16 shrink-0"
               label class="#{kb_label} mb-1 font-mono text-[10px] leading-tight" for="service_connection_prompt_conversion_settings_#{name}" = name
               input id="service_connection_prompt_conversion_settings_#{name}" type="text" name="service_connection[prompt_conversion_settings][#{name}]" value=value placeholder=placeholder inputmode=inputmode autocomplete="off" data-prompt-conversion-settings-field=name class="#{kb_field_input_classes} w-16 max-w-16 font-mono text-xs px-1"
+          div class="w-24 shrink-0"
+            label class="#{kb_label} mb-1 font-mono text-[10px] leading-tight" for="service_connection_prompt_conversion_settings_reasoning_effort" reasoning_effort
+            select#service_connection_prompt_conversion_settings_reasoning_effort name="service_connection[prompt_conversion_settings][reasoning_effort]" data-prompt-conversion-settings-field="reasoning_effort" class="#{kb_field_input_classes} w-24 max-w-24 font-mono text-xs px-1"
+              option value="" selected=pcs.reasoning_effort.nil? —
+              - LlmSamplingParams::REASONING_EFFORTS.each do |value|
+                option value=value selected=(pcs.reasoning_effort == value) = value
 
   div
     = form.label :notes, "メモ", class: "#{kb_label} mb-1"

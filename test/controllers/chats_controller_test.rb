@@ -29,6 +29,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#new_chat_sampling_preset_select"
     assert_select "input[name='chat[temperature]']"
     assert_select "input[name='chat[max_tokens]']"
+    assert_select "select[name='chat[reasoning_effort]']"
   end
 
   test "new syncs gpt-oss model when it was missing from models table" do
@@ -89,7 +90,8 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
         model: model.id,
         temperature: "0.3",
         max_tokens: "512",
-        top_p: "0.9"
+        top_p: "0.9",
+        reasoning_effort: "low"
       }
     }
 
@@ -97,6 +99,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_in_delta 0.3, chat.llm_params["temperature"]
     assert_equal 512, chat.llm_params["max_tokens"]
     assert_in_delta 0.9, chat.llm_params["top_p"]
+    assert_equal "low", chat.llm_params["reasoning_effort"]
   end
 
   test "create enqueues chat response job" do

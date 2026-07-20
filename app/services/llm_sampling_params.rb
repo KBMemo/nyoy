@@ -11,6 +11,7 @@ class LlmSamplingParams
     frequency_penalty
     repeat_penalty
     max_tokens
+    reasoning_effort
   ].freeze
 
   FLOAT_KEYS = %w[
@@ -26,6 +27,7 @@ class LlmSamplingParams
   FLOAT_INPUT_STEP = "any"
 
   INTEGER_KEYS = %w[top_k max_tokens].freeze
+  REASONING_EFFORTS = %w[low medium high].freeze
 
   RANGES = {
     "temperature" => 0.0..2.0,
@@ -49,7 +51,8 @@ class LlmSamplingParams
     "repeat_penalty" => "repeat_penalty",
     "penalty_repeat" => "repeat_penalty",
     "n_predict" => "max_tokens",
-    "max_tokens" => "max_tokens"
+    "max_tokens" => "max_tokens",
+    "reasoning_effort" => "reasoning_effort"
   }.freeze
 
   attr_reader(*KEYS.map(&:to_sym))
@@ -87,7 +90,9 @@ class LlmSamplingParams
     source = stringify(hash)
     KEYS.each do |key|
       value =
-        if FLOAT_KEYS.include?(key)
+        if key == "reasoning_effort"
+          parse_reasoning_effort(source[key])
+        elsif FLOAT_KEYS.include?(key)
           parse_float(source[key], key)
         else
           parse_integer(source[key], key)
@@ -112,6 +117,7 @@ class LlmSamplingParams
     params[:presence_penalty] = presence_penalty unless presence_penalty.nil?
     params[:frequency_penalty] = frequency_penalty unless frequency_penalty.nil?
     params[:repeat_penalty] = repeat_penalty unless repeat_penalty.nil?
+    params[:reasoning_effort] = reasoning_effort unless reasoning_effort.nil?
     params
   end
 
@@ -149,5 +155,10 @@ class LlmSamplingParams
     number.clamp(range.begin, range.end)
   rescue ArgumentError, TypeError
     nil
+  end
+
+  def parse_reasoning_effort(value)
+    normalized = value.to_s.strip.downcase
+    REASONING_EFFORTS.include?(normalized) ? normalized : nil
   end
 end

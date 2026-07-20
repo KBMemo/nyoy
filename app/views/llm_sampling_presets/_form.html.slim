@@ -38,6 +38,11 @@
     h2 class=kb_section_title サンプリング
     .flex.flex-wrap.items-end.gap-x-3.gap-y-2
       - LlmSamplingParams::KEYS.each do |key|
+        - if key == "reasoning_effort"
+          div class="w-24 shrink-0"
+            = form.label key, key, class: "#{kb_label} mb-1 font-mono text-[10px] leading-tight"
+            = form.select key, [["—", ""]] + LlmSamplingParams::REASONING_EFFORTS.map { |value| [value, value] }, { selected: sampling.reasoning_effort }, class: "#{kb_field_input_classes} w-24 max-w-24 font-mono text-xs px-1"
+          - next
         - inputmode = LlmSamplingParams::FLOAT_KEYS.include?(key) ? "decimal" : "numeric"
         div class="w-16 shrink-0"
           = form.label key, key, class: "#{kb_label} mb-1 font-mono text-[10px] leading-tight"

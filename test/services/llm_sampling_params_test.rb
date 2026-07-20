@@ -12,7 +12,8 @@ class LlmSamplingParamsTest < ActiveSupport::TestCase
       "presence_penalty" => 0.8,
       "frequency_penalty" => 0.2,
       "repeat_penalty" => 1.08,
-      "max_tokens" => 1024
+      "max_tokens" => 1024,
+      "reasoning_effort" => "HIGH"
     )
 
     assert_in_delta 0.7, params.temperature
@@ -23,12 +24,18 @@ class LlmSamplingParamsTest < ActiveSupport::TestCase
     assert_in_delta 0.2, params.frequency_penalty
     assert_in_delta 1.08, params.repeat_penalty
     assert_equal 1024, params.max_tokens
+    assert_equal "high", params.reasoning_effort
   end
 
   test "to_request_params omits temperature and max_tokens" do
     params = LlmSamplingParams.from("temperature" => 0.7, "top_p" => 0.8, "max_tokens" => 1024)
 
     assert_equal({ top_p: 0.8 }, params.to_request_params)
+  end
+
+  test "includes valid reasoning effort in request params and omits invalid values" do
+    assert_equal({ reasoning_effort: "low" }, LlmSamplingParams.from(reasoning_effort: "low").to_request_params)
+    assert_nil LlmSamplingParams.from(reasoning_effort: "maximum").reasoning_effort
   end
 
   test "from_props maps llama server defaults" do

@@ -50,6 +50,7 @@ class LlmSamplingPresetsControllerTest < ActionDispatch::IntegrationTest
         frequency_penalty: "0.2",
         repeat_penalty: "1.08",
         max_tokens: "1024",
+        reasoning_effort: "medium",
         enable_thinking: "false"
       }
     }
@@ -58,9 +59,11 @@ class LlmSamplingPresetsControllerTest < ActionDispatch::IntegrationTest
     preset.reload
     assert_equal false, preset.params["enable_thinking"]
     assert_equal "false", preset.enable_thinking
+    assert_equal "medium", preset.sampling_params.reasoning_effort
 
     get edit_llm_sampling_preset_path(preset)
     assert_response :success
     assert_select "select#llm_sampling_preset_enable_thinking option[value=false][selected]"
+    assert_select "select#llm_sampling_preset_reasoning_effort option[value=medium][selected]"
   end
 end
