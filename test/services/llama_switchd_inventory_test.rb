@@ -14,7 +14,7 @@ class LlamaSwitchdInventoryTest < ActiveSupport::TestCase
       models: [ { "path" => "/models/main.gguf" } ]
     )
 
-    result = LlamaSwitchdInventory.new(service_connections(:llama_switchd), client: client).call
+    result = LlamaSwitchdInventory.new(service_connections(:llama_switchd), client: client, runtime_probe: fake_probe).call
     comparison = result.connections.find { |item| item.connection == connection }
 
     assert_equal :port_only, comparison.status
@@ -31,7 +31,11 @@ class LlamaSwitchdInventoryTest < ActiveSupport::TestCase
       models: []
     )
 
-    result = LlamaSwitchdInventory.new(service_connections(:llama_switchd), client: client).call
+    result = LlamaSwitchdInventory.new(
+      service_connections(:llama_switchd),
+      client: client,
+      runtime_probe: fake_probe("vision" => runtime(alias_name: connection.server_model))
+    ).call
     comparison = result.connections.find { |item| item.connection == connection }
 
     assert_equal :exact, comparison.status
@@ -40,7 +44,8 @@ class LlamaSwitchdInventoryTest < ActiveSupport::TestCase
   test "excludes remote OpenAI connection" do
     result = LlamaSwitchdInventory.new(
       service_connections(:llama_switchd),
-      client: fake_client(servers: [], models: [])
+      client: fake_client(servers: [], models: []),
+      runtime_probe: fake_probe
     ).call
 
     assert_not_includes result.connections.map { |item| item.connection.key }, "openai"
@@ -53,5 +58,13 @@ class LlamaSwitchdInventoryTest < ActiveSupport::TestCase
       client.define_singleton_method(:list_servers) { servers }
       client.define_singleton_method(:list_models) { models }
     end
+  end
+
+  def fake_probe(results = {})
+    Object.new.tap { |probe| probe.define_singleton_method(:call) { |_servers| results } }
+  end
+
+  def runtime(alias_name:)
+    LlamaServerRuntimeProbe::Result.new(server_id: "vision", model_alias: alias_name, total_slots: 2)
   end
 end

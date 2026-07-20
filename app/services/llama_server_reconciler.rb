@@ -10,14 +10,16 @@ class LlamaServerReconciler
     final_answer_model: "AgentGraph final answer"
   }.freeze
 
-  def initialize(connection, client: nil)
+  def initialize(connection, client: nil, runtime_probe: nil)
     @connection = connection
     @client = client || LlamaSwitchdClient.new(base_url: connection.base_url, api_token: connection.api_token)
+    @runtime_probe = runtime_probe || LlamaServerRuntimeProbe.new(control_url: connection.base_url)
   end
 
   def call
     servers = @client.list_servers
-    findings = bound_connections.flat_map { |connection| findings_for(connection, servers) }
+    runtimes = @runtime_probe.call(servers)
+    findings = bound_connections.flat_map { |connection| findings_for(connection, servers, runtimes) }
     findings.concat(unbound_findings)
     findings.concat(restart_findings(servers))
     reconciliation = @connection.llama_server_reconciliations.create!(
@@ -55,7 +57,7 @@ class LlamaServerReconciler
     end
   end
 
-  def findings_for(connection, servers)
+  def findings_for(connection, servers, runtimes)
     server = servers.find { |item| item["id"] == connection.managed_server_id }
     usages = usage_labels(connection)
     return [ finding("server_missing", connection, "紐付け先serverがswitchdにありません", usages) ] unless server
@@ -70,6 +72,17 @@ class LlamaServerReconciler
     end
     unless server["ready"]
       findings << finding("server_not_ready", connection, "server状態は#{server['state']}です", usages)
+    end
+    runtime = runtimes[server["id"]]
+    if runtime&.error.present?
+      findings << finding("runtime_probe_failed", connection, "Runtime情報を取得できません: #{runtime.error}", usages)
+    elsif runtime && runtime.model_alias.to_s != server["alias"].to_s
+      findings << finding(
+        "runtime_alias_drift",
+        connection,
+        "Runtime Aliasがswitchd=#{server['alias']} / runtime=#{runtime.model_alias}です",
+        usages
+      )
     end
     findings
   rescue URI::InvalidURIError

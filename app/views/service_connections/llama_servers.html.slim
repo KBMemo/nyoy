@@ -58,6 +58,7 @@
               th.p-2.text-left 状態
               th.p-2.text-left 起動設定
               th.p-2.text-left Source
+              th.p-2.text-left Runtime
               th.p-2.text-left 操作
           tbody
             - @inventory.servers.each do |server|
@@ -74,6 +75,17 @@
                   - if server["restart_required"]
                     span.kb-badge.kb-badge-muted.ml-2 再起動待ち
                 td.p-2.nyoy-monospace.break-all = server["source"]
+                td.p-2
+                  - runtime = (@inventory.runtimes || {})[server["id"]]
+                  - if runtime&.error.present?
+                    span.kb-status-warning = runtime.error
+                  - elsif runtime
+                    .nyoy-monospace = runtime.model_alias
+                    .text-xs.kb-text-muted = "slots=#{runtime.total_slots || '不明'}"
+                    - if runtime.model_path.present?
+                      .text-xs.kb-text-muted.break-all = runtime.model_path
+                  - else
+                    span.kb-text-muted 未取得
                 td.p-2
                   - active_operation = @active_llama_server_operations[server["id"]]
                   - if active_operation
@@ -122,7 +134,7 @@
                   - else
                     span.kb-text-muted 候補なし
                 td.p-2
-                  - labels = { exact: "一致", port_only: "Alias 不一致", alias_only: "Port 不一致", unmatched: "未対応" }
+                  - labels = { exact: "三者一致", runtime_unverified: "Runtime未確認", runtime_error: "Runtime取得失敗", runtime_alias_mismatch: "Runtime Alias不一致", port_only: "Alias 不一致", alias_only: "Port 不一致", unmatched: "未対応" }
                   span class=(comparison.status == :exact ? "kb-status-success" : "kb-status-warning") = labels.fetch(comparison.status)
                   = form_with url: bind_llama_server_service_connection_path(connection), method: :patch, class: "mt-2 flex items-center gap-2" do
                     = select_tag :managed_server_id, options_for_select(@inventory.servers.map { |item| ["#{item['id']} (:#{item['port']})", item["id"]] }, connection.managed_server_id || server&.dig("id")), class: kb_field_input_classes

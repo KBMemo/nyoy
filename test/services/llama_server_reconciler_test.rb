@@ -59,6 +59,20 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
     assert_equal [ "llama_cpp" ], unbound.pluck("connection_key")
   end
 
+  test "warns when runtime alias differs from switchd definition" do
+    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://balvenie:10010", model: "main-alias")
+    ServiceConnection.where.not(id: [ connection.id, service_connections(:llama_switchd).id ]).update_all(enabled: false)
+    server = {
+      "id" => "main", "port" => 10010, "alias" => "main-alias", "state" => "ready",
+      "ready" => true, "active" => true, "enabled" => true, "restart_required" => false
+    }
+    runtime = LlamaServerRuntimeProbe::Result.new(server_id: "main", model_alias: "other-alias")
+
+    result = reconciler(servers: [ server ], runtimes: { "main" => runtime }).call
+
+    assert_includes result.findings.pluck("code"), "runtime_alias_drift"
+  end
+
   private
 
   def bind_connection(name, server_id:, url:, model:)
@@ -73,9 +87,11 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
     end
   end
 
-  def reconciler(servers:)
+  def reconciler(servers:, runtimes: {})
     client = Object.new
     client.define_singleton_method(:list_servers) { servers }
-    LlamaServerReconciler.new(service_connections(:llama_switchd), client: client)
+    probe = Object.new
+    probe.define_singleton_method(:call) { |_servers| runtimes }
+    LlamaServerReconciler.new(service_connections(:llama_switchd), client: client, runtime_probe: probe)
   end
 end
