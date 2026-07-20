@@ -47,7 +47,9 @@ class AgentRun < ApplicationRecord
     keys = state.is_a?(Hash) ? state.keys : []
     return "empty state" if keys.empty?
 
-    "state: #{keys.join(", ")}"
+    parts = [ "state: #{keys.join(", ")}" ]
+    parts.concat(routing_summary(state["routing"]))
+    parts.join(" / ")
   end
 
   def failed_node_run
@@ -125,5 +127,33 @@ class AgentRun < ApplicationRecord
   def merge_state!(updates)
     self.state = (state || {}).deep_merge(updates.stringify_keys)
     save!
+  end
+
+  private
+
+  def routing_summary(routing)
+    return [] unless routing.is_a?(Hash)
+
+    parts = []
+    parts << "route: #{routing["profile"]}" if routing["profile"].present?
+    parts << "llm: #{routing["model_id"]}" if routing["model_id"].present?
+    parts << "source: #{routing["source"]}" if routing["source"].present?
+    parts << "fallback: #{routing["fallback"]}" if routing["fallback"].present?
+
+    cache = routing["llama_cache"]
+    if cache.is_a?(Hash) && cache["slot_id"].present?
+      slot = cache["slot_id"]
+      slot = "#{slot}/#{cache["slot_count"]}" if cache["slot_count"].present?
+      parts << "slot: #{slot}"
+    end
+
+    usage = routing["usage"]
+    if usage.is_a?(Hash)
+      parts << "in: #{usage["input_tokens"]}" if usage["input_tokens"].present?
+      parts << "out: #{usage["output_tokens"]}" if usage["output_tokens"].present?
+      parts << "cached: #{usage["cached_tokens"]}" if usage["cached_tokens"].present?
+    end
+
+    parts
   end
 end

@@ -481,7 +481,7 @@ plannerのllama.cpp cache観測はrun 88〜89で確認した。同じChat・同�
 
 profile比較、明示URL経路、cache、障害注入の再現手順は [AgentGraph Planner Profile 実運用 Runbook](../agent-graph-planner-profile-runbook.md) にまとめた。run 90ではplanner modelを到達不能にし、AgentRunを失敗させず `source=deterministic / fallback=deterministic` へ移行することを確認した。
 
-`intent.hybrid_llm` はrun 91で実機確認した。決定規則では未判定だった「Rails Active Job retry設計の要点は？」をResearch Graphへ昇格し、`routing.profile=hybrid_llm`、model `qwen3.5-4b`、input 139、cached 114、output 13をAgentRunへ保存した。明示的な調査質問は決定規則だけで約0.01秒、挨拶はLLMを呼ばず約0.003秒で判定した。
+`intent.hybrid_llm` はrun 91で実機確認した。決定規則では未判定だった「Rails Active Job retry設計の要点は？」をResearch Graphへ昇格し、`routing.profile=hybrid_llm`、model `qwen3.5-4b`、input 139、cached 114、output 13をAgentRunへ保存した。routingのprofile・model・source・fallback・cache slot・token usageはAgentRun画面の状態概要にも表示する。明示的な調査質問は決定規則だけで約0.01秒、挨拶はLLMを呼ばず約0.003秒で判定した。
 
 比較ケース、Research state、cache、障害時の通常chat fallbackは [AgentGraph Intent Profile 実運用 Runbook](../agent-graph-intent-profile-runbook.md) にまとめた。developmentでは調査4件・通常chat4件の8/8一致と、intent model接続断でRouterがnilを返すことを確認した。
 

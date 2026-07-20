@@ -20,6 +20,32 @@ class AgentRunTest < ActiveSupport::TestCase
     assert_equal "state: question, draft", run.state_summary
   end
 
+  test "state_summary presents intent routing metadata" do
+    run = AgentRun.create!(
+      chat: @chat,
+      graph_name: AgentGraph::ResearchGraph::NAME,
+      status: "running",
+      current_node: "plan_research",
+      state: {
+        "question" => "q",
+        "routing" => {
+          "profile" => "hybrid_llm",
+          "model_id" => "tiny",
+          "source" => "light",
+          "fallback" => "deterministic",
+          "llama_cache" => { "slot_id" => 1, "slot_count" => 2 },
+          "usage" => { "input_tokens" => 50, "output_tokens" => 8, "cached_tokens" => 30 }
+        }
+      }
+    )
+
+    assert_equal(
+      "state: question, routing / route: hybrid_llm / llm: tiny / source: light / " \
+        "fallback: deterministic / slot: 1/2 / in: 50 / out: 8 / cached: 30",
+      run.state_summary
+    )
+  end
+
   test "recovery_candidates summarize failed node and latest checkpoint" do
     run = AgentRun.create!(
       chat: @chat,
