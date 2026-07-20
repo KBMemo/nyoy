@@ -16,7 +16,8 @@ module AgentGraph
         llm: -> { AgentGraph::RoleServices::LlmDraft.new }
       },
       evidence_evaluator: {
-        heuristic: -> { AgentGraph::RoleServices::HeuristicEvidenceEvaluator.new }
+        heuristic: -> { AgentGraph::RoleServices::HeuristicEvidenceEvaluator.new },
+        llm: -> { AgentGraph::LlmEvidenceEvaluator.new }
       },
       final_answer: {
         main: -> { AgentGraph::RoleServices::FinalAnswer.new }

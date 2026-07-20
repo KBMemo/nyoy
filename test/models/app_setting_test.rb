@@ -95,6 +95,23 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_includes setting.errors[:research_planner_model_id], "は有効なチャットモデルを選んでください"
   end
 
+  test "evidence evaluator model and profile are independently configurable" do
+    setting = AppSetting.instance
+    setting.update!(evidence_evaluator_model_id: "gpt-oss", agent_graph_evidence_evaluator_profile: "llm")
+
+    assert_equal "gpt-oss", AppSetting.evidence_evaluator_model.model_id
+    assert_equal "llm", setting.reload.agent_graph_evidence_evaluator_profile
+    assert_equal({ "evidence_evaluator" => "llm" }, setting.agent_graph_role_profiles)
+  end
+
+  test "rejects unknown evidence evaluator model" do
+    setting = AppSetting.instance
+    setting.evidence_evaluator_model_id = "missing-model"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:evidence_evaluator_model_id], "は有効なチャットモデルを選んでください"
+  end
+
   test "intent model and profile are independently configurable" do
     setting = AppSetting.instance
     setting.update!(agent_graph_intent_model_id: "gpt-oss", agent_graph_intent_profile: "hybrid_llm")

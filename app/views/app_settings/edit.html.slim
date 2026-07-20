@@ -109,6 +109,29 @@
         | LLM分類を選んだ場合に使います。失敗時は決定規則へ戻ります。
 
     fieldset
+      legend class="#{kb_label} mb-1" 根拠十分性判定方式
+      p#agent-graph-evidence-evaluator-profile-help.mt-1.text-sm.kb-text-muted
+        | 検索・取得の要否は決定規則で制御し、取得済み根拠の内容だけを追加判定します。現在の有効値:
+        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:evidence_evaluator)
+      .mt-2.space-y-2
+        - @evidence_evaluator_profile_options.each do |label, value|
+          label.flex.min-h-10.items-center.gap-2
+            = form.radio_button :agent_graph_evidence_evaluator_profile,
+                value,
+                class: "kb-control-accent",
+                aria: { describedby: "agent-graph-evidence-evaluator-profile-help" }
+            span.text-sm.kb-text-secondary = label
+
+    div
+      = form.label :evidence_evaluator_model_id, "根拠十分性判定用モデル", class: "#{kb_label} mb-1"
+      = form.select :evidence_evaluator_model_id,
+          grouped_options_for_select(@evidence_evaluator_model_options, @app_setting.evidence_evaluator_model_id),
+          { include_blank: "未設定（決定規則へフォールバック）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | LLM十分性判定を選んだ場合に使います。失敗・不正応答時は決定規則へ戻ります。
+
+    fieldset
       legend class="#{kb_label} mb-1" Graph起動判定方式
       p#agent-graph-intent-profile-help.mt-1.text-sm.kb-text-muted
         | 決定規則で未判定の通常テキストをResearch Graphへ昇格するか判定します。現在の有効値:

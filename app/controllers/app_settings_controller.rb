@@ -24,6 +24,7 @@ class AppSettingsController < ApplicationController
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
     @research_draft_model_options = research_draft_model_options
     @research_planner_model_options = @research_draft_model_options
+    @evidence_evaluator_model_options = @research_draft_model_options
     @agent_graph_intent_model_options = @research_draft_model_options
     @agent_graph_intent_profile_options = [
       [ "既定設定", "" ],
@@ -34,6 +35,11 @@ class AppSettingsController < ApplicationController
       [ "既定設定", "" ],
       [ "決定規則", "deterministic" ],
       [ "LLM分類", "llm" ]
+    ]
+    @evidence_evaluator_profile_options = [
+      [ "既定設定", "" ],
+      [ "決定規則", "heuristic" ],
+      [ "決定規則 + LLM十分性判定", "llm" ]
     ]
     @research_draft_profile_options = [
       [ "既定設定", "" ],
@@ -65,9 +71,11 @@ class AppSettingsController < ApplicationController
       :default_llm_sampling_preset_key,
       :agent_graph_draft_profile,
       :agent_graph_planner_profile,
+      :agent_graph_evidence_evaluator_profile,
       :agent_graph_intent_profile,
       :research_draft_model_id,
       :research_planner_model_id,
+      :evidence_evaluator_model_id,
       :agent_graph_intent_model_id,
       :research_draft_fallback
     ).to_h.transform_values { |value| value.to_s.presence }
