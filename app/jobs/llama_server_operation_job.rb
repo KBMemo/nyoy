@@ -10,13 +10,19 @@ class LlamaServerOperationJob < ApplicationJob
     connection = operation.service_connection
     client = LlamaSwitchdClient.new(base_url: connection.base_url, api_token: connection.api_token)
     detail = execute(client, operation)
+    snapshot = safe_snapshot(detail)
+    if operation.action.in?(%w[start restart])
+      snapshot["runtime"] = LlamaServerRuntimeVerifier.new(connection).call(detail)
+    end
     operation.update!(
       status: "succeeded",
-      response_snapshot: safe_snapshot(detail),
+      response_snapshot: snapshot,
       finished_at: Time.current
     )
   rescue StandardError => e
-    operation&.update!(status: "failed", error_message: e.message.to_s.first(2000), finished_at: Time.current)
+    attrs = { status: "failed", error_message: e.message.to_s.first(2000), finished_at: Time.current }
+    attrs[:response_snapshot] = snapshot if snapshot.present?
+    operation&.update!(attrs)
   end
 
   private

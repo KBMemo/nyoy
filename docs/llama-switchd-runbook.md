@@ -99,6 +99,8 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 start/restartはswitchdのready待ちに最大120秒を使う。NyoyのHTTP timeoutは130秒なので、画面requestではなくSolid Queue jobが完了を待つ。
 
+start/restartのready待ち後、Nyoyはdata planeの`/props`を取得し、switchd Aliasとruntime `model_alias`、definition SLOTSとruntime `total_slots`を比較する。検証成功時は操作履歴にAliasとslot数を表示する。不一致または取得失敗時はoperationを「失敗」とし、switchdから取得済みのserver状態はresponse snapshotへ残す。
+
 操作が `待機中` または `実行中` の間、管理画面は4秒ごとに整合状態・サーバー状態・接続差分・モデル・操作履歴を自動更新する。操作が完了すると自動更新は停止し、ブラウザタブが非表示の間もpollingしない。更新ボタンで手動更新もできる。
 
 サーバー数が多い場合は「サーバー検索」でIDまたはAliasを絞り込み、操作履歴は「操作状態」で待機中・実行中・成功・失敗を絞り込む。自動更新後も入力中の条件は維持される。

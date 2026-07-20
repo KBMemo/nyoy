@@ -1,6 +1,6 @@
 # llama-switchd integration
 
-**実装状況:** Phase 1〜4完了、Phase 5の主要機能完了（2026-07-21）。残課題は [9.2](#92-残課題) を参照。
+**実装状況:** Phase 1〜5のコード実装完了（2026-07-21）。残る本番運用確認は [9.2](#92-残課題) を参照。
 
 ## 1. 目的
 
@@ -173,7 +173,7 @@ queued -> running -> succeeded
 
 - 同じmanaged serverへのmutating operationはNyoy側でも1件に制限
 - upstreamもmutationを直列化するが、UIの二重送信防止と監査のためNyoy側operationを持つ
-- start/restart成功後はswitchdのready待ちとdefinition/status保存まで行う。`/props`の即時検証は残課題
+- start/restart成功後はswitchdのready待ちに加えて`/props`のAlias・slot数を即時検証し、安全なruntime snapshotをoperationへ保存する
 - stop/deleteは紐付いた有効な接続と既定Chat・AgentGraph role等の用途を確認文へ表示し、controllerでも明示確認値を要求する
 - deleteはupstreamの「stoppedかつdisabled」を満たす場合だけ表示する
 
@@ -231,7 +231,7 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 2. [x] start/stop/restart/enable/disable
 3. [x] readiness、error、operation履歴UI
 4. [x] active operation中の画面自動更新
-5. [ ] start/restart完了直後の`/props`検証
+5. [x] start/restart完了直後の`/props` Alias・slot数検証
 
 #### Phase 4: definition管理
 
@@ -253,11 +253,12 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
-| 中 | start/restart直後のruntime検証 | switchdのready待ちとserver detail保存までは実施。`/props`は画面再取得・次回reconciliationで確認 | operation jobが`model_alias`と`total_slots`を確認し、安全なruntime snapshotまたは検証失敗を記録する |
 | 運用 | 本番管理認証スモーク | 非破壊スクリプトとrunbookは実装済み | deploy後に`bin/verify-llama-server-admin`の4項目が本番でPASS |
 | 運用 | 外部alert E2E | Webhook adapter、再試行、単体テストは実装済み | 本番通知先を設定し、異常注入と復旧の2通知を受信確認 |
 
 `public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。
+
+コード上のPhase 1〜5残課題は完了した。残る項目は本番環境での運用確認であり、実装課題が追加された場合はこの表へ完了条件とともに追記する。
 
 ## 10. 確定した設計判断
 

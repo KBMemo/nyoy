@@ -42,6 +42,13 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
       manager_connection: service_connections(:llama_switchd),
       managed_server_id: "main"
     )
+    service_connections(:llama_switchd).llama_server_operations.create!(
+      managed_server_id: "main",
+      action: "restart",
+      status: "succeeded",
+      response_snapshot: { "runtime" => { "model_alias" => "main-model", "total_slots" => 2 } },
+      finished_at: Time.current
+    )
     result = LlamaSwitchdInventory::Result.new(
       servers: [ { "id" => "main", "alias" => "main-model", "port" => 10010, "state" => "ready" } ],
       models: [],
@@ -60,6 +67,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-llama-server-monitor-target='operationStatus']"
     assert_select "#llama-server-refresh-state[data-active='false']"
     assert_select "tr[data-llama-server-row][data-filter-text*='main-model']"
+    assert_match "slots=2", response.body
     assert_select "form[action='#{llama_server_path('main')}'][data-turbo-confirm*='既定Chat']" do
       assert_select "input[name='acknowledge_usage'][value='1']"
     end

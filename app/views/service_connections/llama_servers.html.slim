@@ -199,7 +199,12 @@
                   td.p-2
                     - if operation.error_message.present?
                       span.kb-status-danger = operation.error_message
-                    - elsif operation.finished_at
-                      span.kb-text-muted = "完了 #{l(operation.finished_at, format: :short)}"
+                    - else
+                      - runtime_snapshot = operation.response_snapshot.to_h["runtime"]
+                      - if runtime_snapshot.present?
+                        .nyoy-monospace = runtime_snapshot["model_alias"]
+                        .text-xs.kb-text-muted = "slots=#{runtime_snapshot['total_slots']}"
+                      - if operation.finished_at
+                        .text-xs.kb-text-muted = "完了 #{l(operation.finished_at, format: :short)}"
       - else
         p.mt-2.text-sm.kb-text-muted 操作履歴はありません。
