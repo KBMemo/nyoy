@@ -1,5 +1,7 @@
 # llama-switchd integration
 
+**実装状況:** Phase 1〜4完了、Phase 5の主要機能完了（2026-07-21）。残課題は [9.2](#92-残課題) を参照。
+
 ## 1. 目的
 
 Nyoy のローカル LLM 接続を、手入力した URL と model alias の集合から、`llama-switchd` が管理する server resource への明示参照へ移行する。
@@ -149,12 +151,12 @@ binding済み接続は次の操作を持つ。
 
 start/restartはupstream側でhealth readyまで最大120秒待つ。Web request内で直接待たず、operation recordとjobで実行する。
 
-推奨テーブル:
+実装テーブル:
 
 ```text
 llama_server_operations
   service_connection_id
-  action                 # create/update/start/stop/restart/enable/disable/delete/sync
+  action                 # create/update/start/stop/restart/enable/disable/delete
   status                 # queued/running/succeeded/failed
   request_payload        # secretを含まないallowlisted JSON
   response_snapshot      # bounded JSON
@@ -171,8 +173,8 @@ queued -> running -> succeeded
 
 - 同じmanaged serverへのmutating operationはNyoy側でも1件に制限
 - upstreamもmutationを直列化するが、UIの二重送信防止と監査のためNyoy側operationを持つ
-- start/restart成功後にdefinition/statusと`/props`を再取得し、alias・port・slotsを検証
-- stop/deleteはその接続を既定ChatやAgentGraph roleが参照中なら警告する
+- start/restart成功後はswitchdのready待ちとdefinition/status保存まで行う。`/props`の即時検証は残課題
+- stop/deleteの用途参照警告は残課題。現状はserver IDによる一般確認と、deleteの状態制約だけを適用
 - deleteはupstreamの「stoppedかつdisabled」を満たす場合だけ表示する
 
 AgentGraphの状態機械へは入れない。これはAI workflowではなく、管理操作の短いjob state machineとして独立させる。
@@ -202,49 +204,69 @@ AgentGraphの状態機械へは入れない。これはAI workflowではなく�
 
 server definitionと用途別LLM設定を同じフォームへ混在させない。1つのserverを複数用途で共有しても、samplingやrole assignmentは用途ごとに変えられる。
 
-## 9. 導入順
+## 9. 導入状況
 
-### Phase 1: read-only
+### 9.1 Phase別状況
 
-1. `llama_switchd` control connection
-2. `LlamaSwitchdClient`
-3. server/model inventory画面
-4. 現在のNyoy接続との差分表示
+#### Phase 1: read-only
 
-この段階ではDB接続値を自動更新しない。
+1. [x] `llama_switchd` control connection
+2. [x] `LlamaSwitchdClient`
+3. [x] server/model inventory画面
+4. [x] 現在のNyoy接続との差分表示
 
-### Phase 2: bindingと同期
+DB接続値はinventory表示だけでは更新せず、明示的な同期操作で更新する。
 
-1. `manager_connection_id` / `managed_server_id`
-2. 手動binding
-3. PORT / ALIASからsnapshot同期
-4. `/props`との三者整合チェック
+#### Phase 2: bindingと同期
 
-### Phase 3: lifecycle
+1. [x] `manager_connection_id` / `managed_server_id`
+2. [x] 手動binding
+3. [x] PORT / ALIASからsnapshot同期
+4. [x] `/props`との三者整合チェック
+5. [x] control APIとdata planeのhost分離（`public_host`）
 
-1. operation table/job
-2. start/stop/restart/enable/disable
-3. readiness、error、operation履歴UI
+#### Phase 3: lifecycle
 
-### Phase 4: definition管理
+1. [x] operation table/job
+2. [x] start/stop/restart/enable/disable
+3. [x] readiness、error、operation履歴UI
+4. [x] active operation中の画面自動更新
+5. [ ] start/restart完了直後の`/props`検証
 
-1. model discovery
-2. create/PATCH typed form
-3. `restart_required`導線
-4. stopped + disabled時のdelete
+#### Phase 4: definition管理
 
-### Phase 5: 運用自動化
+1. [x] model discovery
+2. [x] create/PATCH typed form
+3. [x] `restart_required`導線
+4. [x] stopped + disabled時のdelete
 
-1. 定期reconciliation
-2. alias/port drift通知
-3. roleが参照するserver停止時の警告
-4. 必要なら起動済みserverだけをChat model選択肢へ出す
+#### Phase 5: 運用自動化
 
-## 10. 今回の判断
+1. [x] 定期reconciliation
+2. [x] alias/port driftのWebhook通知と同一異常抑止
+3. [ ] roleが参照するserverのstop/delete操作前警告
+4. [x] freshなreconciliation snapshotによりready serverだけをChat model選択肢へ表示
+5. [x] 管理UIのトークン認証
+6. [x] operation/reconciliation履歴の定期削除
+
+### 9.2 残課題
+
+| 優先度 | 課題 | 現状 | 完了条件 |
+| --- | --- | --- | --- |
+| 高 | stop/delete時の用途参照警告 | reconciliation findingには既定Chat・AgentGraph role等の用途を含むが、操作確認はserver IDだけ | 対象serverを参照する用途名を確認文へ表示し、controller側でも確認済み入力を要求する |
+| 中 | start/restart直後のruntime検証 | switchdのready待ちとserver detail保存までは実施。`/props`は画面再取得・次回reconciliationで確認 | operation jobが`model_alias`と`total_slots`を確認し、安全なruntime snapshotまたは検証失敗を記録する |
+| 運用 | 本番管理認証スモーク | 非破壊スクリプトとrunbookは実装済み | deploy後に`bin/verify-llama-server-admin`の4項目が本番でPASS |
+| 運用 | 外部alert E2E | Webhook adapter、再試行、単体テストは実装済み | 本番通知先を設定し、異常注入と復旧の2通知を受信確認 |
+
+`public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。
+
+## 10. 確定した設計判断
 
 - switchd server IDと用途別接続keyを同一視しない
 - 固定portをNyoyの識別子にしない
 - `server_model`はmodel file名ではなくOpenAI APIのALIAS snapshotとする
 - switchd導入後も用途別samplingとAgentGraph role設定はNyoyに残す
 - 初回migrationは自動bindingせずinventory差分から手動確定する
-- 実装開始点はPhase 1のread-only clientとinventoryとする
+- 外部通知失敗はreconciliation保存を失敗させず、別jobで再試行する
+- 管理UI認証token、switchd API token、alert Webhook tokenは責務を分ける
+- control APIとdata planeのhost解決は`LlamaServerEndpoint`へ集約する
