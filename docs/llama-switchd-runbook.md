@@ -129,6 +129,13 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 残る4接続はportだけで自動bindingせず、各Runtime Aliasを確認して個別に同期する。
 
+2026-07-21 LFM2.5整理:
+
+- `lfm2.5-1.2b-instruct-q4-k-m`についてdevelopment・productionの有効接続、既定用途、実行中operationを監査し、用途参照なしを確認
+- developmentでは無効な`llm_gemma4_e4b_mtp`だけがbinding済み。表示名は`LFM2.5 1.2B Instruct`へ修正済み
+- serverを停止し、自動起動を無効化。port `10010`はlistenしていない
+- 接続keyは履歴やmodel metadata参照を壊さないため変更しない
+
 ## 4. Lifecycle smoke test
 
 既存ワークロードへ影響しないstopped / disabledの小型モデルを使う。
