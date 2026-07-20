@@ -56,14 +56,24 @@ module ChatTools
         text.enum_for(:scan, Regexp.new(Regexp.escape(term), Regexp::IGNORECASE)).map do
           Regexp.last_match.begin(0)
         end
-      end.uniq.sort.first(MAX_MATCHES)
+      end.uniq.sort
+
+      positions = distinct_excerpt_positions(positions).first(MAX_MATCHES)
 
       positions.map do |pos|
-        start_pos = [pos - WINDOW, 0].max
+        start_pos = [ pos - WINDOW, 0 ].max
         {
           offset: start_pos,
           excerpt: text[start_pos, WINDOW * 2]
         }
+      end
+    end
+
+    def distinct_excerpt_positions(positions)
+      positions.each_with_object([]) do |position, distinct|
+        next if distinct.last && position - distinct.last < WINDOW * 2
+
+        distinct << position
       end
     end
   end

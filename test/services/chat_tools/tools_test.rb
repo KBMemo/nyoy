@@ -230,6 +230,26 @@ class ChatToolsTest < ActiveSupport::TestCase
     Rails.cache.clear
   end
 
+  test "search_fetched_page removes overlapping excerpts" do
+    gap = "x" * (ChatTools::SearchFetchedPage::WINDOW * 3)
+    text = "retry_on exceptions retry_on" + gap + "exceptions in another section"
+    page_id = ChatTools::FetchedPageCache.store(
+      url: "https://example.com/article",
+      title: "Article",
+      text: text
+    )
+
+    result = JSON.parse(
+      ChatTools::SearchFetchedPage.new.execute(page_id: page_id, query: "retry_on exceptions")
+    )
+
+    assert_equal 2, result["matches"].size
+    offsets = result["matches"].map { |match| match["offset"] }
+    assert_operator offsets.last - offsets.first, :>=, ChatTools::SearchFetchedPage::WINDOW
+  ensure
+    Rails.cache.clear
+  end
+
   test "search_fetched_page reports missing cache" do
     result = ChatTools::SearchFetchedPage.new.execute(page_id: "missing", query: "query")
 
