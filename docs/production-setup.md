@@ -351,6 +351,8 @@ NYOY_URL=https://nyoy.kbmemo.net bin/verify-llama-server-admin
 
 詳細は [llama-switchd 運用 Runbook](./llama-switchd-runbook.md) を参照してください。
 
+2026-07-21、NVM default `v22.14.0` を `scripts/production_env.sh` が自動解決する状態で、PATHの手動補完なしにrevision `00fde05` のdeploy、npm ci、assets precompile、systemd再起動、health checkが完走した。
+
 ## 7. トラブルシュート
 
 | 症状 | 確認 |

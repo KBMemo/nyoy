@@ -91,6 +91,24 @@ bin/verify-llama-server-admin
 
 portだけが一致する場合は自動判断しない。複数接続が同じportを指す場合は、用途を確認してからbindingする。
 
+2026-07-21 本番初回inventory:
+
+- productionへ `llama_switchd` 接続ID 15を作成
+- switchd health成功、11 servers取得
+- reconciliation ID 4は`warning`、findingは既存6接続の`connection_unbound`のみ
+- 6接続はすべてport一致・Alias不一致（`port_only`）のため自動binding・同期は未実施
+
+| Nyoy接続 | port | 現在Alias | Runtime / switchd Alias |
+| --- | ---: | --- | --- |
+| `llama_cpp` | 10011 | `gemma-4-12b-it-mtp` | `gemma-4-e4b-it-qat-ud-q4-k-xl` |
+| `gpt_oss` | 10012 | `gpt-oss-20b` | `gemma-4-12b-it-qat-ud-q4-k-xl` |
+| `vision_llama` | 10021 | `qwen2.5-vl-3b` | `qwen3vl-4b-instruct-q4-k-m` |
+| `embeddings` | 10020 | `bge-m3` | `lfm2.5-embedding-350m-q4-k-m` |
+| `llm_qwythos_9b_mtp_q4` | 10013 | `qwythos-9b-mtp-q4` | `qwythos-9b-claude-mythos-5-1m-q4-k-m` |
+| `llm_gemma4_e4b_mtp` | 10014 | `gemma-4-e4b-it-mtp` | `gpt-oss-20b`（stopped / disabled） |
+
+用途確認後、正しいserver IDへbindingし「URL・Aliasを同期」する。特に`gpt_oss`と`llm_gemma4_e4b_mtp`は用途と実体が入れ替わって見えるため、portだけで確定しない。
+
 ## 4. Lifecycle smoke test
 
 既存ワークロードへ影響しないstopped / disabledの小型モデルを使う。
@@ -206,6 +224,16 @@ payload例:
 ```
 
 通知を停止するときは `LLAMA_SERVER_ALERT_WEBHOOK_URL` を削除してNyoyを再起動する。reconciliation自体は継続する。
+
+2026-07-21 本番runtime E2E:
+
+- 本番revision `00fde05` 上でlocalhost一時HTTP受信器を起動
+- DB transaction内で一時 `llama_switchd` 接続と `healthy -> warning -> healthy` 履歴を作成
+- `llama_server.reconciliation.warning` と `llama_server.reconciliation.recovered` を各1件受信
+- 両requestのBearer認証と `nyoy-llama-reconciliation-<id>` 冪等キーを確認
+- transaction rollback後、一時 `llama_switchd` 接続は0件
+
+これは本番runtimeでの配送経路確認であり、常設の外部通知先確認ではない。`LLAMA_SERVER_ALERT_WEBHOOK_URL` / `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN` は未設定のため、通知先選定後に実障害または管理された障害注入で再確認する。
 
 ## 7. 障害時
 
