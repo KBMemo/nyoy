@@ -25,7 +25,8 @@ module AgentGraph
         deterministic: -> { AgentGraph::RoleServices::DeterministicIntentRouter.new }
       },
       planner: {
-        deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new }
+        deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new },
+        llm: -> { AgentGraph::LlmResearchPlanner.new }
       }
     }.freeze
 
@@ -309,13 +310,14 @@ module AgentGraph
 
       def call(state:, run:, chat:)
         question = state.fetch("question").to_s
-        {
+        plan = {
           "need_memo" => true,
           "need_web" => web_likely?(question),
           "queries" => AgentGraph::SearchQueryNormalizer.queries_for(question),
           "fetch_urls" => extract_urls(question).first(3),
           "sensitive" => question.match?(SENSITIVE_PATTERN)
         }
+        [ plan, { "source" => "deterministic", "model_id" => nil, "fallback" => nil } ]
       end
 
       private

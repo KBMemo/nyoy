@@ -23,6 +23,12 @@ class AppSettingsController < ApplicationController
     @connection_options = StylePlanModelCatalog.options_for_select
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
     @research_draft_model_options = research_draft_model_options
+    @research_planner_model_options = @research_draft_model_options
+    @research_planner_profile_options = [
+      [ "既定設定", "" ],
+      [ "決定規則", "deterministic" ],
+      [ "LLM分類", "llm" ]
+    ]
     @research_draft_profile_options = [
       [ "既定設定", "" ],
       [ "根拠パック", "evidence_pack" ],
@@ -52,7 +58,9 @@ class AppSettingsController < ApplicationController
       :default_style_plan_connection_key,
       :default_llm_sampling_preset_key,
       :agent_graph_draft_profile,
+      :agent_graph_planner_profile,
       :research_draft_model_id,
+      :research_planner_model_id,
       :research_draft_fallback
     ).to_h.transform_values { |value| value.to_s.presence }
 

@@ -85,5 +85,28 @@
       p.mt-1.text-sm.kb-text-muted
         | 軽量モデルが失敗・空応答のときのフォールバックです。未設定時も最終手段は根拠パックのテンプレです。
 
+    fieldset
+      legend class="#{kb_label} mb-1" 調査計画方式
+      p#agent-graph-planner-profile-help.mt-1.text-sm.kb-text-muted
+        | 質問ごとにメモ・Web調査の要否を判定します。現在の有効値:
+        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:planner)
+      .mt-2.space-y-2
+        - @research_planner_profile_options.each do |label, value|
+          label.flex.min-h-10.items-center.gap-2
+            = form.radio_button :agent_graph_planner_profile,
+                value,
+                class: "kb-control-accent",
+                aria: { describedby: "agent-graph-planner-profile-help" }
+            span.text-sm.kb-text-secondary = label
+
+    div
+      = form.label :research_planner_model_id, "調査計画用モデル", class: "#{kb_label} mb-1"
+      = form.select :research_planner_model_id,
+          grouped_options_for_select(@research_planner_model_options, @app_setting.research_planner_model_id),
+          { include_blank: "未設定（決定規則へフォールバック）" },
+          class: kb_field_input_classes
+      p.mt-1.text-sm.kb-text-muted
+        | LLM分類を選んだ場合に使います。失敗時は決定規則へ戻ります。
+
     div
       = form.submit "保存", class: kb_btn_primary_sm

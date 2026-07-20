@@ -461,17 +461,19 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic`、`planner.deterministic`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profileをstateの `planning` に記録する。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+組み込みprofileは `intent.deterministic`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallbackをstateの `planning` に記録する。`planner.llm` は `need_web` / `need_memo` / `queries` のみ軽量modelに分類させ、URL抽出とsensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
-設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」から選択できる。LLMドラフト用modelとfallbackも同じ画面に置き、profile未指定時は環境変数、さらに未指定なら `evidence_pack` を使う。
+設定画面では `draft` profileを「既定設定 / 根拠パック / LLMドラフト」、`planner` profileを「既定設定 / 決定規則 / LLM分類」から選択できる。draftとplannerは軽量modelを独立して指定する。profile未指定時は環境変数、さらに未指定ならそれぞれ `evidence_pack` / `deterministic` を使う。
 
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
 
 `evidence_pack` / `llm` を同一質問で比較する実運用手順は [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md) にまとめた。応答時間・使用model・fallback・evidence差・最終回答品質を記録し、終了後に設定を復旧する。
 
-draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。次は `planner.llm` profileを追加し、技術質問でWeb調査が必要かを軽量modelで判定できるか比較する。
+draft profileのdevelopment実機比較では、軽量modelが根拠不足時に具体的な誤情報を補う例を確認したため、既定は `evidence_pack` を維持する。`planner.llm` profileは実装済み。
+
+2026-07-20 のdevelopment実測では `qwen3.5-4b` を使い、3件すべて `source=light`、fallbackなしだった。Rails 8.1の技術質問とヤマレコURL質問は、決定規則の `need_web=false` からLLM分類の `need_web=true` へ改善した。過去の登山計画メモ質問は `need_web=false, need_memo=true` を維持した。分類時間は約2.7〜5.4秒。URL質問の検索語に根拠のない地域名が1件混じったため、profileを既定化する前に検索語品質と検索結果への影響を追加確認する。
 
 ### Workflow Registry
 

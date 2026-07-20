@@ -4,8 +4,13 @@ require "test_helper"
 
 class ChatContextStatsTest < ActiveSupport::TestCase
   setup do
-    ChatModelCatalog.seed!
-    @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    model = Model.create!(
+      provider: "test",
+      model_id: "chat-context-stats-test",
+      name: "Chat Context Stats Test",
+      context_window: 8192
+    )
+    @chat = Chat.create!(model: model)
   end
 
   test "estimates tokens for chat messages" do

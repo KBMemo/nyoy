@@ -4,12 +4,14 @@ module AgentGraph
   module Nodes
     class PlanResearch
       def call(state:, run:, chat:)
-        plan = AgentGraph::RoleServices.fetch(:planner).call(
+        result = AgentGraph::RoleServices.fetch(:planner).call(
           state: state,
           run: run,
           chat: chat
         )
+        plan, metadata = result.is_a?(Array) ? result : [ result, {} ]
         plan = plan.to_h.stringify_keys
+        metadata = metadata.to_h.stringify_keys
 
         AgentGraph::NodeResult.next(
           AgentGraph::ResearchRouting.after_plan(plan),
@@ -19,7 +21,7 @@ module AgentGraph
             "planning" => {
               "role" => "planner",
               "profile" => AgentGraph::RoleServices.active_profile_for(:planner).to_s
-            },
+            }.merge(metadata),
             "budget" => default_budget(state)
           }
         )

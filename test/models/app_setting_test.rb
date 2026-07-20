@@ -78,6 +78,23 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_includes setting.errors[:research_draft_model_id], "は有効なチャットモデルを選んでください"
   end
 
+  test "research planner model and profile are independently configurable" do
+    setting = AppSetting.instance
+    setting.update!(research_planner_model_id: "gpt-oss", agent_graph_planner_profile: "llm")
+
+    assert_equal "gpt-oss", AppSetting.research_planner_model.model_id
+    assert_equal "llm", setting.reload.agent_graph_planner_profile
+    assert_equal({ "planner" => "llm" }, setting.agent_graph_role_profiles)
+  end
+
+  test "rejects unknown research planner model" do
+    setting = AppSetting.instance
+    setting.research_planner_model_id = "missing-model"
+
+    assert_not setting.valid?
+    assert_includes setting.errors[:research_planner_model_id], "は有効なチャットモデルを選んでください"
+  end
+
   test "stores draft role profile through virtual attribute" do
     setting = AppSetting.instance
     setting.agent_graph_draft_profile = "llm"

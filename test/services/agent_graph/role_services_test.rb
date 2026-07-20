@@ -38,7 +38,7 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
   end
 
   test "deterministic planner preserves the research plan contract" do
-    plan = AgentGraph::RoleServices.fetch(:planner).call(
+    plan, metadata = AgentGraph::RoleServices.fetch(:planner).call(
       state: { "question" => "https://example.com を調べて、公開前に確認してから保存" },
       run: nil,
       chat: nil
@@ -49,6 +49,7 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_equal true, plan["sensitive"]
     assert_equal [ "https://example.com" ], plan["fetch_urls"]
     assert plan["queries"].any?
+    assert_equal "deterministic", metadata["source"]
   end
 
   test "selects a built in role profile" do
@@ -56,6 +57,12 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
 
     assert_equal :llm, AgentGraph::RoleServices.profile_for(:draft)
     assert_instance_of AgentGraph::RoleServices::LlmDraft, AgentGraph::RoleServices.fetch(:draft)
+  end
+
+  test "selects llm planner profile" do
+    AgentGraph::RoleServices.select_profile(:planner, :llm)
+
+    assert_instance_of AgentGraph::LlmResearchPlanner, AgentGraph::RoleServices.fetch(:planner)
   end
 
   test "registers and selects a plugin role profile" do

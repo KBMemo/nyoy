@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_20_143000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -93,6 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.datetime "memo_knowledge_last_ingested_at"
     t.string "research_draft_fallback", default: "main", null: false
     t.string "research_draft_model_id"
+    t.string "research_planner_model_id"
     t.datetime "updated_at", null: false
   end
 
