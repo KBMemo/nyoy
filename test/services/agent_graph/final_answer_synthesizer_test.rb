@@ -185,6 +185,7 @@ class AgentGraphFinalAnswerSynthesizerTest < ActiveSupport::TestCase
     assert_equal "light", meta.fetch("source")
     assert_equal model.model_id, meta.fetch("model_id")
     assert_equal slot_key, cache_calls.sole.fetch(:slot_key)
+    assert_equal false, llm.instance_variable_get(:@params).dig(:chat_template_kwargs, "enable_thinking")
   ensure
     ChatModelCatalog.define_singleton_method(:context_for, original_context_for)
     ChatLlamaCache.define_singleton_method(:apply!, original_cache_apply)

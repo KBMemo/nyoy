@@ -123,9 +123,19 @@ module AgentGraph
     def apply_llm_settings!(llm, model)
       if @model
         ChatLlmSettings.defaults_for(model: model).apply!(llm)
+        disable_thinking!(llm)
       else
         ChatLlmSettings.apply!(llm, chat: @chat)
       end
+    end
+
+    def disable_thinking!(llm)
+      params = (llm.instance_variable_get(:@params) || {}).dup
+      template_kwargs = params.delete(:chat_template_kwargs) || params.delete("chat_template_kwargs") || {}
+      llm.with_params(
+        **params.symbolize_keys,
+        chat_template_kwargs: template_kwargs.to_h.stringify_keys.merge("enable_thinking" => false)
+      )
     end
 
     def cache_slot_key

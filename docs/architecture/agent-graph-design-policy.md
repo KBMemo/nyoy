@@ -475,6 +475,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `final_answer.light` は`AppSetting.final_answer_model_id`の専用modelを使い、model既定samplingと専用llama cache slotで完成回答を生成する。model未設定・接続失敗・空応答時は`final_answer.main`へfallbackし、mainも失敗した場合だけ従来どおりrunを失敗させる。既定profileは品質を優先して`main`を維持し、lightへの切替は実運用比較後に判断する。
 
+main/lightの品質・速度・cache・障害fallbackの再現手順は [AgentGraph Final Answer Profile 実運用 Runbook](../agent-graph-final-answer-profile-runbook.md) にまとめた。`qwen3.5-4b`はthinking無効化後にmainより約11〜16秒短縮したが、根拠にない具体値やAPI例を補う傾向があったため、既定は`main`を維持する。
+
 ImageUnderstanding Graphの`analyze_image`は`VisionChatService`を直接生成せず、`vision` roleへ委譲する。組み込み`vision.main` adapterが既存serviceを呼び、`analysis_meta`へrole・実効profile・model・画像sourceを保存する。外部profileは同じcall契約を実装し、Node履歴から選択結果を確認できるようにする。
 
 MemoWrite / MemoUpdate Graphのdraft nodeは`memo_writer` roleへ委譲する。組み込み`memo_writer.deterministic`は構造化`memo_draft`と承認画面用draftだけを副作用なしで生成する。対象メモ取得、承認、create/update API、冪等性はNode側に残し、profile差し替えがHITLを迂回できない境界とする。実効profileは`memo_draft_meta`とNode履歴へ保存する。
