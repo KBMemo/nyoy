@@ -461,7 +461,7 @@ end
 AgentGraph::RoleServices.select_profile(:draft, :experimental)
 ```
 
-組み込みprofileは `intent.deterministic` / `intent.hybrid_llm`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic` / `evidence_evaluator.llm`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` とする。`intent.hybrid_llm` は決定規則を先に実行し、未判定かつ添付なし・明示的な非調査turnでない通常テキストについて、Research Graphへ昇格するかだけを軽量modelに判定させる。メモ書込・更新・画像理解のGraph選択はLLMへ許可しない。positive判定のprofile・model・cache・usageはResearch stateの `routing` とrun summaryへ保存する。失敗・不正応答・model未設定時は通常chatへ戻る。
+組み込みprofileは `intent.deterministic` / `intent.hybrid_llm`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic` / `evidence_evaluator.llm`、`draft.evidence_pack` / `draft.llm`、`final_answer.main`、`vision.main` とする。`intent.hybrid_llm` は決定規則を先に実行し、未判定かつ添付なし・明示的な非調査turnでない通常テキストについて、Research Graphへ昇格するかだけを軽量modelに判定させる。メモ書込・更新・画像理解のGraph選択はLLMへ許可しない。positive判定のprofile・model・cache・usageはResearch stateの `routing` とrun summaryへ保存する。失敗・不正応答・model未設定時は通常chatへ戻る。
 
 `PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
@@ -472,6 +472,8 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
 
 `finalize_answer` は成功・失敗の両方で `final_synthesis` に `role=final_answer` と実効profileを保存する。組み込み実装は`main`、直接object overrideは`override`としてAgentNodeRun要約へ表示する。
+
+ImageUnderstanding Graphの`analyze_image`は`VisionChatService`を直接生成せず、`vision` roleへ委譲する。組み込み`vision.main` adapterが既存serviceを呼び、`analysis_meta`へrole・実効profile・model・画像sourceを保存する。外部profileは同じcall契約を実装し、Node履歴から選択結果を確認できるようにする。
 
 `evaluate_evidence` は `evidence_review` に `role` と実効 `profile` を常に保存する。evaluator serviceはreview単体に加えて `[review, metadata]` を返せるものとし、`model_id`、`source`、`fallback`、llama cache、token usageをstateとAgentNodeRun要約へ引き継ぐ。これによりheuristicの判断規則を維持したまま、将来の軽量LLM profileを同じ観測契約で比較できる。
 

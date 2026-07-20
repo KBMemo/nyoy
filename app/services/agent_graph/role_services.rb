@@ -7,7 +7,8 @@ module AgentGraph
       evidence_evaluator: :heuristic,
       final_answer: :main,
       intent: :deterministic,
-      planner: :deterministic
+      planner: :deterministic,
+      vision: :main
     }.freeze
 
     BUILTIN_PROFILES = {
@@ -29,6 +30,9 @@ module AgentGraph
       planner: {
         deterministic: -> { AgentGraph::RoleServices::DeterministicResearchPlanner.new },
         llm: -> { AgentGraph::LlmResearchPlanner.new }
+      },
+      vision: {
+        main: -> { AgentGraph::RoleServices::Vision.new }
       }
     }.freeze
 
@@ -135,6 +139,13 @@ module AgentGraph
     class FinalAnswer
       def call(state:, run:, chat:)
         AgentGraph::FinalAnswerSynthesizer.new(chat).call(state)
+      end
+    end
+
+    class Vision
+      def call(image:, mime_type:, prompt:, state:, run:, chat:)
+        analysis = VisionChatService.new.analyze(image: image, mime_type: mime_type, prompt: prompt)
+        [ analysis, { "model_id" => NyoyConnectionStore.server_model(:vision_llama) } ]
       end
     end
 

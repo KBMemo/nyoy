@@ -68,7 +68,8 @@ Rails.application.config.x.nyoy.tap do |config|
     "evidence_evaluator" => ENV["AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE"],
     "final_answer" => ENV["AGENT_GRAPH_FINAL_ANSWER_PROFILE"],
     "intent" => ENV["AGENT_GRAPH_INTENT_PROFILE"],
-    "planner" => ENV["AGENT_GRAPH_PLANNER_PROFILE"]
+    "planner" => ENV["AGENT_GRAPH_PLANNER_PROFILE"],
+    "vision" => ENV["AGENT_GRAPH_VISION_PROFILE"]
   }.compact
   config.openai_url = ENV.fetch("OPENAI_API_URL", "https://api.openai.com")
   config.openai_chat_model = ENV.fetch("OPENAI_CHAT_MODEL", "gpt-4o-mini")
@@ -77,7 +78,7 @@ Rails.application.config.x.nyoy.tap do |config|
   # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
   config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
   config.sd_model_loras = {
-    "illustrious_pencil-XL" => ["ChojuGiga_Illustrious"]
+    "illustrious_pencil-XL" => [ "ChojuGiga_Illustrious" ]
   }
   config.sd_model_default_loras = {
     "illustrious_pencil-XL" => "ChojuGiga_Illustrious"

@@ -37,6 +37,13 @@ class AgentGraphRoleServicesTest < ActiveSupport::TestCase
     assert_instance_of AgentGraph::RoleServices::DeterministicResearchPlanner, service
   end
 
+  test "fetches default vision service" do
+    service = AgentGraph::RoleServices.fetch(:vision)
+
+    assert_instance_of AgentGraph::RoleServices::Vision, service
+    assert_equal :main, AgentGraph::RoleServices.active_profile_for(:vision)
+  end
+
   test "deterministic planner preserves the research plan contract" do
     plan, metadata = AgentGraph::RoleServices.fetch(:planner).call(
       state: { "question" => "https://example.com を調べて、公開前に確認してから保存" },

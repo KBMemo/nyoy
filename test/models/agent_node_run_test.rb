@@ -197,4 +197,32 @@ class AgentNodeRunTest < ActiveSupport::TestCase
       "cached: 25"
     ], node_run.output_summary
   end
+
+  test "output_summary reports vision metadata" do
+    node_run = @run.agent_node_runs.create!(
+      node_name: "analyze_image",
+      status: "completed",
+      output_snapshot: {
+        "updates" => {
+          "analysis" => "image description",
+          "analysis_meta" => {
+            "role" => "vision",
+            "profile" => "main",
+            "source" => "chat_attachment",
+            "model_id" => "vision-model",
+            "usage" => { "input_tokens" => 100, "output_tokens" => 20 }
+          }
+        }
+      }
+    )
+
+    assert_equal [
+      "updates: analysis, analysis_meta",
+      "profile: vision.main",
+      "llm: vision-model",
+      "source: chat_attachment",
+      "in: 100",
+      "out: 20"
+    ], node_run.output_summary
+  end
 end

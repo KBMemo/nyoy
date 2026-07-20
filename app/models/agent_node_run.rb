@@ -21,6 +21,7 @@ class AgentNodeRun < ApplicationRecord
       parts << "updates: #{updates.keys.join(", ")}"
       parts.concat(planning_summary(updates["planning"]))
       parts.concat(evaluation_summary(updates["evidence_review"]))
+      parts.concat(vision_summary(updates["analysis_meta"]))
       parts.concat(synthesis_summary(updates))
     end
     parts << "goto: #{output_snapshot["goto"]}" if output_snapshot["goto"].present?
@@ -57,6 +58,12 @@ class AgentNodeRun < ApplicationRecord
     metadata_summary(review) +
       llama_cache_summary(review["llama_cache"]) +
       usage_summary(review["usage"])
+  end
+
+  def vision_summary(metadata)
+    return [] unless metadata.is_a?(Hash)
+
+    metadata_summary(metadata) + usage_summary(metadata["usage"])
   end
 
   def metadata_summary(metadata)

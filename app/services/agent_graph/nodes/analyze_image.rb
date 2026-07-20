@@ -9,20 +9,27 @@ module AgentGraph
         return payload if payload.is_a?(AgentGraph::NodeResult)
         return unsupported_content_type(state, payload[:content_type]) unless supported_content_type?(payload[:content_type])
 
-        analysis = VisionChatService.new.analyze(
+        result = AgentGraph::RoleServices.fetch(:vision).call(
           image: payload.fetch(:data),
           mime_type: payload.fetch(:content_type),
-          prompt: state.fetch("question").to_s
+          prompt: state.fetch("question").to_s,
+          state: state,
+          run: run,
+          chat: chat
         )
+        analysis, metadata = result.is_a?(Array) ? result : [ result, {} ]
+        metadata = metadata.to_h.stringify_keys
 
         AgentGraph::NodeResult.next(
           updates: {
             "analysis" => analysis,
-            "analysis_meta" => {
+            "analysis_meta" => metadata.merge(
               "source" => image_source["kind"],
               "filename" => payload[:filename],
-              "content_type" => payload[:content_type]
-            }.compact
+              "content_type" => payload[:content_type],
+              "role" => "vision",
+              "profile" => AgentGraph::RoleServices.active_profile_for(:vision).to_s
+            ).compact
           }
         )
       rescue TsuzuraClient::Error, VisionChatService::Error, LlamaCppClient::Error => e

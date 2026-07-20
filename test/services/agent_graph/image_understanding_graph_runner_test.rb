@@ -29,6 +29,9 @@ class AgentGraphImageUnderstandingGraphRunnerTest < ActiveSupport::TestCase
     assert_equal assistant.id, run.state["assistant_message_id"]
     assert_equal "chat_attachment", run.state.dig("image_source", "kind")
     assert_equal "pixel.png", run.state.dig("image_source", "filename")
+    assert_equal "vision", run.state.dig("analysis_meta", "role")
+    assert_equal "main", run.state.dig("analysis_meta", "profile")
+    assert_equal Rails.application.config.x.nyoy.vision_llama_model, run.state.dig("analysis_meta", "model_id")
   ensure
     restore_vision_service
   end
