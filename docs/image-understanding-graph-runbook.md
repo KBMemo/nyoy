@@ -260,7 +260,7 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 - 確認日時: 2026-07-17 15:52 JST
 - 環境: development
 - Nyoy URL: `http://127.0.0.1:3109`
-- vision model / endpoint: `qwen2.5-vl-3b` / `http://balvenie:10021`
+- vision model / endpoint: `qwen3vl-4b-instruct-q4-k-m` / `http://balvenie:10021`
 - `vision_llama` ServiceConnection: enabled / `http://balvenie:10021`
 - `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
 - 使用画像: `public/icon.png`（PNG、512x512、黒背景に赤い円）
@@ -285,7 +285,7 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 
 - 環境: development
 - Nyoy URL: `http://127.0.0.1:3109`
-- vision model / endpoint: `qwen2.5-vl-3b` / `http://balvenie:10021`
+- vision model / endpoint: `qwen3vl-4b-instruct-q4-k-m` / `http://balvenie:10021`
 - `vision_llama` ServiceConnection: 確認中のみ `enabled=true`、障害注入時のみ `base_url=http://127.0.0.1:9`。確認後は `enabled=false` / `base_url=http://balvenie:10021` に復旧
 - `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
 - 使用画像: 葛籠 media

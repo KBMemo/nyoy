@@ -7,7 +7,7 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
     definitions = ChatModelCatalog.definitions
 
     assert_equal 2, definitions.length
-    assert_equal "gemma-4-12b-it-vision-mtp", definitions.find { |d| d.connection_key == "llama_cpp" }.model_id
+    assert_equal "gemma-4-e4b-it-qat-ud-q4-k-xl", definitions.find { |d| d.connection_key == "llama_cpp" }.model_id
     assert_equal "gpt-oss", definitions.find { |d| d.connection_key == "gpt_oss" }.model_id
   end
 
@@ -65,13 +65,13 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
     groups = ChatModelCatalog.grouped_model_options
     labels = groups.map(&:first)
 
-    assert_includes labels, "Gemma Vision"
+    assert_includes labels, "Gemma 4 E4B"
     assert_includes labels, "GPT-OSS"
 
-    gemma_options = groups.find { |label, _| label == "Gemma Vision" }.last
+    gemma_options = groups.find { |label, _| label == "Gemma 4 E4B" }.last
     gpt_oss_options = groups.find { |label, _| label == "GPT-OSS" }.last
 
-    assert_equal [ "gemma-4-12b-it-vision-mtp" ], gemma_options.map(&:first)
+    assert_equal [ "gemma-4-e4b-it-qat-ud-q4-k-xl" ], gemma_options.map(&:first)
     assert_equal [ "gpt-oss" ], gpt_oss_options.map(&:first)
   end
 

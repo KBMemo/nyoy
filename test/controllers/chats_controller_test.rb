@@ -22,7 +22,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "textarea[name='chat[prompt]']"
     assert_select "input[type=file][name='chat[attachments]']"
     assert_select "select[name='chat[model]'] optgroup", minimum: 2
-    assert_select "select[name='chat[model]'] optgroup[label='Gemma Vision'] option", text: "gemma-4-12b-it-vision-mtp"
+    assert_select "select[name='chat[model]'] optgroup[label='Gemma 4 E4B'] option", text: "gemma-4-e4b-it-qat-ud-q4-k-xl"
     assert_select "select[name='chat[model]'] optgroup[label='GPT-OSS'] option", text: "gpt-oss"
     assert_select "button[aria-label='チャット設定'] svg.nyoy-chat-settings-icon"
     assert_select "#new_chat_settings_dialog"
@@ -103,7 +103,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create enqueues chat response job" do
-    model = Model.find_by!(provider: "openai", model_id: "gemma-4-12b-it-vision-mtp")
+    model = Model.find_by!(provider: "openai", model_id: "gemma-4-e4b-it-qat-ud-q4-k-xl")
 
     assert_enqueued_with(job: ChatResponseJob) do
       post chats_path, params: { chat: { prompt: "こんにちは", model: model.id } }
@@ -146,7 +146,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders chat thread" do
-    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gemma-4-12b-it-vision-mtp"))
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gemma-4-e4b-it-qat-ud-q4-k-xl"))
 
     get chat_path(chat)
     assert_response :success
@@ -247,7 +247,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders assistant markdown as html" do
-    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gemma-4-12b-it-vision-mtp"))
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gemma-4-e4b-it-qat-ud-q4-k-xl"))
     chat.messages.create!(role: :assistant, content: "### 見出し\n\n**太字**")
 
     get chat_path(chat)

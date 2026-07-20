@@ -41,7 +41,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
   - **llama.cpp** — style 計画・Chat（`LLAMA_CPP_URL` / `GPT_OSS_*`）
   - **sd.cpp server** — 画像生成（`SDCPP_SERVER_URL`）
   - **sdcpp-switchd** — SD モデル切り替え（`SDCPP_SWITCHD_URL` / `SDCPP_SWITCHD_TOKEN`）
-  - **embeddings API** — bge-m3（`EMBEDDINGS_URL`）
+  - **embeddings API** — LFM2.5 Embedding（`EMBEDDINGS_URL`）
   - **徒然 API** — メモ CRUD・export（`KBMEMO_*`）
   - **searfront** — Web 検索（`SEARFRONT_*`（互換: `SEARXNG_*`））
   - **readability-js-server** — ページ本文抽出（`READABILITY_URL`）
@@ -94,7 +94,7 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `LLAMA_CPP_URL` | llama.cpp の URL | `http://balvenie:10010` |
 | `LLAMA_SWITCHD_URL` | llama-switchd 管理 API | `http://balvenie:11335` |
 | `LLAMA_SWITCHD_TOKEN` | llama-switchd 認証トークン | （未設定） |
-| `LLAMA_MODEL` | style 計画等のモデル名 | `gemma-4-12b-it-vision-mtp` |
+| `LLAMA_MODEL` | style 計画等のモデル名 | `gemma-4-e4b-it-qat-ud-q4-k-xl` |
 | `GPT_OSS_MODEL` | Chat 用 GPT-OSS モデル名 | `gpt-oss` |
 | `GPT_OSS_LLAMA_CPP_URL` | GPT-OSS 専用 URL（省略時は `LLAMA_CPP_URL`） | （未設定） |
 | `LLAMA_JSON_SCHEMA` | llama.cpp へ JSON Schema 制約を送る | `true` |
@@ -104,9 +104,9 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `LLAMA_CACHE_PROMPT` | `cache_prompt: true` を送り KV cache を再利用 | `true` |
 | `OPENAI_CHAT_API_KEY` | 実OpenAI接続専用のAPIキー。`OPENAI_API_KEY=local`とは分離 | （未設定） |
 | `VISION_LLAMA_CPP_URL` | 画像理解用 llama.cpp | `http://balvenie:10021` |
-| `VISION_LLAMA_MODEL` | 画像理解モデル | `qwen2.5-vl-3b` |
-| `EMBEDDINGS_URL` | bge-m3 embeddings API | `http://balvenie:10020` |
-| `EMBEDDINGS_MODEL` | 埋め込みモデル名 | `groonga/bge-m3-Q4_K_M-GGUF` |
+| `VISION_LLAMA_MODEL` | 画像理解モデル | `qwen3vl-4b-instruct-q4-k-m` |
+| `EMBEDDINGS_URL` | LFM2.5 Embedding API | `http://balvenie:10020` |
+| `EMBEDDINGS_MODEL` | 埋め込みモデル名 | `lfm2.5-embedding-350m-q4-k-m` |
 | `EMBEDDINGS_DIMENSIONS` | ベクトル次元数 | `1024` |
 | `EMBEDDING_MAX_CHARS` | embedding API へ送る最大文字数 | `1000` |
 | `SDCPP_SERVER_URL` | sd.cpp サーバーの URL | `http://balvenie:11234` |

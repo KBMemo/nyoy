@@ -80,4 +80,17 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
   ensure
     Rails.application.config.x.nyoy.openai_api_key = original
   end
+
+  test "gpt oss is enabled only with a dedicated server URL" do
+    original = Rails.application.config.x.nyoy.gpt_oss_llama_cpp_url
+    Rails.application.config.x.nyoy.gpt_oss_llama_cpp_url = nil
+    definition = ServiceConnectionSeeds.definitions.find { |item| item[:key] == "gpt_oss" }
+    assert_equal false, definition[:enabled]
+
+    Rails.application.config.x.nyoy.gpt_oss_llama_cpp_url = "http://llama.test:10012"
+    definition = ServiceConnectionSeeds.definitions.find { |item| item[:key] == "gpt_oss" }
+    assert_equal true, definition[:enabled]
+  ensure
+    Rails.application.config.x.nyoy.gpt_oss_llama_cpp_url = original
+  end
 end

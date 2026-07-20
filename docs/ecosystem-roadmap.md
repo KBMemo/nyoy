@@ -94,7 +94,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 | `llama_cpp` | テキスト LLM（style 計画等） |
 | `gpt_oss` | テキスト LLM（GPT-OSS 系、Chat） |
 | `vision_llama` | 画像理解 |
-| `embeddings` | bge-m3 埋め込み |
+| `embeddings` | LFM2.5 Embedding 埋め込み |
 | `sd_cpp` | sd.cpp 画像生成 |
 | `sd_switchd` | SD モデル切り替え |
 | `kbmemo` | **徒然 API**（メモツール・RAG 取込） |

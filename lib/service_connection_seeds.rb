@@ -84,7 +84,7 @@ module ServiceConnectionSeeds
     [
       {
         key: "llama_cpp",
-        name: "Gemma Vision",
+        name: "Gemma 4 E4B",
         base_url: config.llama_cpp_url,
         server_model: config.llama_model,
         notes: "スタイル計画・プロンプト翻訳などのテキスト LLM"
@@ -94,6 +94,7 @@ module ServiceConnectionSeeds
         name: "GPT-OSS",
         base_url: config.gpt_oss_llama_cpp_url.presence || config.llama_cpp_url,
         server_model: config.gpt_oss_model,
+        enabled: config.gpt_oss_llama_cpp_url.present?,
         notes: "チャット画面の GPT-OSS 用"
       },
       {
@@ -116,14 +117,14 @@ module ServiceConnectionSeeds
       },
       {
         key: "vision_llama",
-        name: "Qwen2.5-VL",
+        name: "Qwen3VL 4B",
         base_url: config.vision_llama_cpp_url,
         server_model: config.vision_llama_model,
         notes: "画像理解ページ"
       },
       {
         key: "embeddings",
-        name: "bge-m3",
+        name: "LFM2.5 Embedding 350M",
         base_url: config.embeddings_url,
         server_model: config.embeddings_model,
         notes: "ナレッジ chunk の埋め込み"

@@ -1,8 +1,8 @@
 llama_cpp:
   key: llama_cpp
-  name: Gemma Vision
+  name: Gemma 4 E4B
   base_url: http://balvenie:10010
-  server_model: gemma-4-12b-it-vision-mtp
+  server_model: gemma-4-e4b-it-qat-ud-q4-k-xl
   enabled: true
   sort_order: 0
 
@@ -26,9 +26,9 @@ openai:
 
 vision_llama:
   key: vision_llama
-  name: Qwen2.5-VL
+  name: Qwen3VL 4B
   base_url: http://balvenie:10021
-  server_model: qwen2.5-vl-3b
+  server_model: qwen3vl-4b-instruct-q4-k-m
   enabled: true
   sort_order: 2
 
@@ -42,9 +42,9 @@ llama_switchd:
 
 embeddings:
   key: embeddings
-  name: bge-m3
+  name: LFM2.5 Embedding 350M
   base_url: http://balvenie:10020
-  server_model: groonga/bge-m3-Q4_K_M-GGUF
+  server_model: lfm2.5-embedding-350m-q4-k-m
   enabled: true
   sort_order: 3
 
