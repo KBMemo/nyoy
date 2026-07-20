@@ -14,7 +14,7 @@ plan_research → recall_memos → search_web → fetch_urls → evaluate_eviden
 
 - 入口: `ChatResponseJob` が `AgentGraph::Router` に委譲し、Router が `ResearchIntent` に一致したら `ResearchGraphRunner` を起動する
 - `evaluate_evidence` は最終回答の前に evidence の十分性を確認し、不足があれば `search_web` / `fetch_urls` に戻す
-- `synthesize_draft` は LLM を使わず根拠パック（出典リスト）を内部 state に載せるだけ
+- `synthesize_draft` はrole profileで切り替える。既定の `evidence_pack` はLLMを使わず根拠パックをstateへ載せ、`llm` は設定した調査ドラフト用modelで要約し、失敗時はmain modelまたはtemplateへfallbackする
 - **承認なし**: そのまま `finalize_answer` へ進む（Chat / MCP 共通）
 - `finalize_answer` が **チャット本モデルで最終回答を生成**（`FinalAnswerSynthesizer`）して投稿。モデルサーバー未起動・接続失敗時は run を失敗させ、`ChatErrorBroadcaster` でエラー表示（「モデルサーバーに接続できません…」）
 - 最終回答生成中はストリーミングの思考を Cable `agent_run_progress_thinking` で進捗パネル内にライブ表示（完了後は assistant メッセージの「思考」にも残る）
@@ -62,5 +62,6 @@ plan_research → recall_memos → search_web → fetch_urls → evaluate_eviden
 
 ## 関連 Graph
 
+- Draft profile実機比較: [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md)
 - MemoWrite Graph（create）: [agent-graph-memo-write.md](./agent-graph-memo-write.md)
 - MemoUpdate Graph（update_memo / updated_at 楽観ロック）: [agent-graph-memo-write.md](./agent-graph-memo-write.md)

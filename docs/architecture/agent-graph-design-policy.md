@@ -469,7 +469,9 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `synthesize_draft` は `draft_synthesis` に `role`、実効 `profile`、`model_id`、`source`、`fallback` を保存する。直接object overrideした場合はprofileを `override` と記録し、空応答でnodeが失敗した場合もmetadataを残す。AgentNodeRun要約にもprofileとfallbackを表示する。
 
-次は `evidence_pack` / `llm` を同一質問で比較する実運用手順をrunbook化し、応答時間・使用model・fallback・最終回答品質を確認できるようにする。
+`evidence_pack` / `llm` を同一質問で比較する実運用手順は [AgentGraph Draft Profile 比較 Runbook](../agent-graph-draft-profile-runbook.md) にまとめた。応答時間・使用model・fallback・evidence差・最終回答品質を記録し、終了後に設定を復旧する。
+
+次はrunbookに沿ったdevelopment実機比較を行い、軽量model profileを既定候補にできるか判断する。
 
 ### Workflow Registry
 
