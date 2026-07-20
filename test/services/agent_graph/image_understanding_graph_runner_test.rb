@@ -57,6 +57,31 @@ class AgentGraphImageUnderstandingGraphRunnerTest < ActiveSupport::TestCase
     assert_equal "UNSUPPORTED_IMAGE_CONTENT_TYPE", run.state.dig("errors", 0, "code")
   end
 
+  test "accepts an overridden vision role service" do
+    message = add_user_message(ChatImageAttachments::PLACEHOLDER)
+    message.attachments.attach(io: StringIO.new("png"), filename: "pixel.png", content_type: "image/png")
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |**kwargs|
+      calls << kwargs
+      [ "差し替えた画像解析です。", { "model_id" => "plugin-vision" } ]
+    end
+
+    AgentGraph::RoleServices.with(:vision, service) do
+      run = AgentGraph::ImageUnderstandingGraphRunner.call(@chat)
+
+      assert_predicate run, :completed?
+      assert_equal "差し替えた画像解析です。", run.state["analysis"]
+      assert_equal "override", run.state.dig("analysis_meta", "profile")
+      assert_equal "plugin-vision", run.state.dig("analysis_meta", "model_id")
+    end
+
+    assert_equal 1, calls.size
+    assert_equal "image/png", calls.first.fetch(:mime_type)
+    assert_equal "画像を説明してください", calls.first.fetch(:prompt)
+    assert_equal @chat, calls.first.fetch(:chat)
+  end
+
   private
 
   def add_user_message(content)

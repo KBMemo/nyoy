@@ -521,7 +521,7 @@ AgentGraph::Registry.register(
 
 1. `AgentGraph::Core` 名前空間を作り、`GraphDefinition` / `Edge` / `NodeResult` / `StateSchema` を移す（着手済み。旧 `AgentGraph::*` 定数は互換 alias として残す）
 2. `Runner` から Nyoy 固有の永続化・broadcast・trace 呼び出しを洗い出し、`RuntimeContext` の候補 interface を作る（着手済み。cancellation / progress / approval / node call kwargs を context 経由にする）
-3. intent / draft / final / evidence の呼び出し箇所を role service 経由にする（着手済み。`RoleServices` を追加し、`intent` / `evidence_evaluator` / `draft` / `final_answer` role を既存実装 adapter 経由にする）
+3. intent / planner / draft / final / evidence / vision / memo writer の呼び出し箇所を role service 経由にする（完了。全標準roleを既存実装adapter経由にし、`vision`と`memo_writer`も実Graphでobject overrideを検証済み）
 4. `AgentGraph::Registry.register` の登録形式を public API として固定する（完了）
 5. 新しい小さな Workflow を 1 つ追加し、登録だけで Chat / MCP / UI summary に乗るか検証する（完了。Router 非接続の `DiagnosticGraph` で Registry 登録・実行・summary を検証）
 6. ここまで実装してから、Core gem / Rails engine / Nyoy adapter のどこまで分けるか再検討する（次段階）
@@ -532,7 +532,7 @@ AgentGraph::Registry.register(
 
 - `AgentGraph::Core` が `Rails` / `ApplicationRecord` / `ChatTools` / `ChatChannel` を参照しない（達成）
 - workflow 追加が `Registry.register` と node 定義の追加だけで済む（`DiagnosticGraph` で検証済み）
-- role service の差し替えで軽量モデルを複数試せる（`intent` / `evidence_evaluator` / `draft` / `final_answer` は差し替え可能）
+- role service の差し替えで軽量モデルや別実装を複数試せる（全標準roleが差し替え可能。`intent` / `planner` / `evidence_evaluator` / `draft`は複数profile、`final_answer` / `vision` / `memo_writer`はobject overrideを検証済み）
 - checkpoint / retry の契約が Core から見て adapter interface になっている（達成。`Core::Runner` は context protocol のみを要求し、Rails 永続化は `ActiveRecordRunStore` に分離済み）
 - Nyoy 固有 node と Core runtime のテストが分離できている（達成。`Core::Runner` は Rails boot なしの in-memory context test を持つ）
 

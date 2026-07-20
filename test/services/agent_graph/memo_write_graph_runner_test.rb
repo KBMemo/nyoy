@@ -96,6 +96,32 @@ class AgentGraphMemoWriteGraphRunnerTest < ActiveSupport::TestCase
     end
   end
 
+  test "accepts an overridden memo writer role service" do
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |**kwargs|
+      calls << kwargs
+      [
+        { "action" => "create", "title" => "Plugin title", "body" => "Plugin body" },
+        "### Plugin title\n\nPlugin body",
+        { "source" => "plugin" }
+      ]
+    end
+
+    AgentGraph::RoleServices.with(:memo_writer, service) do
+      run = AgentGraph::MemoWriteGraphRunner.call(@chat)
+
+      assert_predicate run, :awaiting_approval?
+      assert_equal "Plugin title", run.state.dig("memo_draft", "title")
+      assert_equal "override", run.state.dig("memo_draft_meta", "profile")
+      assert_equal "plugin", run.state.dig("memo_draft_meta", "source")
+    end
+
+    assert_equal 1, calls.size
+    assert_equal :create, calls.first.fetch(:action)
+    assert_equal @chat, calls.first.fetch(:chat)
+  end
+
   test "supersedes older pending memo write approvals" do
     old = AgentRun.create!(
       chat: @chat,

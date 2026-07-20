@@ -72,6 +72,40 @@ class AgentGraphMemoUpdateGraphRunnerTest < ActiveSupport::TestCase
     assert_match(/更新対象/, run.error_message)
   end
 
+  test "accepts an overridden memo writer for updates" do
+    calls = []
+    service = Object.new
+    service.define_singleton_method(:call) do |**kwargs|
+      calls << kwargs
+      [
+        {
+          "action" => "update",
+          "mode" => "append",
+          "memo_ref" => "42",
+          "updated_at" => "2026-07-16T00:00:00Z",
+          "append_body" => "Plugin update"
+        },
+        "### Plugin update",
+        { "source" => "plugin" }
+      ]
+    end
+
+    stub_get_memo do
+      AgentGraph::RoleServices.with(:memo_writer, service) do
+        run = AgentGraph::MemoUpdateGraphRunner.call(@chat)
+
+        assert_predicate run, :awaiting_approval?
+        assert_equal "Plugin update", run.state.dig("memo_draft", "append_body")
+        assert_equal "override", run.state.dig("memo_draft_meta", "profile")
+        assert_equal "plugin", run.state.dig("memo_draft_meta", "source")
+      end
+    end
+
+    assert_equal 1, calls.size
+    assert_equal :update, calls.first.fetch(:action)
+    assert_equal @chat, calls.first.fetch(:chat)
+  end
+
   private
 
   def stub_get_memo
