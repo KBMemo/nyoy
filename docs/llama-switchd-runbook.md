@@ -120,6 +120,15 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 大きな未キャッシュモデルではstart APIがtimeoutしても、直ちにstopや再startを行わない。server detailの`active`、systemd状態、対象unitのjournal、download中ファイル、data plane portを確認し、processが進行中ならready化を待つ。
 
+2026-07-21 production切替:
+
+- production DBの`gpt_oss`を`gpt-oss-20b`へbindingし、`http://balvenie:10014`、Alias `gpt-oss-20b`へ同期
+- productionの`llm_gemma4_e4b_mtp`接続を無効化
+- RuntimeのAlias一致と`total_slots=2`を確認
+- reconciliation ID 9は`warning`。`gpt_oss`のfindingはなく、既存の`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`が未bindingであることだけを検出
+
+残る4接続はportだけで自動bindingせず、各Runtime Aliasを確認して個別に同期する。
+
 ## 4. Lifecycle smoke test
 
 既存ワークロードへ影響しないstopped / disabledの小型モデルを使う。
