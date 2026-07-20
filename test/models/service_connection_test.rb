@@ -61,4 +61,29 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert_not connection.valid?
     assert_includes connection.errors[:base_url], "は http:// または https:// で始めてください"
   end
+
+  test "enabled OpenAI connection accepts an environment API token" do
+    original = Rails.application.config.x.nyoy.openai_api_key
+    Rails.application.config.x.nyoy.openai_api_key = "sk-env"
+    connection = service_connections(:openai)
+    connection.assign_attributes(enabled: true, api_token: nil)
+
+    assert connection.valid?
+    assert_equal "environment", connection.api_token_source
+    assert connection.api_token_configured?
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = original
+  end
+
+  test "enabled OpenAI connection still requires a token without environment fallback" do
+    original = Rails.application.config.x.nyoy.openai_api_key
+    Rails.application.config.x.nyoy.openai_api_key = nil
+    connection = service_connections(:openai)
+    connection.assign_attributes(enabled: true, api_token: nil)
+
+    assert_not connection.valid?
+    assert connection.errors[:api_token].any?
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = original
+  end
 end

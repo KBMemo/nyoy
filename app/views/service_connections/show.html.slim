@@ -20,9 +20,12 @@
     - else
       dt.font-medium.kb-text-secondary モデル
       dd.kb-text-muted 未設定（「モデル取得」で接続先 API から取得できます）
-    - if @service_connection.api_token.present?
+    - if @service_connection.api_token_configured?
       dt.font-medium.kb-text-secondary API トークン
-      dd.nyoy-monospace ••••••••
+      - if @service_connection.api_token_source == "environment"
+        dd 環境変数（OPENAI_CHAT_API_KEY）
+      - else
+        dd.nyoy-monospace ••••••••
     dt.font-medium.kb-text-secondary 状態
     dd = @service_connection.enabled? ? "有効" : "無効"
     dt.font-medium.kb-text-secondary 表示順

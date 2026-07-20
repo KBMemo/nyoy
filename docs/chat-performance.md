@@ -196,7 +196,7 @@ RUBY
 | 対応 | 実OpenAI用を `OPENAI_CHAT_API_KEY`、llama-server互換用を `OPENAI_API_KEY=local` に分離 |
 | 互換性 | `OPENAI_CHAT_API_KEY` 未設定時は、`local` 以外の従来 `OPENAI_API_KEY` を実OpenAIキーとして受け付ける |
 | seed | `local` はOpenAI接続のtokenとして保存せず、新規接続を有効化しない |
-| 併せて検討 | UI では OpenAI 接続の有効化に DB `api_token` が必須だが、実行時・モデル取得時は env fallback も見る。env-only 運用を許すなら validation と UI 表示も揃える |
+| env-only | `OPENAI_CHAT_API_KEY` があればDB `api_token` が空でも有効化でき、接続画面には秘密値を出さず「環境変数」と表示する |
 
 ### 4.7 再計測チェックリスト
 

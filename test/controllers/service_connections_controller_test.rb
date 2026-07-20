@@ -173,6 +173,37 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert Model.exists?(provider: "openai", model_id: "gpt-4o")
   end
 
+  test "update enables OpenAI connection with environment API token" do
+    original = Rails.application.config.x.nyoy.openai_api_key
+    Rails.application.config.x.nyoy.openai_api_key = "sk-env"
+    connection = service_connections(:openai)
+    connection.update!(enabled: false, api_token: nil)
+
+    patch service_connection_path(connection), params: {
+      service_connection: {
+        name: connection.name,
+        base_url: connection.base_url,
+        server_model: connection.server_model,
+        api_token: "",
+        enabled: true,
+        sort_order: connection.sort_order
+      }
+    }
+
+    assert_redirected_to service_connection_path(connection)
+    assert connection.reload.enabled?
+    assert_nil connection.api_token
+
+    get service_connection_path(connection)
+    assert_select "dd", text: "環境変数（OPENAI_CHAT_API_KEY）"
+
+    get edit_service_connection_path(connection)
+    assert_response :success
+    assert_select ".kb-status-success", text: /OPENAI_CHAT_API_KEY が設定済み/
+  ensure
+    Rails.application.config.x.nyoy.openai_api_key = original
+  end
+
   test "update openai chat model enabled flags" do
     connection = service_connections(:openai)
     connection.update!(
@@ -208,7 +239,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
   test "refresh models updates server model from api" do
     connection = service_connections(:gpt_oss)
     connection.update!(server_model: "old-model")
-    fake_result = ServiceConnectionModelFetcher::Result.new(ok: true, models: ["gpt-oss-20b"], message: "モデル 1 件を取得しました")
+    fake_result = ServiceConnectionModelFetcher::Result.new(ok: true, models: [ "gpt-oss-20b" ], message: "モデル 1 件を取得しました")
 
     with_fake_model_fetcher(fake_result) do
       post refresh_models_service_connection_path(connection)

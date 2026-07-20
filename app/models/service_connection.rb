@@ -37,7 +37,7 @@ class ServiceConnection < ApplicationRecord
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validate :key_must_be_allowed
   validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
-  validates :api_token, presence: true, if: :openai_chat_enabled?
+  validates :api_token, presence: true, if: -> { openai_chat_enabled? && !openai_environment_api_token? }
   validates :server_model, presence: true, if: :custom_llm?
 
   scope :enabled, -> { where(enabled: true) }
@@ -68,6 +68,21 @@ class ServiceConnection < ApplicationRecord
 
   def openai_chat_enabled?
     openai? && enabled?
+  end
+
+  def openai_environment_api_token?
+    openai? && Rails.application.config.x.nyoy.openai_api_key.present?
+  end
+
+  def api_token_source
+    return "database" if api_token.present?
+    return "environment" if openai_environment_api_token?
+
+    nil
+  end
+
+  def api_token_configured?
+    api_token_source.present?
   end
 
   def searfront_settings

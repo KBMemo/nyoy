@@ -62,7 +62,10 @@
       - if service_connection.key == "searfront"
         p.mt-1.text-sm.kb-text-muted searfront の Bearer トークン（必須）。空欄のまま更新すると既存のトークンは保持されます。
       - elsif service_connection.openai?
-        p.mt-1.text-sm.kb-text-muted OpenAI API キー（sk-...）。有効化するには必須です。空欄のまま更新すると既存のキーは保持されます。
+        - if service_connection.openai_environment_api_token?
+          p.mt-1.text-sm.kb-status-success OPENAI_CHAT_API_KEY が設定済みです。空欄の場合は環境変数のキーを使います。
+        - else
+          p.mt-1.text-sm.kb-text-muted OpenAI API キー（sk-...）。有効化するには必須です。空欄のまま更新すると既存のキーは保持されます。
       - else
         p.mt-1.text-sm.kb-text-muted sd.cpp switchd や徒然 API の認証トークンなど。空欄のまま更新すると既存のトークンは保持されます。
 
