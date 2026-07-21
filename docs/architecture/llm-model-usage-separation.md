@@ -168,3 +168,13 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 `LlmUsageResolver.llama_client_for`、`EmbeddingClient`、`VisionChatService`は有効な用途assignmentを解決できない場合に明示エラーを返す。`LlamaCppClient`は既定接続を持たず、解決済み`base_url`を必須引数として受け取る。これによりassignmentの設定不備が別モデルへの暗黙接続として隠れない。
 
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。
+
+## 10. 用途assignment監査
+
+`bin/rails llm_usages:audit`は全用途についてassignment、Model能力、Connection種別・有効状態、fallbackをJSONで報告する。状態は`healthy`、`degraded`、`unavailable`、`disabled`、`invalid`、`missing`のいずれかになる。`STRICT=1`では全用途が`healthy`でない限り終了statusを失敗にする。
+
+移行・deploy・Connection変更後は次を実行する。
+
+```bash
+STRICT=1 bin/rails llm_usages:audit
+```
