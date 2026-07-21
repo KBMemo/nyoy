@@ -329,7 +329,23 @@ bin/prod kbmemo:rag:ingest
 
 ## 6. 2 回目以降のデプロイ
 
-**bowmore 上**で実行します（`ssh` は不要）。
+通常は開発端末から実行する。bowmoreにGiteaのdeploy keyを配置せず、push済みのHEADをgit bundleで転送する。転送先ではfast-forwardだけを許可し、既存の`bin/deploy --skip-pull`が依存更新、DB準備、assets生成、systemd再起動、health checkを担当する。
+
+```bash
+git push origin main
+bin/deploy-bowmore
+```
+
+確認とseed実行:
+
+```bash
+bin/deploy-bowmore --check
+bin/deploy-bowmore --seed
+```
+
+接続先は`NYOY_DEPLOY_HOST`、配置先は`NYOY_DEPLOY_PATH`、branchは`NYOY_DEPLOY_BRANCH`で変更できる。コマンドは追跡ファイルがcleanで、HEADと`origin/<branch>`が一致する場合だけ転送する。
+
+bowmore上で直接更新できるdeploy keyを別途設定した環境では、従来のコマンドも利用できる。
 
 ```bash
 cd ~/sites/nyoy
