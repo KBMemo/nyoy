@@ -34,7 +34,7 @@ Environment:
   NYOY_HEALTH_URL       health check URL (default: https://nyoy.kbmemo.net/up)
   NYOY_HEALTH_HOST      Host header for localhost checks (default: nyoy.kbmemo.net)
   NYOY_HEALTH_CHECK_DELAY
-                        seconds to wait before first health check (default: 3)
+                        seconds to wait before first health check (default: 5)
   NYOY_GIT_REMOTE       git remote (default: origin)
 
 Example:
@@ -143,7 +143,7 @@ if [[ ! -f "${APP_ROOT}/config/master.key" ]]; then
 fi
 
 HEALTH_URL="${NYOY_HEALTH_URL:-https://nyoy.kbmemo.net/up}"
-HEALTH_CHECK_DELAY="${NYOY_HEALTH_CHECK_DELAY:-3}"
+HEALTH_CHECK_DELAY="${NYOY_HEALTH_CHECK_DELAY:-5}"
 
 if [[ ! "${HEALTH_CHECK_DELAY}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   echo "NYOY_HEALTH_CHECK_DELAY must be a non-negative number" >&2

@@ -372,11 +372,11 @@ bin/deploy --skip-restart   # git pull〜assets まで。再起動は手動
 ```bash
 NYOY_SYSTEMD_UNIT=nyoy \
 NYOY_HEALTH_URL=https://nyoy.kbmemo.net/up \
-NYOY_HEALTH_CHECK_DELAY=3 \
+NYOY_HEALTH_CHECK_DELAY=5 \
 bin/deploy
 ```
 
-`bin/deploy` はservice再起動後、最初のhealth checkまで既定で3秒待機する。起動時間に合わせて `NYOY_HEALTH_CHECK_DELAY` を変更できる。
+`bin/deploy` はservice再起動後、最初のhealth checkまで既定で5秒待機する。起動時間に合わせて `NYOY_HEALTH_CHECK_DELAY` を変更できる。
 
 LLMサーバー管理認証を変更した場合は、デプロイ後に非破壊スモークテストを実行します。
 
