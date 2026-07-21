@@ -121,6 +121,11 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Build test assets
+        env:
+          RAILS_ENV: test
+        run: bin/vite build
+
       - name: Run tests
         env:
           RAILS_ENV: test

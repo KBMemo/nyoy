@@ -17,7 +17,7 @@ class AgentGraphCoreTest < ActiveSupport::TestCase
     graph = AgentGraph::Core::GraphDefinition.new(
       name: :sample,
       start_node: :start,
-      nodes: { start: -> {} },
+      nodes: { start: -> { } },
       edges: { start: AgentGraph::Core::Edge.new(to: ->(state) { state.fetch("next") }) }
     )
 

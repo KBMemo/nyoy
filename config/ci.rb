@@ -2,6 +2,8 @@
 
 CI.run do
   step "Setup", "bin/setup --skip-server"
+  step "Setup: JavaScript", "npm ci"
+  step "Setup: Test assets", "env RAILS_ENV=test bin/vite build"
 
   step "Style: Ruby", "bin/rubocop"
 
@@ -9,6 +11,7 @@ CI.run do
   step "Security: npm audit", "npm audit --audit-level=high"
   step "Security: Brakeman code analysis", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
   step "Tests: Rails", "bin/rails test"
+  step "Tests: AgentGraph Core", "bundle exec rake -C packages/agent_graph-core test"
   step "Tests: Seeds", "env RAILS_ENV=test bin/rails db:seed:replant"
 
   # Optional: Run system tests
