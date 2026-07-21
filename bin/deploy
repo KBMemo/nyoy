@@ -33,6 +33,8 @@ Environment:
   NYOY_SYSTEMD_UNIT     user systemd unit name (default: nyoy)
   NYOY_HEALTH_URL       health check URL (default: https://nyoy.kbmemo.net/up)
   NYOY_HEALTH_HOST      Host header for localhost checks (default: nyoy.kbmemo.net)
+  NYOY_HEALTH_CHECK_DELAY
+                        seconds to wait before first health check (default: 3)
   NYOY_GIT_REMOTE       git remote (default: origin)
 
 Example:
@@ -141,6 +143,12 @@ if [[ ! -f "${APP_ROOT}/config/master.key" ]]; then
 fi
 
 HEALTH_URL="${NYOY_HEALTH_URL:-https://nyoy.kbmemo.net/up}"
+HEALTH_CHECK_DELAY="${NYOY_HEALTH_CHECK_DELAY:-3}"
+
+if [[ ! "${HEALTH_CHECK_DELAY}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "NYOY_HEALTH_CHECK_DELAY must be a non-negative number" >&2
+  exit 1
+fi
 
 step "deploy nyoy (${APP_ROOT}, RAILS_ENV=${RAILS_ENV})"
 
@@ -188,6 +196,9 @@ if [[ "${SKIP_RESTART}" -eq 0 ]]; then
     echo "user systemd unit ${SYSTEMD_UNIT}.service not found; restart the app process manually." >&2
     exit 1
   fi
+
+  step "wait ${HEALTH_CHECK_DELAY}s for startup"
+  run sleep "${HEALTH_CHECK_DELAY}"
 
   step "health check ${HEALTH_URL}"
   if [[ "${DRY_RUN}" -eq 1 ]]; then
