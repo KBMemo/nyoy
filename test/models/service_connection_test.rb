@@ -40,15 +40,28 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert_not ServiceConnection.exists?(connection.id)
   end
 
-  test "chat_keys includes custom llms" do
+  test "model endpoints include custom llms by adapter" do
     ServiceConnection.create!(
       key: "llm_extra",
       name: "Extra",
       base_url: "http://example.com:8080",
+      adapter: "llama_cpp",
       server_model: "extra-model"
     )
 
-    assert_includes ServiceConnection.chat_keys, "llm_extra"
+    assert_includes ServiceConnection.model_endpoints.pluck(:key), "llm_extra"
+  end
+
+  test "custom llm defaults to llama cpp adapter" do
+    connection = ServiceConnection.new(
+      key: "llm_adapter_default",
+      name: "Adapter default",
+      base_url: "http://example.com:8080",
+      server_model: "test-model"
+    )
+
+    assert connection.valid?
+    assert_equal "llama_cpp", connection.adapter
   end
 
   test "validates base_url format" do

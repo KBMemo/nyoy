@@ -3,12 +3,13 @@
 require "test_helper"
 
 class ChatModelCatalogTest < ActiveSupport::TestCase
-  test "definitions come from enabled chat connections" do
+  test "definitions come from enabled generative model endpoints" do
     definitions = ChatModelCatalog.definitions
 
-    assert_equal 2, definitions.length
+    assert_equal 3, definitions.length
     assert_equal "gemma-4-e4b-it-qat-ud-q4-k-xl", definitions.find { |d| d.connection_key == "llama_cpp" }.model_id
     assert_equal "gpt-oss", definitions.find { |d| d.connection_key == "gpt_oss" }.model_id
+    assert_equal "qwen3vl-4b-instruct-q4-k-m", definitions.find { |d| d.connection_key == "vision_llama" }.model_id
   end
 
   test "definitions exclude bound server that is not ready" do

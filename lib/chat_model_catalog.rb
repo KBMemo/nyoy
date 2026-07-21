@@ -12,7 +12,7 @@ module ChatModelCatalog
   end
 
   def configured_definitions
-    ServiceConnection.chat_backends.enabled.ordered.flat_map do |connection|
+    ServiceConnection.model_endpoints.enabled.ordered.flat_map do |connection|
       definitions_for(connection)
     end
   end
@@ -32,9 +32,11 @@ module ChatModelCatalog
     if connection.openai?
       Array(connection.settings&.dig("chat_models")).compact_blank.presence ||
         [ connection.server_model ].compact_blank
-    else
+    elsif connection.generative_model_endpoint?
       model_id = connection.server_model.presence || NyoyConnectionStore.server_model(connection.key)
       model_id.present? ? [ model_id ] : []
+    else
+      []
     end
   end
 
@@ -48,7 +50,7 @@ module ChatModelCatalog
 
   # Returns option groups for chat model select: [[connection_name, [[model_name, id], ...]], ...]
   def grouped_model_options
-    seed! if ServiceConnection.chat_backends.enabled.any?
+    seed! if ServiceConnection.model_endpoints.enabled.any?
 
     available_chat_backends.filter_map do |connection|
       model_ids = model_ids_for(connection)
@@ -105,7 +107,9 @@ module ChatModelCatalog
   end
 
   def available_chat_backends
-    ServiceConnection.chat_backends.enabled.ordered.select do |connection|
+    ServiceConnection.model_endpoints.enabled.ordered.select do |connection|
+      next false unless connection.generative_model_endpoint?
+
       LlamaServerAvailability.available?(connection)
     end
   end

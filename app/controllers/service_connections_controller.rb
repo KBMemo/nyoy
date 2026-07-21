@@ -84,6 +84,7 @@ class ServiceConnectionsController < ApplicationController
     @custom_llm = ActiveModel::Type::Boolean.new.cast(params[:custom])
     @service_connection = ServiceConnection.new(
       enabled: true,
+      adapter: (@custom_llm ? "llama_cpp" : "generic"),
       sort_order: ServiceConnection.maximum(:sort_order).to_i + 1
     )
     @service_connection.key = "llm_" if @custom_llm
@@ -92,6 +93,7 @@ class ServiceConnectionsController < ApplicationController
 
   def create
     @service_connection = ServiceConnection.new(service_connection_params)
+    @service_connection.adapter = "llama_cpp" if @service_connection.custom_llm?
     apply_searfront_settings!(@service_connection)
     apply_prompt_conversion_settings!(@service_connection)
     apply_llama_switchd_settings!(@service_connection)

@@ -29,7 +29,7 @@ class ServiceConnectionModelFetcher
   def fetch_models
     if @connection.openai?
       fetch_openai_api_models
-    elsif @connection.custom_llm? || OPENAI_COMPAT_KEYS.include?(@connection.key)
+    elsif @connection.model_endpoint? || OPENAI_COMPAT_KEYS.include?(@connection.key)
       fetch_openai_compatible_models
     elsif @connection.key == "sd_switchd"
       fetch_sd_switchd_models

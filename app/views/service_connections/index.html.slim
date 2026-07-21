@@ -40,7 +40,7 @@ p.text-sm.kb-text-secondary
         - if connection.notes.present?
           p.mt-2.text-sm.kb-text-secondary = truncate(connection.notes, length: 120)
         .mt-3.flex.flex-wrap.items-center.gap-3
-          - if connection.chat_backend? || connection.server_model.present? || connection.custom_llm?
+          - if connection.model_endpoint? || connection.server_model.present?
             = button_to "モデル取得", refresh_models_service_connection_path(connection), method: :post, class: "kb-chrome-btn-secondary kb-btn-sm #{kb_focus_ring}"
           = link_to "編集", edit_service_connection_path(connection), class: "kb-chrome-link text-sm"
           - unless connection.builtin?

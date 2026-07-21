@@ -14,7 +14,7 @@ class ServiceConnectionPropsFetcher
   end
 
   def call
-    unless @connection.supports_prompt_conversion_settings?
+    unless @connection.generative_model_endpoint?
       raise Error, "この接続種別はサンプリング取得に対応していません"
     end
 

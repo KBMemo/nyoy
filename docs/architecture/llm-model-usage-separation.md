@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 4 consumerのassignment解決移行（2026-07-21）
+**ステータス:** Phase 5 ServiceConnection用途依存の除去（2026-07-21）
 
 ## 1. 目的
 
@@ -92,7 +92,24 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 旧AppSetting画面との互換期間中は、関連する接続・Model・sampling preset columnの変更を既存assignmentへdual-writeする。assignment管理UIへの移行完了後にこの同期を削除する。
 
-## 6. 不変条件
+## 6. Connection adapter
+
+`ServiceConnection.adapter`は接続プロトコルだけを表す。
+
+| adapter | 責務 |
+| --- | --- |
+| `llama_cpp` | llama.cppのOpenAI互換model endpoint |
+| `openai` | OpenAI model endpoint |
+| `llama_switchd` | llama-server control plane |
+| `generic` | LLM以外を含む個別API |
+
+従来の`CHAT_BUILTIN_KEYS`、`chat_backends`、`chat_keys`は削除した。Chat catalogはmodel endpointのadapterとModel capabilityから候補を作る。llama-switchd inventoryとreconciliationは`adapter=llama_cpp`を管理対象とし、`gpt_oss`や`vision_llama`等の用途名を列挙しない。
+
+llama-server停止・削除前の用途表示は、有効なassignmentの主Model・fallback ModelからConnectionを逆引きする。assignmentがまだ1件もない移行前DBだけ、旧AppSetting判定へfallbackする。
+
+prompt conversion設定は旧UI互換のためmodel endpointに残しているが、最終的なsampling値の所有者はassignmentまたはsampling presetである。接続keyのserver指向移行と旧UI削除は後続Phaseで行う。
+
+## 7. 不変条件
 
 - `ServiceConnection`は用途keyを保持しない
 - 用途選択UIはConnectionではなくModelを表示する
@@ -102,7 +119,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 - lifecycle操作前の使用中判定は、Connectionへの直接参照ではなくassignmentから逆引きする
 - fallbackは暗黙のURL fallbackではなくassignment上で明示する
 
-## 7. 移行順序
+## 8. 移行順序
 
 1. 用途keyと能力要件を定義する（本Phase）
 2. `LlmUsageAssignment`を追加する

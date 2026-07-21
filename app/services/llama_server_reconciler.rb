@@ -43,8 +43,7 @@ class LlamaServerReconciler
   end
 
   def managed_candidates
-    keys = (ServiceConnection::CHAT_BUILTIN_KEYS - [ "openai" ]) + %w[vision_llama embeddings]
-    ServiceConnection.enabled.where(key: keys).or(ServiceConnection.enabled.custom_llms).ordered
+    ServiceConnection.enabled.where(adapter: "llama_cpp").ordered
   end
 
   def unbound_findings

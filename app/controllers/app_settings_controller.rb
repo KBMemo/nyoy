@@ -18,7 +18,7 @@ class AppSettingsController < ApplicationController
   private
 
   def load_form
-    ChatModelCatalog.seed! if ServiceConnection.chat_backends.enabled.any?
+    ChatModelCatalog.seed! if ServiceConnection.model_endpoints.enabled.any?
     @app_setting = AppSetting.instance
     @connection_options = StylePlanModelCatalog.options_for_select
     @llm_sampling_presets = LlmSamplingPreset.enabled.ordered

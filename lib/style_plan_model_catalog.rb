@@ -69,7 +69,8 @@ module StylePlanModelCatalog
 
   def client_for(connection_key: nil)
     key = connection_key.presence || default_connection_key
-    unless ServiceConnection.chat_keys.include?(key)
+    connection = ServiceConnection.find_by(key: key)
+    unless connection&.generative_model_endpoint?
       raise StylePlanGenerator::Error, "不明な接続です: #{key}"
     end
     unless NyoyConnectionStore.enabled?(key)

@@ -24,4 +24,16 @@ class LlamaServerUsageResolverTest < ActiveSupport::TestCase
 
     assert_empty LlamaServerUsageResolver.descriptions_for_server(manager, "main")
   end
+
+  test "derives usages from model assignments" do
+    LlmUsageAssignmentSeeds.seed!
+    connection = service_connections(:llama_cpp)
+
+    labels = LlamaServerUsageResolver.labels_for(connection)
+
+    assert_includes labels, "通常Chat"
+    assert_includes labels, "AgentGraphドラフト"
+    assert_includes labels, "画像生成style plan"
+    assert_not_includes labels, "画像理解"
+  end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class LlamaServerUsageResolver
-  MODEL_USAGES = {
+  LEGACY_MODEL_USAGES = {
     research_draft_model: "AgentGraph draft",
     research_planner_model: "AgentGraph planner",
     agent_graph_intent_model: "AgentGraph intent",
@@ -10,12 +10,24 @@ class LlamaServerUsageResolver
   }.freeze
 
   def self.labels_for(connection)
+    labels = LlmUsageAssignment.enabled.includes(:model, :fallback_model).filter_map do |assignment|
+      models = [ assignment.model, assignment.fallback_model ].compact
+      next unless models.any? { |model| model.metadata.to_h["connection_key"] == connection.key }
+
+      LlmUsageCatalog.fetch(assignment.usage_key).label
+    end.uniq
+    return labels if LlmUsageAssignment.exists?
+
+    legacy_labels_for(connection)
+  end
+
+  def self.legacy_labels_for(connection)
     labels = []
     labels << "既定Chat" if AppSetting.default_chat_connection_key == connection.key
     labels << "style plan" if AppSetting.default_style_plan_connection_key == connection.key
     labels << "画像理解" if connection.key == "vision_llama"
     labels << "埋め込み" if connection.key == "embeddings"
-    MODEL_USAGES.each do |resolver, label|
+    LEGACY_MODEL_USAGES.each do |resolver, label|
       model = AppSetting.public_send(resolver)
       labels << label if model&.metadata&.dig("connection_key") == connection.key
     end

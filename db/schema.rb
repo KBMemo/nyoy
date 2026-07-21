@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_040000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_050000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -496,6 +496,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_040000) do
   end
 
   create_table "service_connections", force: :cascade do |t|
+    t.string "adapter", default: "generic", null: false
     t.string "api_token"
     t.string "base_url", null: false
     t.datetime "created_at", null: false
@@ -509,6 +510,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_040000) do
     t.jsonb "settings", default: {}, null: false
     t.integer "sort_order", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.index ["adapter"], name: "index_service_connections_on_adapter"
     t.index ["enabled"], name: "index_service_connections_on_enabled"
     t.index ["key"], name: "index_service_connections_on_key", unique: true
     t.index ["manager_connection_id", "managed_server_id"], name: "index_service_connections_on_manager_and_server"

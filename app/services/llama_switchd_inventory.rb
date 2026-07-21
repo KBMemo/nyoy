@@ -39,8 +39,7 @@ class LlamaSwitchdInventory
   private
 
   def managed_connections
-    keys = (ServiceConnection::CHAT_BUILTIN_KEYS - [ "openai" ]) + %w[vision_llama embeddings]
-    ServiceConnection.where(key: keys).or(ServiceConnection.custom_llms).ordered
+    ServiceConnection.where(adapter: "llama_cpp").ordered
   end
 
   def compare(connection, servers, runtimes)

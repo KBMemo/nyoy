@@ -48,6 +48,7 @@ module ServiceConnectionSeeds
     attributes = {
       name: definition.fetch(:name),
       base_url: definition.fetch(:base_url),
+      adapter: adapter_for(definition),
       server_model: definition[:server_model],
       sort_order: definition.fetch(:sort_order, index),
       notes: definition[:notes]
@@ -64,6 +65,7 @@ module ServiceConnectionSeeds
     attributes = {
       name: definition.fetch(:name),
       base_url: definition.fetch(:base_url),
+      adapter: adapter_for(definition),
       server_model: definition[:server_model],
       enabled: definition.fetch(:enabled, true),
       sort_order: definition.fetch(:sort_order, index),
@@ -175,5 +177,14 @@ module ServiceConnectionSeeds
         notes: "Chat fetch_url ツール用（Mozilla Readability）"
       }
     ]
+  end
+
+  def adapter_for(definition)
+    key = definition.fetch(:key).to_s
+    return "openai" if key == "openai"
+    return "llama_switchd" if key == "llama_switchd"
+    return "llama_cpp" if key.in?(%w[llama_cpp gpt_oss vision_llama embeddings]) || key.start_with?("llm_")
+
+    "generic"
   end
 end

@@ -24,7 +24,7 @@ class ServiceConnection < ApplicationRecord
     readability
   ].freeze
 
-  CHAT_BUILTIN_KEYS = %w[llama_cpp gpt_oss openai].freeze
+  ADAPTERS = %w[generic llama_cpp openai llama_switchd].freeze
   CUSTOM_LLM_KEY_FORMAT = /\Allm_[a-z0-9_]+\z/
 
   KEY_LABELS = {
@@ -43,6 +43,7 @@ class ServiceConnection < ApplicationRecord
   }.freeze
 
   validates :key, :name, :base_url, presence: true
+  validates :adapter, inclusion: { in: ADAPTERS }
   validates :key, uniqueness: true
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validate :key_must_be_allowed
@@ -54,13 +55,14 @@ class ServiceConnection < ApplicationRecord
 
   scope :enabled, -> { where(enabled: true) }
   scope :ordered, -> { order(sort_order: :asc, name: :asc) }
-  scope :chat_backends, -> { where(key: chat_keys) }
+  scope :model_endpoints, -> { where(adapter: %w[llama_cpp openai]) }
   scope :custom_llms, -> { where("key LIKE ?", "llm_%") }
 
   before_validation :normalize_searfront_settings, if: :searfront?
+  before_validation :normalize_custom_llm_adapter, if: :custom_llm?
   before_destroy :prevent_builtin_destroy
   after_save :clear_connection_cache
-  after_save :sync_chat_models, if: :chat_backend?
+  after_save :sync_chat_models, if: :generative_model_endpoint?
 
   def builtin?
     BUILTIN_KEYS.include?(key)
@@ -75,7 +77,7 @@ class ServiceConnection < ApplicationRecord
   end
 
   def openai?
-    key.to_s == "openai"
+    adapter == "openai"
   end
 
   def openai_chat_enabled?
@@ -142,7 +144,7 @@ class ServiceConnection < ApplicationRecord
   end
 
   def supports_prompt_conversion_settings?
-    CHAT_BUILTIN_KEYS.include?(key.to_s) || custom_llm?
+    generative_model_endpoint?
   end
 
   def key_label
@@ -151,12 +153,20 @@ class ServiceConnection < ApplicationRecord
     KEY_LABELS.fetch(key, key)
   end
 
-  def chat_backend?
-    self.class.chat_keys.include?(key)
+  def model_endpoint?
+    adapter.in?(%w[llama_cpp openai])
   end
 
-  def self.chat_keys
-    CHAT_BUILTIN_KEYS + custom_llms.pluck(:key)
+  def generative_model_endpoint?
+    return false unless model_endpoint?
+    return true if openai?
+
+    models_for_connection.any? { |model| LlmModelCapabilities.for(model).include?(:text_generation) } ||
+      (server_model.present? && key != "embeddings")
+  end
+
+  def models_for_connection
+    Model.where("metadata ->> 'connection_key' = ?", key.to_s)
   end
 
   def self.available_keys
@@ -188,6 +198,10 @@ class ServiceConnection < ApplicationRecord
 
   def normalize_searfront_settings
     self.settings = SearfrontSettings.normalize(settings)
+  end
+
+  def normalize_custom_llm_adapter
+    self.adapter = "llama_cpp" if adapter.blank? || adapter == "generic"
   end
 
   def prevent_builtin_destroy
