@@ -14,7 +14,7 @@ module LlamaServerAdminAuthentication
   def require_llama_server_admin!
     return if llama_server_admin_authenticated?
 
-    session[:llama_server_admin_return_to] = request.fullpath if request.get?
+    session[:llama_server_admin_return_to] = request.fullpath if request.get? || request.head?
     redirect_to new_llama_server_admin_session_path, alert: "LLMサーバー管理の認証が必要です。"
   end
 

@@ -9,6 +9,13 @@ class LlamaServerAdminSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_llama_server_admin_session_path
   end
 
+  test "redirects an unauthenticated head request without losing the return path" do
+    head service_connections_path
+
+    assert_redirected_to new_llama_server_admin_session_path
+    assert_equal service_connections_path, session[:llama_server_admin_return_to]
+  end
+
   test "signs in and returns to requested management page" do
     get service_connections_path
     post llama_server_admin_session_path, params: { token: LLAMA_SERVER_ADMIN_TEST_TOKEN }

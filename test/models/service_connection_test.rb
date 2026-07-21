@@ -99,7 +99,15 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     )
 
     assert_not connection.valid?
-    assert_includes connection.errors[:base_url], "は http:// または https:// で始めてください"
+    assert_includes connection.errors[:base_url], "は有効な http:// または https:// URLを指定してください"
+  end
+
+  test "rejects an http url without a host" do
+    connection = service_connections(:llama_cpp)
+    connection.base_url = "http:///path"
+
+    assert_not connection.valid?
+    assert connection.errors[:base_url].any?
   end
 
   test "enabled OpenAI connection accepts an environment API token" do

@@ -4,12 +4,12 @@ require "test_helper"
 
 class SdPromptTokenizerTest < ActiveSupport::TestCase
   test "counts CLIP tokens for a simple prompt" do
-    assert_equal 5, SdPromptTokenizer.count("a photo of a cat")
+    assert_equal 5, SdPromptTokenizer.token_count("a photo of a cat")
   end
 
   test "returns zero for blank text" do
-    assert_equal 0, SdPromptTokenizer.count("")
-    assert_equal 0, SdPromptTokenizer.count("   ")
+    assert_equal 0, SdPromptTokenizer.token_count("")
+    assert_equal 0, SdPromptTokenizer.token_count("   ")
   end
 
   test "labels include limit" do

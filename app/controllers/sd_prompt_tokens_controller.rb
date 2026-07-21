@@ -3,7 +3,7 @@
 class SdPromptTokensController < ApplicationController
   def create
     text = params[:text].to_s
-    count = SdPromptTokenizer.count(text)
+    count = SdPromptTokenizer.token_count(text)
 
     render json: {
       count: count,

@@ -17,7 +17,7 @@ class SdPromptTokenizer
   /ix
 
   class << self
-    def count(text)
+    def token_count(text)
       encode(text).length
     end
 
@@ -28,11 +28,11 @@ class SdPromptTokenizer
     end
 
     def over_limit?(text)
-      count(text) > CLIP_TOKEN_LIMIT
+      token_count(text) > CLIP_TOKEN_LIMIT
     end
 
     def label(text)
-      count = count(text)
+      count = token_count(text)
       "#{count} / #{CLIP_TOKEN_LIMIT}"
     end
 
@@ -101,7 +101,7 @@ class SdPromptTokenizer
       return token
     end
 
-    word = token[0..-2].chars + ["#{token[-1]}</w>"]
+    word = token[0..-2].chars + [ "#{token[-1]}</w>" ]
     pairs = pairs_for(word)
     return @cache[token] = word.join if pairs.empty?
 

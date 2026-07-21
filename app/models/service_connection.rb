@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 class ServiceConnection < ApplicationRecord
   belongs_to :manager_connection, class_name: "ServiceConnection", optional: true
   has_many :managed_connections,
@@ -51,7 +53,7 @@ class ServiceConnection < ApplicationRecord
   validate :key_must_be_allowed
   validate :manager_must_be_llama_switchd
   validate :llama_switchd_settings_must_be_valid
-  validates :base_url, format: { with: %r{\Ahttps?://}, message: "は http:// または https:// で始めてください" }
+  validate :base_url_must_be_http_url
   validates :api_token, presence: true, if: -> { openai_chat_enabled? && !openai_environment_api_token? }
   validates :server_model, presence: true, if: :custom_llm?
 
@@ -193,6 +195,15 @@ class ServiceConnection < ApplicationRecord
   end
 
   private
+
+  def base_url_must_be_http_url
+    uri = URI.parse(base_url.to_s)
+    return if uri.is_a?(URI::HTTP) && uri.host.present?
+
+    errors.add(:base_url, "は有効な http:// または https:// URLを指定してください")
+  rescue URI::InvalidURIError
+    errors.add(:base_url, "は有効な http:// または https:// URLを指定してください")
+  end
 
   def manager_must_be_llama_switchd
     return if manager_connection.nil? || manager_connection.key == "llama_switchd"
