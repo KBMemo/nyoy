@@ -32,11 +32,13 @@ module ApplicationHelper
     sd_prompt_templates
     lora_profiles
     service_connections
+    llm_sampling_presets
+    llm_usage_assignments
     app_settings
   ].freeze
 
   def kb_chrome_link_class(controller)
-    classes = ["kb-chrome-link"]
+    classes = [ "kb-chrome-link" ]
     classes << "font-semibold" if controller_name == controller
     classes.join(" ")
   end
@@ -46,27 +48,28 @@ module ApplicationHelper
   end
 
   def kb_chrome_settings_trigger_class
-    classes = ["kb-chrome-link", "kb-chrome-dropdown-trigger", kb_focus_ring]
+    classes = [ "kb-chrome-link", "kb-chrome-dropdown-trigger", kb_focus_ring ]
     classes << "font-semibold" if kb_settings_nav_active?
     classes.join(" ")
   end
 
   def kb_chrome_dropdown_item_class(controller)
-    classes = ["kb-chrome-dropdown-item"]
+    classes = [ "kb-chrome-dropdown-item" ]
     classes << "font-semibold" if controller_name == controller
     classes.join(" ")
   end
 
   def kb_settings_nav_items
     [
-      ["ナレッジ", "prompt_knowledge_chunks", prompt_knowledge_chunks_path],
-      ["スタイル", "prompt_styles", prompt_styles_path],
-      ["モデル", "sd_model_profiles", sd_model_profiles_path],
-      ["生成テンプレート", "sd_prompt_templates", sd_prompt_templates_path],
-      ["LoRA", "lora_profiles", lora_profiles_path],
-      ["接続", "service_connections", service_connections_path],
-      ["サンプリング", "llm_sampling_presets", llm_sampling_presets_path],
-      ["既定モデル", "app_settings", edit_app_settings_path]
+      [ "ナレッジ", "prompt_knowledge_chunks", prompt_knowledge_chunks_path ],
+      [ "スタイル", "prompt_styles", prompt_styles_path ],
+      [ "モデル", "sd_model_profiles", sd_model_profiles_path ],
+      [ "生成テンプレート", "sd_prompt_templates", sd_prompt_templates_path ],
+      [ "LoRA", "lora_profiles", lora_profiles_path ],
+      [ "接続", "service_connections", service_connections_path ],
+      [ "サンプリング", "llm_sampling_presets", llm_sampling_presets_path ],
+      [ "LLM用途", "llm_usage_assignments", llm_usage_assignments_path ],
+      [ "既定モデル", "app_settings", edit_app_settings_path ]
     ]
   end
 

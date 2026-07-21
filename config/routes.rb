@@ -50,6 +50,7 @@ Rails.application.routes.draw do
   resources :llama_servers, only: %i[new create edit update destroy]
   resource :llama_server_admin_session, only: %i[new create destroy]
   resources :llm_sampling_presets
+  resources :llm_usage_assignments, only: %i[index update]
   resource :app_settings, only: %i[edit update]
   resources :sd_model_profiles
   resources :sd_prompt_templates

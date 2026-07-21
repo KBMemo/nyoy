@@ -70,6 +70,8 @@ AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約で
 | `llm_sampling_preset_id` | 任意のsampling preset |
 | `enabled` | assignmentの利用可否 |
 
+管理画面の「LLM用途」では、用途ごとに主Model、明示fallback Model、sampling preset、有効状態を更新する。Model候補は用途の必須capabilityを満たし、有効なConnectionへ解決できるものに絞る。既存割当が能力不足または接続不能になった場合は候補から黙って除去せず、現在値を残して警告表示する。
+
 profile実装名は保持しない。AgentGraph profileとModel選択を独立させるためである。
 
 Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化する。現行互換として`chat`は`text_generation`と`tool_calling`、画像入力modalitiesは`vision`、`embedding(s)`は`embedding`を満たす。assignment保存時に主Modelとfallback Modelの両方を検証する。
