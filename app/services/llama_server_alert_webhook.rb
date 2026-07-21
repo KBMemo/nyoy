@@ -17,7 +17,7 @@ class LlamaServerAlertWebhook
     request["Content-Type"] = "application/json"
     request["Authorization"] = "Bearer #{@token}" if @token.present?
     request["Idempotency-Key"] = "nyoy-llama-reconciliation-#{reconciliation.id}"
-    request.body = JSON.generate(payload(reconciliation, policy))
+    request.body = JSON.generate(LlamaServerAlertPayload.call(reconciliation, policy: policy))
 
     http = Net::HTTP.new(@uri.host, @uri.port)
     http.use_ssl = @uri.scheme == "https"
@@ -37,19 +37,5 @@ class LlamaServerAlertWebhook
     return if @uri.is_a?(URI::HTTP) && @uri.host.present?
 
     raise Error, "LLM server alert webhook URL must use http or https"
-  end
-
-  def payload(reconciliation, policy)
-    {
-      event: "llama_server.reconciliation.#{policy.event}",
-      environment: Rails.env,
-      reconciliation_id: reconciliation.id,
-      status: reconciliation.status,
-      previous_status: policy.previous_status,
-      checked_at: reconciliation.checked_at.iso8601,
-      findings: reconciliation.findings,
-      error_message: reconciliation.error_message,
-      management_path: "/service_connections/llama_servers"
-    }
   end
 end

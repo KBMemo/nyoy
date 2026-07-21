@@ -92,6 +92,12 @@ Rails.application.config.x.nyoy.tap do |config|
   config.llama_server_admin_session_ttl = ENV.fetch("LLAMA_SERVER_ADMIN_SESSION_TTL", 12.hours.to_i).to_i.seconds
   config.llama_server_alert_webhook_url = ENV["LLAMA_SERVER_ALERT_WEBHOOK_URL"]
   config.llama_server_alert_webhook_token = ENV["LLAMA_SERVER_ALERT_WEBHOOK_TOKEN"]
+  config.llama_server_alert_zabbix_server = ENV["LLAMA_SERVER_ALERT_ZABBIX_SERVER"]
+  config.llama_server_alert_zabbix_port = ENV.fetch("LLAMA_SERVER_ALERT_ZABBIX_PORT", "10051").to_i
+  config.llama_server_alert_zabbix_host = ENV["LLAMA_SERVER_ALERT_ZABBIX_HOST"]
+  config.llama_server_alert_zabbix_key_prefix = ENV.fetch(
+    "LLAMA_SERVER_ALERT_ZABBIX_KEY_PREFIX", "nyoy.llama_server.reconciliation"
+  )
   # Streamable HTTP の DNS rebinding 保護。リモート公開時は false（API キーで保護）。
   config.mcp_dns_rebinding_protection = ENV.fetch("MCP_DNS_REBINDING_PROTECTION", "false") == "true"
   config.sd_model_loras = {

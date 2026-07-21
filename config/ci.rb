@@ -13,6 +13,7 @@ CI.run do
   step "Tests: Rails", "bin/rails test"
   step "Tests: AgentGraph Core", "bundle exec rake -C packages/agent_graph-core test"
   step "Tests: Seeds", "env RAILS_ENV=test bin/rails db:seed:replant"
+  step "Cleanup: Test database", "env RAILS_ENV=test bin/rails db:test:prepare"
 
   # Optional: Run system tests
   # step "Tests: System", "bin/rails test:system"

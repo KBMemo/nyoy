@@ -256,7 +256,7 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
 | 完了 | production残接続のbinding | 2026-07-22に`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`を確定済みRuntime Aliasへbinding・同期 | reconciliation `healthy`、findings 0件を確認済み |
-| 運用 | Zabbixへの外部alert常設 | 本番runtimeと一時localhost受信器でwarning/recovered、Bearer、冪等キーのE2Eは確認済み。2026-07-22にZabbix導入後へ延期を決定 | Zabbix導入後に受信方式を確定し、本番envへ設定して実際の異常・復旧通知を受信確認 |
+| 運用 | Zabbixへの外部alert常設 | bowmore Zabbix 7.0.28を確認し、sender protocol adapterを実装。Webhook E2Eも確認済み | Zabbix host・trapper item・triggerを作成し、本番env設定後に異常・復旧通知を受信確認 |
 
 `public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。
 
