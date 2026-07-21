@@ -129,6 +129,15 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 残る4接続はportだけで自動bindingせず、各Runtime Aliasを確認して個別に同期する。
 
+2026-07-22にswitchd APIを再確認し、server ID・Alias・portが一致する次の対応表を確定した。本番DBは`adapter` / binding column導入前で、Kamal hostもSSH接続拒否だったため、実際のbindingは最新app deploy後まで保留している。
+
+| 旧接続 | binding先 server ID | port |
+| --- | --- | ---: |
+| `llama_cpp` | `gemma-4-e4b-it-qat-ud-q4-k-xl` | 10011 |
+| `vision_llama` | `qwen3vl-4b-instruct-q4-k-m` | 10021 |
+| `embeddings` | `lfm2.5-embedding-350m-q4-k-m` | 10020 |
+| `llm_qwythos_9b_mtp_q4` | `qwythos-9b-claude-mythos-5-1m-q4-k-m` | 10013 |
+
 2026-07-21 LFM2.5整理:
 
 - `lfm2.5-1.2b-instruct-q4-k-m`についてdevelopment・productionの有効接続、既定用途、実行中operationを監査し、用途参照なしを確認
