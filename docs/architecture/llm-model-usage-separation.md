@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 8 用途assignment管理UIへの移行（2026-07-21）
+**ステータス:** Phase 12 AppSetting互換API撤去（2026-07-21）
 
 ## 1. 目的
 
@@ -37,24 +37,24 @@ sampling値は接続特性ではない。同じModelでも通常Chat、planner�
 
 `tool_calling`は通常Chatの必須能力とする。toolを使わない会話も同じ用途に含め、turnごとにassignmentを切り替えない。structured outputは現行実装にfallbackがあるため、Phase 1では必須capabilityに含めない。
 
-## 3. 旧設定からの移行表
+## 3. 用途別の実行元
 
-| usage key | 現在の設定元 | 現在のfallback |
+| usage key | consumer | fallback |
 | --- | --- | --- |
-| `chat.default` | `AppSetting.default_chat_connection_key`、Chatの`Model` | 有効なModel catalogの先頭 |
-| `agent.intent` | `AppSetting.agent_graph_intent_model_id` | 通常Chat model |
-| `agent.planner` | `AppSetting.research_planner_model_id` | 通常Chat model |
-| `agent.evidence_evaluator` | `AppSetting.evidence_evaluator_model_id` | heuristicまたは通常Chat model |
-| `agent.draft` | `AppSetting.research_draft_model_id` | 通常Chat model、次にtemplate |
-| `agent.final_answer` | `AppSetting.final_answer_model_id` | 通常Chat model |
-| `vision.image_understanding` | `ServiceConnection key=vision_llama` | なし（retry後に失敗） |
-| `embedding.memo_knowledge` | `ServiceConnection key=embeddings` | なし |
-| `embedding.prompt_knowledge` | `ServiceConnection key=embeddings` | なし |
-| `image.style_plan` | `default_style_plan_connection_key`、生成recordの`style_plan_connection_key` | `chat.default`のModel |
-| `image.direct_prompt` | `style_plan_connection_key` | style plan既定接続 |
-| `utility.chat_history_summary` | `LlamaCppClient`既定接続 | `llama_cpp` |
-| `utility.memo_chunk_compression` | `LlamaCppClient`既定接続 | `llama_cpp` |
-| `utility.sd_prompt_translation` | `LlamaCppClient`既定接続 | `llama_cpp` |
+| `chat.default` | 通常Chatの既定Model・sampling | assignmentの明示fallback Model |
+| `agent.intent` | `HybridLlmIntentRouter` | deterministic判定 |
+| `agent.planner` | `LlmResearchPlanner` | deterministic計画 |
+| `agent.evidence_evaluator` | `LlmEvidenceEvaluator` | heuristic判定 |
+| `agent.draft` | `EvidenceSynthesizer` | Chat Model、次にtemplate |
+| `agent.final_answer` | `LightFinalAnswer` | main final answer profile |
+| `vision.image_understanding` | `VisionChatService` | なし（retry後に失敗） |
+| `embedding.memo_knowledge` | メモRAG登録・検索 | なし |
+| `embedding.prompt_knowledge` | prompt RAG登録・検索 | なし |
+| `image.style_plan` | `StylePlanGenerator` | assignmentの明示fallback Model |
+| `image.direct_prompt` | `DirectPromptGenerator` | assignmentの明示fallback Model |
+| `utility.chat_history_summary` | `ChatHistorySummarizer` | assignmentの明示fallback Model |
+| `utility.memo_chunk_compression` | `MemoKnowledgeChunkCompressor` | assignmentの明示fallback Model |
+| `utility.sd_prompt_translation` | `SdPromptTranslator` | assignmentの明示fallback Model |
 
 AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約である。profileはアルゴリズム実装を選び、usage assignmentはそのprofileがLLMを必要とするときのModelを選ぶ。deterministic profileではassignmentが存在してもLLMを呼ばない。
 
@@ -76,7 +76,7 @@ profile実装名は保持しない。AgentGraph profileとModel選択を独立�
 
 Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化する。現行互換として`chat`は`text_generation`と`tool_calling`、画像入力modalitiesは`vision`、`embedding(s)`は`embedding`を満たす。assignment保存時に主Modelとfallback Modelの両方を検証する。
 
-`LlmUsageAssignmentSeeds.seed!`は現在のAppSettingと有効なServiceConnectionから、未登録用途だけを移行する。既存assignmentは再seedしても上書きしない。AgentGraphの専用Modelが未設定なら通常Chat Modelを使い、専用Modelがある場合は通常Chat Modelを明示fallbackとして保存する。Vision・Embedding Modelが未登録の場合は、それぞれの接続から能力metadata付きで作成する。
+`LlmUsageAssignmentSeeds.seed!`はModel catalogと有効なServiceConnectionから、未登録用途だけを作成する。既存assignmentは再seedしても上書きしない。AgentGraph用途は初期値として通常Chat Modelを使う。Vision・Embedding Modelが未登録の場合は、それぞれの接続から能力metadata付きで作成する。
 
 `db:seed`はServiceConnection、Chat Model、sampling presetの後にassignment seedを実行する。productionで通常deploy時にseedを省略している場合は、Phase 3の反映時に`LlmUsageAssignmentSeeds.seed!`を一度明示実行する。
 
@@ -86,7 +86,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 1. 有効なassignmentの主Modelと、そのModelが参照する有効なConnection
 2. 主ModelのConnectionが無効なら、明示fallback Modelとその有効なConnection
-3. assignmentが未登録または無効なら、consumerが渡す旧設定
+3. assignmentが未登録、無効、または利用可能なModelがなければ明示エラー
 
 通常Chatの既定Modelとsampling preset、AgentGraphのintent・planner・evidence evaluator・draft・final answer、画像理解、メモ・プロンプトRAGのembedding、style plan、direct prompt、Chat履歴要約、メモchunk圧縮、画像prompt翻訳をResolver経由へ移した。
 
@@ -148,6 +148,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 9. 用途選択環境変数を廃止し、初回seedをModel基準へ統一する（完了）
 10. runtimeの旧接続キーfallbackを廃止し、用途assignmentを必須化する（完了）
 11. 旧AppSettingのLLM設定8列を安全弁付きmigrationで削除する（完了）
+12. `AppSetting`のLLM用途互換アクセサを撤去し、consumerをResolverへ直結する（完了）
 
 ## 9. Legacy key監査
 

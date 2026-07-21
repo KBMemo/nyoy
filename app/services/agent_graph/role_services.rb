@@ -154,7 +154,7 @@ module AgentGraph
       end
 
       def call(state:, run:, chat:)
-        model = AppSetting.final_answer_model
+        model = LlmUsageResolver.model_for("agent.final_answer")
         return fallback_result(state: state, run: run, chat: chat, error: "final answer model is not configured") unless model
 
         result = synthesize_light(state: state, chat: chat, model: model)

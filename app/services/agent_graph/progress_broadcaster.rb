@@ -101,7 +101,7 @@ module AgentGraph
         return nil unless LLM_NODES.include?(node_name.to_s)
 
         if node_name.to_s == "draft_memo"
-          draft = AppSetting.research_draft_model
+          draft = LlmUsageResolver.model_for("agent.draft")
           if draft
             return draft.name.presence || draft.model_id
           end

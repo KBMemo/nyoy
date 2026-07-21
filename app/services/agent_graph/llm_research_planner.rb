@@ -16,7 +16,7 @@ module AgentGraph
 
     def call(state:, run:, chat:)
       baseline = fallback_plan(state: state, run: run, chat: chat)
-      model = AppSetting.research_planner_model
+      model = LlmUsageResolver.model_for("agent.planner")
       return fallback_result(baseline, model, "planner model is not configured") unless model
 
       classification, llama_cache, usage = classify(model, state.fetch("question").to_s, chat)

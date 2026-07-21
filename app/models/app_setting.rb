@@ -13,43 +13,6 @@ class AppSetting < ApplicationRecord
       first || create!
     end
 
-    def default_chat_connection_key
-      LlmUsageResolver.resolve("chat.default")&.connection&.key
-    end
-
-    def default_style_plan_connection_key
-      LlmUsageResolver.resolve("image.style_plan")&.connection&.key
-    end
-
-    # Normalized chat sampling hash from the selected preset, or {} when unset/invalid.
-    def default_chat_llm_params
-      preset = LlmUsageResolver.resolve("chat.default")&.sampling_preset
-      return {} unless preset
-
-      ChatLlmSettings.normalize(preset.sampling_params.to_h)
-    end
-
-    # Preferred Model for Research Graph draft synthesis (nil = use chat model).
-    def research_draft_model
-      LlmUsageResolver.model_for("agent.draft")
-    end
-
-    def research_planner_model
-      LlmUsageResolver.model_for("agent.planner")
-    end
-
-    def evidence_evaluator_model
-      LlmUsageResolver.model_for("agent.evidence_evaluator")
-    end
-
-    def final_answer_model
-      LlmUsageResolver.model_for("agent.final_answer")
-    end
-
-    def agent_graph_intent_model
-      LlmUsageResolver.model_for("agent.intent")
-    end
-
     # "main" = retry with chat model then template; "template" = evidence pack only.
     def research_draft_fallback
       value = instance.research_draft_fallback.to_s.presence

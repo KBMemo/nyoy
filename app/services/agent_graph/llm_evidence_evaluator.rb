@@ -19,7 +19,7 @@ module AgentGraph
       baseline = @fallback.call(state: state, run: run, chat: chat)
       return heuristic_result(baseline) unless reviewable?(baseline, state)
 
-      model = AppSetting.evidence_evaluator_model
+      model = LlmUsageResolver.model_for("agent.evidence_evaluator")
       return fallback_result(baseline, model, "evidence evaluator model is not configured") unless model
 
       sufficient, llama_cache, usage = classify(model, state, chat)

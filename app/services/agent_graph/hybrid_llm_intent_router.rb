@@ -21,7 +21,7 @@ module AgentGraph
       return nil if text.to_s.strip.empty? || message&.attachments&.attached?
       return nil if ResearchIntent.negative?(text)
 
-      model = AppSetting.agent_graph_intent_model
+      model = LlmUsageResolver.model_for("agent.intent")
       return nil unless model
 
       classification, metadata = classify(model, text, chat)

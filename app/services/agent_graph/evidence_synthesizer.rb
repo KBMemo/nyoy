@@ -4,8 +4,8 @@ module AgentGraph
   # Shared draft / evidence helpers for Research Graph.
   # Used by SynthesizeDraft; FinalAnswerSynthesizer reuses evidence_pack and shared helpers.
   #
-  # Prefer AppSetting.research_draft_model (light) when set; on failure fall back
-  # to the chat model and/or the evidence-pack template per AppSetting.
+  # Prefer the agent.draft assignment; on failure fall back to the chat model
+  # and/or the evidence-pack template per AppSetting.
   class EvidenceSynthesizer
     # Test hook: skip LLM and use the evidence-pack template.
     class << self
@@ -96,7 +96,7 @@ module AgentGraph
 
     def evidence_models
       main = @chat.model_association
-      light = AppSetting.research_draft_model
+      light = LlmUsageResolver.model_for("agent.draft")
       [ light, main ]
     end
 

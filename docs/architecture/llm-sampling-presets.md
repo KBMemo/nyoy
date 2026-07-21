@@ -63,7 +63,7 @@ POST /service_connections/:id/load_sampling.json
 
 優先順位（後勝ち）:
 
-1. アプリ既定プリセット（`AppSetting.default_chat_llm_params`）
+1. `chat.default`用途assignmentのsampling preset
 2. 接続プロファイルのサンプリング（モデルの `metadata.connection_key` → `ServiceConnection.settings.prompt_conversion`）
 3. チャット個別の `chats.llm_params`
 
