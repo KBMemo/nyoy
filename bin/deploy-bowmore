@@ -93,8 +93,10 @@ seed_option="$5"
 trap 'rm -f "${bundle_file}"' EXIT
 
 cd "${deploy_path}"
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "remote tracked files contain uncommitted changes" >&2
+unexpected_changes="$(git status --porcelain --untracked-files=no | awk '{print $2}' | grep -Ev '^(\.kamal/secrets|config/credentials\.yml\.enc)$' || true)"
+if [[ -n "${unexpected_changes}" ]]; then
+  echo "remote tracked files contain unexpected changes:" >&2
+  echo "${unexpected_changes}" >&2
   exit 1
 fi
 
