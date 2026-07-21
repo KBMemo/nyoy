@@ -190,7 +190,7 @@ module ServiceConnectionSeeds
 
   def record_for(definition)
     legacy_key = definition.fetch(:key).to_s
-    ServiceConnection.resolve(legacy_key) || ServiceConnection.new(
+    ServiceConnection.resolve_compatible(legacy_key) || ServiceConnection.new(
       key: canonical_key_for(definition),
       legacy_key: (legacy_key if adapter_for(definition) == "llama_cpp")
     )

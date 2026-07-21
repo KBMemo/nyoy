@@ -50,7 +50,9 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     )
 
     assert_includes ServiceConnection.model_endpoints.pluck(:key), "llama_server_extra_model"
-    assert_equal ServiceConnection.resolve("llm_extra"), ServiceConnection.find_by!(key: "llama_server_extra_model")
+    assert_nil ServiceConnection.resolve("llm_extra")
+    assert_equal ServiceConnection.resolve_compatible("llm_extra"),
+                 ServiceConnection.find_by!(key: "llama_server_extra_model")
   end
 
   test "canonicalized embedding connection is not a generative endpoint" do

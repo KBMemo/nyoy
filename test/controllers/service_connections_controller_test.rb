@@ -486,11 +486,12 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    connection = ServiceConnection.resolve("llm_test_server")
+    connection = ServiceConnection.find_by!(legacy_key: "llm_test_server")
     assert_equal "llama_server_test_model", connection.key
     assert_equal "llm_test_server", connection.legacy_key
     assert_redirected_to service_connection_path(connection)
-    assert_equal "http://balvenie:10012", NyoyConnectionStore.url(:llm_test_server)
+    assert_equal "http://balvenie:10012", NyoyConnectionStore.url(connection.key)
+    assert_nil NyoyConnectionStore.url(:llm_test_server)
   end
 
   test "seed_missing registers missing builtin connections" do

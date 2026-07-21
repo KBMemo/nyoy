@@ -117,7 +117,7 @@ prompt conversion設定は旧UI互換のためmodel endpointに残している�
 
 llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とする。identifierはllama-switchdのmanaged server IDを優先し、未登録ならRuntime Alias、最後にServiceConnection IDから生成する。これにより`gpt_oss`、`vision_llama`、`embeddings`のような用途名をConnectionの識別子から除く。
 
-移行前のkeyは`ServiceConnection.legacy_key`に保存する。`ServiceConnection.resolve`は現行key、旧keyの順で検索するため、環境変数、旧AppSetting、既存の運用コマンドは移行期間中も利用できる。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
+移行前のkeyは`ServiceConnection.legacy_key`に保存する。通常実行で使う`ServiceConnection.resolve`は現行keyだけを検索する。旧keyの検索は、初期seedと移行用CLIが明示的に使う`resolve_compatible`に限定する。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
 
 Connection key移行時は画像生成履歴のstyle plan接続を更新する。Modelは`service_connection_id`で参照するためkey変更の影響を受けず、用途assignmentもModel参照のため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。
 
@@ -165,7 +165,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 
 2026-07-21のdevelopment DB監査では、Model associationと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seed定義と互換API、運用runbookの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、seed・`NyoyConnectionStore`・style plan履歴操作・外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
 
-2026-07-22にNyoy以外のローカルworkspaceも検索した結果、旧ServiceConnection keyを直接指定する外部実行scriptは見つからなかった。ただしNyoy内部の初回seedと互換APIに参照が残るため、`legacy_key`撤去は保留と判断した。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明は削除した。
+2026-07-22にNyoy以外のローカルworkspaceも検索した結果、旧ServiceConnection keyを直接指定する外部実行scriptは見つからなかった。通常実行のkey解決はcanonical key専用に切り替え、旧key検索を初回seedと移行用CLIへ限定した。`legacy_key`列は監査期間が終わるまで残す。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明は削除した。
 
 `LlmUsageResolver.llama_client_for`、`EmbeddingClient`、`VisionChatService`は有効な用途assignmentを解決できない場合に明示エラーを返す。`LlamaCppClient`は既定接続を持たず、解決済み`base_url`を必須引数として受け取る。これによりassignmentの設定不備が別モデルへの暗黙接続として隠れない。
 

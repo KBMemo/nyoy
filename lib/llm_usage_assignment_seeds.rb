@@ -42,7 +42,7 @@ module LlmUsageAssignmentSeeds
   end
 
   def model_for_chat_connection(connection_key)
-    connection = ServiceConnection.resolve(connection_key)
+    connection = ServiceConnection.resolve_compatible(connection_key)
     return unless connection&.enabled?
     return unless connection&.server_model.present?
 
@@ -50,7 +50,7 @@ module LlmUsageAssignmentSeeds
   end
 
   def model_for_connection(connection_key, capabilities:, input_modalities:)
-    connection = ServiceConnection.resolve(connection_key)
+    connection = ServiceConnection.resolve_compatible(connection_key)
     return unless connection&.enabled?
     return unless connection&.server_model.present?
 

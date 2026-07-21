@@ -178,8 +178,12 @@ class ServiceConnection < ApplicationRecord
   end
 
   def self.resolve(key)
+    find_by(key: key.to_s)
+  end
+
+  def self.resolve_compatible(key)
     value = key.to_s
-    find_by(key: value) || find_by(legacy_key: value)
+    resolve(value) || find_by(legacy_key: value)
   end
 
   def self.server_key_for(value)
