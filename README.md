@@ -112,7 +112,7 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `EMBEDDINGS_URL` | LFM2.5 Embedding API | `http://balvenie:10020` |
 | `EMBEDDINGS_MODEL` | 埋め込みモデル名 | `lfm2.5-embedding-350m-q4-k-m` |
 | `EMBEDDINGS_DIMENSIONS` | ベクトル次元数 | `1024` |
-| `EMBEDDING_MAX_CHARS` | embedding API へ送る最大文字数 | `1000` |
+| `EMBEDDING_MAX_CHARS` | embedding API へ送る最大文字数（512 token モデル向けの余白を含む） | `400` |
 | `SDCPP_SERVER_URL` | sd.cpp サーバーの URL | `http://balvenie:11234` |
 | `SDCPP_SWITCHD_URL` | モデル切り替え API | `http://balvenie:11334` |
 | `SDCPP_SWITCHD_TOKEN` | switchd 認証トークン | （未設定） |

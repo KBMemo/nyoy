@@ -18,7 +18,8 @@ Rails.application.config.x.nyoy.tap do |config|
   config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://balvenie:10020")
   config.embeddings_model = ENV.fetch("EMBEDDINGS_MODEL", "lfm2.5-embedding-350m-q4-k-m")
   config.embedding_dimensions = ENV.fetch("EMBEDDING_DIMENSIONS", 1024).to_i
-  config.embedding_max_chars = ENV.fetch("EMBEDDING_MAX_CHARS", 1000).to_i
+  # 512-token embedding models need headroom for Japanese text and chunk titles.
+  config.embedding_max_chars = ENV.fetch("EMBEDDING_MAX_CHARS", 400).to_i
   config.llama_json_schema = ENV.fetch("LLAMA_JSON_SCHEMA", "true") == "true"
   config.llama_read_timeout = ENV.fetch("LLAMA_READ_TIMEOUT", 300).to_i
   # 通常は GET /props の total_slots を使う。ここは props 取得失敗時のフォールバック（0 で無効）。
