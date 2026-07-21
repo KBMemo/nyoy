@@ -47,8 +47,13 @@ class LlmUsageAssignment < ApplicationRecord
 
   def validate_model_connection(attribute, candidate)
     return unless candidate
-    return if candidate.service_connection
+    connection = candidate.service_connection
+    unless connection
+      errors.add(attribute, "に接続が設定されていません")
+      return
+    end
+    return if connection.model_endpoint?
 
-    errors.add(attribute, "に接続が設定されていません")
+    errors.add(attribute, "の接続はLLMモデルエンドポイントではありません")
   end
 end

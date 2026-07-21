@@ -85,6 +85,19 @@ class LlmUsageAssignmentTest < ActiveSupport::TestCase
     assert LlmUsageAssignment.new(usage_key: "agent.draft", model: model).valid?
   end
 
+  test "rejects a model connected to a non-LLM service" do
+    model = create_model(
+      "generic-service-model",
+      capabilities: [ "chat" ],
+      connection: service_connections(:kbmemo)
+    )
+
+    assignment = LlmUsageAssignment.new(usage_key: "agent.draft", model: model)
+
+    assert_not assignment.valid?
+    assert_includes assignment.errors[:model], "の接続はLLMモデルエンドポイントではありません"
+  end
+
   private
 
   def text_model
