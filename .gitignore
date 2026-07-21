@@ -15,6 +15,11 @@
 
 # Ignore local deploy credentials/config.
 /.kamal/
+!/.kamal/
+/.kamal/*
+!/.kamal/hooks/
+/.kamal/hooks/*
+!/.kamal/hooks/post-deploy
 /config/credentials.yml.enc
 
 # Ignore all logfiles and tempfiles.

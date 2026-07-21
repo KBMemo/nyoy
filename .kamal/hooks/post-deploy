@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+destination_args=""
+if [ -n "${KAMAL_DESTINATION:-}" ]; then
+  destination_args="--destination ${KAMAL_DESTINATION}"
+fi
+
+# Seed only missing usages, then fail verification if any usage is unhealthy.
+# shellcheck disable=SC2086
+bin/kamal app exec --primary --reuse $destination_args "bin/rails runner 'LlmUsageAssignmentSeeds.seed!'"
+# shellcheck disable=SC2086
+bin/kamal app exec --primary --reuse --env STRICT:1 $destination_args "bin/rails llm_usages:audit"

@@ -182,6 +182,16 @@ bin/rails dbconsole
 
 `bin/prod` は `scripts/production_env.sh` 経由で rbenv / `.env.production` / `RAILS_MASTER_KEY` を設定してから `rails` を実行します。
 
+### LLM用途設定のdeploy後確認
+
+Kamal deployでは`.kamal/hooks/post-deploy`が不足している用途assignmentを補完し、続けて次のstrict監査を実行します。
+
+```bash
+STRICT=1 bin/rails llm_usages:audit
+```
+
+2026-07-22時点で`config/deploy.yml`のweb host `192.168.0.1:22`はこの開発端末から接続拒否となるため、本番deployと残るllama-switchd bindingは未実施である。SSH到達性または実際のdeploy host設定を修正後、「最新app deploy → migration → 不足用途seed → strict監査」の順で実施する。旧app稼働中にDB migrationだけを先行適用しない。
+
 `.env.production` の `DB_PASSWORD` など `!` を含む値は、クォート推奨です。
 
 ```bash
