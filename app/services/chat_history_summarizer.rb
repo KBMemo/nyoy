@@ -9,11 +9,11 @@ class ChatHistorySummarizer
   def initialize(
     llm_enabled: Rails.application.config.x.nyoy.chat_summary_llm,
     max_chars: Rails.application.config.x.nyoy.chat_summary_max_chars,
-    client: LlamaCppClient.new
+    client: nil
   )
     @llm_enabled = llm_enabled
     @max_chars = positive_int(max_chars, 1200)
-    @client = client
+    @client = client || LlmUsageResolver.llama_client_for("utility.chat_history_summary")
   end
 
   def summarize(messages)

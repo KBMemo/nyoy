@@ -198,7 +198,9 @@ module AgentGraph
     class Vision
       def call(image:, mime_type:, prompt:, state:, run:, chat:)
         analysis = VisionChatService.new.analyze(image: image, mime_type: mime_type, prompt: prompt)
-        [ analysis, { "model_id" => NyoyConnectionStore.server_model(:vision_llama) } ]
+        model_id = LlmUsageResolver.resolve("vision.image_understanding")&.model&.model_id ||
+          NyoyConnectionStore.server_model(:vision_llama)
+        [ analysis, { "model_id" => model_id } ]
       end
     end
 

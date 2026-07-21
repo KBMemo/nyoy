@@ -16,8 +16,7 @@ class StylePlanGenerator
 
   def initialize(flow:, client: nil, connection_key: nil, retriever: PromptKnowledgeRetriever.new)
     @flow = flow
-    @connection_key = connection_key.presence || StylePlanModelCatalog.default_connection_key
-    @client = client || StylePlanModelCatalog.client_for(connection_key: @connection_key)
+    @connection_key, @client = resolve_client(client, connection_key)
     @retriever = retriever
   end
 
@@ -54,6 +53,18 @@ class StylePlanGenerator
   end
 
   private
+
+  def resolve_client(client, connection_key)
+    key = connection_key.presence
+    return [ key, client || StylePlanModelCatalog.client_for(connection_key: key) ] if key
+    return [ StylePlanModelCatalog.default_connection_key, client ] if client
+
+    resolution = LlmUsageResolver.resolve("image.style_plan")
+    return [ resolution.connection.key, LlmUsageResolver.llama_client_for("image.style_plan") ] if resolution
+
+    key = StylePlanModelCatalog.default_connection_key
+    [ key, StylePlanModelCatalog.client_for(connection_key: key) ]
+  end
 
   def available_styles(forced_style_id)
     scope = PromptStyle.enabled.ordered.includes(prompt_style_models: :sd_model_profile)

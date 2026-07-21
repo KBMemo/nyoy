@@ -48,6 +48,21 @@ class LlmUsageAssignmentSeedsTest < ActiveSupport::TestCase
     assert_equal preset, LlmUsageAssignment.find_by!(usage_key: "chat.default").llm_sampling_preset
   end
 
+  test "syncs existing assignments when legacy AppSetting changes" do
+    LlmUsageAssignmentSeeds.seed!
+
+    AppSetting.instance.update!(
+      default_chat_connection_key: "gpt_oss",
+      research_draft_model_id: ServiceConnection.find_by!(key: "llama_cpp").server_model
+    )
+
+    chat = LlmUsageAssignment.find_by!(usage_key: "chat.default")
+    draft = LlmUsageAssignment.find_by!(usage_key: "agent.draft")
+    assert_equal "gpt_oss", chat.model.metadata["connection_key"]
+    assert_equal "llama_cpp", draft.model.metadata["connection_key"]
+    assert_equal chat.model, draft.fallback_model
+  end
+
   private
 
   def connection_key_for(usage_key)

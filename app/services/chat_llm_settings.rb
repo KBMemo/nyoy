@@ -27,7 +27,17 @@ class ChatLlmSettings
 
   # Defaults for a model before per-chat overrides (new chat form / seed).
   def self.defaults_for(model: nil)
-    from(merge_layers(AppSetting.default_chat_llm_params, connection_llm_params_for(model)))
+    from(merge_layers(default_sampling_for(model), connection_llm_params_for(model)))
+  end
+
+  def self.default_sampling_for(model)
+    resolution = LlmUsageResolver.resolve("chat.default")
+    preset = resolution&.sampling_preset
+    if preset && resolution.model == model
+      normalize(preset.sampling_params.to_h_compact)
+    else
+      AppSetting.default_chat_llm_params
+    end
   end
 
   def self.connection_llm_params_for(model)

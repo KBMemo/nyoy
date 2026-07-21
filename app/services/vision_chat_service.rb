@@ -12,13 +12,11 @@ class VisionChatService
     不明な点は推測で補わず、不明と述べてください。
   TEXT
 
-  def initialize(
-    client: LlamaCppClient.new(
-      base_url: NyoyConnectionStore.url(:vision_llama),
-      model: NyoyConnectionStore.server_model(:vision_llama)
+  def initialize(client: nil)
+    @client = client || LlmUsageResolver.llama_client_for(
+      "vision.image_understanding",
+      legacy_connection_key: :vision_llama
     )
-  )
-    @client = client
   end
 
   def analyze(image:, mime_type:, prompt:)

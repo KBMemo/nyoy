@@ -124,6 +124,8 @@ module ChatTools
     end
 
     def vision_tools_available?
+      return true if LlmUsageResolver.resolve("vision.image_understanding")
+
       NyoyConnectionStore.enabled?(:vision_llama) && NyoyConnectionStore.url(:vision_llama).present?
     end
 
@@ -186,7 +188,7 @@ module ChatTools
       tools = tool_instances(chat)
       return llm_chat if tools.empty?
 
-      instructions = [TOOL_ORCHESTRATION_INSTRUCTIONS]
+      instructions = [ TOOL_ORCHESTRATION_INSTRUCTIONS ]
       instructions << memo_tools_instructions(tools) if memo_tools_available?
       if web_tools_available?
         instructions << WEB_TOOLS_INSTRUCTIONS
@@ -205,7 +207,7 @@ module ChatTools
       text = rag_tool_available? ? MEMO_TOOLS_INSTRUCTIONS_TOOL : MEMO_TOOLS_INSTRUCTIONS_INJECT
       return text unless write_tools_present?(tools)
 
-      [text, MEMO_WRITE_TOOLS_INSTRUCTIONS].join(" ")
+      [ text, MEMO_WRITE_TOOLS_INSTRUCTIONS ].join(" ")
     end
 
     def sampling_tools_instructions(tools)

@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 3 既存設定からのassignment移行（2026-07-21）
+**ステータス:** Phase 4 consumerのassignment解決移行（2026-07-21）
 
 ## 1. 目的
 
@@ -78,7 +78,21 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 `db:seed`はServiceConnection、Chat Model、sampling presetの後にassignment seedを実行する。productionで通常deploy時にseedを省略している場合は、Phase 3の反映時に`LlmUsageAssignmentSeeds.seed!`を一度明示実行する。
 
-## 5. 不変条件
+## 5. Runtime resolver
+
+`LlmUsageResolver`は次の順で実行先を決める。
+
+1. 有効なassignmentの主Modelと、そのModelが参照する有効なConnection
+2. 主ModelのConnectionが無効なら、明示fallback Modelとその有効なConnection
+3. assignmentが未登録または無効なら、consumerが渡す旧設定
+
+通常Chatの既定Modelとsampling preset、AgentGraphのintent・planner・evidence evaluator・draft・final answer、画像理解、メモ・プロンプトRAGのembedding、style plan、direct prompt、Chat履歴要約、メモchunk圧縮、画像prompt翻訳をResolver経由へ移した。
+
+通常Chatではユーザーがチャット作成時に選んだModelを引き続き優先し、`chat.default`は未指定時の既定Modelを決める。画像生成recordが保持する`style_plan_connection_key`も履歴再現性のため優先し、新規recordの既定だけをassignmentから解決する。
+
+旧AppSetting画面との互換期間中は、関連する接続・Model・sampling preset columnの変更を既存assignmentへdual-writeする。assignment管理UIへの移行完了後にこの同期を削除する。
+
+## 6. 不変条件
 
 - `ServiceConnection`は用途keyを保持しない
 - 用途選択UIはConnectionではなくModelを表示する
@@ -88,7 +102,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 - lifecycle操作前の使用中判定は、Connectionへの直接参照ではなくassignmentから逆引きする
 - fallbackは暗黙のURL fallbackではなくassignment上で明示する
 
-## 6. 移行順序
+## 7. 移行順序
 
 1. 用途keyと能力要件を定義する（本Phase）
 2. `LlmUsageAssignment`を追加する

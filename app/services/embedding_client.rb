@@ -7,10 +7,10 @@ require "uri"
 class EmbeddingClient
   class Error < StandardError; end
 
-  def initialize(
-    base_url: NyoyConnectionStore.url(:embeddings),
-    model: NyoyConnectionStore.server_model(:embeddings)
-  )
+  def initialize(base_url: nil, model: nil, usage_key: "embedding.memo_knowledge")
+    resolution = LlmUsageResolver.resolve(usage_key) if base_url.blank? || model.blank?
+    base_url ||= resolution&.connection&.base_url || NyoyConnectionStore.url(:embeddings)
+    model ||= resolution&.model&.model_id || NyoyConnectionStore.server_model(:embeddings)
     @base_url = base_url.sub(%r{/\z}, "")
     @model = model
   end

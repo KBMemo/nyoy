@@ -6,11 +6,11 @@ class MemoKnowledgeChunkCompressor
   def initialize(
     max_chars: Rails.application.config.x.nyoy.memo_rag_chunk_max_output_chars,
     llm_enabled: Rails.application.config.x.nyoy.memo_rag_llm_compress,
-    client: LlamaCppClient.new
+    client: nil
   )
     @max_chars = positive_int(max_chars, 800)
     @llm_enabled = llm_enabled
-    @client = client
+    @client = client || LlmUsageResolver.llama_client_for("utility.memo_chunk_compression")
   end
 
   def compress(chunks, query:)

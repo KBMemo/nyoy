@@ -15,12 +15,11 @@ class DirectPromptGenerator
   class Error < StandardError; end
 
   def initialize(client: nil, connection_key: nil)
-    @connection_key = connection_key.presence || StylePlanModelCatalog.default_connection_key
-    @client = client || StylePlanModelCatalog.client_for(connection_key: @connection_key)
+    @connection_key, @client = resolve_client(client, connection_key)
   end
 
   def self.build_system_prompt(template)
-    parts = [SYSTEM_PREFIX]
+    parts = [ SYSTEM_PREFIX ]
     parts << template.body.to_s.strip if template&.body.present?
     parts.compact_blank.join("\n\n")
   end
@@ -57,6 +56,18 @@ class DirectPromptGenerator
   end
 
   private
+
+  def resolve_client(client, connection_key)
+    key = connection_key.presence
+    return [ key, client || StylePlanModelCatalog.client_for(connection_key: key) ] if key
+    return [ StylePlanModelCatalog.default_connection_key, client ] if client
+
+    resolution = LlmUsageResolver.resolve("image.direct_prompt")
+    return [ resolution.connection.key, LlmUsageResolver.llama_client_for("image.direct_prompt") ] if resolution
+
+    key = StylePlanModelCatalog.default_connection_key
+    [ key, StylePlanModelCatalog.client_for(connection_key: key) ]
+  end
 
   def user_prompt(japanese_prompt)
     return japanese_prompt if response_format.present?

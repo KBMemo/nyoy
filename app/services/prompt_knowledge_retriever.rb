@@ -3,7 +3,7 @@
 class PromptKnowledgeRetriever
   DEFAULT_LIMIT = 10
 
-  def initialize(client: EmbeddingClient.new, limit: DEFAULT_LIMIT)
+  def initialize(client: EmbeddingClient.new(usage_key: "embedding.prompt_knowledge"), limit: DEFAULT_LIMIT)
     @client = client
     @limit = limit
   end

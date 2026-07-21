@@ -66,6 +66,9 @@ module ChatModelCatalog
   end
 
   def default_model
+    assigned = LlmUsageResolver.model_for("chat.default")
+    return assigned if assigned
+
     key = default_connection_key
     definition = definitions.find { |item| item.connection_key == key } || definitions.first
     return nil unless definition

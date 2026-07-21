@@ -6,6 +6,7 @@ class AppSetting < ApplicationRecord
   RESEARCH_DRAFT_FALLBACKS = %w[main template].freeze
 
   before_validation :normalize_research_draft_fallback
+  after_save :sync_llm_usage_assignments, if: :llm_assignment_source_changed?
 
   validate :connection_keys_must_be_available
   validate :sampling_preset_key_must_be_available
@@ -50,37 +51,32 @@ class AppSetting < ApplicationRecord
     # Preferred Model for Research Graph draft synthesis (nil = use chat model).
     def research_draft_model
       model_id = instance.research_draft_model_id.to_s.presence
-      return nil if model_id.blank?
-
-      Model.find_by(provider: "openai", model_id: model_id)
+      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
+      LlmUsageResolver.model_for("agent.draft", legacy: legacy)
     end
 
     def research_planner_model
       model_id = instance.research_planner_model_id.to_s.presence
-      return nil if model_id.blank?
-
-      Model.find_by(provider: "openai", model_id: model_id)
+      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
+      LlmUsageResolver.model_for("agent.planner", legacy: legacy)
     end
 
     def evidence_evaluator_model
       model_id = instance.evidence_evaluator_model_id.to_s.presence
-      return nil if model_id.blank?
-
-      Model.find_by(provider: "openai", model_id: model_id)
+      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
+      LlmUsageResolver.model_for("agent.evidence_evaluator", legacy: legacy)
     end
 
     def final_answer_model
       model_id = instance.final_answer_model_id.to_s.presence
-      return nil if model_id.blank?
-
-      Model.find_by(provider: "openai", model_id: model_id)
+      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
+      LlmUsageResolver.model_for("agent.final_answer", legacy: legacy)
     end
 
     def agent_graph_intent_model
       model_id = instance.agent_graph_intent_model_id.to_s.presence
-      return nil if model_id.blank?
-
-      Model.find_by(provider: "openai", model_id: model_id)
+      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
+      LlmUsageResolver.model_for("agent.intent", legacy: legacy)
     end
 
     # "main" = retry with chat model then template; "template" = evidence pack only.
@@ -177,6 +173,14 @@ class AppSetting < ApplicationRecord
   end
 
   private
+
+  def llm_assignment_source_changed?
+    (saved_changes.keys.map(&:to_sym) & LlmUsageAssignmentSeeds::APP_SETTING_COLUMNS).any?
+  end
+
+  def sync_llm_usage_assignments
+    LlmUsageAssignmentSeeds.sync_from_app_setting!(self)
+  end
 
   def normalize_research_draft_fallback
     self.research_draft_fallback = research_draft_fallback.to_s.presence || "main"

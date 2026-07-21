@@ -12,8 +12,8 @@ class SdPromptTranslator
 
   class Error < StandardError; end
 
-  def initialize(client: LlamaCppClient.new)
-    @client = client
+  def initialize(client: nil)
+    @client = client || LlmUsageResolver.llama_client_for("utility.sd_prompt_translation")
   end
 
   def translate(japanese_prompt, skill: nil)

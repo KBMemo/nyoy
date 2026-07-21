@@ -107,6 +107,27 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     assert_in_delta 0.4, effective.temperature
   end
 
+  test "usage assignment sampling preset replaces the legacy app default" do
+    AppSetting.delete_all
+    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    preset = LlmSamplingPreset.create!(
+      key: "assignment_default",
+      name: "Assignment default",
+      params: { "temperature" => 0.25, "top_p" => 0.6 }
+    )
+    LlmUsageAssignment.create!(
+      usage_key: "chat.default",
+      model: model,
+      llm_sampling_preset: preset
+    )
+
+    defaults = ChatLlmSettings.defaults_for(model: model)
+
+    assert_in_delta 0.25, defaults.temperature
+    assert_in_delta 0.6, defaults.top_p
+  end
+
   test "chat llm_params override connection profile values" do
     connection = ServiceConnection.find_by!(key: "gpt_oss")
     connection.assign_prompt_conversion_settings(

@@ -3,7 +3,7 @@
 class PromptKnowledgeChunkEmbedder
   class Error < StandardError; end
 
-  def initialize(client: EmbeddingClient.new)
+  def initialize(client: EmbeddingClient.new(usage_key: "embedding.prompt_knowledge"))
     @client = client
   end
 
