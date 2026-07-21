@@ -486,9 +486,9 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    connection = ServiceConnection.find_by!(legacy_key: "llm_test_server")
+    connection = ServiceConnection.find_by!(key: "llama_server_test_model")
     assert_equal "llama_server_test_model", connection.key
-    assert_equal "llm_test_server", connection.legacy_key
+    assert_nil connection.seed_key
     assert_redirected_to service_connection_path(connection)
     assert_equal "http://balvenie:10012", NyoyConnectionStore.url(connection.key)
     assert_nil NyoyConnectionStore.url(:llm_test_server)

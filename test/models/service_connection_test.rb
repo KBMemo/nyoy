@@ -15,7 +15,6 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     connection.update_columns(
       key: "llama_server_gemma",
       seed_key: "llama_cpp",
-      legacy_key: nil
     )
 
     assert connection.reload.builtin?
@@ -63,15 +62,15 @@ class ServiceConnectionTest < ActiveSupport::TestCase
 
     assert_includes ServiceConnection.model_endpoints.pluck(:key), "llama_server_extra_model"
     assert_nil ServiceConnection.resolve("llm_extra")
-    assert_equal ServiceConnection.resolve_compatible("llm_extra"),
-                 ServiceConnection.find_by!(key: "llama_server_extra_model")
+    assert_equal ServiceConnection.find_by!(key: "llama_server_extra_model"),
+                 ServiceConnection.resolve("llama_server_extra_model")
   end
 
   test "canonicalized embedding connection is not a generative endpoint" do
     connection = service_connections(:embeddings)
     connection.update_columns(
       key: "llama_server_lfm_embedding",
-      legacy_key: "embeddings",
+      seed_key: "embeddings",
       adapter: "llama_cpp"
     )
 
@@ -89,7 +88,7 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert connection.valid?
     assert_equal "llama_cpp", connection.adapter
     assert_equal "llama_server_test_model", connection.key
-    assert_equal "llm_adapter_default", connection.legacy_key
+    assert_nil connection.seed_key
   end
 
   test "validates base_url format" do

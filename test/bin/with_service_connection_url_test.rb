@@ -5,6 +5,8 @@ require "open3"
 require "rbconfig"
 
 class WithServiceConnectionUrlTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
   setup do
     @connection = service_connections(:vision_llama)
     @original_url = @connection.base_url

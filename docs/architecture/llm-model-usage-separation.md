@@ -119,9 +119,9 @@ llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とす�
 
 組み込みseedの識別子は`ServiceConnection.seed_key`に保持する。これは初期設定レコードのupsertと削除保護だけに使い、runtime接続解決やLLM用途選択には使わない。
 
-移行前のkeyは`ServiceConnection.legacy_key`に保存する。通常実行で使う`ServiceConnection.resolve`は現行keyだけを検索する。旧keyの検索は、初期seedと移行用CLIが明示的に使う`resolve_compatible`に限定する。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
+通常実行で使う`ServiceConnection.resolve`は現行keyだけを検索する。初期seedと移行用CLIで組み込み接続を指定する場合は、`resolve_seeded`が現行key、`seed_key`の順で検索する。新規のカスタムllama.cpp接続は保存時にserver指向keyへ正規化する。
 
-Connection key移行時は画像生成履歴のstyle plan接続を更新する。Modelは`service_connection_id`で参照するためkey変更の影響を受けず、用途assignmentもModel参照のため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。
+Connection key移行時は画像生成履歴のstyle plan接続を更新した。Modelは`service_connection_id`で参照するためkey変更の影響を受けず、用途assignmentもModel参照のため更新不要である。
 
 ### 6.2 Runtime connection source
 
@@ -161,13 +161,11 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 17. sampling presetをtext generation用途だけに制限する（完了）
 18. 用途管理画面GETから自動seedを除去する（完了）
 
-## 9. Legacy key監査
+## 9. Legacy key撤去
 
-`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`について生成履歴に旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
+development・production DBの生成履歴に旧key参照が0件であることと、Nyoy以外のローカルworkspaceに旧keyを直接指定する外部scriptがないことを2026-07-22に確認した。組み込みseedの識別は`seed_key`へ分離し、通常実行はcanonical key専用、移行CLIはcanonical keyまたは`seed_key`を受け付ける。
 
-2026-07-21のdevelopment DB監査では、Model associationと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seedと移行用CLIの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、seed・style plan履歴操作・外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
-
-2026-07-22にNyoy以外のローカルworkspaceも検索した結果、旧ServiceConnection keyを直接指定する外部実行scriptは見つからなかった。通常実行のkey解決はcanonical key専用に切り替え、旧key検索を初回seedと移行用CLIへ限定した。`legacy_key`列は監査期間が終わるまで残す。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明は削除した。
+`legacy_key`列と監査taskは安全弁付きmigrationで撤去した。migrationは画像生成3テーブルのstyle plan接続に旧keyが残っていれば停止する。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明も削除済みである。
 
 `LlmUsageResolver.llama_client_for`、`EmbeddingClient`、`VisionChatService`は有効な用途assignmentを解決できない場合に明示エラーを返す。`LlamaCppClient`は既定接続を持たず、解決済み`base_url`を必須引数として受け取る。これによりassignmentの設定不備が別モデルへの暗黙接続として隠れない。
 

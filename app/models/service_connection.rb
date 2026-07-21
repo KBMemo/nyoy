@@ -48,7 +48,6 @@ class ServiceConnection < ApplicationRecord
   validates :key, uniqueness: true
   validates :seed_key, uniqueness: true, allow_nil: true
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
-  validates :legacy_key, uniqueness: true, allow_nil: true
   validate :key_must_be_allowed
   validate :manager_must_be_llama_switchd
   validate :llama_switchd_settings_must_be_valid
@@ -164,7 +163,7 @@ class ServiceConnection < ApplicationRecord
   def generative_model_endpoint?
     return false unless model_endpoint?
     return true if openai?
-    return false if legacy_key.presence == "embeddings" || key == "embeddings"
+    return false if seed_key.presence == "embeddings" || key == "embeddings"
 
     models_for_connection.any? { |model| LlmModelCapabilities.for(model).include?(:text_generation) } ||
       server_model.present?
@@ -183,9 +182,9 @@ class ServiceConnection < ApplicationRecord
     find_by(key: key.to_s)
   end
 
-  def self.resolve_compatible(key)
+  def self.resolve_seeded(key)
     value = key.to_s
-    resolve(value) || find_by(legacy_key: value)
+    resolve(value) || find_by(seed_key: value)
   end
 
   def self.server_key_for(value)
@@ -225,7 +224,6 @@ class ServiceConnection < ApplicationRecord
     self.adapter = "llama_cpp" if adapter.blank? || adapter == "generic"
     return unless new_record? && server_model.present? && key.to_s.match?(CUSTOM_LLM_KEY_FORMAT)
 
-    self.legacy_key ||= key
     self.key = self.class.server_key_for(managed_server_id.presence || server_model)
   end
 

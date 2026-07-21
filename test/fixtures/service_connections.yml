@@ -1,4 +1,5 @@
 llama_cpp:
+  seed_key: llama_cpp
   adapter: llama_cpp
   key: llama_cpp
   name: Gemma 4 E4B
@@ -8,6 +9,7 @@ llama_cpp:
   sort_order: 0
 
 gpt_oss:
+  seed_key: gpt_oss
   adapter: llama_cpp
   key: gpt_oss
   name: GPT-OSS
@@ -17,6 +19,7 @@ gpt_oss:
   sort_order: 1
 
 openai:
+  seed_key: openai
   adapter: openai
   key: openai
   name: OpenAI（ChatGPT）
@@ -28,6 +31,7 @@ openai:
     chat_models: []
 
 vision_llama:
+  seed_key: vision_llama
   adapter: llama_cpp
   key: vision_llama
   name: Qwen3VL 4B
@@ -37,6 +41,7 @@ vision_llama:
   sort_order: 2
 
 llama_switchd:
+  seed_key: llama_switchd
   adapter: llama_switchd
   key: llama_switchd
   name: llama-switchd
@@ -46,6 +51,7 @@ llama_switchd:
   sort_order: 3
 
 embeddings:
+  seed_key: embeddings
   adapter: llama_cpp
   key: embeddings
   name: LFM2.5 Embedding 350M
@@ -55,6 +61,7 @@ embeddings:
   sort_order: 3
 
 sd_cpp:
+  seed_key: sd_cpp
   key: sd_cpp
   name: sd.cpp
   base_url: http://balvenie:11234
@@ -62,6 +69,7 @@ sd_cpp:
   sort_order: 4
 
 sd_switchd:
+  seed_key: sd_switchd
   key: sd_switchd
   name: sd.cpp switchd
   base_url: http://balvenie:11334
@@ -69,6 +77,7 @@ sd_switchd:
   sort_order: 5
 
 kbmemo:
+  seed_key: kbmemo
   key: kbmemo
   name: 徒然（KBMemo）
   base_url: https://kbmemo.net
@@ -77,6 +86,7 @@ kbmemo:
   sort_order: 6
 
 tsuzura:
+  seed_key: tsuzura
   key: tsuzura
   name: 葛籠（KBMemo Media）
   base_url: http://localhost:3008
@@ -85,6 +95,7 @@ tsuzura:
   sort_order: 7
 
 searfront:
+  seed_key: searfront
   key: searfront
   name: searfront
   base_url: http://bowmore:13000
@@ -100,6 +111,7 @@ searfront:
     max_fetches_per_turn: 3
 
 readability:
+  seed_key: readability
   key: readability
   name: readability-js-server
   base_url: http://bowmore:8030

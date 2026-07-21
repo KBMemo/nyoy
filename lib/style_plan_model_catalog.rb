@@ -36,9 +36,10 @@ module StylePlanModelCatalog
   def json_schema_supported?(connection_key)
     key = connection_key.to_s
     connection = ServiceConnection.resolve(key)
-    identity = connection&.legacy_key.presence || connection&.key || key
-    return true if JSON_SCHEMA_CONNECTIONS.include?(identity)
-    return true if identity.match?(ServiceConnection::CUSTOM_LLM_KEY_FORMAT)
+    return true if connection&.openai?
+    return true if connection&.adapter == "llama_cpp" && connection.seed_key.nil?
+    return true if connection&.seed_key == "llama_cpp"
+    return true if JSON_SCHEMA_CONNECTIONS.include?(key)
 
     false
   end
