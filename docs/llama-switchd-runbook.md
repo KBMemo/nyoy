@@ -129,7 +129,7 @@ portだけが一致する場合は自動判断しない。複数接続が同じp
 
 残る4接続はportだけで自動bindingせず、各Runtime Aliasを確認して個別に同期する。
 
-2026-07-22にswitchd APIを再確認し、server ID・Alias・portが一致する次の対応表を確定した。本番DBは`adapter` / binding column導入前で、Kamal hostもSSH接続拒否だったため、実際のbindingは最新app deploy後まで保留している。
+2026-07-22にswitchd APIを再確認し、server ID・Alias・portが一致する次の対応表を確定した。同日にbowmoreのsystemd経路で最新appとDB migrationを反映し、4接続のbinding・URL/Alias同期を完了した。同期後のreconciliationは`healthy`、findingsは0件だった。
 
 | 旧接続 | binding先 server ID | port |
 | --- | --- | ---: |

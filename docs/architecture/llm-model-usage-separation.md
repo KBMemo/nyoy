@@ -182,3 +182,5 @@ STRICT=1 bin/rails llm_usages:audit
 ```
 
 Kamal deploy後は`.kamal/hooks/post-deploy`が不足用途だけをseedしてからstrict監査を実行する。監査失敗時は新コンテナの起動完了後にdeployコマンドを失敗終了させるため、出力を確認して設定を修復する。
+
+2026-07-22にbowmore productionへmigrationとseedを適用し、14用途すべて`healthy`を確認した。旧`gpt-oss` Modelが無効接続を参照していた6用途はcanonical `gpt-oss-20b` Modelへ移行した。binding同期時に発見したspecialized Model能力の上書きも修正し、vision・embedding用途を再監査済みである。

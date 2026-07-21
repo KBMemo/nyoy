@@ -192,6 +192,8 @@ STRICT=1 bin/rails llm_usages:audit
 
 2026-07-22時点の本番はKamalではなく、bowmoreのsystemd user unit `nyoy.service`（`/home/kensei/sites/nyoy`、port 3009）で稼働している。更新時は「最新app取得 → bundle更新 → service restart」の順で実施し、`start.sh`に組み込んだmigration・seed・strict監査がすべて成功したことをjournalで確認する。旧app稼働中にDB migrationだけを先行適用しない。
 
+同日の初回適用では、migration、14用途のstrict監査、legacy key DB監査、llama-switchd reconciliation、公開Host付き`/up`（HTTP 200）まで確認した。
+
 `.env.production` の `DB_PASSWORD` など `!` を含む値は、クォート推奨です。
 
 ```bash
