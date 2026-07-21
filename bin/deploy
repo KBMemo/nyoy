@@ -165,7 +165,7 @@ fi
 
 step "bundle install"
 run bundle config set --local deployment 'true'
-run bundle config set --local without 'development test'
+run bundle config set --local without 'development:test'
 run bundle install
 
 step "npm ci"
