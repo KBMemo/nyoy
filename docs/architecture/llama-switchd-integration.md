@@ -256,11 +256,11 @@ DB接続値はinventory表示だけでは更新せず、明示的な同期操作
 | 優先度 | 課題 | 現状 | 完了条件 |
 | --- | --- | --- | --- |
 | 完了 | production残接続のbinding | 2026-07-22に`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`を確定済みRuntime Aliasへbinding・同期 | reconciliation `healthy`、findings 0件を確認済み |
-| 運用 | Zabbixへの外部alert常設 | bowmore Zabbix 7.0.28を確認し、sender protocol adapterを実装。Webhook E2Eも確認済み | Zabbix host・trapper item・triggerを作成し、本番env設定後に異常・復旧通知を受信確認 |
+| 運用 | Zabbixへの外部alert常設 | **完了。** sender protocol adapter、本番host・trapper items・trigger、warning/recovered E2Eを2026-07-22に確認 | 通常reconciliationの状態変化を継続監視 |
 
 `public_host` は実装・自動テスト済みだが、現行の同一host構成では設定不要である。実際にcontrol/data hostを分離するときにrunbookの疎通確認を行う。
 
-コード上のPhase 1〜5残課題は完了した。残る項目は本番環境での運用確認であり、実装課題が追加された場合はこの表へ完了条件とともに追記する。
+コード上のPhase 1〜5と本番環境での運用確認は完了した。実装課題が追加された場合はこの表へ完了条件とともに追記する。
 
 ## 10. 確定した設計判断
 

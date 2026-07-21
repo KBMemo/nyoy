@@ -299,6 +299,17 @@ payload例:
 - productionの`LLAMA_SERVER_ALERT_WEBHOOK_URL` / `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN`は未設定のまま維持
 - localhost受信器は常設扱いにしない。常設先はZabbix trapperとする
 
+2026-07-22 Zabbix常設通知E2E:
+
+- bowmore Zabbix 7.0.28にtechnical host `nyoy-production`（host ID `10683`）を作成
+- status item `50817`、payload item `50818`、problem/recovery trigger `25253`を作成
+- Nyoy本番へ`127.0.0.1:10051`のsender設定を反映し、`LlamaServerAlert.zabbix_enabled? = true`を確認
+- DB transaction内の管理された障害注入でwarning reconciliation `87`、healthy reconciliation `88`を送信後、DB recordはrollback
+- Zabbix historyでstatus `1 -> 0`とwarning/recovered payloadを確認
+- problem event `70`、recovery event `71`を確認し、triggerは正常値`0`へ復帰
+
+これによりZabbix常設通知の実装・本番設定・異常復旧E2Eは完了した。以後は通常のreconciliationから状態変化時だけ自動配送される。
+
 Zabbix連携設計時は、任意JSON POST、任意のBearer token、`Idempotency-Key`を受け付けることを確認する。Zabbixがサービス固有payloadしか受け付けない場合は、Nyoyの汎用payloadを変換するadapterを別途実装する。
 
 ## 7. 障害時

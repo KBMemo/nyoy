@@ -258,7 +258,7 @@ gantt
 ### 推奨
 
 - llama-switchd Phase 1〜5とproduction移行は完了。`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`のbinding・URL/Alias同期後、reconciliation `healthy`、findings 0件を確認済み
-- LLM server外部alertはWebhook配送E2EとZabbix sender adapterまで完了。Zabbix host・trapper item・trigger作成後にproduction sender設定を有効化し、実通知を確認する
+- LLM server外部alertはZabbix sender adapter、production host・trapper items・trigger、warning/recovered E2Eまで完了
 - webhook を本番投入する場合は、[Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md) に沿って site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
 
 ### 完了（Phase 6）
