@@ -46,6 +46,7 @@ class ServiceConnection < ApplicationRecord
   validates :adapter, inclusion: { in: ADAPTERS }
   validates :key, uniqueness: true
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
+  validates :legacy_key, uniqueness: true, allow_nil: true
   validate :key_must_be_allowed
   validate :manager_must_be_llama_switchd
   validate :llama_switchd_settings_must_be_valid
@@ -65,7 +66,7 @@ class ServiceConnection < ApplicationRecord
   after_save :sync_chat_models, if: :generative_model_endpoint?
 
   def builtin?
-    BUILTIN_KEYS.include?(key)
+    BUILTIN_KEYS.include?(key) || BUILTIN_KEYS.include?(legacy_key)
   end
 
   def custom_llm?
@@ -148,6 +149,7 @@ class ServiceConnection < ApplicationRecord
   end
 
   def key_label
+    return "llama-server（#{key}）" if key.to_s.start_with?("llama_server_")
     return "カスタム LLM（#{key}）" if custom_llm?
 
     KEY_LABELS.fetch(key, key)
@@ -170,7 +172,17 @@ class ServiceConnection < ApplicationRecord
   end
 
   def self.available_keys
-    BUILTIN_KEYS - pluck(:key)
+    BUILTIN_KEYS - where(key: BUILTIN_KEYS).or(where(legacy_key: BUILTIN_KEYS)).pluck(Arel.sql("COALESCE(legacy_key, key)"))
+  end
+
+  def self.resolve(key)
+    value = key.to_s
+    find_by(key: value) || find_by(legacy_key: value)
+  end
+
+  def self.server_key_for(value)
+    normalized = value.to_s.downcase.gsub(/[^a-z0-9]+/, "_").gsub(/\A_+|_+\z/, "")
+    "llama_server_#{normalized}"
   end
 
   private
@@ -192,6 +204,7 @@ class ServiceConnection < ApplicationRecord
     return if key.blank?
     return if builtin?
     return if custom_llm?
+    return if key.to_s.start_with?("llama_server_") && adapter == "llama_cpp"
 
     errors.add(:key, "は組み込み key か llm_ で始まるカスタム key にしてください")
   end
@@ -202,6 +215,10 @@ class ServiceConnection < ApplicationRecord
 
   def normalize_custom_llm_adapter
     self.adapter = "llama_cpp" if adapter.blank? || adapter == "generic"
+    return unless new_record? && server_model.present? && key.to_s.match?(CUSTOM_LLM_KEY_FORMAT)
+
+    self.legacy_key ||= key
+    self.key = self.class.server_key_for(managed_server_id.presence || server_model)
   end
 
   def prevent_builtin_destroy

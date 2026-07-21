@@ -27,7 +27,7 @@ module ServiceConnectionSeeds
   end
 
   def sync_definition(definition, index)
-    record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
+    record = record_for(definition)
     record.assign_attributes(sync_attributes_for(definition, record, index))
     return if record.save
 
@@ -36,7 +36,7 @@ module ServiceConnectionSeeds
   end
 
   def upsert_definition!(definition, index)
-    record = ServiceConnection.find_or_initialize_by(key: definition.fetch(:key))
+    record = record_for(definition)
     attributes = definition_attributes(definition, record, index)
     record.assign_attributes(attributes)
     record.save!
@@ -186,5 +186,20 @@ module ServiceConnectionSeeds
     return "llama_cpp" if key.in?(%w[llama_cpp gpt_oss vision_llama embeddings]) || key.start_with?("llm_")
 
     "generic"
+  end
+
+  def record_for(definition)
+    legacy_key = definition.fetch(:key).to_s
+    ServiceConnection.resolve(legacy_key) || ServiceConnection.new(
+      key: canonical_key_for(definition),
+      legacy_key: (legacy_key if adapter_for(definition) == "llama_cpp")
+    )
+  end
+
+  def canonical_key_for(definition)
+    return definition.fetch(:key) unless adapter_for(definition) == "llama_cpp"
+
+    source = definition[:server_model].presence || definition.fetch(:key)
+    ServiceConnection.server_key_for(source)
   end
 end

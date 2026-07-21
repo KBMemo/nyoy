@@ -44,8 +44,8 @@ class ChatLlmSettings
     key = model&.metadata&.dig("connection_key").to_s.presence
     return {} if key.blank?
 
-    connection = ServiceConnection.enabled.find_by(key: key)
-    return {} unless connection&.supports_prompt_conversion_settings?
+    connection = ServiceConnection.resolve(key)
+    return {} unless connection&.enabled? && connection.supports_prompt_conversion_settings?
 
     normalize(connection.prompt_conversion_settings.sampling.to_h_compact)
   end

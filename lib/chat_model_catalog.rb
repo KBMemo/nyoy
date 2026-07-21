@@ -80,7 +80,7 @@ module ChatModelCatalog
 
   def seed!
     definitions.each do |definition|
-      connection = ServiceConnection.find_by(key: definition.connection_key)
+      connection = ServiceConnection.resolve(definition.connection_key)
       record = Model.find_or_initialize_by(provider: "openai", model_id: definition.model_id)
       record.assign_attributes(
         name: definition.name,

@@ -49,7 +49,8 @@ class ServiceConnectionTest < ActiveSupport::TestCase
       server_model: "extra-model"
     )
 
-    assert_includes ServiceConnection.model_endpoints.pluck(:key), "llm_extra"
+    assert_includes ServiceConnection.model_endpoints.pluck(:key), "llama_server_extra_model"
+    assert_equal ServiceConnection.resolve("llm_extra"), ServiceConnection.find_by!(key: "llama_server_extra_model")
   end
 
   test "custom llm defaults to llama cpp adapter" do
@@ -62,6 +63,8 @@ class ServiceConnectionTest < ActiveSupport::TestCase
 
     assert connection.valid?
     assert_equal "llama_cpp", connection.adapter
+    assert_equal "llama_server_test_model", connection.key
+    assert_equal "llm_adapter_default", connection.legacy_key
   end
 
   test "validates base_url format" do

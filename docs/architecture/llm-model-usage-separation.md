@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 5 ServiceConnection用途依存の除去（2026-07-21）
+**ステータス:** Phase 6 server指向の接続key移行（2026-07-21）
 
 ## 1. 目的
 
@@ -107,7 +107,15 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 llama-server停止・削除前の用途表示は、有効なassignmentの主Model・fallback ModelからConnectionを逆引きする。assignmentがまだ1件もない移行前DBだけ、旧AppSetting判定へfallbackする。
 
-prompt conversion設定は旧UI互換のためmodel endpointに残しているが、最終的なsampling値の所有者はassignmentまたはsampling presetである。接続keyのserver指向移行と旧UI削除は後続Phaseで行う。
+prompt conversion設定は旧UI互換のためmodel endpointに残しているが、最終的なsampling値の所有者はassignmentまたはsampling presetである。
+
+### 6.1 Connection key
+
+llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とする。identifierはllama-switchdのmanaged server IDを優先し、未登録ならRuntime Alias、最後にServiceConnection IDから生成する。これにより`gpt_oss`、`vision_llama`、`embeddings`のような用途名をConnectionの識別子から除く。
+
+移行前のkeyは`ServiceConnection.legacy_key`に保存する。`ServiceConnection.resolve`は現行key、旧keyの順で検索するため、環境変数、旧AppSetting、既存の運用コマンドは移行期間中も利用できる。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
+
+移行migrationはConnectionのkey変更と同時に、AppSettingの既定接続、画像生成履歴のstyle plan接続、Model metadataの`connection_key`を更新する。用途assignmentはModelを参照しているため更新不要である。旧keyの削除はPhase 7の環境変数fallback整理後に別途判断する。
 
 ## 7. 不変条件
 
@@ -126,7 +134,7 @@ prompt conversion設定は旧UI互換のためmodel endpointに残している�
 3. 既存AppSetting・AgentGraph model設定からassignmentをseedする
 4. Chat、AgentGraph、Vision、Embedding、画像prompt、補助処理をassignment解決へ移す
 5. `ServiceConnection`の用途依存scope・validation・UIを除去する
-6. 用途名を含む接続keyをserver指向keyへ移行する
+6. 用途名を含む接続keyをserver指向keyへ移行する（完了）
 7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する
 
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。

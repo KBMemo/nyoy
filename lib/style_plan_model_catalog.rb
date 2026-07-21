@@ -25,18 +25,20 @@ module StylePlanModelCatalog
     definition = definitions.find { |item| item.connection_key == connection_key }
     return definition.name if definition
 
-    ServiceConnection.find_by(key: connection_key)&.name || connection_key
+    ServiceConnection.resolve(connection_key)&.name || connection_key
   end
 
   def prompt_conversion_settings(connection_key)
-    connection = ServiceConnection.find_by(key: connection_key.to_s)
+    connection = ServiceConnection.resolve(connection_key)
     PromptConversionSettings.from(connection&.settings)
   end
 
   def json_schema_supported?(connection_key)
     key = connection_key.to_s
-    return true if JSON_SCHEMA_CONNECTIONS.include?(key)
-    return true if key.match?(ServiceConnection::CUSTOM_LLM_KEY_FORMAT)
+    connection = ServiceConnection.resolve(key)
+    identity = connection&.legacy_key.presence || connection&.key || key
+    return true if JSON_SCHEMA_CONNECTIONS.include?(identity)
+    return true if identity.match?(ServiceConnection::CUSTOM_LLM_KEY_FORMAT)
 
     false
   end
@@ -55,7 +57,7 @@ module StylePlanModelCatalog
 
   def model_for(connection_key)
     key = connection_key.to_s
-    connection = ServiceConnection.find_by(key: key)
+    connection = ServiceConnection.resolve(key)
 
     if connection&.openai?
       settings = OpenaiChatModelSettings.from(connection.settings)
@@ -69,7 +71,7 @@ module StylePlanModelCatalog
 
   def client_for(connection_key: nil)
     key = connection_key.presence || default_connection_key
-    connection = ServiceConnection.find_by(key: key)
+    connection = ServiceConnection.resolve(key)
     unless connection&.generative_model_endpoint?
       raise StylePlanGenerator::Error, "不明な接続です: #{key}"
     end
@@ -88,7 +90,7 @@ module StylePlanModelCatalog
   end
 
   def option_label(definition)
-    connection = ServiceConnection.find_by(key: definition.connection_key)
+    connection = ServiceConnection.resolve(definition.connection_key)
     connection_name = connection&.name || definition.connection_key
     return connection_name if connection_name == definition.name
 

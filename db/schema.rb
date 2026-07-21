@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_050000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -502,6 +502,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_050000) do
     t.datetime "created_at", null: false
     t.boolean "enabled", default: true, null: false
     t.string "key", null: false
+    t.string "legacy_key"
     t.string "managed_server_id"
     t.bigint "manager_connection_id"
     t.string "name", null: false
@@ -513,6 +514,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_050000) do
     t.index ["adapter"], name: "index_service_connections_on_adapter"
     t.index ["enabled"], name: "index_service_connections_on_enabled"
     t.index ["key"], name: "index_service_connections_on_key", unique: true
+    t.index ["legacy_key"], name: "index_service_connections_on_legacy_key", unique: true
     t.index ["manager_connection_id", "managed_server_id"], name: "index_service_connections_on_manager_and_server"
   end
 

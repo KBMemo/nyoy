@@ -19,7 +19,8 @@ key = ARGV[0].to_s
 temporary_url = ARGV[1].to_s
 command = ARGV[(separator + 1)..]
 
-connection = ServiceConnection.find_by!(key: key)
+connection = ServiceConnection.resolve(key)
+raise ActiveRecord::RecordNotFound, "Couldn't find ServiceConnection for key #{key.inspect}" unless connection
 original_url = connection.base_url
 
 begin

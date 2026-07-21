@@ -53,7 +53,7 @@ module NyoyConnectionStore
     def connection(key)
       return nil unless table_ready?
 
-      ServiceConnection.find_by(key: key.to_s)
+      ServiceConnection.resolve(key)
     end
 
     def table_ready?

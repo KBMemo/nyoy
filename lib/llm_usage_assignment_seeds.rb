@@ -76,14 +76,16 @@ module LlmUsageAssignmentSeeds
   end
 
   def model_for_chat_connection(connection_key)
-    connection = ServiceConnection.enabled.find_by(key: connection_key)
+    connection = ServiceConnection.resolve(connection_key)
+    return unless connection&.enabled?
     return unless connection&.server_model.present?
 
     model_by_model_id(connection.server_model)
   end
 
   def model_for_connection(connection_key, capabilities:, input_modalities:)
-    connection = ServiceConnection.enabled.find_by(key: connection_key)
+    connection = ServiceConnection.resolve(connection_key)
+    return unless connection&.enabled?
     return unless connection&.server_model.present?
 
     model = Model.find_or_initialize_by(provider: "openai", model_id: connection.server_model)

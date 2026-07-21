@@ -25,8 +25,9 @@ class LlamaServerUsageResolver
     labels = []
     labels << "既定Chat" if AppSetting.default_chat_connection_key == connection.key
     labels << "style plan" if AppSetting.default_style_plan_connection_key == connection.key
-    labels << "画像理解" if connection.key == "vision_llama"
-    labels << "埋め込み" if connection.key == "embeddings"
+    connection_identifier = connection.legacy_key.presence || connection.key
+    labels << "画像理解" if connection_identifier == "vision_llama"
+    labels << "埋め込み" if connection_identifier == "embeddings"
     LEGACY_MODEL_USAGES.each do |resolver, label|
       model = AppSetting.public_send(resolver)
       labels << label if model&.metadata&.dig("connection_key") == connection.key
