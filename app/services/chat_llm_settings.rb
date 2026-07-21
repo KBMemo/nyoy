@@ -20,7 +20,7 @@ class ChatLlmSettings
     settings.apply!(llm_chat)
   end
 
-  # App default preset < connection profile sampling < per-chat llm_params.
+  # Usage assignment preset < connection profile sampling < per-chat llm_params.
   def self.effective_for(chat)
     from(merge_layers(defaults_for(model: chat.model_association).to_h, chat.llm_params))
   end

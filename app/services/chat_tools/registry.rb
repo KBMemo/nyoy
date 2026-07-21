@@ -124,9 +124,7 @@ module ChatTools
     end
 
     def vision_tools_available?
-      return true if LlmUsageResolver.resolve("vision.image_understanding")
-
-      NyoyConnectionStore.enabled?(:vision_llama) && NyoyConnectionStore.url(:vision_llama).present?
+      LlmUsageResolver.resolve("vision.image_understanding").present?
     end
 
     def media_tools_available?

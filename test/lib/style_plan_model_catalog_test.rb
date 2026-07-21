@@ -16,7 +16,7 @@ class StylePlanModelCatalogTest < ActiveSupport::TestCase
 
   test "default_connection_key follows style plan usage assignment" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
-    LlmUsageAssignment.create!(usage_key: "image.style_plan", model: model)
+    LlmUsageAssignment.find_by!(usage_key: "image.style_plan").update!(model: model)
 
     assert_equal "gpt_oss", StylePlanModelCatalog.default_connection_key
   end

@@ -5,12 +5,15 @@ require "test_helper"
 class ChatToolsRegistryTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
+    LlmUsageAssignment.delete_all
+    LlmUsageAssignmentSeeds.seed!
     NyoyConnectionStore.clear_cache!
     ChatTools::Registry.reset_client!
   end
 
   teardown do
     ChatTools::Registry.reset_client!
+    LlmUsageAssignment.delete_all
   end
 
   test "main llm uses read only tools by default" do
@@ -177,7 +180,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     calls = []
     fake_client.define_singleton_method(:list_memos) do |**kwargs|
       calls << kwargs
-      { "memos" => [{ "uid" => "01J8X2K3M4N5P6Q7R8S9T0UVWX", "title" => "旅行" }] }
+      { "memos" => [ { "uid" => "01J8X2K3M4N5P6Q7R8S9T0UVWX", "title" => "旅行" } ] }
     end
     original_client = ChatTools::Registry.method(:client)
     ChatTools::Registry.define_singleton_method(:client) { fake_client }

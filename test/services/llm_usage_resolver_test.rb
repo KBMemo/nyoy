@@ -31,10 +31,12 @@ class LlmUsageResolverTest < ActiveSupport::TestCase
     assert_equal service_connections(:llama_cpp), resolution.connection
   end
 
-  test "returns legacy model when assignment is missing" do
-    legacy = model_for("llama_cpp")
+  test "raises when a client assignment is missing" do
+    error = assert_raises(LlmUsageResolver::MissingAssignmentError) do
+      LlmUsageResolver.llama_client_for("agent.draft")
+    end
 
-    assert_equal legacy, LlmUsageResolver.model_for("agent.draft", legacy: legacy)
+    assert_includes error.message, "agent.draft"
   end
 
   test "returns nil for a disabled assignment" do

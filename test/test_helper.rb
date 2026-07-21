@@ -22,6 +22,8 @@ module ActiveSupport
     fixtures :all
 
     setup do
+      LlmUsageAssignmentSeeds.seed! unless LlmUsageAssignment.exists?
+
       EmbeddingClient.define_method(:embed) do |input:|
         text = Array(input).first.to_s
         seed = text.bytes.sum + text.length

@@ -3,6 +3,10 @@
 require "test_helper"
 
 class LlmUsageAssignmentTest < ActiveSupport::TestCase
+  setup do
+    LlmUsageAssignment.delete_all
+  end
+
   test "accepts a model with all required capabilities" do
     assignment = LlmUsageAssignment.new(usage_key: "chat.default", model: text_model)
 

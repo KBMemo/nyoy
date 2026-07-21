@@ -8,8 +8,8 @@ class LlamaCppClient
   class Error < StandardError; end
 
   def initialize(
-    base_url: NyoyConnectionStore.url(:llama_cpp),
-    model: NyoyConnectionStore.server_model(:llama_cpp),
+    base_url:,
+    model: nil,
     api_token: nil
   )
     @base_url = base_url.sub(%r{/\z}, "")
@@ -67,7 +67,7 @@ class LlamaCppClient
     reasoning = normalize_message_content(message["reasoning_content"])
     legacy = choice["text"].to_s.strip
 
-    json_text = [content, reasoning]
+    json_text = [ content, reasoning ]
       .filter_map { |part| extract_json_text(part) }
       .max_by { |candidate| candidate[:score] }
       &.dig(:text)
@@ -107,7 +107,7 @@ class LlamaCppClient
 
     begin
       parsed = LlamaJsonParser.parse(normalized)
-      return { text: parsed.to_json, score: 100 + normalized.length }
+      { text: parsed.to_json, score: 100 + normalized.length }
     rescue LlamaJsonParser::Error
       parsed = LlamaJsonParser.repair_truncated(normalized)
       { text: parsed.to_json, score: 50 + normalized.length }
@@ -118,7 +118,7 @@ class LlamaCppClient
 
   def self.message_sources(response)
     message = response.dig("choices", 0, "message") || {}
-    [message["content"], message["reasoning_content"]]
+    [ message["content"], message["reasoning_content"] ]
       .map { |part| part.to_s.strip }
       .reject(&:blank?)
       .uniq

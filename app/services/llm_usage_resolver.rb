@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class LlmUsageResolver
+  class MissingAssignmentError < StandardError; end
+
   Resolution = Data.define(:usage_key, :assignment, :model, :connection, :sampling_preset)
 
   class << self
@@ -12,19 +14,15 @@ class LlmUsageResolver
       resolve_model(assignment, assignment.model) || resolve_model(assignment, assignment.fallback_model)
     end
 
-    def model_for(usage_key, legacy: nil)
-      resolve(usage_key)&.model || legacy
+    def model_for(usage_key)
+      resolve(usage_key)&.model
     end
 
-    def llama_client_for(usage_key, legacy_connection_key: :llama_cpp)
+    def llama_client_for(usage_key)
       resolution = resolve(usage_key)
-      return client_for(resolution) if resolution
+      raise MissingAssignmentError, "LLM usage assignment is unavailable: #{usage_key}" unless resolution
 
-      LlamaCppClient.new(
-        base_url: NyoyConnectionStore.url(legacy_connection_key),
-        model: NyoyConnectionStore.server_model(legacy_connection_key),
-        api_token: NyoyConnectionStore.api_token(legacy_connection_key)
-      )
+      client_for(resolution)
     end
 
     private

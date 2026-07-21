@@ -133,7 +133,8 @@ module ChatModelCatalog
     else
       model_record&.metadata&.dig("api_base")
     end
-    api_base = api_base.presence || NyoyConnectionStore.url(:llama_cpp)
+    raise ArgumentError, "model connection is unavailable: #{model_record&.model_id}" if api_base.blank?
+
     normalized = api_base.sub(%r{/\z}, "")
 
     api_key = if connection_key == "openai"

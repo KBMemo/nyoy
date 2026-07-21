@@ -13,10 +13,7 @@ class VisionChatService
   TEXT
 
   def initialize(client: nil)
-    @client = client || LlmUsageResolver.llama_client_for(
-      "vision.image_understanding",
-      legacy_connection_key: :vision_llama
-    )
+    @client = client || LlmUsageResolver.llama_client_for("vision.image_understanding")
   end
 
   def analyze(image:, mime_type:, prompt:)
