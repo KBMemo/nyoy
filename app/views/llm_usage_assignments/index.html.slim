@@ -15,7 +15,7 @@ section.space-y-4 aria-label="LLM用途割当"
   - @assignments.each do |assignment|
     - definition = assignment.definition
     - model_options = @model_options.fetch(assignment.id)
-    - connection = ServiceConnection.resolve(assignment.model.metadata.to_h["connection_key"])
+    - connection = assignment.model.resolved_service_connection
     article.kb-card.p-4 id=dom_id(assignment)
       = form_with model: assignment, class: "space-y-4" do |form|
         .flex.flex-wrap.items-start.justify-between.gap-3

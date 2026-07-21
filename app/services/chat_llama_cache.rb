@@ -56,7 +56,7 @@ module ChatLlamaCache
   end
 
   def openai_model?(model)
-    model&.metadata&.dig("connection_key") == "openai"
+    model&.resolved_service_connection&.openai? == true
   end
 
   def disabled_metadata
@@ -118,12 +118,8 @@ module ChatLlamaCache
 
   def api_base_for(chat, model: nil)
     model ||= chat&.model_association
-    connection_key = model&.metadata&.dig("connection_key")
-    if connection_key.present?
-      NyoyConnectionStore.url(connection_key).to_s.sub(%r{/\z}, "").presence
-    else
+    model&.resolved_service_connection&.base_url.to_s.sub(%r{/\z}, "").presence ||
       model&.metadata&.dig("api_base").to_s.sub(%r{/\z}, "").presence
-    end
   end
 
   def total_slots_from_props(base_url)

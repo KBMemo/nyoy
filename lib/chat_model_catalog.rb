@@ -83,6 +83,7 @@ module ChatModelCatalog
       connection = ServiceConnection.resolve(definition.connection_key)
       record = Model.find_or_initialize_by(provider: "openai", model_id: definition.model_id)
       record.assign_attributes(
+        service_connection: connection,
         name: definition.name,
         family: connection&.openai? ? "openai" : "local",
         context_window: context_window_for(connection),
@@ -127,18 +128,15 @@ module ChatModelCatalog
   end
 
   def context_for(model_record)
-    connection_key = model_record&.metadata&.dig("connection_key")
-    api_base = if connection_key.present?
-      NyoyConnectionStore.url(connection_key)
-    else
-      model_record&.metadata&.dig("api_base")
-    end
+    connection = model_record&.resolved_service_connection
+    connection_key = connection&.key
+    api_base = connection&.base_url.presence || model_record&.metadata&.dig("api_base")
     raise ArgumentError, "model connection is unavailable: #{model_record&.model_id}" if api_base.blank?
 
     normalized = api_base.sub(%r{/\z}, "")
 
-    api_key = if connection_key == "openai"
-      NyoyConnectionStore.api_token(:openai).presence || RubyLLM.config.openai_api_key
+    api_key = if connection&.openai?
+      connection.api_token.presence || RubyLLM.config.openai_api_key
     else
       RubyLLM.config.openai_api_key
     end

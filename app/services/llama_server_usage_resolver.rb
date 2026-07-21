@@ -4,7 +4,7 @@ class LlamaServerUsageResolver
   def self.labels_for(connection)
     labels = LlmUsageAssignment.enabled.includes(:model, :fallback_model).filter_map do |assignment|
       models = [ assignment.model, assignment.fallback_model ].compact
-      next unless models.any? { |model| model.metadata.to_h["connection_key"] == connection.key }
+      next unless models.any? { |model| model.resolved_service_connection == connection }
 
       LlmUsageCatalog.fetch(assignment.usage_key).label
     end.uniq

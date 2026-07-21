@@ -9,6 +9,7 @@ class ServiceConnection < ApplicationRecord
            inverse_of: :manager_connection
   has_many :llama_server_operations, dependent: :destroy
   has_many :llama_server_reconciliations, dependent: :destroy
+  has_many :models, dependent: :nullify
   BUILTIN_KEYS = %w[
     llama_cpp
     gpt_oss
@@ -168,7 +169,7 @@ class ServiceConnection < ApplicationRecord
   end
 
   def models_for_connection
-    Model.where("metadata ->> 'connection_key' = ?", key.to_s)
+    Model.where(service_connection_id: id).or(Model.where("metadata ->> 'connection_key' = ?", key.to_s))
   end
 
   def self.available_keys

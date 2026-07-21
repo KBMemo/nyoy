@@ -17,6 +17,7 @@ class LlmUsageResolverTest < ActiveSupport::TestCase
     assert_equal assignment, resolution.assignment
     assert_equal model, resolution.model
     assert_equal service_connections(:gpt_oss), resolution.connection
+    assert_equal service_connections(:gpt_oss), model.service_connection
   end
 
   test "uses fallback model when the primary connection is disabled" do
@@ -43,6 +44,14 @@ class LlmUsageResolverTest < ActiveSupport::TestCase
     LlmUsageAssignment.create!(usage_key: "agent.draft", model: model_for("llama_cpp"), enabled: false)
 
     assert_nil LlmUsageResolver.resolve("agent.draft")
+  end
+
+  test "temporarily resolves an unassociated model from legacy metadata" do
+    model = model_for("llama_cpp")
+    model.update_columns(service_connection_id: nil)
+    LlmUsageAssignment.create!(usage_key: "agent.draft", model: model)
+
+    assert_equal service_connections(:llama_cpp), LlmUsageResolver.resolve("agent.draft").connection
   end
 
   private

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_070000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_071000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -366,12 +366,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_070000) do
     t.string "name", null: false
     t.jsonb "pricing", default: {}
     t.string "provider", null: false
+    t.bigint "service_connection_id"
     t.datetime "updated_at", null: false
     t.index ["capabilities"], name: "index_models_on_capabilities", using: :gin
     t.index ["family"], name: "index_models_on_family"
     t.index ["modalities"], name: "index_models_on_modalities", using: :gin
     t.index ["provider", "model_id"], name: "index_models_on_provider_and_model_id", unique: true
     t.index ["provider"], name: "index_models_on_provider"
+    t.index ["service_connection_id"], name: "index_models_on_service_connection_id"
   end
 
   create_table "prompt_knowledge_chunks", force: :cascade do |t|
@@ -541,6 +543,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_070000) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
+  add_foreign_key "models", "service_connections", on_delete: :nullify
   add_foreign_key "prompt_style_loras", "lora_profiles"
   add_foreign_key "prompt_style_loras", "prompt_styles"
   add_foreign_key "prompt_style_models", "prompt_styles"

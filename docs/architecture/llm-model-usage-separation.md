@@ -149,6 +149,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 10. runtimeの旧接続キーfallbackを廃止し、用途assignmentを必須化する（完了）
 11. 旧AppSettingのLLM設定8列を安全弁付きmigrationで削除する（完了）
 12. `AppSetting`のLLM用途互換アクセサを撤去し、consumerをResolverへ直結する（完了）
+13. `Model.service_connection_id`を追加し、JSON metadata参照からassociationへ移行する（互換読取期間）
 
 ## 9. Legacy key監査
 

@@ -30,8 +30,7 @@ class LlmUsageResolver
     def resolve_model(assignment, model)
       return unless model
 
-      connection_key = model.metadata.to_h["connection_key"].to_s.presence
-      connection = ServiceConnection.resolve(connection_key) if connection_key
+      connection = model.resolved_service_connection
       connection = nil unless connection&.enabled?
       return unless connection
 

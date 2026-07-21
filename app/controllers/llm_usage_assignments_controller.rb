@@ -48,14 +48,14 @@ class LlmUsageAssignmentsController < ApplicationController
     end
     candidates |= [ assignment.model, assignment.fallback_model ].compact
     candidates.sort_by { |model| [ model.name.to_s.downcase, model.model_id.to_s ] }.map do |model|
-      connection = ServiceConnection.resolve(model.metadata.to_h["connection_key"])
+      connection = model.resolved_service_connection
       suffix = connection&.enabled? ? connection.name : "接続利用不可"
       [ "#{model.name.presence || model.model_id} - #{suffix}", model.id ]
     end
   end
 
   def available_connection_for(model)
-    connection = ServiceConnection.resolve(model.metadata.to_h["connection_key"])
+    connection = model.resolved_service_connection
     connection&.enabled?
   end
 

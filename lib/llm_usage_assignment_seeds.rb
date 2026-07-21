@@ -56,6 +56,7 @@ module LlmUsageAssignmentSeeds
 
     model = Model.find_or_initialize_by(provider: "openai", model_id: connection.server_model)
     model.assign_attributes(
+      service_connection: connection,
       name: model.name.presence || connection.server_model,
       family: model.family.presence || "local",
       capabilities: (Array(model.capabilities) | capabilities),
