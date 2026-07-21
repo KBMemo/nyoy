@@ -64,7 +64,7 @@ POST /service_connections/:id/load_sampling.json
 優先順位（後勝ち）:
 
 1. `chat.default`用途assignmentのsampling preset
-2. 接続プロファイルのサンプリング（モデルの `metadata.connection_key` → `ServiceConnection.settings.prompt_conversion`）
+2. 接続プロファイルのサンプリング（`Model.service_connection` → `ServiceConnection.settings.prompt_conversion`）
 3. チャット個別の `chats.llm_params`
 
 - 新規チャット作成時・生成時の `ChatLlmSettings.effective_for` / `defaults_for` がこの合成を使う

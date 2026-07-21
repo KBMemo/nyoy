@@ -11,9 +11,6 @@ class ServiceConnectionLegacyKeyAudit
     def call
       ServiceConnection.where.not(legacy_key: nil).order(:id).map do |connection|
         references = column_references(connection.legacy_key)
-        model_count = Model.where("metadata ->> 'connection_key' = ?", connection.legacy_key).count
-        references["models.metadata.connection_key"] = model_count if model_count.positive?
-
         {
           "key" => connection.key,
           "legacy_key" => connection.legacy_key,

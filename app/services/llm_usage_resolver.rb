@@ -30,7 +30,7 @@ class LlmUsageResolver
     def resolve_model(assignment, model)
       return unless model
 
-      connection = model.resolved_service_connection
+      connection = model.service_connection
       connection = nil unless connection&.enabled?
       return unless connection
 

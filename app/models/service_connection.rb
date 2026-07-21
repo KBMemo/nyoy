@@ -169,7 +169,7 @@ class ServiceConnection < ApplicationRecord
   end
 
   def models_for_connection
-    Model.where(service_connection_id: id).or(Model.where("metadata ->> 'connection_key' = ?", key.to_s))
+    models
   end
 
   def self.available_keys

@@ -117,7 +117,7 @@ llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とす�
 
 移行前のkeyは`ServiceConnection.legacy_key`に保存する。`ServiceConnection.resolve`は現行key、旧keyの順で検索するため、環境変数、旧AppSetting、既存の運用コマンドは移行期間中も利用できる。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
 
-移行migrationはConnectionのkey変更と同時に、AppSettingの既定接続、画像生成履歴のstyle plan接続、Model metadataの`connection_key`を更新する。用途assignmentはModelを参照しているため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。
+Connection key移行時は画像生成履歴のstyle plan接続を更新する。Modelは`service_connection_id`で参照するためkey変更の影響を受けず、用途assignmentもModel参照のため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。
 
 ### 6.2 Runtime connection source
 
@@ -149,7 +149,8 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 10. runtimeの旧接続キーfallbackを廃止し、用途assignmentを必須化する（完了）
 11. 旧AppSettingのLLM設定8列を安全弁付きmigrationで削除する（完了）
 12. `AppSetting`のLLM用途互換アクセサを撤去し、consumerをResolverへ直結する（完了）
-13. `Model.service_connection_id`を追加し、JSON metadata参照からassociationへ移行する（互換読取期間）
+13. `Model.service_connection_id`を追加し、JSON metadata参照からassociationへ移行する（完了）
+14. Model metadataの`connection_key`を安全弁付きmigrationで削除する（完了）
 
 ## 9. Legacy key監査
 

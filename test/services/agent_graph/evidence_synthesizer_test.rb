@@ -21,7 +21,8 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
       context_window: 8192,
       capabilities: [ "chat" ],
       modalities: { "input" => [ "text" ], "output" => [ "text" ] },
-      metadata: { "connection_key" => "gpt_oss", "api_base" => light.metadata["api_base"] }
+      service_connection: service_connections(:gpt_oss),
+      metadata: { "api_base" => light.metadata["api_base"] }
     )
     original_chat_model = @chat.model_association
     @chat.update!(model: main)

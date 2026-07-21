@@ -18,23 +18,12 @@ class ServiceConnectionLegacyKeyAuditTest < ActiveSupport::TestCase
       loras: "[]"
     )
     generation.update_column(:style_plan_connection_key, "llama_cpp")
-    model = Model.create!(
-      provider: "openai",
-      model_id: "legacy-audit-model",
-      name: "Legacy audit model",
-      capabilities: [ "chat" ],
-      modalities: { "input" => [ "text" ], "output" => [ "text" ] },
-      metadata: { "connection_key" => "llama_cpp" }
-    )
-
     row = ServiceConnectionLegacyKeyAudit.call.find { |item| item.fetch("legacy_key") == "llama_cpp" }
 
-    assert_equal 2, row.fetch("reference_count")
+    assert_equal 1, row.fetch("reference_count")
     assert_equal 1, row.dig("references", "image_generations.style_plan_connection_key")
-    assert_equal 1, row.dig("references", "models.metadata.connection_key")
     assert_not row.fetch("database_clear")
   ensure
-    model&.destroy!
     generation&.destroy!
   end
 

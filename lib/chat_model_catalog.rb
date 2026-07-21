@@ -90,8 +90,7 @@ module ChatModelCatalog
         capabilities: [ "chat" ],
         modalities: { "input" => [ "text" ], "output" => [ "text" ] },
         metadata: {
-          "api_base" => definition.api_base,
-          "connection_key" => definition.connection_key
+          "api_base" => definition.api_base
         }
       )
       record.save!
@@ -128,7 +127,7 @@ module ChatModelCatalog
   end
 
   def context_for(model_record)
-    connection = model_record&.resolved_service_connection
+    connection = model_record&.service_connection
     connection_key = connection&.key
     api_base = connection&.base_url.presence || model_record&.metadata&.dig("api_base")
     raise ArgumentError, "model connection is unavailable: #{model_record&.model_id}" if api_base.blank?

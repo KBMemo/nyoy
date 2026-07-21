@@ -58,7 +58,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
       name: "openai-cache-test",
       family: "openai",
       capabilities: [ "chat" ],
-      metadata: { "connection_key" => "openai" }
+      service_connection: service_connections(:openai)
     )
     chat = Chat.create!(model: model)
 
@@ -80,7 +80,7 @@ class ChatLlamaCacheTest < ActiveSupport::TestCase
       name: "explicit-llama-cache-test",
       family: "local",
       capabilities: [ "chat" ],
-      metadata: { "connection_key" => "llama_cpp" }
+      service_connection: service_connections(:llama_cpp)
     )
     Rails.application.config.x.nyoy.llama_slot_count = 0
     Rails.application.config.x.nyoy.llama_cache_prompt = true

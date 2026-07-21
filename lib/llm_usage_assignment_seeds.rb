@@ -65,8 +65,7 @@ module LlmUsageAssignmentSeeds
         "output" => (Array(model.modalities.to_h["output"]) | [ "text" ])
       ),
       metadata: model.metadata.to_h.merge(
-        "api_base" => connection.base_url,
-        "connection_key" => connection.key
+        "api_base" => connection.base_url
       )
     )
     model.save!

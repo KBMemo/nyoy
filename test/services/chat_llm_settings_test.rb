@@ -95,7 +95,7 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
 
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     assign_chat_default(model, LlmSamplingPreset.find_by!(key: "qwen3_5_9b"))
-    assert_equal "gpt_oss", model.metadata["connection_key"]
+    assert_equal connection, model.service_connection
 
     defaults = ChatLlmSettings.defaults_for(model: model)
     assert_equal 4096, defaults.max_tokens

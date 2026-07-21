@@ -11,7 +11,7 @@ class ChatModelSeedsTest < ActiveSupport::TestCase
 
     assert_equal "gemma-4-e4b-it-qat-ud-q4-k-xl", gemma.name
     assert_equal "gpt-oss", gpt_oss.name
-    assert_equal "llama_cpp", gemma.metadata["connection_key"]
-    assert_equal "gpt_oss", gpt_oss.metadata["connection_key"]
+    assert_equal service_connections(:llama_cpp), gemma.service_connection
+    assert_equal service_connections(:gpt_oss), gpt_oss.service_connection
   end
 end

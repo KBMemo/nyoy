@@ -8,8 +8,4 @@ class Model < ApplicationRecord
            foreign_key: :fallback_model_id,
            dependent: :restrict_with_error,
            inverse_of: :fallback_model
-
-  def resolved_service_connection
-    service_connection || ServiceConnection.resolve(metadata.to_h["connection_key"])
-  end
 end

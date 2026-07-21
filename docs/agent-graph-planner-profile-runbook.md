@@ -69,7 +69,7 @@ RUN_ID=84 bin/rails runner '
 
 ## 5. fallback障害注入
 
-planner modelの接続だけを一時的に到達不能にする。`KEY` は対象modelの `metadata.connection_key` を使う。
+planner modelの接続だけを一時的に到達不能にする。`KEY` は対象modelの `service_connection.key` を使う。
 
 ```bash
 KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("agent.planner")&.connection&.key')"

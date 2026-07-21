@@ -56,7 +56,7 @@ module ChatLlamaCache
   end
 
   def openai_model?(model)
-    model&.resolved_service_connection&.openai? == true
+    model&.service_connection&.openai? == true
   end
 
   def disabled_metadata
@@ -118,7 +118,7 @@ module ChatLlamaCache
 
   def api_base_for(chat, model: nil)
     model ||= chat&.model_association
-    model&.resolved_service_connection&.base_url.to_s.sub(%r{/\z}, "").presence ||
+    model&.service_connection&.base_url.to_s.sub(%r{/\z}, "").presence ||
       model&.metadata&.dig("api_base").to_s.sub(%r{/\z}, "").presence
   end
 

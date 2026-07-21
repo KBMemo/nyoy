@@ -40,6 +40,6 @@ class LlmUsageAssignmentSeedsTest < ActiveSupport::TestCase
   private
 
   def connection_key_for(usage_key)
-    LlmUsageAssignment.find_by!(usage_key: usage_key).model.metadata.fetch("connection_key")
+    LlmUsageAssignment.find_by!(usage_key: usage_key).model.service_connection.key
   end
 end
