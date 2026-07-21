@@ -1,0 +1,81 @@
+# LLMモデル・用途・接続の分離
+
+**ステータス:** Phase 1 用途契約定義（2026-07-21）
+
+## 1. 目的
+
+LLM設定を次の3責務へ分離する。
+
+1. `ServiceConnection`: llama-server、OpenAI互換API、llama-switchdとの接続・稼働状態
+2. `Model`: Runtime Alias、能力、context長などのモデル特性
+3. `LlmUsageAssignment`: 用途に対して選択するModel、profile、fallback
+
+実行時の解決順は`usage_key -> assignment -> model -> connection -> API`とする。用途からConnectionを直接選択せず、Connectionのkeyや名前にも用途を持たせない。
+
+sampling値は接続特性ではない。同じModelでも通常Chat、planner、最終回答で異なるため、用途assignmentまたは用途から参照するsampling profileで管理する。
+
+## 2. 用途契約
+
+コード上の正本は`LlmUsageCatalog`とする。
+
+| usage key | 用途 | 必須capability |
+| --- | --- | --- |
+| `chat.default` | 通常Chatと許可されたtool呼び出し | `text_generation`, `tool_calling` |
+| `agent.intent` | Research Graphへの昇格判定 | `text_generation` |
+| `agent.planner` | 調査計画 | `text_generation` |
+| `agent.evidence_evaluator` | 根拠十分性の評価 | `text_generation` |
+| `agent.draft` | 根拠からのドラフト生成 | `text_generation` |
+| `agent.final_answer` | 最終回答生成 | `text_generation` |
+| `vision.image_understanding` | Chat・ImageUnderstanding Graphの画像理解 | `text_generation`, `vision` |
+| `embedding.memo_knowledge` | メモRAGの登録・検索query埋め込み | `embedding` |
+| `embedding.prompt_knowledge` | プロンプト知識の登録・検索query埋め込み | `embedding` |
+| `image.style_plan` | free flowのstyle plan生成 | `text_generation` |
+| `image.direct_prompt` | direct flowのprompt生成 | `text_generation` |
+| `utility.chat_history_summary` | 長いChat履歴の要約 | `text_generation` |
+| `utility.memo_chunk_compression` | メモchunk圧縮（既定off） | `text_generation` |
+| `utility.sd_prompt_translation` | 画像プロンプト翻訳 | `text_generation` |
+
+`tool_calling`は通常Chatの必須能力とする。toolを使わない会話も同じ用途に含め、turnごとにassignmentを切り替えない。structured outputは現行実装にfallbackがあるため、Phase 1では必須capabilityに含めない。
+
+## 3. 現行設定からの移行表
+
+| usage key | 現在の設定元 | 現在のfallback |
+| --- | --- | --- |
+| `chat.default` | `AppSetting.default_chat_connection_key`、Chatの`Model` | `DEFAULT_CHAT_CONNECTION_KEY` |
+| `agent.intent` | `AppSetting.agent_graph_intent_model_id` | 通常Chat model |
+| `agent.planner` | `AppSetting.research_planner_model_id` | 通常Chat model |
+| `agent.evidence_evaluator` | `AppSetting.evidence_evaluator_model_id` | heuristicまたは通常Chat model |
+| `agent.draft` | `AppSetting.research_draft_model_id` | 通常Chat model、次にtemplate |
+| `agent.final_answer` | `AppSetting.final_answer_model_id` | 通常Chat model |
+| `vision.image_understanding` | `ServiceConnection key=vision_llama` | なし（retry後に失敗） |
+| `embedding.memo_knowledge` | `ServiceConnection key=embeddings` | なし |
+| `embedding.prompt_knowledge` | `ServiceConnection key=embeddings` | なし |
+| `image.style_plan` | `default_style_plan_connection_key`、生成recordの`style_plan_connection_key` | `STYLE_PLAN_CONNECTION_KEY` |
+| `image.direct_prompt` | `style_plan_connection_key` | style plan既定接続 |
+| `utility.chat_history_summary` | `LlamaCppClient`既定接続 | `llama_cpp` |
+| `utility.memo_chunk_compression` | `LlamaCppClient`既定接続 | `llama_cpp` |
+| `utility.sd_prompt_translation` | `LlamaCppClient`既定接続 | `llama_cpp` |
+
+AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約である。profileはアルゴリズム実装を選び、usage assignmentはそのprofileがLLMを必要とするときのModelを選ぶ。deterministic profileではassignmentが存在してもLLMを呼ばない。
+
+## 4. 不変条件
+
+- `ServiceConnection`は用途keyを保持しない
+- 用途選択UIはConnectionではなくModelを表示する
+- Modelは必須capabilityをすべて満たす用途にだけ選択できる
+- Modelから有効なConnectionを解決できない場合、そのassignmentは利用不可とする
+- Runtime AliasやURL変更で用途assignmentを変更しない
+- lifecycle操作前の使用中判定は、Connectionへの直接参照ではなくassignmentから逆引きする
+- fallbackは暗黙のURL fallbackではなくassignment上で明示する
+
+## 5. 移行順序
+
+1. 用途keyと能力要件を定義する（本Phase）
+2. `LlmUsageAssignment`を追加する
+3. 既存AppSetting・AgentGraph model設定からassignmentをseedする
+4. Chat、AgentGraph、Vision、Embedding、画像prompt、補助処理をassignment解決へ移す
+5. `ServiceConnection`の用途依存scope・validation・UIを除去する
+6. 用途名を含む接続keyをserver指向keyへ移行する
+7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する
+
+各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。
