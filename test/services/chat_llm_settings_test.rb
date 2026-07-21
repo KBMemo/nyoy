@@ -6,6 +6,8 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
     LlmSamplingPresetSeeds.seed!
+    LlmUsageAssignment.delete_all
+    LlmUsageAssignmentSeeds.seed!
   end
 
   test "blank values are omitted from stored hash" do
@@ -54,10 +56,10 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     )
   end
 
-  test "apply! falls back to AppSetting default when chat llm_params blank" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
-    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"), llm_params: {})
+  test "apply! uses assignment default when chat llm_params blank" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assign_chat_default(model, LlmSamplingPreset.find_by!(key: "qwen3_5_9b"))
+    chat = Chat.create!(model:, llm_params: {})
 
     llm_chat = RubyLLM.chat(model: "gpt-oss", provider: :openai, assume_model_exists: true)
     ChatLlmSettings.apply!(llm_chat, chat: chat)
@@ -67,10 +69,10 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
   end
 
   test "apply! prefers chat llm_params over defaults for overlapping keys" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assign_chat_default(model, LlmSamplingPreset.find_by!(key: "qwen3_5_9b"))
     chat = Chat.create!(
-      model: Model.find_by!(provider: "openai", model_id: "gpt-oss"),
+      model: model,
       llm_params: { "temperature" => 0.2 }
     )
 
@@ -81,10 +83,7 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     assert_in_delta 0.8, llm_chat.instance_variable_get(:@params)[:top_p]
   end
 
-  test "connection profile sampling overlays app default for the model" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
-
+  test "connection profile sampling overlays assignment default for the model" do
     connection = ServiceConnection.find_by!(key: "gpt_oss")
     connection.assign_prompt_conversion_settings(
       connection.prompt_conversion_settings.to_settings_h.merge(
@@ -95,6 +94,7 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     connection.save!
 
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assign_chat_default(model, LlmSamplingPreset.find_by!(key: "qwen3_5_9b"))
     assert_equal "gpt_oss", model.metadata["connection_key"]
 
     defaults = ChatLlmSettings.defaults_for(model: model)
@@ -108,19 +108,13 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
   end
 
   test "usage assignment sampling preset replaces the legacy app default" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     preset = LlmSamplingPreset.create!(
       key: "assignment_default",
       name: "Assignment default",
       params: { "temperature" => 0.25, "top_p" => 0.6 }
     )
-    LlmUsageAssignment.create!(
-      usage_key: "chat.default",
-      model: model,
-      llm_sampling_preset: preset
-    )
+    assign_chat_default(model, preset)
 
     defaults = ChatLlmSettings.defaults_for(model: model)
 
@@ -141,5 +135,11 @@ class ChatLlmSettingsTest < ActiveSupport::TestCase
     )
 
     assert_equal 8192, ChatLlmSettings.effective_for(chat).max_tokens
+  end
+
+  private
+
+  def assign_chat_default(model, preset)
+    LlmUsageAssignment.find_by!(usage_key: "chat.default").update!(model:, llm_sampling_preset: preset)
   end
 end

@@ -56,6 +56,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     )
     original = LlamaSwitchdInventory.instance_method(:call)
     LlamaSwitchdInventory.define_method(:call) { result }
+    LlmUsageAssignmentSeeds.seed!
 
     get llama_servers_service_connections_path
 
@@ -68,7 +69,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#llama-server-refresh-state[data-active='false']"
     assert_select "tr[data-llama-server-row][data-filter-text*='main-model']"
     assert_match "slots=2", response.body
-    assert_select "form[action='#{llama_server_path('main')}'][data-turbo-confirm*='既定Chat']" do
+    assert_select "form[action='#{llama_server_path('main')}'][data-turbo-confirm*='通常Chat']" do
       assert_select "input[name='acknowledge_usage'][value='1']"
     end
   ensure

@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 7 用途別URL環境変数fallbackの廃止（2026-07-21）
+**ステータス:** Phase 8 用途assignment管理UIへの移行（2026-07-21）
 
 ## 1. 目的
 
@@ -37,7 +37,7 @@ sampling値は接続特性ではない。同じModelでも通常Chat、planner�
 
 `tool_calling`は通常Chatの必須能力とする。toolを使わない会話も同じ用途に含め、turnごとにassignmentを切り替えない。structured outputは現行実装にfallbackがあるため、Phase 1では必須capabilityに含めない。
 
-## 3. 現行設定からの移行表
+## 3. 旧設定からの移行表
 
 | usage key | 現在の設定元 | 現在のfallback |
 | --- | --- | --- |
@@ -92,7 +92,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 通常Chatではユーザーがチャット作成時に選んだModelを引き続き優先し、`chat.default`は未指定時の既定Modelを決める。画像生成recordが保持する`style_plan_connection_key`も履歴再現性のため優先し、新規recordの既定だけをassignmentから解決する。
 
-旧AppSetting画面との互換期間中は、関連する接続・Model・sampling preset columnの変更を既存assignmentへdual-writeする。assignment管理UIへの移行完了後にこの同期を削除する。
+旧AppSettingの接続・Model・sampling preset columnは初回seedの移行元としてのみ読む。変更を既存assignmentへ反映するdual-writeは廃止し、runtimeと管理画面は`LlmUsageAssignment`を正本とする。旧列はrollback確認期間の退避データとしてDBに残すが、画面・strong parameters・validationから除外する。
 
 ## 6. Connection adapter
 
@@ -144,5 +144,6 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 5. `ServiceConnection`の用途依存scope・validation・UIを除去する
 6. 用途名を含む接続keyをserver指向keyへ移行する（完了）
 7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する（完了）
+8. 用途assignment管理UIへ移行し、旧AppSetting dual-writeを削除する（完了）
 
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。

@@ -8,19 +8,13 @@ module LlmUsageAssignmentSeeds
     "agent.draft" => :research_draft_model_id,
     "agent.final_answer" => :final_answer_model_id
   }.freeze
-  APP_SETTING_COLUMNS = (
-    AGENT_MODEL_COLUMNS.values + %i[
-      default_chat_connection_key default_style_plan_connection_key default_llm_sampling_preset_key
-    ]
-  ).freeze
-
   module_function
 
   def seed!
     ChatModelCatalog.seed!
     setting = AppSetting.instance
-    chat_model = model_for_chat_connection(AppSetting.default_chat_connection_key)
-    style_model = model_for_chat_connection(AppSetting.default_style_plan_connection_key)
+    chat_model = model_for_chat_connection(legacy_connection_key(setting, :default_chat_connection_key))
+    style_model = model_for_chat_connection(legacy_connection_key(setting, :default_style_plan_connection_key))
     utility_model = model_for_chat_connection("llama_cpp")
     vision_model = model_for_connection("vision_llama", capabilities: [ "chat" ], input_modalities: %w[text image])
     embedding_model = model_for_connection("embeddings", capabilities: [ "embedding" ], input_modalities: [ "text" ])
@@ -41,22 +35,6 @@ module LlmUsageAssignmentSeeds
     create_missing!("utility.sd_prompt_translation", utility_model)
   end
 
-  def sync_from_app_setting!(setting)
-    return unless LlmUsageAssignment.exists?
-
-    ChatModelCatalog.seed!
-    chat_model = model_for_chat_connection(AppSetting.default_chat_connection_key)
-    style_model = model_for_chat_connection(AppSetting.default_style_plan_connection_key)
-    update_existing!("chat.default", chat_model, sampling_preset: default_sampling_preset(setting))
-    AGENT_MODEL_COLUMNS.each do |usage_key, column|
-      preferred = model_by_model_id(setting.public_send(column)) || chat_model
-      fallback = chat_model if preferred && chat_model && preferred != chat_model
-      update_existing!(usage_key, preferred, fallback_model: fallback)
-    end
-    update_existing!("image.style_plan", style_model)
-    update_existing!("image.direct_prompt", style_model)
-  end
-
   def create_missing!(usage_key, model, fallback_model: nil, sampling_preset: nil)
     return unless model
 
@@ -66,13 +44,6 @@ module LlmUsageAssignmentSeeds
     assignment.assign_attributes(model:, fallback_model:, llm_sampling_preset: sampling_preset)
     assignment.save!
     assignment
-  end
-
-  def update_existing!(usage_key, model, fallback_model: nil, sampling_preset: nil)
-    assignment = LlmUsageAssignment.find_by(usage_key: usage_key)
-    return unless assignment && model
-
-    assignment.update!(model:, fallback_model:, llm_sampling_preset: sampling_preset)
   end
 
   def model_for_chat_connection(connection_key)
@@ -115,5 +86,13 @@ module LlmUsageAssignmentSeeds
   def default_sampling_preset(setting)
     key = setting.default_llm_sampling_preset_key.to_s.presence
     LlmSamplingPreset.enabled.find_by(key: key) if key
+  end
+
+  def legacy_connection_key(setting, column)
+    stored = setting.public_send(column).to_s.presence
+    return stored if stored
+
+    config_key = column == :default_chat_connection_key ? :default_chat_connection_key : :style_plan_connection_key
+    Rails.application.config.x.nyoy.public_send(config_key)
   end
 end

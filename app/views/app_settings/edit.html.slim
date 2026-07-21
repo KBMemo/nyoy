@@ -1,181 +1,92 @@
-- content_for :title, "既定モデル"
+- content_for :title, "Graph設定"
 
-.mb-6
-  h1 class=kb_page_title 既定モデル
-  p.mt-1.text-sm.kb-text-secondary
-    | チャットと画像生成のプロンプト変換で、フォーム未指定時に使う接続と、
-    | チャットの既定サンプリング、Research Graph の調査ドラフト用モデルを選びます。接続ごとのモデル名は
-    = link_to "接続設定", service_connections_path, class: "kb-chrome-link"
-    | 、サンプリングプリセットは
-    = link_to "サンプリング", llm_sampling_presets_path, class: "kb-chrome-link"
-    | で管理します。
+.mb-6.flex.flex-wrap.items-center.justify-between.gap-3
+  h1 class=kb_page_title Graph設定
+  = link_to "LLM用途", llm_usage_assignments_path, class: "kb-chrome-link text-sm"
 
-- if @connection_options.empty?
-  .kb-alert.kb-alert-danger
-    | 有効なチャット用 LLM 接続がありません。先に接続を登録してください。
-- else
-  = form_with model: @app_setting, url: app_settings_path, method: :patch, class: "space-y-6" do |form|
-    - if @app_setting.errors.any?
-      .kb-alert.kb-alert-danger
-        ul.list-disc.pl-5
-          - @app_setting.errors.full_messages.each do |message|
-            li = message
+= form_with model: @app_setting, url: app_settings_path, method: :patch, class: "space-y-6" do |form|
+  - if @app_setting.errors.any?
+    .kb-alert.kb-alert-danger role="alert"
+      ul.list-disc.pl-5
+        - @app_setting.errors.full_messages.each do |message|
+          li = message
 
-    div
-      = form.label :default_chat_connection_key, "チャット既定モデル", class: "#{kb_label} mb-1"
-      = form.select :default_chat_connection_key,
-          options_for_select(@connection_options, @app_setting.default_chat_connection_key),
-          { include_blank: "環境変数の既定に従う" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | 新規チャットでモデルを選ばないときの接続です。現在の有効値:
-        code.nyoy-monospace.ml-1 = AppSetting.default_chat_connection_key
+  fieldset
+    legend class="#{kb_label} mb-1" 調査ドラフト方式
+    p#agent-graph-draft-profile-help.mt-1.text-sm.kb-text-muted
+      | 現在:
+      code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:draft)
+    .mt-2.space-y-2
+      - @research_draft_profile_options.each do |label, value|
+        label.flex.min-h-10.items-center.gap-2
+          = form.radio_button :agent_graph_draft_profile,
+              value,
+              class: "kb-control-accent",
+              aria: { describedby: "agent-graph-draft-profile-help" }
+          span.text-sm.kb-text-secondary = label
 
-    div
-      = form.label :default_style_plan_connection_key, "プロンプト変換既定モデル", class: "#{kb_label} mb-1"
-      = form.select :default_style_plan_connection_key,
-          options_for_select(@connection_options, @app_setting.default_style_plan_connection_key),
-          { include_blank: "環境変数の既定に従う" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | 画像生成・メモ挿絵・img2img の「プロンプト変換モデル」未指定時の接続です。現在の有効値:
-        code.nyoy-monospace.ml-1 = AppSetting.default_style_plan_connection_key
+  div
+    = form.label :research_draft_fallback, "調査ドラフト失敗時", class: "#{kb_label} mb-1"
+    = form.select :research_draft_fallback,
+        options_for_select(@research_draft_fallback_options, @app_setting.research_draft_fallback.presence || "main"),
+        {},
+        class: kb_field_input_classes
 
-    div
-      = form.label :default_llm_sampling_preset_key, "チャット既定サンプリング", class: "#{kb_label} mb-1"
-      = form.select :default_llm_sampling_preset_key,
-          options_from_collection_for_select(@llm_sampling_presets, :key, :name, @app_setting.default_llm_sampling_preset_key),
-          { include_blank: "サーバー既定（未設定）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | 新規チャットの llm_params にシードし、チャット設定が空のときの生成にも使います。
-        - if @app_setting.default_llm_sampling_preset_key.present?
-          |  現在:
-          code.nyoy-monospace.ml-1 = @app_setting.default_llm_sampling_preset_key
+  fieldset
+    legend class="#{kb_label} mb-1" 最終回答方式
+    p#agent-graph-final-answer-profile-help.mt-1.text-sm.kb-text-muted
+      | 現在:
+      code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:final_answer)
+    .mt-2.space-y-2
+      - @final_answer_profile_options.each do |label, value|
+        label.flex.min-h-10.items-center.gap-2
+          = form.radio_button :agent_graph_final_answer_profile,
+              value,
+              class: "kb-control-accent",
+              aria: { describedby: "agent-graph-final-answer-profile-help" }
+          span.text-sm.kb-text-secondary = label
 
-    fieldset
-      legend class="#{kb_label} mb-1" 調査ドラフト方式
-      p#agent-graph-draft-profile-help.mt-1.text-sm.kb-text-muted
-        | 既定設定は環境変数に従い、未設定時は根拠パックを使います。現在の有効値:
-        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:draft)
-      .mt-2.space-y-2
-        - @research_draft_profile_options.each do |label, value|
-          label.flex.min-h-10.items-center.gap-2
-            = form.radio_button :agent_graph_draft_profile,
-                value,
-                class: "kb-control-accent",
-                aria: { describedby: "agent-graph-draft-profile-help" }
-            span.text-sm.kb-text-secondary = label
+  fieldset
+    legend class="#{kb_label} mb-1" 調査計画方式
+    p#agent-graph-planner-profile-help.mt-1.text-sm.kb-text-muted
+      | 現在:
+      code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:planner)
+    .mt-2.space-y-2
+      - @research_planner_profile_options.each do |label, value|
+        label.flex.min-h-10.items-center.gap-2
+          = form.radio_button :agent_graph_planner_profile,
+              value,
+              class: "kb-control-accent",
+              aria: { describedby: "agent-graph-planner-profile-help" }
+          span.text-sm.kb-text-secondary = label
 
-    div
-      = form.label :research_draft_model_id, "調査ドラフト用モデル", class: "#{kb_label} mb-1"
-      = form.select :research_draft_model_id,
-          grouped_options_for_select(@research_draft_model_options, @app_setting.research_draft_model_id),
-          { include_blank: "チャットと同じ（未設定）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | LLM ドラフトを選んだ場合に使います。未設定時はチャットと同じモデルです。
+  fieldset
+    legend class="#{kb_label} mb-1" 根拠十分性判定方式
+    p#agent-graph-evidence-evaluator-profile-help.mt-1.text-sm.kb-text-muted
+      | 現在:
+      code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:evidence_evaluator)
+    .mt-2.space-y-2
+      - @evidence_evaluator_profile_options.each do |label, value|
+        label.flex.min-h-10.items-center.gap-2
+          = form.radio_button :agent_graph_evidence_evaluator_profile,
+              value,
+              class: "kb-control-accent",
+              aria: { describedby: "agent-graph-evidence-evaluator-profile-help" }
+          span.text-sm.kb-text-secondary = label
 
-    div
-      = form.label :research_draft_fallback, "調査ドラフト失敗時", class: "#{kb_label} mb-1"
-      = form.select :research_draft_fallback,
-          options_for_select(@research_draft_fallback_options, @app_setting.research_draft_fallback.presence || "main"),
-          {},
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | 軽量モデルが失敗・空応答のときのフォールバックです。未設定時も最終手段は根拠パックのテンプレです。
+  fieldset
+    legend class="#{kb_label} mb-1" Graph起動判定方式
+    p#agent-graph-intent-profile-help.mt-1.text-sm.kb-text-muted
+      | 現在:
+      code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:intent)
+    .mt-2.space-y-2
+      - @agent_graph_intent_profile_options.each do |label, value|
+        label.flex.min-h-10.items-center.gap-2
+          = form.radio_button :agent_graph_intent_profile,
+              value,
+              class: "kb-control-accent",
+              aria: { describedby: "agent-graph-intent-profile-help" }
+          span.text-sm.kb-text-secondary = label
 
-    fieldset
-      legend class="#{kb_label} mb-1" 最終回答方式
-      p#agent-graph-final-answer-profile-help.mt-1.text-sm.kb-text-muted
-        | 調査結果からユーザー向けの完成した回答を生成します。現在の有効値:
-        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:final_answer)
-      .mt-2.space-y-2
-        - @final_answer_profile_options.each do |label, value|
-          label.flex.min-h-10.items-center.gap-2
-            = form.radio_button :agent_graph_final_answer_profile,
-                value,
-                class: "kb-control-accent",
-                aria: { describedby: "agent-graph-final-answer-profile-help" }
-            span.text-sm.kb-text-secondary = label
-
-    div
-      = form.label :final_answer_model_id, "最終回答用軽量モデル", class: "#{kb_label} mb-1"
-      = form.select :final_answer_model_id,
-          grouped_options_for_select(@final_answer_model_options, @app_setting.final_answer_model_id),
-          { include_blank: "未設定（メインモデルへフォールバック）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | 軽量モデル方式を選んだ場合に使います。失敗・空応答時はチャットのメインモデルで再試行します。
-
-    fieldset
-      legend class="#{kb_label} mb-1" 調査計画方式
-      p#agent-graph-planner-profile-help.mt-1.text-sm.kb-text-muted
-        | 質問ごとにメモ・Web調査の要否を判定します。現在の有効値:
-        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:planner)
-      .mt-2.space-y-2
-        - @research_planner_profile_options.each do |label, value|
-          label.flex.min-h-10.items-center.gap-2
-            = form.radio_button :agent_graph_planner_profile,
-                value,
-                class: "kb-control-accent",
-                aria: { describedby: "agent-graph-planner-profile-help" }
-            span.text-sm.kb-text-secondary = label
-
-    div
-      = form.label :research_planner_model_id, "調査計画用モデル", class: "#{kb_label} mb-1"
-      = form.select :research_planner_model_id,
-          grouped_options_for_select(@research_planner_model_options, @app_setting.research_planner_model_id),
-          { include_blank: "未設定（決定規則へフォールバック）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | LLM分類を選んだ場合に使います。失敗時は決定規則へ戻ります。
-
-    fieldset
-      legend class="#{kb_label} mb-1" 根拠十分性判定方式
-      p#agent-graph-evidence-evaluator-profile-help.mt-1.text-sm.kb-text-muted
-        | 検索・取得の要否は決定規則で制御し、取得済み根拠の内容だけを追加判定します。現在の有効値:
-        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:evidence_evaluator)
-      .mt-2.space-y-2
-        - @evidence_evaluator_profile_options.each do |label, value|
-          label.flex.min-h-10.items-center.gap-2
-            = form.radio_button :agent_graph_evidence_evaluator_profile,
-                value,
-                class: "kb-control-accent",
-                aria: { describedby: "agent-graph-evidence-evaluator-profile-help" }
-            span.text-sm.kb-text-secondary = label
-
-    div
-      = form.label :evidence_evaluator_model_id, "根拠十分性判定用モデル", class: "#{kb_label} mb-1"
-      = form.select :evidence_evaluator_model_id,
-          grouped_options_for_select(@evidence_evaluator_model_options, @app_setting.evidence_evaluator_model_id),
-          { include_blank: "未設定（決定規則へフォールバック）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | LLM十分性判定を選んだ場合に使います。失敗・不正応答時は決定規則へ戻ります。
-
-    fieldset
-      legend class="#{kb_label} mb-1" Graph起動判定方式
-      p#agent-graph-intent-profile-help.mt-1.text-sm.kb-text-muted
-        | 決定規則で未判定の通常テキストをResearch Graphへ昇格するか判定します。現在の有効値:
-        code.nyoy-monospace.ml-1 = AgentGraph::RoleServices.profile_for(:intent)
-      .mt-2.space-y-2
-        - @agent_graph_intent_profile_options.each do |label, value|
-          label.flex.min-h-10.items-center.gap-2
-            = form.radio_button :agent_graph_intent_profile,
-                value,
-                class: "kb-control-accent",
-                aria: { describedby: "agent-graph-intent-profile-help" }
-            span.text-sm.kb-text-secondary = label
-
-    div
-      = form.label :agent_graph_intent_model_id, "Graph起動判定用モデル", class: "#{kb_label} mb-1"
-      = form.select :agent_graph_intent_model_id,
-          grouped_options_for_select(@agent_graph_intent_model_options, @app_setting.agent_graph_intent_model_id),
-          { include_blank: "未設定（決定規則のみ）" },
-          class: kb_field_input_classes
-      p.mt-1.text-sm.kb-text-muted
-        | LLM調査判定を選んだ場合に使います。失敗・不正応答時は通常チャットへ戻ります。
-
-    div
-      = form.submit "保存", class: kb_btn_primary_sm
+  div
+    = form.submit "保存", class: kb_btn_primary_sm

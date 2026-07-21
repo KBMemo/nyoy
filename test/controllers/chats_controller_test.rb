@@ -53,10 +53,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_equal model, chat.model
   end
 
-  test "create seeds llm_params from AppSetting default sampling preset" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
+  test "create seeds llm_params from usage assignment sampling preset" do
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assign_chat_sampling(model)
 
     post chats_path, params: { chat: { prompt: "こんにちは", model: model.id } }
 
@@ -66,9 +65,8 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create seeds max_tokens from connection profile over app preset" do
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_llm_sampling_preset_key: "qwen3_5_9b")
     model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    assign_chat_sampling(model)
     connection = ServiceConnection.find_by!(key: "gpt_oss")
     connection.assign_prompt_conversion_settings(
       connection.prompt_conversion_settings.to_settings_h.merge("max_tokens" => 4096)
@@ -403,5 +401,16 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "prompt / slot 2/4"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dt", text: "tokens"
     assert_select "#message_#{message.id} .nyoy-chat-message-stat dd", text: "in 160 / out 40 / cached 120 / created 30"
+  end
+
+  private
+
+  def assign_chat_sampling(model)
+    LlmSamplingPresetSeeds.seed!
+    assignment = LlmUsageAssignment.find_or_initialize_by(usage_key: "chat.default")
+    assignment.update!(
+      model: model,
+      llm_sampling_preset: LlmSamplingPreset.find_by!(key: "qwen3_5_9b")
+    )
   end
 end

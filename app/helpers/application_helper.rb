@@ -69,7 +69,7 @@ module ApplicationHelper
       [ "接続", "service_connections", service_connections_path ],
       [ "サンプリング", "llm_sampling_presets", llm_sampling_presets_path ],
       [ "LLM用途", "llm_usage_assignments", llm_usage_assignments_path ],
-      [ "既定モデル", "app_settings", edit_app_settings_path ]
+      [ "Graph設定", "app_settings", edit_app_settings_path ]
     ]
   end
 

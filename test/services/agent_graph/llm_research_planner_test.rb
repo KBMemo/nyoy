@@ -7,15 +7,15 @@ class AgentGraphLlmResearchPlannerTest < ActiveSupport::TestCase
     ChatModelCatalog.seed!
     @model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     @chat = Chat.create!(model: @model)
-    AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.planner").delete_all
   end
 
   teardown do
-    AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.planner").delete_all
   end
 
   test "uses light classification while preserving deterministic safety fields" do
-    AppSetting.instance.update!(research_planner_model_id: @model.model_id)
+    LlmUsageAssignment.create!(usage_key: "agent.planner", model: @model)
     planner = AgentGraph::LlmResearchPlanner.new
     calls = []
     planner.define_singleton_method(:classify) do |model, question, chat|

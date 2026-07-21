@@ -21,7 +21,7 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
 
   test "records drift readiness and restart findings with usage" do
     connection = bind_connection(:llama_cpp, server_id: "main", url: "http://balvenie:10010", model: "old-alias")
-    AppSetting.instance.update!(default_chat_connection_key: connection.key)
+    LlmUsageAssignmentSeeds.seed!
     server = {
       "id" => "main", "port" => 10011, "alias" => "new-alias", "state" => "stopped",
       "ready" => false, "active" => false, "enabled" => true, "restart_required" => true
@@ -35,7 +35,7 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
     assert_includes codes, "alias_drift"
     assert_includes codes, "server_not_ready"
     assert_includes codes, "restart_required"
-    assert result.findings.any? { |finding| finding["usages"].include?("既定Chat") }
+    assert result.findings.any? { |finding| finding["usages"].include?("通常Chat") }
     assert_equal "old-alias", connection.reload.server_model
   end
 

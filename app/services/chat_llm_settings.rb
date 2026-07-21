@@ -36,7 +36,7 @@ class ChatLlmSettings
     if preset && resolution.model == model
       normalize(preset.sampling_params.to_h_compact)
     else
-      AppSetting.default_chat_llm_params
+      {}
     end
   end
 

@@ -57,9 +57,9 @@ POST /service_connections/:id/load_sampling.json
 
 チャット設定ダイアログでも同一プリセットをフォームへ流し込み、「設定を更新」で `chats.llm_params` に保存する。
 
-## 既定モデル連携
+## 用途assignment連携
 
-設定 → 既定モデルの「チャット既定サンプリング」で `LlmSamplingPreset` を選べる（`app_settings.default_llm_sampling_preset_key`）。
+設定 → LLM用途で用途ごとに`LlmSamplingPreset`を選べる。通常Chatの既定値は`chat.default` assignmentから解決する。
 
 優先順位（後勝ち）:
 

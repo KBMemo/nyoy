@@ -23,8 +23,6 @@ class LlamaServerUsageResolver
 
   def self.legacy_labels_for(connection)
     labels = []
-    labels << "既定Chat" if AppSetting.default_chat_connection_key == connection.key
-    labels << "style plan" if AppSetting.default_style_plan_connection_key == connection.key
     connection_identifier = connection.legacy_key.presence || connection.key
     labels << "画像理解" if connection_identifier == "vision_llama"
     labels << "埋め込み" if connection_identifier == "embeddings"

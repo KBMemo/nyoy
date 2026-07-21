@@ -7,12 +7,12 @@ class AgentGraphLlmEvidenceEvaluatorTest < ActiveSupport::TestCase
     ChatModelCatalog.seed!
     @model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     @chat = Chat.create!(model: @model)
-    AppSetting.delete_all
-    AppSetting.instance.update!(evidence_evaluator_model_id: @model.model_id)
+    LlmUsageAssignment.where(usage_key: "agent.evidence_evaluator").delete_all
+    LlmUsageAssignment.create!(usage_key: "agent.evidence_evaluator", model: @model)
   end
 
   teardown do
-    AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.evidence_evaluator").delete_all
   end
 
   test "keeps sufficient review when retrieved evidence supports the answer" do

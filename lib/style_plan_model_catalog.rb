@@ -14,7 +14,7 @@ module StylePlanModelCatalog
   end
 
   def default_connection_key
-    AppSetting.default_style_plan_connection_key.presence || connection_keys.first || "llama_cpp"
+    LlmUsageResolver.resolve("image.style_plan")&.connection&.key || connection_keys.first || "llama_cpp"
   end
 
   def options_for_select

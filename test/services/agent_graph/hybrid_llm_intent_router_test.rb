@@ -8,11 +8,13 @@ class AgentGraphHybridLlmIntentRouterTest < ActiveSupport::TestCase
     @model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
     @chat = Chat.create!(model: @model)
     AppSetting.delete_all
-    AppSetting.instance.update!(agent_graph_intent_model_id: @model.model_id)
+    LlmUsageAssignment.where(usage_key: "agent.intent").delete_all
+    LlmUsageAssignment.create!(usage_key: "agent.intent", model: @model)
   end
 
   teardown do
     AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.intent").delete_all
   end
 
   test "keeps deterministic graph decisions without calling the LLM" do

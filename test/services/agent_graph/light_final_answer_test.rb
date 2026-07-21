@@ -10,14 +10,16 @@ class AgentGraphLightFinalAnswerTest < ActiveSupport::TestCase
     @chat = Chat.create!(model: @main_model)
     @state = { "question" => "question", "draft" => "draft" }
     AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.final_answer").delete_all
+    LlmUsageAssignment.create!(usage_key: "agent.final_answer", model: @light_model)
   end
 
   teardown do
     AppSetting.delete_all
+    LlmUsageAssignment.where(usage_key: "agent.final_answer").delete_all
   end
 
   test "uses configured light model and dedicated cache slot" do
-    AppSetting.instance.update!(final_answer_model_id: @light_model.model_id)
     calls = []
     synthesizer_class = fake_synthesizer_class(calls, [ "light answer", false, { "source" => "light" } ])
     fallback = Object.new
@@ -44,7 +46,6 @@ class AgentGraphLightFinalAnswerTest < ActiveSupport::TestCase
   end
 
   test "falls back to main when light synthesis fails" do
-    AppSetting.instance.update!(final_answer_model_id: @light_model.model_id)
     synthesizer_class = fake_synthesizer_class([], [ nil, false, { "source" => "error", "error" => "light failed" } ])
     fallback = fallback_service
     service = AgentGraph::RoleServices::LightFinalAnswer.new(
@@ -63,7 +64,6 @@ class AgentGraphLightFinalAnswerTest < ActiveSupport::TestCase
   end
 
   test "calls main fallback once when light synthesizer raises" do
-    AppSetting.instance.update!(final_answer_model_id: @light_model.model_id)
     synthesizer_class = Class.new do
       define_singleton_method(:new) { |*| raise "light connection failed" }
     end
@@ -87,6 +87,7 @@ class AgentGraphLightFinalAnswerTest < ActiveSupport::TestCase
   end
 
   test "falls back to main when light model is not configured" do
+    LlmUsageAssignment.find_by!(usage_key: "agent.final_answer").destroy!
     service = AgentGraph::RoleServices::LightFinalAnswer.new(
       fallback: fallback_service,
       synthesizer_class: fake_synthesizer_class([], nil)

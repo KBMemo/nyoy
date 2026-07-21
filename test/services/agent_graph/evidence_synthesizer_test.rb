@@ -6,7 +6,9 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
     @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-    AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
+    LlmUsageAssignment.where(usage_key: "agent.draft").delete_all
+    LlmUsageAssignment.create!(usage_key: "agent.draft", model: @chat.model_association)
+    AppSetting.instance.update!(research_draft_fallback: "main")
   end
 
   test "uses light model first then falls back to main" do
@@ -23,7 +25,8 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     )
     original_chat_model = @chat.model_association
     @chat.update!(model: main)
-    AppSetting.instance.update!(research_draft_model_id: light.model_id, research_draft_fallback: "main")
+    LlmUsageAssignment.find_by!(usage_key: "agent.draft").update!(model: light)
+    AppSetting.instance.update!(research_draft_fallback: "main")
 
     calls = []
     original = AgentGraph::EvidenceSynthesizer.instance_method(:ask_model)
@@ -55,7 +58,7 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     ensure
       AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
       AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)
-      AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
+      AppSetting.instance.update!(research_draft_fallback: "main")
       @chat.update!(model: original_chat_model)
       main.destroy!
     end
@@ -63,7 +66,8 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
 
   test "template fallback skips main when configured" do
     light = Model.find_by!(provider: "openai", model_id: "gpt-oss")
-    AppSetting.instance.update!(research_draft_model_id: light.model_id, research_draft_fallback: "template")
+    LlmUsageAssignment.find_by!(usage_key: "agent.draft").update!(model: light)
+    AppSetting.instance.update!(research_draft_fallback: "template")
 
     calls = []
     original = AgentGraph::EvidenceSynthesizer.instance_method(:ask_model)
@@ -88,11 +92,12 @@ class AgentGraphEvidenceSynthesizerTest < ActiveSupport::TestCase
     ensure
       AgentGraph::EvidenceSynthesizer.define_method(:ask_model, original)
       AgentGraph::EvidenceSynthesizer.send(:private, :ask_model)
-      AppSetting.instance.update!(research_draft_model_id: nil, research_draft_fallback: "main")
+      AppSetting.instance.update!(research_draft_fallback: "main")
     end
   end
 
   test "llm draft appends evidence appendix so sources stay visible" do
+    LlmUsageAssignment.find_by!(usage_key: "agent.draft").destroy!
     synthesizer = AgentGraph::EvidenceSynthesizer.new(@chat)
     original = AgentGraph::EvidenceSynthesizer.instance_method(:ask_model)
     AgentGraph::EvidenceSynthesizer.define_method(:ask_model) do |*|

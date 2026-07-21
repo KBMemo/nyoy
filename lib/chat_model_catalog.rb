@@ -64,7 +64,7 @@ module ChatModelCatalog
   end
 
   def default_connection_key
-    AppSetting.default_chat_connection_key.presence || definitions.first&.connection_key
+    LlmUsageResolver.resolve("chat.default")&.connection&.key || definitions.first&.connection_key
   end
 
   def default_model

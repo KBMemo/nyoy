@@ -1,20 +1,10 @@
 # frozen_string_literal: true
 
-# Singleton preferences for app-wide defaults (editable from the settings UI).
-# Blank columns fall back to ENV / config.x.nyoy values.
+# Singleton preferences for app-wide behavior that is not owned by an LLM usage assignment.
 class AppSetting < ApplicationRecord
   RESEARCH_DRAFT_FALLBACKS = %w[main template].freeze
 
   before_validation :normalize_research_draft_fallback
-  after_save :sync_llm_usage_assignments, if: :llm_assignment_source_changed?
-
-  validate :connection_keys_must_be_available
-  validate :sampling_preset_key_must_be_available
-  validate :research_draft_model_must_be_available
-  validate :research_planner_model_must_be_available
-  validate :evidence_evaluator_model_must_be_available
-  validate :final_answer_model_must_be_available
-  validate :agent_graph_intent_model_must_be_available
   validate :research_draft_fallback_must_be_allowed
   validate :agent_graph_role_profiles_must_be_available
 
@@ -24,25 +14,16 @@ class AppSetting < ApplicationRecord
     end
 
     def default_chat_connection_key
-      resolve(
-        :default_chat_connection_key,
-        env_fallback: Rails.application.config.x.nyoy.default_chat_connection_key
-      )
+      LlmUsageResolver.resolve("chat.default")&.connection&.key
     end
 
     def default_style_plan_connection_key
-      resolve(
-        :default_style_plan_connection_key,
-        env_fallback: Rails.application.config.x.nyoy.style_plan_connection_key
-      )
+      LlmUsageResolver.resolve("image.style_plan")&.connection&.key
     end
 
     # Normalized chat sampling hash from the selected preset, or {} when unset/invalid.
     def default_chat_llm_params
-      key = instance.default_llm_sampling_preset_key.to_s.presence
-      return {} if key.blank?
-
-      preset = LlmSamplingPreset.enabled.find_by(key: key)
+      preset = LlmUsageResolver.resolve("chat.default")&.sampling_preset
       return {} unless preset
 
       ChatLlmSettings.normalize(preset.sampling_params.to_h)
@@ -50,33 +31,23 @@ class AppSetting < ApplicationRecord
 
     # Preferred Model for Research Graph draft synthesis (nil = use chat model).
     def research_draft_model
-      model_id = instance.research_draft_model_id.to_s.presence
-      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
-      LlmUsageResolver.model_for("agent.draft", legacy: legacy)
+      LlmUsageResolver.model_for("agent.draft")
     end
 
     def research_planner_model
-      model_id = instance.research_planner_model_id.to_s.presence
-      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
-      LlmUsageResolver.model_for("agent.planner", legacy: legacy)
+      LlmUsageResolver.model_for("agent.planner")
     end
 
     def evidence_evaluator_model
-      model_id = instance.evidence_evaluator_model_id.to_s.presence
-      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
-      LlmUsageResolver.model_for("agent.evidence_evaluator", legacy: legacy)
+      LlmUsageResolver.model_for("agent.evidence_evaluator")
     end
 
     def final_answer_model
-      model_id = instance.final_answer_model_id.to_s.presence
-      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
-      LlmUsageResolver.model_for("agent.final_answer", legacy: legacy)
+      LlmUsageResolver.model_for("agent.final_answer")
     end
 
     def agent_graph_intent_model
-      model_id = instance.agent_graph_intent_model_id.to_s.presence
-      legacy = Model.find_by(provider: "openai", model_id: model_id) if model_id
-      LlmUsageResolver.model_for("agent.intent", legacy: legacy)
+      LlmUsageResolver.model_for("agent.intent")
     end
 
     # "main" = retry with chat model then template; "template" = evidence pack only.
@@ -91,23 +62,6 @@ class AppSetting < ApplicationRecord
 
     def update_memo_knowledge_last_ingested_at!(time)
       instance.update!(memo_knowledge_last_ingested_at: time)
-    end
-
-    private
-
-    def resolve(column, env_fallback:)
-      keys = available_connection_keys
-      stored = instance.public_send(column).to_s.presence
-      return stored if stored && keys.include?(stored)
-
-      preferred = env_fallback.to_s.presence
-      return preferred if preferred && keys.include?(preferred)
-
-      keys.first
-    end
-
-    def available_connection_keys
-      StylePlanModelCatalog.connection_keys
     end
   end
 
@@ -174,68 +128,8 @@ class AppSetting < ApplicationRecord
 
   private
 
-  def llm_assignment_source_changed?
-    (saved_changes.keys.map(&:to_sym) & LlmUsageAssignmentSeeds::APP_SETTING_COLUMNS).any?
-  end
-
-  def sync_llm_usage_assignments
-    LlmUsageAssignmentSeeds.sync_from_app_setting!(self)
-  end
-
   def normalize_research_draft_fallback
     self.research_draft_fallback = research_draft_fallback.to_s.presence || "main"
-  end
-
-  def connection_keys_must_be_available
-    keys = ChatModelCatalog.configured_definitions.map(&:connection_key).uniq
-    validate_connection_key(:default_chat_connection_key, keys)
-    validate_connection_key(:default_style_plan_connection_key, keys)
-  end
-
-  def sampling_preset_key_must_be_available
-    key = default_llm_sampling_preset_key.to_s.presence
-    return if key.blank?
-    return if LlmSamplingPreset.enabled.exists?(key: key)
-
-    errors.add(:default_llm_sampling_preset_key, "は有効なサンプリングプリセットを選んでください")
-  end
-
-  def research_draft_model_must_be_available
-    model_id = research_draft_model_id.to_s.presence
-    return if model_id.blank?
-
-    available = ChatModelCatalog.model_ids
-    return if available.include?(model_id)
-
-    errors.add(:research_draft_model_id, "は有効なチャットモデルを選んでください")
-  end
-
-  def research_planner_model_must_be_available
-    model_id = research_planner_model_id.to_s.presence
-    return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
-
-    errors.add(:research_planner_model_id, "は有効なチャットモデルを選んでください")
-  end
-
-  def agent_graph_intent_model_must_be_available
-    model_id = agent_graph_intent_model_id.to_s.presence
-    return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
-
-    errors.add(:agent_graph_intent_model_id, "は有効なチャットモデルを選んでください")
-  end
-
-  def evidence_evaluator_model_must_be_available
-    model_id = evidence_evaluator_model_id.to_s.presence
-    return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
-
-    errors.add(:evidence_evaluator_model_id, "は有効なチャットモデルを選んでください")
-  end
-
-  def final_answer_model_must_be_available
-    model_id = final_answer_model_id.to_s.presence
-    return if model_id.blank? || ChatModelCatalog.model_ids.include?(model_id)
-
-    errors.add(:final_answer_model_id, "は有効なチャットモデルを選んでください")
   end
 
   def research_draft_fallback_must_be_allowed
@@ -254,13 +148,5 @@ class AppSetting < ApplicationRecord
     rescue KeyError
       errors.add(:agent_graph_role_profiles, "#{role} は登録されていない role です")
     end
-  end
-
-  def validate_connection_key(attribute, keys)
-    value = public_send(attribute).to_s.presence
-    return if value.blank?
-    return if keys.include?(value)
-
-    errors.add(attribute, "は有効な接続を選んでください")
   end
 end

@@ -62,16 +62,15 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
     assert_includes definitions.map(&:model_id), "gpt-4o-mini"
   end
 
-  test "default_model follows app setting connection key" do
+  test "default_model follows chat usage assignment" do
     ChatModelCatalog.seed!
-    AppSetting.delete_all
-    AppSetting.instance.update!(default_chat_connection_key: "gpt_oss")
+    LlmUsageAssignment.delete_all
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    LlmUsageAssignment.create!(usage_key: "chat.default", model: model)
 
-    model = ChatModelCatalog.default_model
+    default_model = ChatModelCatalog.default_model
 
-    assert_equal "gpt-oss", model.model_id
-  ensure
-    AppSetting.delete_all
+    assert_equal "gpt-oss", default_model.model_id
   end
 
   test "grouped_model_options groups models by connection name" do

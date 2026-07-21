@@ -18,15 +18,7 @@ class AppSettingsController < ApplicationController
   private
 
   def load_form
-    ChatModelCatalog.seed! if ServiceConnection.model_endpoints.enabled.any?
     @app_setting = AppSetting.instance
-    @connection_options = StylePlanModelCatalog.options_for_select
-    @llm_sampling_presets = LlmSamplingPreset.enabled.ordered
-    @research_draft_model_options = research_draft_model_options
-    @research_planner_model_options = @research_draft_model_options
-    @evidence_evaluator_model_options = @research_draft_model_options
-    @final_answer_model_options = @research_draft_model_options
-    @agent_graph_intent_model_options = @research_draft_model_options
     @agent_graph_intent_profile_options = [
       [ "既定設定", "" ],
       [ "決定規則", "deterministic" ],
@@ -58,33 +50,13 @@ class AppSettingsController < ApplicationController
     ]
   end
 
-  def research_draft_model_options
-    ChatModelCatalog.grouped_model_options.map do |group_name, models|
-      choices = models.filter_map do |name, record_id|
-        model = Model.find_by(id: record_id)
-        next unless model
-
-        [ name, model.model_id ]
-      end
-      [ group_name, choices ]
-    end
-  end
-
   def app_setting_params
     attrs = params.require(:app_setting).permit(
-      :default_chat_connection_key,
-      :default_style_plan_connection_key,
-      :default_llm_sampling_preset_key,
       :agent_graph_draft_profile,
       :agent_graph_planner_profile,
       :agent_graph_evidence_evaluator_profile,
       :agent_graph_final_answer_profile,
       :agent_graph_intent_profile,
-      :research_draft_model_id,
-      :research_planner_model_id,
-      :evidence_evaluator_model_id,
-      :final_answer_model_id,
-      :agent_graph_intent_model_id,
       :research_draft_fallback
     ).to_h.transform_values { |value| value.to_s.presence }
 

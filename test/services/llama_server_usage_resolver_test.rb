@@ -7,14 +7,14 @@ class LlamaServerUsageResolverTest < ActiveSupport::TestCase
     manager = service_connections(:llama_switchd)
     connection = service_connections(:llama_cpp)
     connection.update!(manager_connection: manager, managed_server_id: "main", enabled: true)
-    AppSetting.instance.update!(default_chat_connection_key: connection.key)
+    LlmUsageAssignmentSeeds.seed!
 
     descriptions = LlamaServerUsageResolver.descriptions_for_server(manager, "main")
 
     assert_equal 1, descriptions.size
     assert_includes descriptions.first, connection.name
     assert_includes descriptions.first, connection.key
-    assert_includes descriptions.first, "既定Chat"
+    assert_includes descriptions.first, "通常Chat"
   end
 
   test "ignores disabled and differently bound connections" do

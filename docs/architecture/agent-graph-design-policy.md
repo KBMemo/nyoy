@@ -463,7 +463,7 @@ AgentGraph::RoleServices.select_profile(:draft, :experimental)
 
 組み込みprofileは `intent.deterministic` / `intent.hybrid_llm`、`planner.deterministic` / `planner.llm`、`evidence_evaluator.heuristic` / `evidence_evaluator.llm`、`draft.evidence_pack` / `draft.llm`、`final_answer.main` / `final_answer.light`、`vision.main`、`memo_writer.deterministic` とする。`intent.hybrid_llm` は決定規則を先に実行し、未判定かつ添付なし・明示的な非調査turnでない通常テキストについて、Research Graphへ昇格するかだけを軽量modelに判定させる。メモ書込・更新・画像理解のGraph選択はLLMへ許可しない。positive判定のprofile・model・cache・usageはResearch stateの `routing` とrun summaryへ保存する。失敗・不正応答・model未設定時は通常chatへ戻る。
 
-`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使うため、`AppSetting.research_draft_model_id` で軽量modelを選び、失敗時fallbackも既存設定に従う。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
+`PlanResearch` は `planner` roleへ委譲し、実効profile・model・source・fallback・llama cache・token usageをstateの `planning` に記録する。このmetadataはAgentRun stateだけでなくNode履歴の `plan_research` 行要約にも表示する。`planner.llm` は `need_web` / `need_memo` だけを軽量modelに分類させ、検索語・URL抽出・sensitive判定は決定規則を維持する。不正JSON・空応答・接続失敗時は `planner.deterministic` へ戻る。`draft.llm` は既存の `EvidenceSynthesizer` を使い、`agent.draft`用途assignmentで軽量modelを選ぶ。直接 `register(role, service)` したoverrideは選択profileより優先し、testや一時的な実験に使う。
 
 profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実行時の `select_profile` > `AppSetting.agent_graph_role_profiles` > 環境変数 > 組み込みdefault」とする。AppSettingはrole名からprofile名へのJSON objectを保持するため、role追加時にcolumnを増やさない。環境変数は `AGENT_GRAPH_DRAFT_PROFILE` などをAppSetting未設定時のfallbackとして使う。
 
@@ -473,7 +473,7 @@ profile選択は `RoleServiceConfiguration` が解決し、優先順位を「実
 
 `finalize_answer` は成功・失敗の両方で `final_synthesis` に `role=final_answer` と実効profileを保存する。組み込み実装は`main`、直接object overrideは`override`としてAgentNodeRun要約へ表示する。
 
-`final_answer.light` は`AppSetting.final_answer_model_id`の専用modelを使い、model既定samplingと専用llama cache slotで完成回答を生成する。model未設定・接続失敗・空応答時は`final_answer.main`へfallbackし、mainも失敗した場合だけ従来どおりrunを失敗させる。既定profileは品質を優先して`main`を維持し、lightへの切替は実運用比較後に判断する。
+`final_answer.light` は`agent.final_answer`用途assignmentの専用modelを使い、model既定samplingと専用llama cache slotで完成回答を生成する。model未設定・接続失敗・空応答時は`final_answer.main`へfallbackし、mainも失敗した場合だけ従来どおりrunを失敗させる。既定profileは品質を優先して`main`を維持し、lightへの切替は実運用比較後に判断する。
 
 main/lightの品質・速度・cache・障害fallbackの再現手順は [AgentGraph Final Answer Profile 実運用 Runbook](../agent-graph-final-answer-profile-runbook.md) にまとめた。`qwen3.5-4b`はthinking無効化後にmainより約11〜16秒短縮したが、根拠にない具体値やAPI例を補う傾向があったため、既定は`main`を維持する。
 
