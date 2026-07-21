@@ -329,7 +329,7 @@ bin/prod kbmemo:rag:ingest
 
 ## 6. 2 回目以降のデプロイ
 
-通常は開発端末から実行する。bowmoreにGiteaのdeploy keyを配置せず、push済みのHEADをgit bundleで転送する。転送先ではfast-forwardだけを許可し、既存の`bin/deploy --skip-pull`が依存更新、DB準備、assets生成、systemd再起動、health checkを担当する。
+通常は開発端末から実行する。bowmoreにGiteaのdeploy keyを配置せず、push済みのHEADをgit bundleで転送する。転送先ではfast-forwardだけを許可し、成功後に`origin/<branch>`も転送revisionへ更新する。既存の`bin/deploy --skip-pull`が依存更新、DB準備、assets生成、systemd再起動、health checkを担当する。
 
 ```bash
 git push origin main

@@ -131,6 +131,7 @@ fi
 
 git checkout "${branch}"
 git merge --ff-only FETCH_HEAD
+git update-ref "refs/remotes/origin/${branch}" "${revision}"
 restore_local_config
 bin/deploy --skip-pull "${seed_option}"
 REMOTE_SCRIPT
