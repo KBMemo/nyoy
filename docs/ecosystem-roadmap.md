@@ -257,7 +257,7 @@ gantt
 
 ### 推奨
 
-- llama-switchd Phase 1〜5は実装済み。productionの`gpt_oss`はbinding済みで、残る4接続はRuntime Aliasを確認して個別にbinding・同期する
+- llama-switchd Phase 1〜5とproduction移行は完了。`llama_cpp`、`vision_llama`、`embeddings`、`llm_qwythos_9b_mtp_q4`のbinding・URL/Alias同期後、reconciliation `healthy`、findings 0件を確認済み
 - LLM server外部alertは配送E2Eまで確認済み。常設通知はZabbix導入後に受信方式を設計し、productionへURL/tokenを設定して実通知を確認する
 - webhook を本番投入する場合は、[Memo RAG Webhook 本番有効化 Runbook](./memo-rag-webhook-production-runbook.md) に沿って site `NYOY_MEMO_WEBHOOK_*` と Nyoy `MEMO_RAG_WEBHOOK_*` を同じ secret で有効化し、`MemoKnowledgeIngestJob` の checkpoint 定期同期ログで収束を継続確認する
 

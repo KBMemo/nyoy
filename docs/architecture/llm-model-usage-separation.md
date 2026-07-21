@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 12 AppSetting互換API撤去（2026-07-21）
+**ステータス:** Phase 1〜18完了、本番14用途・4 llama-switchd binding確認済み（2026-07-22）
 
 ## 1. 目的
 
@@ -163,7 +163,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 
 `bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`について生成履歴に旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
 
-2026-07-21のdevelopment DB監査では、Model associationと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seed定義と互換API、運用runbookの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、seed・`NyoyConnectionStore`・style plan履歴操作・外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
+2026-07-21のdevelopment DB監査では、Model associationと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seedと移行用CLIの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、seed・style plan履歴操作・外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
 
 2026-07-22にNyoy以外のローカルworkspaceも検索した結果、旧ServiceConnection keyを直接指定する外部実行scriptは見つからなかった。通常実行のkey解決はcanonical key専用に切り替え、旧key検索を初回seedと移行用CLIへ限定した。`legacy_key`列は監査期間が終わるまで残す。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明は削除した。
 
