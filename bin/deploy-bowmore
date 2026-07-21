@@ -90,7 +90,22 @@ bundle_file="$2"
 revision="$3"
 branch="$4"
 seed_option="$5"
-trap 'rm -f "${bundle_file}"' EXIT
+local_config_backup="$(mktemp -d)"
+local_config_files=(.kamal/secrets config/credentials.yml.enc)
+
+restore_local_config() {
+  local file
+  for file in "${local_config_files[@]}"; do
+    if [[ -f "${local_config_backup}/${file}" ]]; then
+      mkdir -p "$(dirname "${file}")"
+      cp -p "${local_config_backup}/${file}" "${file}"
+    fi
+  done
+  rm -rf "${local_config_backup}"
+  rm -f "${bundle_file}"
+}
+
+trap restore_local_config EXIT
 
 cd "${deploy_path}"
 unexpected_changes="$(git status --porcelain --untracked-files=no | awk '{print $2}' | grep -Ev '^(\.kamal/secrets|config/credentials\.yml\.enc)$' || true)"
@@ -100,6 +115,14 @@ if [[ -n "${unexpected_changes}" ]]; then
   exit 1
 fi
 
+for file in "${local_config_files[@]}"; do
+  if [[ -f "${file}" ]] && ! git diff --quiet -- "${file}"; then
+    mkdir -p "${local_config_backup}/$(dirname "${file}")"
+    cp -p "${file}" "${local_config_backup}/${file}"
+    git checkout -- "${file}"
+  fi
+done
+
 git fetch "${bundle_file}" HEAD
 if [[ "$(git rev-parse FETCH_HEAD)" != "${revision}" ]]; then
   echo "transferred revision does not match ${revision}" >&2
@@ -108,5 +131,6 @@ fi
 
 git checkout "${branch}"
 git merge --ff-only FETCH_HEAD
+restore_local_config
 bin/deploy --skip-pull "${seed_option}"
 REMOTE_SCRIPT
