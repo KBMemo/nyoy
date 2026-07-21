@@ -130,6 +130,15 @@ jobs:
           DB_NAME: nyoy_test
         run: bin/rails db:test:prepare test
 
+      - name: Verify seeds from an empty database
+        env:
+          RAILS_ENV: test
+          DB_HOST: localhost
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: nyoy_test
+        run: bin/rails db:seed:replant
+
   system-test:
     runs-on: ubuntu-latest
 
