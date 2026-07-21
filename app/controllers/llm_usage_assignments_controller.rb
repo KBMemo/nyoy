@@ -4,7 +4,6 @@ class LlmUsageAssignmentsController < ApplicationController
   before_action :set_assignment, only: :update
 
   def index
-    LlmUsageAssignmentSeeds.seed!
     load_index
   end
 

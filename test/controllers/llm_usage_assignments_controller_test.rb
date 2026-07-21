@@ -21,6 +21,19 @@ class LlmUsageAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name='llm_usage_assignment[llm_sampling_preset_id]']", count: generation_usage_count
   end
 
+  test "index reports missing usages without creating assignments" do
+    missing = LlmUsageAssignment.find_by!(usage_key: "agent.draft")
+    missing.destroy!
+
+    assert_no_difference("LlmUsageAssignment.count") do
+      get llm_usage_assignments_path
+    end
+
+    assert_response :success
+    assert_select ".kb-alert-warning", text: /モデルを解決できない用途が1件あります/
+    assert_nil LlmUsageAssignment.find_by(usage_key: "agent.draft")
+  end
+
   test "update changes model fallback preset and enabled state" do
     assignment = LlmUsageAssignment.find_by!(usage_key: "agent.draft")
     candidates = Model.all.select do |model|

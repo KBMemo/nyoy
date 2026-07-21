@@ -80,6 +80,8 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 `db:seed`はServiceConnection、Chat Model、sampling presetの後にassignment seedを実行する。productionで通常deploy時にseedを省略している場合は、Phase 3の反映時に`LlmUsageAssignmentSeeds.seed!`を一度明示実行する。
 
+用途管理画面のGETはassignmentを作成しない。不足件数を警告表示するだけとし、初期作成・修復は`db:seed`または明示的な`LlmUsageAssignmentSeeds.seed!`で行う。これにより設定欠落が画面閲覧の副作用で隠れない。
+
 ## 5. Runtime resolver
 
 `LlmUsageResolver`は次の順で実行先を決める。
@@ -155,6 +157,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 15. 用途assignmentにConnection未関連Modelを保存できないvalidationを追加する（完了）
 16. 用途assignmentのModel接続をLLM model endpoint adapterに限定する（完了）
 17. sampling presetをtext generation用途だけに制限する（完了）
+18. 用途管理画面GETから自動seedを除去する（完了）
 
 ## 9. Legacy key監査
 
