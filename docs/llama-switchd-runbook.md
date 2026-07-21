@@ -269,15 +269,15 @@ payload例:
 - 両requestのBearer認証と `nyoy-llama-reconciliation-<id>` 冪等キーを確認
 - transaction rollback後、一時 `llama_switchd` 接続は0件
 
-これは本番runtimeでの配送経路確認であり、常設の外部通知先確認ではない。`LLAMA_SERVER_ALERT_WEBHOOK_URL` / `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN` は未設定のため、通知先選定後に実障害または管理された障害注入で再確認する。
+これは本番runtimeでの配送経路確認であり、常設の外部通知先確認ではない。`LLAMA_SERVER_ALERT_WEBHOOK_URL` / `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN` は未設定である。2026-07-22にZabbix導入後へ延期する方針を決定したため、Zabbix側の受信方式確定後に実障害または管理された障害注入で再確認する。
 
 2026-07-21 常設先監査:
 
 - local環境、bowmore上のsite群、近隣projectから、流用可能なntfy / Gotify / Slack / Discord等の通知設定と汎用Webhook受信先を検出できなかった
 - productionの`LLAMA_SERVER_ALERT_WEBHOOK_URL` / `LLAMA_SERVER_ALERT_WEBHOOK_TOKEN`は未設定のまま維持
-- localhost受信器を常設扱いにせず、実際に運用者へ到達する通知先が選定されるまで外部依存の残課題とする
+- localhost受信器を常設扱いにせず、Zabbix導入と受信方式の確定まで外部依存の残課題とする
 
-通知先の選定時は、任意JSON POST、任意のBearer token、`Idempotency-Key`を受け付けることを確認する。サービス固有payloadしか受け付けない場合は、Nyoyの汎用payloadをそのサービスへ変換するadapterを別途実装する。
+Zabbix連携設計時は、任意JSON POST、任意のBearer token、`Idempotency-Key`を受け付けることを確認する。Zabbixがサービス固有payloadしか受け付けない場合は、Nyoyの汎用payloadを変換するadapterを別途実装する。
 
 ## 7. 障害時
 
