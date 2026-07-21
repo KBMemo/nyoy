@@ -84,7 +84,7 @@ curl -fsS https://kbmemo.net/up
 5. 徒然ログで webhook 設定エラーが出ていないことを確認する。
 
 ```bash
-sudo journalctl -u kbmemo -n 100 --no-pager
+journalctl --user -u kbmemo -n 100 --no-pager
 ```
 
 ## スモークテスト
@@ -165,7 +165,7 @@ MemoRagWebhookEvent.where(status: "failed").order(id: :desc).limit(10).pluck(
 
 ```bash
 journalctl --user -u nyoy -f
-sudo journalctl -u kbmemo -f
+journalctl --user -u kbmemo -f
 ```
 
 定期同期は継続する。webhook 有効化後も、必要に応じて checkpoint 同期で収束を確認する。
@@ -211,7 +211,7 @@ bin/prod kbmemo:rag:ingest
 | 徒然から 422 | payload の必須項目欠落。徒然側 revision と Nyoy 側 revision を確認 |
 | event が `failed` | `error_message` を確認。Nyoy の `kbmemo` ServiceConnection token で対象メモが読めるか確認 |
 | event が `pending` のまま | Nyoy の Solid Queue 実行状態を `journalctl --user -u nyoy` で確認 |
-| 徒然の job が `UnknownJobClassError` | 徒然を最新 revision で再起動したか確認し、再起動境界で失敗した `NyoyMemoWebhookJob` を再実行する |
+| 徒然の job が `UnknownJobClassError` | `kbmemo` worker が `kbmemo_site`、`kbmemo-media` worker が `kbmemo_media` だけを購読しているか確認する。共有 queue DB で `*` を購読しない |
 | chunk が増えない | 対象メモが draft、または Nyoy token account から見えない可能性 |
 
 ## 完了条件
