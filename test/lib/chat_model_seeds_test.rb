@@ -14,4 +14,18 @@ class ChatModelSeedsTest < ActiveSupport::TestCase
     assert_equal service_connections(:llama_cpp), gemma.service_connection
     assert_equal service_connections(:gpt_oss), gpt_oss.service_connection
   end
+
+  test "seed preserves specialized model capabilities and modalities" do
+    vision = Model.find_by!(provider: "openai", model_id: service_connections(:vision_llama).server_model)
+    vision.update!(
+      capabilities: [ "chat", "vision-specialized" ],
+      modalities: { "input" => %w[text image], "output" => [ "text" ] }
+    )
+
+    ChatModelCatalog.seed!
+
+    vision.reload
+    assert_includes vision.capabilities, "vision-specialized"
+    assert_includes vision.modalities.fetch("input"), "image"
+  end
 end

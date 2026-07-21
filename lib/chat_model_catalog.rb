@@ -87,8 +87,11 @@ module ChatModelCatalog
         name: definition.name,
         family: connection&.openai? ? "openai" : "local",
         context_window: context_window_for(connection),
-        capabilities: [ "chat" ],
-        modalities: { "input" => [ "text" ], "output" => [ "text" ] },
+        capabilities: Array(record.capabilities) | [ "chat" ],
+        modalities: record.modalities.to_h.deep_merge(
+          "input" => Array(record.modalities.to_h["input"]) | [ "text" ],
+          "output" => Array(record.modalities.to_h["output"]) | [ "text" ]
+        ),
         metadata: {
           "api_base" => definition.api_base
         }

@@ -163,9 +163,10 @@ class ServiceConnection < ApplicationRecord
   def generative_model_endpoint?
     return false unless model_endpoint?
     return true if openai?
+    return false if legacy_key.presence == "embeddings" || key == "embeddings"
 
     models_for_connection.any? { |model| LlmModelCapabilities.for(model).include?(:text_generation) } ||
-      (server_model.present? && key != "embeddings")
+      server_model.present?
   end
 
   def models_for_connection

@@ -53,6 +53,17 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert_equal ServiceConnection.resolve("llm_extra"), ServiceConnection.find_by!(key: "llama_server_extra_model")
   end
 
+  test "canonicalized embedding connection is not a generative endpoint" do
+    connection = service_connections(:embeddings)
+    connection.update_columns(
+      key: "llama_server_lfm_embedding",
+      legacy_key: "embeddings",
+      adapter: "llama_cpp"
+    )
+
+    assert_not connection.reload.generative_model_endpoint?
+  end
+
   test "custom llm defaults to llama cpp adapter" do
     connection = ServiceConnection.new(
       key: "llm_adapter_default",
