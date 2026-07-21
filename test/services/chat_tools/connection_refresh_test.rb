@@ -15,7 +15,7 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
     requested = []
     client = ChatTools::Registry.web_search_client
     client.define_singleton_method(:perform_request) do |uri, req|
-      requested << [uri.to_s, req["Authorization"]]
+      requested << [ uri.to_s, req["Authorization"] ]
       ChatToolsConnectionRefreshTest.fake_http_response(200, {
         status: "completed",
         results: [],
@@ -32,7 +32,7 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
 
   test "readability client uses url updated in service connection" do
     connection = service_connections(:readability)
-    connection.update!(base_url: "http://updated-readability:8030")
+    connection.update!(base_url: "http://updated-readability:8030", enabled: true)
     NyoyConnectionStore.clear_cache!
 
     client = ChatTools::Registry.readability_client
@@ -41,7 +41,7 @@ class ChatToolsConnectionRefreshTest < ActiveSupport::TestCase
   end
 
   test "url fetcher picks up updated readability connection" do
-    service_connections(:readability).update!(base_url: "http://another-readability:8030")
+    service_connections(:readability).update!(base_url: "http://another-readability:8030", enabled: true)
     NyoyConnectionStore.clear_cache!
 
     fetcher = ChatTools::Registry.url_fetcher

@@ -7,6 +7,7 @@ class LlmUsageAssignment < ApplicationRecord
 
   validates :usage_key, presence: true, uniqueness: true, inclusion: { in: ->(_) { LlmUsageCatalog.keys } }
   validate :models_must_support_usage
+  validate :models_must_have_connections
   validate :fallback_model_must_differ
 
   scope :enabled, -> { where(enabled: true) }
@@ -37,5 +38,17 @@ class LlmUsageAssignment < ApplicationRecord
     return if model_id.blank? || fallback_model_id.blank? || model_id != fallback_model_id
 
     errors.add(:fallback_model, "は主モデルと異なるモデルを選択してください")
+  end
+
+  def models_must_have_connections
+    validate_model_connection(:model, model)
+    validate_model_connection(:fallback_model, fallback_model) if fallback_model
+  end
+
+  def validate_model_connection(attribute, candidate)
+    return unless candidate
+    return if candidate.service_connection
+
+    errors.add(attribute, "に接続が設定されていません")
   end
 end

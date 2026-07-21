@@ -131,6 +131,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 - 用途選択UIはConnectionではなくModelを表示する
 - Modelは必須capabilityをすべて満たす用途にだけ選択できる
 - Modelから有効なConnectionを解決できない場合、そのassignmentは利用不可とする
+- assignment保存時は主Model・fallback ModelともConnection associationを必須とする（Connectionの一時無効化は許可する）
 - Runtime AliasやURL変更で用途assignmentを変更しない
 - lifecycle操作前の使用中判定は、Connectionへの直接参照ではなくassignmentから逆引きする
 - fallbackは暗黙のURL fallbackではなくassignment上で明示する
@@ -151,6 +152,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 12. `AppSetting`のLLM用途互換アクセサを撤去し、consumerをResolverへ直結する（完了）
 13. `Model.service_connection_id`を追加し、JSON metadata参照からassociationへ移行する（完了）
 14. Model metadataの`connection_key`を安全弁付きmigrationで削除する（完了）
+15. 用途assignmentにConnection未関連Modelを保存できないvalidationを追加する（完了）
 
 ## 9. Legacy key監査
 

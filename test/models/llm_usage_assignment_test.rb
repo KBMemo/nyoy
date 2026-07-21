@@ -59,6 +59,32 @@ class LlmUsageAssignmentTest < ActiveSupport::TestCase
     assert_includes same_model.errors[:fallback_model], "は主モデルと異なるモデルを選択してください"
   end
 
+  test "rejects primary and fallback models without connections" do
+    disconnected_primary = create_model("disconnected-primary", capabilities: [ "chat" ], connection: nil)
+    disconnected_fallback = create_model("disconnected-fallback", capabilities: [ "chat" ], connection: nil)
+    primary_assignment = LlmUsageAssignment.new(usage_key: "agent.draft", model: disconnected_primary)
+    fallback_assignment = LlmUsageAssignment.new(
+      usage_key: "agent.draft",
+      model: text_model,
+      fallback_model: disconnected_fallback
+    )
+
+    assert_not primary_assignment.valid?
+    assert_includes primary_assignment.errors[:model], "に接続が設定されていません"
+    assert_not fallback_assignment.valid?
+    assert_includes fallback_assignment.errors[:fallback_model], "に接続が設定されていません"
+  end
+
+  test "accepts a model whose connection is disabled" do
+    model = create_model(
+      "disabled-connection-model",
+      capabilities: [ "chat" ],
+      connection: service_connections(:gpt_oss).tap { |connection| connection.update!(enabled: false) }
+    )
+
+    assert LlmUsageAssignment.new(usage_key: "agent.draft", model: model).valid?
+  end
+
   private
 
   def text_model
@@ -81,13 +107,14 @@ class LlmUsageAssignmentTest < ActiveSupport::TestCase
     @embedding_model ||= create_model("embedding-model", capabilities: [ "embedding" ])
   end
 
-  def create_model(model_id, capabilities:, modalities: {})
+  def create_model(model_id, capabilities:, modalities: {}, connection: service_connections(:llama_cpp))
     Model.create!(
       provider: "openai",
       model_id: model_id,
       name: model_id,
       capabilities: capabilities,
-      modalities: modalities
+      modalities: modalities,
+      service_connection: connection
     )
   end
 end

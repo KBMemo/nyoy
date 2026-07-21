@@ -46,14 +46,6 @@ class LlmUsageResolverTest < ActiveSupport::TestCase
     assert_nil LlmUsageResolver.resolve("agent.draft")
   end
 
-  test "does not resolve an unassociated model" do
-    model = model_for("llama_cpp")
-    model.update_columns(service_connection_id: nil)
-    LlmUsageAssignment.create!(usage_key: "agent.draft", model: model)
-
-    assert_nil LlmUsageResolver.resolve("agent.draft")
-  end
-
   private
 
   def model_for(connection_key)
