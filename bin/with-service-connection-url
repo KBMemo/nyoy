@@ -5,7 +5,7 @@ require_relative "../config/environment"
 
 def usage
   warn "Usage: bin/with-service-connection-url KEY TEMP_URL -- COMMAND [ARGS...]"
-  warn "Example: bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- bin/mcp-call-tool run_image_understanding_graph '{}'"
+  warn "Example: bin/with-service-connection-url llama_server_qwen3vl_4b http://127.0.0.1:9 -- bin/mcp-call-tool run_image_understanding_graph '{}'"
 end
 
 begin

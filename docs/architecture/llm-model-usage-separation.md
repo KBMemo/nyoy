@@ -147,4 +147,10 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 8. 用途assignment管理UIへ移行し、旧AppSetting dual-writeを削除する（完了）
 9. 用途選択環境変数を廃止し、初回seedをModel基準へ統一する（完了）
 
+## 9. Legacy key監査
+
+`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`についてAppSetting退避列、生成履歴、Model metadataに旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
+
+2026-07-21のdevelopment DB監査では、Model metadataと生成履歴はcanonical keyへ移行済みだった。`legacy_key`自体は初期seed定義、assignment未登録時の互換fallback、外部運用コマンドの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、runbookと外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
+
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。

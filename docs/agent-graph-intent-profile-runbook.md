@@ -9,7 +9,7 @@ set -a
 source env.development
 set +a
 
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "agent_graph_intent_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.intent"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:intent), model: a&.model&.model_id)'
 bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:intent), profiles: AgentGraph::RoleServices.profile_names(:intent)}.to_json)'
 ```
 
@@ -69,7 +69,8 @@ run 91では `qwen3.5-4b`、input 139、cached 114、output 13を確認した。
 intent modelの接続だけを一時的に到達不能にする。設定画面で `hybrid_llm` と対象modelを選んだ状態で、別shellから次を実行してもよい。コマンド終了後に接続URLは自動復旧する。
 
 ```bash
-KEY=llm_qwen35_4b
+KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("agent.intent")&.connection&.key')"
+test -n "$KEY"
 bin/with-service-connection-url "$KEY" http://127.0.0.1:9 -- \
   bin/rails runner '
     chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
@@ -87,7 +88,7 @@ bin/with-service-connection-url "$KEY" http://127.0.0.1:9 -- \
 ## 6. 復旧確認
 
 ```bash
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "agent_graph_intent_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.intent"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:intent), model: a&.model&.model_id)'
 bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:intent)'
 ```
 

@@ -9,7 +9,7 @@ set -a
 source env.development
 set +a
 
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "evidence_evaluator_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.evidence_evaluator"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:evidence_evaluator), model: a&.model&.model_id)'
 bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:evidence_evaluator), profiles: AgentGraph::RoleServices.profile_names(:evidence_evaluator)}.to_json)'
 ```
 
@@ -33,14 +33,13 @@ bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:evidence_
 bin/rails runner - <<'RUBY'
 settings = AppSetting.instance
 original_profiles = settings.agent_graph_role_profiles.deep_dup
-original_model = settings.evidence_evaluator_model_id
+assignment = LlmUsageAssignment.find_by!(usage_key: "agent.evidence_evaluator")
+original_model = assignment.model
 chat = nil
 begin
   chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
-  settings.update!(
-    agent_graph_evidence_evaluator_profile: "llm",
-    evidence_evaluator_model_id: "qwen3.5-4b"
-  )
+  settings.update!(agent_graph_evidence_evaluator_profile: "llm")
+  assignment.update!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
   base = {
     "question" => "Rails Active Jobのretry_onは何を設定する機能ですか？",
     "plan" => { "need_web" => true },
@@ -69,7 +68,8 @@ begin
   end
   puts JSON.pretty_generate(results)
 ensure
-  settings.update!(agent_graph_role_profiles: original_profiles, evidence_evaluator_model_id: original_model)
+  settings.update!(agent_graph_role_profiles: original_profiles)
+  assignment.update!(model: original_model)
   chat&.destroy!
 end
 RUBY
@@ -110,15 +110,19 @@ RUN_ID=1 bin/rails runner '
 対象modelの接続だけを一時的に到達不能にし、取得済み根拠を判定する。
 
 ```bash
-bin/with-service-connection-url llm_qwen35_4b http://127.0.0.1:9 -- \
+KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("agent.evidence_evaluator")&.connection&.key')"
+test -n "$KEY"
+bin/with-service-connection-url "$KEY" http://127.0.0.1:9 -- \
   bin/rails runner - <<'RUBY'
 settings = AppSetting.instance
 original_profiles = settings.agent_graph_role_profiles.deep_dup
-original_model = settings.evidence_evaluator_model_id
+assignment = LlmUsageAssignment.find_by!(usage_key: "agent.evidence_evaluator")
+original_model = assignment.model
 chat = nil
 begin
   chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
-  settings.update!(agent_graph_evidence_evaluator_profile: "llm", evidence_evaluator_model_id: "qwen3.5-4b")
+  settings.update!(agent_graph_evidence_evaluator_profile: "llm")
+  assignment.update!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
   state = {
     "question" => "Rails Active Jobのretry_onは何を設定する機能ですか？",
     "plan" => { "need_web" => true },
@@ -132,7 +136,8 @@ begin
   review, metadata = AgentGraph::RoleServices.fetch(:evidence_evaluator).call(state: state, run: nil, chat: chat)
   puts JSON.pretty_generate(status: review[:status], metadata: metadata)
 ensure
-  settings.update!(agent_graph_role_profiles: original_profiles, evidence_evaluator_model_id: original_model)
+  settings.update!(agent_graph_role_profiles: original_profiles)
+  assignment.update!(model: original_model)
   chat&.destroy!
 end
 RUBY
@@ -151,9 +156,9 @@ RUBY
 ## 6. 復旧確認
 
 ```bash
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "evidence_evaluator_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.evidence_evaluator"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:evidence_evaluator), model: a&.model&.model_id)'
 bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:evidence_evaluator)'
-bin/rails runner 'puts ServiceConnection.find_by!(key: "llm_qwen35_4b").base_url'
+bin/rails runner 'puts LlmUsageResolver.resolve("agent.evidence_evaluator")&.connection&.base_url'
 ```
 
 期待と異なる場合はAppSetting、`AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE`、対象ServiceConnectionの`base_url`を確認する。

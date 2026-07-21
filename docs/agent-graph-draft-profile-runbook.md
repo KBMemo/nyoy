@@ -37,7 +37,7 @@ bin/mcp-list-tools | rg 'run_research_graph|get_research_graph'
 consoleで確認する場合:
 
 ```bash
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "research_draft_model_id", "research_draft_fallback"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.draft"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:draft), model: a&.model&.model_id, fallback: AppSetting.research_draft_fallback)'
 ```
 
 確認終了後にこの値へ戻す。

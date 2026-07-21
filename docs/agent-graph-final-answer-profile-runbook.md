@@ -9,7 +9,7 @@ set -a
 source env.development
 set +a
 
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "final_answer_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.final_answer"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:final_answer), model: a&.model&.model_id)'
 bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:final_answer), profiles: AgentGraph::RoleServices.profile_names(:final_answer)}.to_json)'
 ```
 
@@ -34,7 +34,8 @@ bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:final_ans
 bin/rails runner - <<'RUBY'
 settings = AppSetting.instance
 original_profiles = settings.agent_graph_role_profiles.deep_dup
-original_model = settings.final_answer_model_id
+assignment = LlmUsageAssignment.find_by!(usage_key: "agent.final_answer")
+original_model = assignment.model
 chat = nil
 begin
   chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
@@ -56,7 +57,8 @@ begin
   }
   cases = [ [ :main, "main", nil ], [ :light_1, "light", "qwen3.5-4b" ], [ :light_2, "light", "qwen3.5-4b" ] ]
   results = cases.map do |name, profile, model_id|
-    settings.update!(agent_graph_final_answer_profile: profile, final_answer_model_id: model_id)
+    settings.update!(agent_graph_final_answer_profile: profile)
+    assignment.update!(model: Model.find_by!(provider: "openai", model_id: model_id)) if model_id
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     answer, truncated, metadata = AgentGraph::RoleServices.fetch(:final_answer).call(state: state, run: nil, chat: chat)
     {
@@ -69,7 +71,8 @@ begin
   end
   puts JSON.pretty_generate(results)
 ensure
-  settings.update!(agent_graph_role_profiles: original_profiles, final_answer_model_id: original_model)
+  settings.update!(agent_graph_role_profiles: original_profiles)
+  assignment.update!(model: original_model)
   chat&.destroy!
 end
 RUBY
@@ -102,15 +105,19 @@ thinking無効化後はmainより11〜16秒短縮した。一方、evidenceに�
 light modelの接続だけを一時的に到達不能にし、第3節と同じstateで実行する。
 
 ```bash
-bin/with-service-connection-url llm_qwen35_4b http://127.0.0.1:9 -- \
+KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("agent.final_answer")&.connection&.key')"
+test -n "$KEY"
+bin/with-service-connection-url "$KEY" http://127.0.0.1:9 -- \
   bin/rails runner - <<'RUBY'
 settings = AppSetting.instance
 original_profiles = settings.agent_graph_role_profiles.deep_dup
-original_model = settings.final_answer_model_id
+assignment = LlmUsageAssignment.find_by!(usage_key: "agent.final_answer")
+original_model = assignment.model
 chat = nil
 begin
   chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-  settings.update!(agent_graph_final_answer_profile: "light", final_answer_model_id: "qwen3.5-4b")
+  settings.update!(agent_graph_final_answer_profile: "light")
+  assignment.update!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
   state = {
     "question" => "retry_onとは？",
     "draft" => "retry_onは例外発生時のジョブ再試行を設定します。",
@@ -132,7 +139,8 @@ begin
     metadata: metadata.except("system_prompt", "user_prompt", "thinking")
   )
 ensure
-  settings.update!(agent_graph_role_profiles: original_profiles, final_answer_model_id: original_model)
+  settings.update!(agent_graph_role_profiles: original_profiles)
+  assignment.update!(model: original_model)
   chat&.destroy!
 end
 RUBY
@@ -166,9 +174,9 @@ light成功時は`profile: final_answer.light / source: light`、fallback時は`
 ## 7. 復旧確認
 
 ```bash
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "final_answer_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.final_answer"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:final_answer), model: a&.model&.model_id)'
 bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:final_answer)'
-bin/rails runner 'puts ServiceConnection.find_by!(key: "llm_qwen35_4b").base_url'
+bin/rails runner 'puts LlmUsageResolver.resolve("agent.final_answer")&.connection&.base_url'
 ```
 
 期待と異なる場合はAppSetting、`AGENT_GRAPH_FINAL_ANSWER_PROFILE`、対象ServiceConnectionの`base_url`を確認する。

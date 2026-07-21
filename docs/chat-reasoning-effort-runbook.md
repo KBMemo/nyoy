@@ -5,14 +5,14 @@ Chat の `reasoning_effort` が対応モデルへ渡り、思考時間を短縮�
 ## 1. 前提
 
 - Nyoy development が起動している
-- `gpt_oss` 接続が有効で、接続先 llama-server に gpt-oss がロードされている
+- `chat.default`にgpt-oss Modelを割り当て、接続先llama-serverにgpt-ossがロードされている
 - `MEMO_RAG_MODE=tool` など、比較中の環境設定が同一である
 - Web 検索やメモ参照を必要としない質問を使う
 
 接続 URL を確認する。
 
 ```bash
-GPT_OSS_URL="$(bin/rails runner 'puts ServiceConnection.resolve("gpt_oss")&.base_url')"
+GPT_OSS_URL="$(bin/rails runner 'puts LlmUsageResolver.resolve("chat.default")&.connection&.base_url')"
 printf '%s\n' "$GPT_OSS_URL"
 curl -fsS "$GPT_OSS_URL/health"
 curl -fsS "$GPT_OSS_URL/props" | ruby -rjson -e '

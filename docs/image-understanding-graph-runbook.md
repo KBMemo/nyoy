@@ -7,7 +7,7 @@
 ## 前提
 
 - Nyoy が起動している
-- `vision_llama` の `ServiceConnection` が有効
+- `vision.image_understanding`用途assignmentの`ServiceConnection`が有効
 - vision LLM が画像解析できる状態
 - MCP を確認する場合は `MCP_API_TOKEN` が設定済み
 - 葛籠経路を確認する場合は `tsuzura` の `ServiceConnection` が有効
@@ -158,7 +158,7 @@ bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説
 
 手順:
 
-1. vision LLM または `vision_llama` 接続先を停止する。サーバーを止めずに確認する場合は、下の Rails runner 例で `vision_llama.base_url` を一時的に未使用ポートへ向ける
+1. vision LLMまたは`vision.image_understanding`の接続先を停止する。サーバーを止めずに確認する場合は、下の補助コマンドで接続先を一時的に未使用ポートへ向ける
 2. Chat 添付経路、または MCP `tsuzura_media_id` 経路で画像理解を実行する
 3. failed run の `agent_run_id` を控える
 4. node 履歴で `resolve_image_source` が completed、`analyze_image` が failed であることを確認する
@@ -168,7 +168,9 @@ bin/mcp-call-tool run_image_understanding_graph '{"question":"この画像を説
 接続先を一時変更して失敗を作る例:
 
 ```bash
-bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- \
+VISION_CONNECTION_KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("vision.image_understanding")&.connection&.key')"
+test -n "$VISION_CONNECTION_KEY"
+bin/with-service-connection-url "$VISION_CONNECTION_KEY" http://127.0.0.1:9 -- \
   bin/mcp-call-tool run_image_understanding_graph \
     "{\"question\":\"この画像を説明して\",\"tsuzura_media_id\":\"$TSUZURA_MEDIA_ID\"}"
 ```
@@ -176,8 +178,8 @@ bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- \
 `bin/with-service-connection-url` は指定コマンドの終了後に元の `base_url` へ戻す。手動で UI 操作する場合は、次のように一時変更を維持し、別 shell で `/image_understandings/new` または Chat 添付経路を実行してから Enter で復旧する。
 
 ```bash
-bin/with-service-connection-url vision_llama http://127.0.0.1:9 -- \
-  bash -lc 'read -r -p "Run image understanding now, then press Enter to restore vision_llama..."'
+bin/with-service-connection-url "$VISION_CONNECTION_KEY" http://127.0.0.1:9 -- \
+  bash -lc 'read -r -p "Run image understanding now, then press Enter to restore the connection..."'
 ```
 
 HTTP MCP retry 例:

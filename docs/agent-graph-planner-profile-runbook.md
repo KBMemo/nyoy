@@ -11,7 +11,7 @@ set -a
 source env.development
 set +a
 
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "research_planner_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.planner"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:planner), model: a&.model&.model_id)'
 bin/rails runner 'puts({profile: AgentGraph::RoleServices.profile_for(:planner), profiles: AgentGraph::RoleServices.profile_names(:planner)}.to_json)'
 ```
 
@@ -72,16 +72,16 @@ RUN_ID=84 bin/rails runner '
 planner modelの接続だけを一時的に到達不能にする。`KEY` は対象modelの `metadata.connection_key` を使う。
 
 ```bash
-KEY=llm_qwen35_4b
+KEY="$(bin/rails runner 'puts LlmUsageResolver.resolve("agent.planner")&.connection&.key')"
+test -n "$KEY"
 bin/with-service-connection-url "$KEY" http://127.0.0.1:9 -- \
   bin/rails runner - <<'RUBY'
 settings = AppSetting.instance
 original_profiles = settings.agent_graph_role_profiles.deep_dup
-original_model = settings.research_planner_model_id
-settings.update!(
-  agent_graph_planner_profile: "llm",
-  research_planner_model_id: "qwen3.5-4b"
-)
+assignment = LlmUsageAssignment.find_by!(usage_key: "agent.planner")
+original_model = assignment.model
+settings.update!(agent_graph_planner_profile: "llm")
+assignment.update!(model: Model.find_by!(provider: "openai", model_id: "qwen3.5-4b"))
 AgentGraph::FinalAnswerSynthesizer.force_passthrough = true
 
 begin
@@ -96,9 +96,9 @@ begin
   )
 ensure
   settings.update!(
-    agent_graph_role_profiles: original_profiles,
-    research_planner_model_id: original_model
+    agent_graph_role_profiles: original_profiles
   )
+  assignment.update!(model: original_model)
   AgentGraph::FinalAnswerSynthesizer.force_passthrough = false
 end
 RUBY
@@ -117,7 +117,7 @@ RUBY
 ## 6. 復旧確認
 
 ```bash
-bin/rails runner 'puts JSON.pretty_generate(AppSetting.instance.attributes.slice("agent_graph_role_profiles", "research_planner_model_id"))'
+bin/rails runner 'a=LlmUsageAssignment.find_by(usage_key: "agent.planner"); puts JSON.pretty_generate(profile: AgentGraph::RoleServices.profile_for(:planner), model: a&.model&.model_id)'
 bin/rails runner 'puts AgentGraph::RoleServices.profile_for(:planner)'
 ```
 
