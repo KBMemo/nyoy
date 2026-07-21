@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_030000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -219,7 +219,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_030000) do
     t.string "status", default: "queued", null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_llama_server_operations_on_created_at"
-    t.index ["service_connection_id", "managed_server_id"], name: "index_active_llama_server_operations", unique: true, where: "((status)::text = ANY (ARRAY[('queued'::character varying)::text, ('running'::character varying)::text]))"
+    t.index ["service_connection_id", "managed_server_id"], name: "index_active_llama_server_operations", unique: true, where: "((status)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying])::text[]))"
     t.index ["service_connection_id"], name: "index_llama_server_operations_on_service_connection_id"
   end
 
@@ -248,6 +248,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_030000) do
     t.integer "sort_order", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["key"], name: "index_llm_sampling_presets_on_key", unique: true
+  end
+
+  create_table "llm_usage_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.bigint "fallback_model_id"
+    t.bigint "llm_sampling_preset_id"
+    t.bigint "model_id", null: false
+    t.datetime "updated_at", null: false
+    t.string "usage_key", null: false
+    t.index ["fallback_model_id"], name: "index_llm_usage_assignments_on_fallback_model_id"
+    t.index ["llm_sampling_preset_id"], name: "index_llm_usage_assignments_on_llm_sampling_preset_id"
+    t.index ["model_id"], name: "index_llm_usage_assignments_on_model_id"
+    t.index ["usage_key"], name: "index_llm_usage_assignments_on_usage_key", unique: true
   end
 
   create_table "lora_profiles", force: :cascade do |t|
@@ -525,6 +539,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_030000) do
   add_foreign_key "image_generations", "sd_prompt_templates"
   add_foreign_key "llama_server_operations", "service_connections"
   add_foreign_key "llama_server_reconciliations", "service_connections"
+  add_foreign_key "llm_usage_assignments", "llm_sampling_presets", on_delete: :nullify
+  add_foreign_key "llm_usage_assignments", "models"
+  add_foreign_key "llm_usage_assignments", "models", column: "fallback_model_id"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"

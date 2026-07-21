@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 1 用途契約定義（2026-07-21）
+**ステータス:** Phase 2 assignment基盤（2026-07-21）
 
 ## 1. 目的
 
@@ -58,7 +58,23 @@ sampling値は接続特性ではない。同じModelでも通常Chat、planner�
 
 AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約である。profileはアルゴリズム実装を選び、usage assignmentはそのprofileがLLMを必要とするときのModelを選ぶ。deterministic profileではassignmentが存在してもLLMを呼ばない。
 
-## 4. 不変条件
+## 4. Assignment schema
+
+`llm_usage_assignments`は次を保持する。
+
+| column | 意味 |
+| --- | --- |
+| `usage_key` | `LlmUsageCatalog`の一意な用途key |
+| `model_id` | 主Model |
+| `fallback_model_id` | 任意の明示fallback Model |
+| `llm_sampling_preset_id` | 任意のsampling preset |
+| `enabled` | assignmentの利用可否 |
+
+profile実装名は保持しない。AgentGraph profileとModel選択を独立させるためである。
+
+Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化する。現行互換として`chat`は`text_generation`と`tool_calling`、画像入力modalitiesは`vision`、`embedding(s)`は`embedding`を満たす。assignment保存時に主Modelとfallback Modelの両方を検証する。
+
+## 5. 不変条件
 
 - `ServiceConnection`は用途keyを保持しない
 - 用途選択UIはConnectionではなくModelを表示する
@@ -68,7 +84,7 @@ AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約で
 - lifecycle操作前の使用中判定は、Connectionへの直接参照ではなくassignmentから逆引きする
 - fallbackは暗黙のURL fallbackではなくassignment上で明示する
 
-## 5. 移行順序
+## 6. 移行順序
 
 1. 用途keyと能力要件を定義する（本Phase）
 2. `LlmUsageAssignment`を追加する

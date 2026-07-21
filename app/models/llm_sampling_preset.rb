@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class LlmSamplingPreset < ApplicationRecord
+  has_many :llm_usage_assignments, dependent: :nullify
+
   validates :key, :name, presence: true
   validates :key, uniqueness: true, format: { with: /\A[a-z0-9_]+\z/, message: "は小文字英数字と _ のみ" }
   validates :params, presence: true
