@@ -46,6 +46,7 @@ class ServiceConnection < ApplicationRecord
   validates :key, :name, :base_url, presence: true
   validates :adapter, inclusion: { in: ADAPTERS }
   validates :key, uniqueness: true
+  validates :seed_key, uniqueness: true, allow_nil: true
   validates :key, format: { with: /\A[a-z][a-z0-9_]*\z/, message: "は小文字英数字と _ のみ使えます" }
   validates :legacy_key, uniqueness: true, allow_nil: true
   validate :key_must_be_allowed
@@ -67,7 +68,7 @@ class ServiceConnection < ApplicationRecord
   after_save :sync_chat_models, if: :generative_model_endpoint?
 
   def builtin?
-    BUILTIN_KEYS.include?(key) || BUILTIN_KEYS.include?(legacy_key)
+    BUILTIN_KEYS.include?(seed_key) || BUILTIN_KEYS.include?(key)
   end
 
   def custom_llm?
@@ -174,7 +175,8 @@ class ServiceConnection < ApplicationRecord
   end
 
   def self.available_keys
-    BUILTIN_KEYS - where(key: BUILTIN_KEYS).or(where(legacy_key: BUILTIN_KEYS)).pluck(Arel.sql("COALESCE(legacy_key, key)"))
+    registered = where(seed_key: BUILTIN_KEYS).or(where(key: BUILTIN_KEYS)).pluck(Arel.sql("COALESCE(seed_key, key)"))
+    BUILTIN_KEYS - registered
   end
 
   def self.resolve(key)

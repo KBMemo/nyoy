@@ -117,6 +117,8 @@ prompt conversion設定は旧UI互換のためmodel endpointに残している�
 
 llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とする。identifierはllama-switchdのmanaged server IDを優先し、未登録ならRuntime Alias、最後にServiceConnection IDから生成する。これにより`gpt_oss`、`vision_llama`、`embeddings`のような用途名をConnectionの識別子から除く。
 
+組み込みseedの識別子は`ServiceConnection.seed_key`に保持する。これは初期設定レコードのupsertと削除保護だけに使い、runtime接続解決やLLM用途選択には使わない。
+
 移行前のkeyは`ServiceConnection.legacy_key`に保存する。通常実行で使う`ServiceConnection.resolve`は現行keyだけを検索する。旧keyの検索は、初期seedと移行用CLIが明示的に使う`resolve_compatible`に限定する。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
 
 Connection key移行時は画像生成履歴のstyle plan接続を更新する。Modelは`service_connection_id`で参照するためkey変更の影響を受けず、用途assignmentもModel参照のため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。

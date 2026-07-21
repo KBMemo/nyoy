@@ -46,6 +46,7 @@ module ServiceConnectionSeeds
   # env → DB 同期用。既存レコードの enabled は UI / DB 設定を上書きしない。
   def sync_attributes_for(definition, record, index)
     attributes = {
+      seed_key: definition.fetch(:key),
       name: definition.fetch(:name),
       base_url: definition.fetch(:base_url),
       adapter: adapter_for(definition),
@@ -63,6 +64,7 @@ module ServiceConnectionSeeds
 
   def definition_attributes(definition, record, index)
     attributes = {
+      seed_key: definition.fetch(:key),
       name: definition.fetch(:name),
       base_url: definition.fetch(:base_url),
       adapter: adapter_for(definition),
@@ -190,7 +192,7 @@ module ServiceConnectionSeeds
 
   def record_for(definition)
     legacy_key = definition.fetch(:key).to_s
-    ServiceConnection.resolve_compatible(legacy_key) || ServiceConnection.new(
+    ServiceConnection.find_by(seed_key: legacy_key) || ServiceConnection.resolve_compatible(legacy_key) || ServiceConnection.new(
       key: canonical_key_for(definition),
       legacy_key: (legacy_key if adapter_for(definition) == "llama_cpp")
     )

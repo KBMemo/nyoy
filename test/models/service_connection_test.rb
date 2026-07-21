@@ -10,6 +10,18 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert_includes connection.errors[:base], "組み込み接続は削除できません。無効化してください。"
   end
 
+  test "canonical connection remains builtin through its seed key" do
+    connection = service_connections(:llama_cpp)
+    connection.update_columns(
+      key: "llama_server_gemma",
+      seed_key: "llama_cpp",
+      legacy_key: nil
+    )
+
+    assert connection.reload.builtin?
+    assert_not connection.destroy
+  end
+
   test "custom llm requires llm_ prefix and server_model" do
     connection = ServiceConnection.new(
       key: "not_llm",
