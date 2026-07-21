@@ -91,8 +91,7 @@ sudo journalctl -u kbmemo -n 100 --no-pager
 
 本番データを壊さないよう、UI から一時メモを 1 件作成して確認する。確認後に削除する。
 
-1. 徒然 UI で committed メモを作成または更新する。
-2. Nyoy console で最新 event を確認する。
+1. Nyoy console で徒然 API 接続が有効か確認する。
 
 ```bash
 cd ~/sites/nyoy
@@ -100,9 +99,19 @@ bin/prod console
 ```
 
 ```ruby
+connection = ServiceConnection.resolve(:kbmemo)
+[connection&.enabled?, connection&.base_url, connection&.api_token.present?, TsurezureClient.new.configured?]
+```
+
+すべて有効でなければ、先に「設定 > 接続」で `kbmemo` の URL、API token、有効状態を設定する。webhook secret はイベントの認証用であり、メモ本文を取得する API token の代わりにはならない。
+
+2. 徒然 UI で committed メモを作成または更新する。
+3. Nyoy console で最新 event を確認する。
+
+```ruby
 event = MemoRagWebhookEvent.order(id: :desc).first
 [event.event_type, event.status, event.memo_uid, event.error_message, event.processed_at]
-PromptKnowledgeChunk.where(memo_uid: event.memo_uid).count
+PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", event.memo_uid).count
 ```
 
 期待:
@@ -112,13 +121,13 @@ PromptKnowledgeChunk.where(memo_uid: event.memo_uid).count
 - chunk count は `1` 以上
 - `error_message` は `nil`
 
-3. 同じメモを徒然 UI から削除する。
-4. Nyoy console で削除 event と chunk 削除を確認する。
+4. 同じメモを徒然 UI から削除する。
+5. Nyoy console で削除 event と chunk 削除を確認する。
 
 ```ruby
 event = MemoRagWebhookEvent.where(memo_uid: "<対象UID>").order(id: :desc).first
 [event.event_type, event.status, event.error_message, event.processed_at]
-PromptKnowledgeChunk.where(memo_uid: event.memo_uid).count
+PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", event.memo_uid).count
 ```
 
 期待:
@@ -202,6 +211,7 @@ bin/prod kbmemo:rag:ingest
 | 徒然から 422 | payload の必須項目欠落。徒然側 revision と Nyoy 側 revision を確認 |
 | event が `failed` | `error_message` を確認。Nyoy の `kbmemo` ServiceConnection token で対象メモが読めるか確認 |
 | event が `pending` のまま | Nyoy の Solid Queue 実行状態を `journalctl --user -u nyoy` で確認 |
+| 徒然の job が `UnknownJobClassError` | 徒然を最新 revision で再起動したか確認し、再起動境界で失敗した `NyoyMemoWebhookJob` を再実行する |
 | chunk が増えない | 対象メモが draft、または Nyoy token account から見えない可能性 |
 
 ## 完了条件
