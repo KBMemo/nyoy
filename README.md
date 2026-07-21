@@ -24,7 +24,7 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 - **URL 取得** — `fetch_url`（SSRF 対策 + readability-js-server で本文抽出）
 - **メモ RAG** — 徒然 `export` 取込 → pgvector チャンク → 質問に関連する抜粋を Chat に自動注入
 - **コンテキスト管理** — 直近 N ターン制限、古い会話の要約（DB キャッシュ）、推定トークン表示、メモ RAG チャンク数
-- **画像理解** — Chat への画像添付 + `analyze_image` ツール（`vision_llama` 接続）
+- **画像理解** — Chat への画像添付 + `analyze_image` ツール（`vision.image_understanding` 用途）
 - **葛籠連携** — Chat 添付の葛籠アーカイブ + `list_albums` / `get_media` ツール（`tsuzura` 接続）
 
 ### その他
@@ -144,8 +144,6 @@ Web 検索は searfront（`/v1/search`）経由です。接続画面で URL・�
 | `CHAT_SUMMARY_LLM` | 要約に llama.cpp を使う | `false` |
 | `CHAT_CONTEXT_TOKEN_WARN_RATIO` | 推定 tokens が context の何割で警告するか | `0.75` |
 | `CHAT_RESPONSE_TOKEN_RESERVE` | 回答用に空ける tokens | `2000` |
-| `STYLE_PLAN_CONNECTION_KEY` | プロンプト変換の既定接続（UI 未設定時のフォールバック） | `llama_cpp` |
-| `DEFAULT_CHAT_CONNECTION_KEY` | チャットの既定接続（UI 未設定時のフォールバック） | `llama_cpp` |
 | `MEMO_RAG_ENABLED` | メモ RAG（有効化） | `true` |
 | `MEMO_RAG_MODE` | `tool`=recall_memos ツールで必要時取得 / `inject`=毎ターン自動注入 | `tool` |
 | `MAIN_LLM_TOOL_MODE` | 通常 Chat のメインLLMに渡すツール範囲。`restricted`/`read_only`=読み取り系のみ、`all`=write 系も含む、`none`=無効 | `restricted` |

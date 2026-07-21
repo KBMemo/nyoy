@@ -161,9 +161,11 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 
 ## 9. Legacy key監査
 
-`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`について生成履歴とModel metadataに旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
+`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`について生成履歴に旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
 
-2026-07-21のdevelopment DB監査では、Model metadataと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seed定義と外部運用コマンドの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
+2026-07-21のdevelopment DB監査では、Model associationと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seed定義と互換API、運用runbookの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、seed・`NyoyConnectionStore`・style plan履歴操作・外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
+
+2026-07-22にNyoy以外のローカルworkspaceも検索した結果、旧ServiceConnection keyを直接指定する外部実行scriptは見つからなかった。ただしNyoy内部の初回seedと互換APIに参照が残るため、`legacy_key`撤去は保留と判断した。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明は削除した。
 
 `LlmUsageResolver.llama_client_for`、`EmbeddingClient`、`VisionChatService`は有効な用途assignmentを解決できない場合に明示エラーを返す。`LlamaCppClient`は既定接続を持たず、解決済み`base_url`を必須引数として受け取る。これによりassignmentの設定不備が別モデルへの暗黙接続として隠れない。
 
@@ -178,3 +180,5 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 ```bash
 STRICT=1 bin/rails llm_usages:audit
 ```
+
+Kamal deploy後は`.kamal/hooks/post-deploy`が不足用途だけをseedしてからstrict監査を実行する。監査失敗時は新コンテナの起動完了後にdeployコマンドを失敗終了させるため、出力を確認して設定を修復する。
