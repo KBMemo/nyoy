@@ -6,6 +6,7 @@ require_relative "../lib/prompt_style_seeds"
 require_relative "../lib/render_preset_seeds"
 require_relative "../lib/sd_prompt_template_seeds"
 require_relative "../lib/llm_sampling_preset_seeds"
+require_relative "../lib/llm_usage_assignment_seeds"
 
 # Phase 1: capability layer (sd_model_profiles / lora_profiles).
 CapabilitySeeds.seed!
@@ -18,6 +19,7 @@ RenderPresetSeeds.seed!
 ServiceConnectionSeeds.seed!
 ChatModelSeeds.seed!
 LlmSamplingPresetSeeds.seed!
+LlmUsageAssignmentSeeds.seed!
 
 [
   {

@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 2 assignment基盤（2026-07-21）
+**ステータス:** Phase 3 既存設定からのassignment移行（2026-07-21）
 
 ## 1. 目的
 
@@ -73,6 +73,10 @@ AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約で
 profile実装名は保持しない。AgentGraph profileとModel選択を独立させるためである。
 
 Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化する。現行互換として`chat`は`text_generation`と`tool_calling`、画像入力modalitiesは`vision`、`embedding(s)`は`embedding`を満たす。assignment保存時に主Modelとfallback Modelの両方を検証する。
+
+`LlmUsageAssignmentSeeds.seed!`は現在のAppSettingと有効なServiceConnectionから、未登録用途だけを移行する。既存assignmentは再seedしても上書きしない。AgentGraphの専用Modelが未設定なら通常Chat Modelを使い、専用Modelがある場合は通常Chat Modelを明示fallbackとして保存する。Vision・Embedding Modelが未登録の場合は、それぞれの接続から能力metadata付きで作成する。
+
+`db:seed`はServiceConnection、Chat Model、sampling presetの後にassignment seedを実行する。productionで通常deploy時にseedを省略している場合は、Phase 3の反映時に`LlmUsageAssignmentSeeds.seed!`を一度明示実行する。
 
 ## 5. 不変条件
 
