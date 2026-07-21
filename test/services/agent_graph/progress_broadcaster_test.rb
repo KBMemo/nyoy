@@ -8,7 +8,7 @@ class AgentGraphProgressBroadcasterTest < ActiveSupport::TestCase
   setup do
     ChatModelCatalog.seed!
     @chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
-    AppSetting.instance.update!(research_draft_model_id: "gpt-oss", research_draft_fallback: "main")
+    AppSetting.instance.update!(research_draft_fallback: "main")
   end
 
   test "evidence pack progress omits model name" do

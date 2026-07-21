@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_060000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_070000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -85,18 +85,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_060000) do
   end
 
   create_table "app_settings", force: :cascade do |t|
-    t.string "agent_graph_intent_model_id"
     t.jsonb "agent_graph_role_profiles", default: {}, null: false
     t.datetime "created_at", null: false
-    t.string "default_chat_connection_key"
-    t.string "default_llm_sampling_preset_key"
-    t.string "default_style_plan_connection_key"
-    t.string "evidence_evaluator_model_id"
-    t.string "final_answer_model_id"
     t.datetime "memo_knowledge_last_ingested_at"
     t.string "research_draft_fallback", default: "main", null: false
-    t.string "research_draft_model_id"
-    t.string "research_planner_model_id"
     t.datetime "updated_at", null: false
   end
 

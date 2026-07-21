@@ -45,7 +45,7 @@ class AppSettingsControllerTest < ActionDispatch::IntegrationTest
       "intent" => "hybrid_llm"
     }, setting.agent_graph_role_profiles)
     assert_equal "template", setting.research_draft_fallback
-    assert_nil setting.default_chat_connection_key
-    assert_nil setting.research_draft_model_id
+    assert_not setting.has_attribute?(:default_chat_connection_key)
+    assert_not setting.has_attribute?(:research_draft_model_id)
   end
 end

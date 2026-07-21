@@ -2,7 +2,6 @@
 
 class ServiceConnectionLegacyKeyAudit
   REFERENCE_COLUMNS = {
-    "app_settings" => %w[default_chat_connection_key default_style_plan_connection_key],
     "image_generations" => %w[style_plan_connection_key],
     "img2img_generations" => %w[style_plan_connection_key],
     "memo_illustrations" => %w[style_plan_connection_key]

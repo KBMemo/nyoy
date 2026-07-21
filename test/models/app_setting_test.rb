@@ -31,16 +31,6 @@ class AppSettingTest < ActiveSupport::TestCase
     assert_in_delta 0.8, params["top_p"]
   end
 
-  test "legacy model columns do not overwrite usage assignments" do
-    assignment = LlmUsageAssignment.find_by!(usage_key: "agent.draft")
-    original_model = assignment.model
-
-    AppSetting.instance.update!(research_draft_model_id: "gpt-oss")
-
-    assert_equal original_model, assignment.reload.model
-    assert_equal original_model, AppSetting.research_draft_model
-  end
-
   test "stores draft role profile through virtual attribute" do
     setting = AppSetting.instance
     setting.agent_graph_draft_profile = "llm"

@@ -92,7 +92,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 通常Chatではユーザーがチャット作成時に選んだModelを引き続き優先し、`chat.default`は未指定時の既定Modelを決める。画像生成recordが保持する`style_plan_connection_key`も履歴再現性のため優先し、新規recordの既定だけをassignmentから解決する。
 
-旧AppSettingの接続・Model・sampling preset columnは初回seedの移行元としてのみ読む。変更を既存assignmentへ反映するdual-writeは廃止し、runtimeと管理画面は`LlmUsageAssignment`を正本とする。旧列はrollback確認期間の退避データとしてDBに残すが、画面・strong parameters・validationから除外する。
+旧AppSettingの接続・Model・sampling preset columnからassignmentへの移行は完了した。変更を既存assignmentへ反映するdual-writeを廃止した後、移行安全弁付きmigrationで旧8列も削除した。runtime、管理画面、初回seedはいずれも`LlmUsageAssignment`を正本とする。
 
 ## 6. Connection adapter
 
@@ -107,7 +107,7 @@ Modelの既存`capabilities`と`modalities`は`LlmModelCapabilities`で正規化
 
 従来の`CHAT_BUILTIN_KEYS`、`chat_backends`、`chat_keys`は削除した。Chat catalogはmodel endpointのadapterとModel capabilityから候補を作る。llama-switchd inventoryとreconciliationは`adapter=llama_cpp`を管理対象とし、`gpt_oss`や`vision_llama`等の用途名を列挙しない。
 
-llama-server停止・削除前の用途表示は、有効なassignmentの主Model・fallback ModelからConnectionを逆引きする。assignmentがまだ1件もない移行前DBだけ、旧AppSetting判定へfallbackする。
+llama-server停止・削除前の用途表示は、有効なassignmentの主Model・fallback ModelからConnectionを逆引きする。assignment未登録時に旧AppSettingへ戻る経路は持たない。
 
 prompt conversion設定は旧UI互換のためmodel endpointに残しているが、最終的なsampling値の所有者はassignmentまたはsampling presetである。
 
@@ -147,10 +147,11 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 8. 用途assignment管理UIへ移行し、旧AppSetting dual-writeを削除する（完了）
 9. 用途選択環境変数を廃止し、初回seedをModel基準へ統一する（完了）
 10. runtimeの旧接続キーfallbackを廃止し、用途assignmentを必須化する（完了）
+11. 旧AppSettingのLLM設定8列を安全弁付きmigrationで削除する（完了）
 
 ## 9. Legacy key監査
 
-`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`についてAppSetting退避列、生成履歴、Model metadataに旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
+`bin/rails service_connections:legacy_key_audit`は、各`ServiceConnection.legacy_key`について生成履歴とModel metadataに旧keyが残っていないかJSONで報告する。`STRICT=1`を付けると旧参照が1件でもあれば終了statusを失敗にする。
 
 2026-07-21のdevelopment DB監査では、Model metadataと生成履歴はcanonical keyへ移行済みだった。runtimeのassignment未登録時fallbackも廃止済みである。`legacy_key`自体は初期seed定義と外部運用コマンドの移行期間に使うため、現時点では削除しない。削除条件はDB監査がclearであり、外部クライアントがcanonical keyまたはusage keyからの動的解決へ移行していることである。
 

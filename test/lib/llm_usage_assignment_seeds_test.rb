@@ -18,15 +18,13 @@ class LlmUsageAssignmentSeedsTest < ActiveSupport::TestCase
     assert_equal "llama_cpp", connection_key_for("utility.chat_history_summary")
   end
 
-  test "uses configured agent model and records the chat model as fallback" do
-    setting = AppSetting.instance
-    setting.update!(research_draft_model_id: "gpt-oss")
-
+  test "seeds agent usages from the default chat model" do
     LlmUsageAssignmentSeeds.seed!
 
+    chat = LlmUsageAssignment.find_by!(usage_key: "chat.default")
     assignment = LlmUsageAssignment.find_by!(usage_key: "agent.draft")
-    assert_equal "gpt-oss", assignment.model.model_id
-    assert_equal ServiceConnection.find_by!(key: "llama_cpp").server_model, assignment.fallback_model.model_id
+    assert_equal chat.model, assignment.model
+    assert_nil assignment.fallback_model
   end
 
   test "preserves an existing assignment" do
@@ -37,28 +35,6 @@ class LlmUsageAssignmentSeedsTest < ActiveSupport::TestCase
 
     assert_equal existing.id, LlmUsageAssignment.find_by!(usage_key: "chat.default").id
     assert_equal custom_model, existing.reload.model
-  end
-
-  test "copies the current default sampling preset to chat assignment" do
-    preset = LlmSamplingPreset.create!(key: "seed_test", name: "Seed test", params: { "temperature" => 0.2 })
-    AppSetting.instance.update!(default_llm_sampling_preset_key: preset.key)
-
-    LlmUsageAssignmentSeeds.seed!
-
-    assert_equal preset, LlmUsageAssignment.find_by!(usage_key: "chat.default").llm_sampling_preset
-  end
-
-  test "does not overwrite existing assignments when legacy AppSetting changes" do
-    LlmUsageAssignmentSeeds.seed!
-    chat = LlmUsageAssignment.find_by!(usage_key: "chat.default")
-    original_model = chat.model
-
-    AppSetting.instance.update!(
-      default_chat_connection_key: "gpt_oss",
-      research_draft_model_id: ServiceConnection.find_by!(key: "llama_cpp").server_model
-    )
-
-    assert_equal original_model, chat.reload.model
   end
 
   private

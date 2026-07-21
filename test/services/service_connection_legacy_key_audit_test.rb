@@ -12,7 +12,12 @@ class ServiceConnectionLegacyKeyAuditTest < ActiveSupport::TestCase
   end
 
   test "reports legacy references by storage location" do
-    AppSetting.instance.update_column(:default_chat_connection_key, "llama_cpp")
+    generation = ImageGeneration.create!(
+      japanese_prompt: "legacy audit",
+      sd_model: "flat2d",
+      loras: "[]"
+    )
+    generation.update_column(:style_plan_connection_key, "llama_cpp")
     model = Model.create!(
       provider: "openai",
       model_id: "legacy-audit-model",
@@ -25,11 +30,12 @@ class ServiceConnectionLegacyKeyAuditTest < ActiveSupport::TestCase
     row = ServiceConnectionLegacyKeyAudit.call.find { |item| item.fetch("legacy_key") == "llama_cpp" }
 
     assert_equal 2, row.fetch("reference_count")
-    assert_equal 1, row.dig("references", "app_settings.default_chat_connection_key")
+    assert_equal 1, row.dig("references", "image_generations.style_plan_connection_key")
     assert_equal 1, row.dig("references", "models.metadata.connection_key")
     assert_not row.fetch("database_clear")
   ensure
     model&.destroy!
+    generation&.destroy!
   end
 
   test "marks connection clear when database only uses canonical key" do
