@@ -50,14 +50,15 @@ section.space-y-4 aria-label="LLM用途割当"
                 options_for_select(model_options, assignment.fallback_model_id),
                 { include_blank: "なし" },
                 class: kb_field_input_classes
-          div
-            = form.label :llm_sampling_preset_id, "Sampling preset", class: kb_label
-            = form.collection_select :llm_sampling_preset_id,
-                @sampling_presets,
-                :id,
-                :name,
-                { include_blank: "指定なし" },
-                class: kb_field_input_classes
+          - if definition.capabilities.include?(:text_generation)
+            div
+              = form.label :llm_sampling_preset_id, "Sampling preset", class: kb_label
+              = form.collection_select :llm_sampling_preset_id,
+                  @sampling_presets,
+                  :id,
+                  :name,
+                  { include_blank: "指定なし" },
+                  class: kb_field_input_classes
           .flex.items-end
             label.flex.min-h-10.items-center.gap-2
               = form.check_box :enabled, class: "kb-control-accent"

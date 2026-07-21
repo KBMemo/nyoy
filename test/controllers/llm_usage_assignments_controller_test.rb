@@ -17,7 +17,8 @@ class LlmUsageAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "article[id^='llm_usage_assignment_']", count: LlmUsageCatalog.keys.size
     assert_select "select[name='llm_usage_assignment[model_id]']", count: LlmUsageCatalog.keys.size
     assert_select "select[name='llm_usage_assignment[fallback_model_id]']", count: LlmUsageCatalog.keys.size
-    assert_select "select[name='llm_usage_assignment[llm_sampling_preset_id]']", count: LlmUsageCatalog.keys.size
+    generation_usage_count = LlmUsageCatalog.all.count { |definition| definition.capabilities.include?(:text_generation) }
+    assert_select "select[name='llm_usage_assignment[llm_sampling_preset_id]']", count: generation_usage_count
   end
 
   test "update changes model fallback preset and enabled state" do
@@ -56,5 +57,18 @@ class LlmUsageAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select "[role='alert']", text: /必要な能力を満たしていません/
     assert_equal "vision.image_understanding", assignment.reload.usage_key
+  end
+
+  test "update rejects a sampling preset for an embedding usage" do
+    assignment = LlmUsageAssignment.find_by!(usage_key: "embedding.memo_knowledge")
+    preset = LlmSamplingPreset.enabled.first!
+
+    patch llm_usage_assignment_path(assignment), params: {
+      llm_usage_assignment: { llm_sampling_preset_id: preset.id, enabled: "1" }
+    }
+
+    assert_response :unprocessable_entity
+    assert_select "[role='alert']", text: /テキスト生成用途にだけ設定できます/
+    assert_nil assignment.reload.llm_sampling_preset
   end
 end

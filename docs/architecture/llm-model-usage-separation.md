@@ -67,7 +67,7 @@ AgentGraphの`intent.hybrid_llm`等のprofile選択とModel選択は別契約で
 | `usage_key` | `LlmUsageCatalog`の一意な用途key |
 | `model_id` | 主Model |
 | `fallback_model_id` | 任意の明示fallback Model |
-| `llm_sampling_preset_id` | 任意のsampling preset |
+| `llm_sampling_preset_id` | text generation用途だけに設定できる任意のsampling preset |
 | `enabled` | assignmentの利用可否 |
 
 管理画面の「LLM用途」では、用途ごとに主Model、明示fallback Model、sampling preset、有効状態を更新する。Model候補は用途の必須capabilityを満たし、有効なConnectionへ解決できるものに絞る。既存割当が能力不足または接続不能になった場合は候補から黙って除去せず、現在値を残して警告表示する。
@@ -154,6 +154,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 14. Model metadataの`connection_key`を安全弁付きmigrationで削除する（完了）
 15. 用途assignmentにConnection未関連Modelを保存できないvalidationを追加する（完了）
 16. 用途assignmentのModel接続をLLM model endpoint adapterに限定する（完了）
+17. sampling presetをtext generation用途だけに制限する（完了）
 
 ## 9. Legacy key監査
 

@@ -98,6 +98,24 @@ class LlmUsageAssignmentTest < ActiveSupport::TestCase
     assert_includes assignment.errors[:model], "の接続はLLMモデルエンドポイントではありません"
   end
 
+  test "allows sampling presets only for text generation usages" do
+    preset = LlmSamplingPreset.create!(key: "usage_test", name: "Usage test", params: { "temperature" => 0.5 })
+    text_assignment = LlmUsageAssignment.new(
+      usage_key: "agent.draft",
+      model: text_model,
+      llm_sampling_preset: preset
+    )
+    embedding_assignment = LlmUsageAssignment.new(
+      usage_key: "embedding.memo_knowledge",
+      model: embedding_model,
+      llm_sampling_preset: preset
+    )
+
+    assert text_assignment.valid?
+    assert_not embedding_assignment.valid?
+    assert_includes embedding_assignment.errors[:llm_sampling_preset], "はテキスト生成用途にだけ設定できます"
+  end
+
   private
 
   def text_model

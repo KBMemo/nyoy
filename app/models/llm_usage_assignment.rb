@@ -9,6 +9,7 @@ class LlmUsageAssignment < ApplicationRecord
   validate :models_must_support_usage
   validate :models_must_have_connections
   validate :fallback_model_must_differ
+  validate :sampling_preset_requires_text_generation
 
   scope :enabled, -> { where(enabled: true) }
 
@@ -55,5 +56,12 @@ class LlmUsageAssignment < ApplicationRecord
     return if connection.model_endpoint?
 
     errors.add(attribute, "の接続はLLMモデルエンドポイントではありません")
+  end
+
+  def sampling_preset_requires_text_generation
+    return unless llm_sampling_preset
+    return if usage_key.present? && LlmUsageCatalog.keys.include?(usage_key) && definition.capabilities.include?(:text_generation)
+
+    errors.add(:llm_sampling_preset, "はテキスト生成用途にだけ設定できます")
   end
 end
