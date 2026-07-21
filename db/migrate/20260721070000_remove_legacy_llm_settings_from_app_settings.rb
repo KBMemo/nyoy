@@ -75,11 +75,12 @@ class RemoveLegacyLlmSettingsFromAppSettings < ActiveRecord::Migration[8.1]
     return if model_id.blank?
 
     now = quote(Time.current)
+    sampling_preset_sql = sampling_preset_id.present? ? quote(sampling_preset_id) : "NULL"
     execute <<~SQL.squish
       INSERT INTO llm_usage_assignments
         (usage_key, model_id, llm_sampling_preset_id, enabled, created_at, updated_at)
       VALUES
-        (#{quote(usage_key)}, #{quote(model_id)}, #{quote(sampling_preset_id)}, TRUE, #{now}, #{now})
+        (#{quote(usage_key)}, #{quote(model_id)}, #{sampling_preset_sql}, TRUE, #{now}, #{now})
       ON CONFLICT (usage_key) DO NOTHING
     SQL
   end

@@ -35,4 +35,14 @@ class RemoveLegacyLlmSettingsFromAppSettingsTest < ActiveSupport::TestCase
     assert_includes inserted, [ "agent.planner", 10, nil ]
     assert_equal 7, inserted.size
   end
+
+  test "writes SQL NULL when a sampling preset is absent" do
+    migration = RemoveLegacyLlmSettingsFromAppSettings.new
+    statements = []
+    migration.define_singleton_method(:execute) { |sql| statements << sql }
+
+    migration.send(:insert_assignment, "chat.default", 10)
+
+    assert_match(/'chat\.default', '10', NULL, TRUE/, statements.fetch(0))
+  end
 end
