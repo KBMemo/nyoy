@@ -14,13 +14,11 @@ class StylePlanModelCatalogTest < ActiveSupport::TestCase
     assert_instance_of LlamaCppClient, client
   end
 
-  test "default_connection_key prefers config when enabled" do
-    original = Rails.application.config.x.nyoy.style_plan_connection_key
-    Rails.application.config.x.nyoy.style_plan_connection_key = "llama_cpp"
+  test "default_connection_key follows style plan usage assignment" do
+    model = Model.find_by!(provider: "openai", model_id: "gpt-oss")
+    LlmUsageAssignment.create!(usage_key: "image.style_plan", model: model)
 
-    assert_equal "llama_cpp", StylePlanModelCatalog.default_connection_key
-  ensure
-    Rails.application.config.x.nyoy.style_plan_connection_key = original
+    assert_equal "gpt_oss", StylePlanModelCatalog.default_connection_key
   end
 
   test "options_for_select lists enabled chat backends" do

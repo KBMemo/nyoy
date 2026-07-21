@@ -41,7 +41,7 @@ sampling値は接続特性ではない。同じModelでも通常Chat、planner�
 
 | usage key | 現在の設定元 | 現在のfallback |
 | --- | --- | --- |
-| `chat.default` | `AppSetting.default_chat_connection_key`、Chatの`Model` | `DEFAULT_CHAT_CONNECTION_KEY` |
+| `chat.default` | `AppSetting.default_chat_connection_key`、Chatの`Model` | 有効なModel catalogの先頭 |
 | `agent.intent` | `AppSetting.agent_graph_intent_model_id` | 通常Chat model |
 | `agent.planner` | `AppSetting.research_planner_model_id` | 通常Chat model |
 | `agent.evidence_evaluator` | `AppSetting.evidence_evaluator_model_id` | heuristicまたは通常Chat model |
@@ -50,7 +50,7 @@ sampling値は接続特性ではない。同じModelでも通常Chat、planner�
 | `vision.image_understanding` | `ServiceConnection key=vision_llama` | なし（retry後に失敗） |
 | `embedding.memo_knowledge` | `ServiceConnection key=embeddings` | なし |
 | `embedding.prompt_knowledge` | `ServiceConnection key=embeddings` | なし |
-| `image.style_plan` | `default_style_plan_connection_key`、生成recordの`style_plan_connection_key` | `STYLE_PLAN_CONNECTION_KEY` |
+| `image.style_plan` | `default_style_plan_connection_key`、生成recordの`style_plan_connection_key` | `chat.default`のModel |
 | `image.direct_prompt` | `style_plan_connection_key` | style plan既定接続 |
 | `utility.chat_history_summary` | `LlamaCppClient`既定接続 | `llama_cpp` |
 | `utility.memo_chunk_compression` | `LlamaCppClient`既定接続 | `llama_cpp` |
@@ -123,7 +123,7 @@ llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とす�
 
 llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正本とする。`LLAMA_CPP_URL`、`GPT_OSS_LLAMA_CPP_URL`、`VISION_LLAMA_CPP_URL`、`EMBEDDINGS_URL`と対応するModel環境変数は、初回の`ServiceConnectionSeeds`用入力としてのみ利用する。接続レコードが存在しない、無効、または値が空の場合も、実行時に環境変数へfallbackしない。
 
-これにより、管理画面で無効化した接続が環境変数によって再び利用される経路をなくす。LLM以外の外部サービスは本分離の対象外であり、既存の環境変数fallbackを維持する。既定用途を選ぶ`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`は接続URLではないため、旧AppSetting互換として引き続き残す。
+これにより、管理画面で無効化した接続が環境変数によって再び利用される経路をなくす。LLM以外の外部サービスは本分離の対象外であり、既存の環境変数fallbackを維持する。用途選択に使っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`も廃止し、初回seedはModel catalogからassignmentを作る。
 
 ## 7. 不変条件
 
@@ -145,5 +145,6 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 6. 用途名を含む接続keyをserver指向keyへ移行する（完了）
 7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する（完了）
 8. 用途assignment管理UIへ移行し、旧AppSetting dual-writeを削除する（完了）
+9. 用途選択環境変数を廃止し、初回seedをModel基準へ統一する（完了）
 
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。

@@ -70,9 +70,6 @@ Rails.application.config.x.nyoy.tap do |config|
   config.chat_summary_max_tokens = ENV.fetch("CHAT_SUMMARY_MAX_TOKENS", 300).to_i
   config.memo_rag_max_tokens = ENV.fetch("MEMO_RAG_MAX_TOKENS", 1500).to_i
   config.chat_response_token_reserve = ENV.fetch("CHAT_RESPONSE_TOKEN_RESERVE", 2000).to_i
-  config.style_plan_connection_key = ENV.fetch("STYLE_PLAN_CONNECTION_KEY", "llama_cpp")
-  # UI（設定 → 既定モデル）未設定時のフォールバック。DB の app_settings が優先される。
-  config.default_chat_connection_key = ENV.fetch("DEFAULT_CHAT_CONNECTION_KEY", "llama_cpp")
   config.agent_graph_role_profiles = {
     "draft" => ENV["AGENT_GRAPH_DRAFT_PROFILE"],
     "evidence_evaluator" => ENV["AGENT_GRAPH_EVIDENCE_EVALUATOR_PROFILE"],

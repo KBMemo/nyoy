@@ -13,8 +13,8 @@ module LlmUsageAssignmentSeeds
   def seed!
     ChatModelCatalog.seed!
     setting = AppSetting.instance
-    chat_model = model_for_chat_connection(legacy_connection_key(setting, :default_chat_connection_key))
-    style_model = model_for_chat_connection(legacy_connection_key(setting, :default_style_plan_connection_key))
+    chat_model = ChatModelCatalog.default_model
+    style_model = chat_model
     utility_model = model_for_chat_connection("llama_cpp")
     vision_model = model_for_connection("vision_llama", capabilities: [ "chat" ], input_modalities: %w[text image])
     embedding_model = model_for_connection("embeddings", capabilities: [ "embedding" ], input_modalities: [ "text" ])
@@ -86,13 +86,5 @@ module LlmUsageAssignmentSeeds
   def default_sampling_preset(setting)
     key = setting.default_llm_sampling_preset_key.to_s.presence
     LlmSamplingPreset.enabled.find_by(key: key) if key
-  end
-
-  def legacy_connection_key(setting, column)
-    stored = setting.public_send(column).to_s.presence
-    return stored if stored
-
-    config_key = column == :default_chat_connection_key ? :default_chat_connection_key : :style_plan_connection_key
-    Rails.application.config.x.nyoy.public_send(config_key)
   end
 end
