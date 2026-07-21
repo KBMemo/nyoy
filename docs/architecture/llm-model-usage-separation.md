@@ -173,7 +173,7 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 
 ## 10. 用途assignment監査
 
-`bin/rails llm_usages:audit`は全用途についてassignment、Model能力、Connection種別・有効状態、fallbackをJSONで報告する。状態は`healthy`、`degraded`、`unavailable`、`disabled`、`invalid`、`missing`のいずれかになる。`STRICT=1`では全用途が`healthy`でない限り終了statusを失敗にする。
+`bin/rails llm_usages:audit`は全用途についてassignment、Model能力、Connection種別・有効状態、fallbackをJSONで報告する。llama.cpp接続ではModel IDとruntime Alias snapshot（`ServiceConnection.server_model`）の一致も検査する。状態は`healthy`、`degraded`、`unavailable`、`disabled`、`invalid`、`missing`のいずれかになる。`STRICT=1`では全用途が`healthy`でない限り終了statusを失敗にする。
 
 移行・deploy・Connection変更後は次を実行する。
 

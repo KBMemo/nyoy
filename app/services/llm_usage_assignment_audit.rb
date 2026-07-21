@@ -44,13 +44,15 @@ class LlmUsageAssignmentAudit
 
       connection = model.service_connection
       missing = definition.capabilities - LlmModelCapabilities.for(model)
+      alias_matches = runtime_alias_matches?(model, connection)
       {
         "id" => model.id,
         "model_id" => model.model_id,
         "missing_capabilities" => missing.map(&:to_s),
         "connection_key" => connection&.key,
         "connection_enabled" => connection&.enabled? == true,
-        "available" => missing.empty? && connection&.model_endpoint? == true && connection.enabled?
+        "runtime_alias_matches" => alias_matches,
+        "available" => missing.empty? && alias_matches && connection&.model_endpoint? == true && connection.enabled?
       }
     end
 
@@ -61,7 +63,9 @@ class LlmUsageAssignmentAudit
         issues.concat(assignment.errors.map { |error| "#{error.attribute}: #{error.message}" })
       end
       issues << "primary_unavailable" unless primary&.fetch("available")
+      issues << "primary_alias_drift" if primary && !primary.fetch("runtime_alias_matches")
       issues << "fallback_unavailable" if fallback && !fallback.fetch("available")
+      issues << "fallback_alias_drift" if fallback && !fallback.fetch("runtime_alias_matches")
       issues.uniq
     end
 
@@ -72,6 +76,12 @@ class LlmUsageAssignmentAudit
       return "degraded" if fallback&.fetch("available")
 
       "unavailable"
+    end
+
+    def runtime_alias_matches?(model, connection)
+      return true unless connection&.adapter == "llama_cpp"
+
+      model.model_id.to_s == connection.server_model.to_s
     end
   end
 end

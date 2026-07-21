@@ -38,4 +38,23 @@ class LlmUsageAssignmentAuditTest < ActiveSupport::TestCase
     assert_includes row.fetch("issues"), "primary_unavailable"
     assert row.dig("fallback", "available")
   end
+
+  test "reports llama model alias drift as unavailable" do
+    connection = service_connections(:llama_cpp)
+    model = Model.create!(
+      provider: "openai",
+      model_id: "stale-runtime-alias",
+      name: "Stale runtime alias",
+      capabilities: [ "chat" ],
+      modalities: { "input" => [ "text" ], "output" => [ "text" ] },
+      service_connection: connection
+    )
+    LlmUsageAssignment.find_by!(usage_key: "agent.draft").update!(model: model)
+
+    row = LlmUsageAssignmentAudit.call.find { |item| item.fetch("usage_key") == "agent.draft" }
+
+    assert_equal "unavailable", row.fetch("status")
+    assert_not row.dig("primary", "runtime_alias_matches")
+    assert_includes row.fetch("issues"), "primary_alias_drift"
+  end
 end
