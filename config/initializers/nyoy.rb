@@ -2,6 +2,8 @@
 
 Rails.application.config.x.nyoy = ActiveSupport::OrderedOptions.new
 Rails.application.config.x.nyoy.tap do |config|
+  # Legacy llama endpoint variables bootstrap ServiceConnection records only.
+  # Runtime requests resolve model endpoints from the database.
   config.llama_cpp_url = ENV.fetch("LLAMA_CPP_URL", "http://balvenie:10010")
   config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-e4b-it-qat-ud-q4-k-xl")
   config.gpt_oss_llama_cpp_url = ENV["GPT_OSS_LLAMA_CPP_URL"]

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module NyoyConnectionStore
+  DATABASE_ONLY_KEYS = %i[llama_cpp gpt_oss vision_llama embeddings].freeze
+
   FALLBACKS = {
     llama_cpp: { url: :llama_cpp_url, model: :llama_model },
     gpt_oss: { url: :gpt_oss_llama_cpp_url, model: :gpt_oss_model, url_fallback: :llama_cpp_url },
@@ -19,6 +21,7 @@ module NyoyConnectionStore
     def url(key)
       record = connection(key)
       return record.base_url if record&.enabled? && record.base_url.present?
+      return if database_only?(key)
 
       env_value(key, :url) if FALLBACKS.key?(key.to_sym)
     end
@@ -26,6 +29,7 @@ module NyoyConnectionStore
     def server_model(key)
       record = connection(key)
       return record.server_model if record&.enabled? && record.server_model.present?
+      return if database_only?(key)
 
       env_value(key, :model) if FALLBACKS.key?(key.to_sym)
     end
@@ -33,6 +37,7 @@ module NyoyConnectionStore
     def api_token(key)
       record = connection(key)
       return record.api_token if record&.enabled? && record.api_token.present?
+      return if database_only?(key)
 
       env_value(key, :token) if FALLBACKS.key?(key.to_sym)
     end
@@ -40,6 +45,7 @@ module NyoyConnectionStore
     def enabled?(key)
       record = connection(key)
       return record.enabled? if record
+      return false if database_only?(key)
 
       FALLBACKS.key?(key.to_sym)
     end
@@ -54,6 +60,10 @@ module NyoyConnectionStore
       return nil unless table_ready?
 
       ServiceConnection.resolve(key)
+    end
+
+    def database_only?(key)
+      DATABASE_ONLY_KEYS.include?(key.to_sym)
     end
 
     def table_ready?

@@ -12,12 +12,28 @@ class NyoyConnectionStoreTest < ActiveSupport::TestCase
     assert_equal "gemma-4-e4b-it-qat-ud-q4-k-xl", NyoyConnectionStore.server_model(:llama_cpp)
   end
 
-  test "falls back to environment defaults when connection missing" do
+  test "does not fall back to environment defaults when llm connection is missing" do
     ServiceConnection.delete_all
     NyoyConnectionStore.clear_cache!
 
-    assert_equal Rails.application.config.x.nyoy.llama_cpp_url, NyoyConnectionStore.url(:llama_cpp)
-    assert_equal Rails.application.config.x.nyoy.llama_model, NyoyConnectionStore.server_model(:llama_cpp)
+    assert_nil NyoyConnectionStore.url(:llama_cpp)
+    assert_nil NyoyConnectionStore.server_model(:llama_cpp)
+    assert_not NyoyConnectionStore.enabled?(:llama_cpp)
+  end
+
+  test "does not fall back to environment defaults when llm connection is disabled" do
+    service_connections(:llama_cpp).update!(enabled: false)
+
+    assert_nil NyoyConnectionStore.url(:llama_cpp)
+    assert_nil NyoyConnectionStore.server_model(:llama_cpp)
+    assert_not NyoyConnectionStore.enabled?(:llama_cpp)
+  end
+
+  test "keeps environment fallback for non-llm connections" do
+    ServiceConnection.where(key: "readability").delete_all
+
+    assert_equal Rails.application.config.x.nyoy.readability_url, NyoyConnectionStore.url(:readability)
+    assert NyoyConnectionStore.enabled?(:readability)
   end
 
   test "reads updated url without explicit cache clear" do

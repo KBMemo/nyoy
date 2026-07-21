@@ -1,6 +1,6 @@
 # LLMモデル・用途・接続の分離
 
-**ステータス:** Phase 6 server指向の接続key移行（2026-07-21）
+**ステータス:** Phase 7 用途別URL環境変数fallbackの廃止（2026-07-21）
 
 ## 1. 目的
 
@@ -115,7 +115,13 @@ llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とす�
 
 移行前のkeyは`ServiceConnection.legacy_key`に保存する。`ServiceConnection.resolve`は現行key、旧keyの順で検索するため、環境変数、旧AppSetting、既存の運用コマンドは移行期間中も利用できる。新規のカスタムllama.cpp接続も保存時にserver指向keyへ正規化し、入力された`llm_*` keyを`legacy_key`として保持する。
 
-移行migrationはConnectionのkey変更と同時に、AppSettingの既定接続、画像生成履歴のstyle plan接続、Model metadataの`connection_key`を更新する。用途assignmentはModelを参照しているため更新不要である。旧keyの削除はPhase 7の環境変数fallback整理後に別途判断する。
+移行migrationはConnectionのkey変更と同時に、AppSettingの既定接続、画像生成履歴のstyle plan接続、Model metadataの`connection_key`を更新する。用途assignmentはModelを参照しているため更新不要である。`legacy_key`は旧運用コマンドとの互換識別子として残し、利用状況を確認してから別途削除を判断する。
+
+### 6.2 Runtime connection source
+
+llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正本とする。`LLAMA_CPP_URL`、`GPT_OSS_LLAMA_CPP_URL`、`VISION_LLAMA_CPP_URL`、`EMBEDDINGS_URL`と対応するModel環境変数は、初回の`ServiceConnectionSeeds`用入力としてのみ利用する。接続レコードが存在しない、無効、または値が空の場合も、実行時に環境変数へfallbackしない。
+
+これにより、管理画面で無効化した接続が環境変数によって再び利用される経路をなくす。LLM以外の外部サービスは本分離の対象外であり、既存の環境変数fallbackを維持する。既定用途を選ぶ`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`は接続URLではないため、旧AppSetting互換として引き続き残す。
 
 ## 7. 不変条件
 
@@ -135,6 +141,6 @@ llama.cpp model endpointの接続keyは`llama_server_<server identifier>`とす�
 4. Chat、AgentGraph、Vision、Embedding、画像prompt、補助処理をassignment解決へ移す
 5. `ServiceConnection`の用途依存scope・validation・UIを除去する
 6. 用途名を含む接続keyをserver指向keyへ移行する（完了）
-7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する
+7. 用途別URL環境変数fallbackを非推奨化し、移行期間後に削除する（完了）
 
 各Phaseは旧経路との互換期間を設ける。全consumerの切替前に旧columnや環境変数を削除しない。

@@ -139,6 +139,8 @@ DB_QUEUE_NAME=nyoy_production_queue
 DB_CABLE_NAME=nyoy_production_cable
 
 # 外部 AI サービス（balvenie 等、ネットワーク到達可能な URL に変更）
+# llama endpoint変数は初回db:seedでServiceConnectionを作るためにだけ使用する。
+# 運用開始後の接続先・有効状態は「設定 > 接続」で管理する。
 LLAMA_CPP_URL=http://balvenie:10010
 LLAMA_SWITCHD_URL=http://balvenie:11335
 LLAMA_SWITCHD_TOKEN=...

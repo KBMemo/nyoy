@@ -12,7 +12,7 @@ Chat の `reasoning_effort` が対応モデルへ渡り、思考時間を短縮�
 接続 URL を確認する。
 
 ```bash
-GPT_OSS_URL="$(bin/rails runner 'puts ServiceConnection.find_by!(key: "gpt_oss").base_url')"
+GPT_OSS_URL="$(bin/rails runner 'puts ServiceConnection.resolve("gpt_oss")&.base_url')"
 printf '%s\n' "$GPT_OSS_URL"
 curl -fsS "$GPT_OSS_URL/health"
 curl -fsS "$GPT_OSS_URL/props" | ruby -rjson -e '

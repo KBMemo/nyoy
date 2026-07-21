@@ -137,7 +137,7 @@ assistant メッセージに保存し、Chat UI のメタに表示する。
 | 狙い | Chat 以外の LLM 呼び出しが sticky slot の KV を evict しないようにする |
 | リスク源 | `ChatHistorySummarizer` / `MemoKnowledgeChunkCompressor`（LLM 圧縮は既定オフ）、style plan、その他 `LlamaCppClient` |
 | 案 | Chat 専用インスタンス、slot 帯の分離、非 Chat 呼び出しに別 `id_slot` 方針 |
-| メモ | `gpt_oss`は専用port `10014`へbinding済み。URL未設定時だけ`llama_cpp`へフォールバックする |
+| メモ | `gpt_oss`は専用port `10014`へbinding済み。実行時接続はServiceConnectionを正本とし、未設定・無効時は別接続へフォールバックしない |
 
 `total_slots >= 2` の場合、末尾 `LLAMA_AUX_SLOT_COUNT` slotsをAgentGraphのintent・planner・draft・evidence evaluator・final answer用に予約し、通常Chatは残りのslotだけを使う。補助処理同士の衝突より、対話のsticky cache保護を優先する。`LLAMA_AUX_SLOT_COUNT=0`で従来どおり全slot共有へ戻せる。
 
