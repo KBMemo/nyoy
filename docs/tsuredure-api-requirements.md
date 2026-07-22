@@ -315,7 +315,7 @@ API では公開しない。作成・更新時の格納先は徒然側の既定�
 
 **楽観的ロック（更新時）:**
 
-徒然に `lock_version` は無い。第一案は `updated_at` または `If-Unmodified-Since` ヘッダによる競合検知。将来 `revision` 整数列を追加してもよい。
+徒然に `lock_version` は無い。更新時は `updated_at` パラメータまたは `If-Unmodified-Since` ヘッダを現在値と比較し、不一致なら HTTP 409 / `stale_memo` を返す方式を実装済み。将来、より細粒度な競合管理が必要になった場合は `revision` 整数列を追加してもよい。
 
 **添付・メディア:**
 
@@ -503,7 +503,7 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 | その他分類 | notebooks（目次ツリー）、boards（カンバン）、memo_groups（共有） |
 | 添付 | (1) Active Storage → Git `{slug}.assets/`、(2) 葛籠は本文マクロ `album::` / `image::media:` + `properties.media_album_id` |
 | 削除 | **物理削除**（soft-delete / tombstone なし） |
-| 楽観的ロック | **未実装**（`lock_version` なし）。`updated_at` + `file_committed_at` のみ |
+| 楽観的ロック | ✓ `updated_at` / `If-Unmodified-Since` による条件更新。競合時は HTTP 409 / `stale_memo`（`lock_version` は未採用） |
 | 下書き | `file_committed_at` が `null` の間は下書き状態 |
 
 参照: `site/app/models/memo.rb`, `site/db/schema.rb`
