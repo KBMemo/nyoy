@@ -5,6 +5,8 @@ llama.cpp で `style_id` ベースの最小 JSON 計画を作成し、`SdPromptS
 
 加えて **Chat**（GPT-OSS + 徒然連携）、**Web 検索 / URL 取得**、**メモ RAG** を備え、ローカル AI サービスを `ServiceConnection` で束ねます。
 
+License: [MIT](LICENSE)
+
 ## 機能
 
 ### 画像生成

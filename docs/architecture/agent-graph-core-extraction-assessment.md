@@ -4,7 +4,8 @@
 
 ## 結論
 
-`agent_graph-core` は当面Nyoy repository内のprivate path gemとして維持する。別repository化や公開gem化はまだ行わない。
+`agent_graph-core` は当面Nyoy repository内のpath gemとして維持する。ソースはNyoyと
+同じMITで公開するが、別repository化やRubyGemsへの公開はまだ行わない。
 
 Coreの技術的な分離条件は満たしているが、独立配布を必要とする第二利用者やrelease要件がない。現在分離すると、repository、version、互換性、security updateを管理する負担だけが先に発生する。
 
@@ -20,6 +21,7 @@ Coreの技術的な分離条件は満たしているが、独立配布を必要�
 | workflow追加 | Registry登録形式を固定、DiagnosticGraphで検証済み |
 | role差し替え | 全標準roleで接続済み。vision / memo_writerも実Graph overrideを確認 |
 | persistence / retry | Coreはcontext protocolだけを要求 |
+| license | MIT |
 
 Nodeに残る`ChatTools`、Active Storage、葛籠、Chatへの依存は、具体workflowを実行するNyoy adapterの責務であり、Coreへ移さない。
 
@@ -27,7 +29,6 @@ Nodeに残る`ChatTools`、Active Storage、葛籠、Chatへの依存は、具�
 
 - 第二利用者と要求APIが存在しない
 - 対応RubyがNyoy採用中の4.0.3だけ
-- licenseが`Nonstandard`で再配布条件を確定していない
 - homepage、issue tracker、security policyがNyoy repository前提
 - changelog、release tag、互換性確認の運用がない
 - `0.1.x` public APIを外部利用で検証していない
@@ -42,7 +43,7 @@ Nodeに残る`ChatTools`、Active Storage、葛籠、Chatへの依存は、具�
 2. Nyoyとは独立したrelease cadenceが必要になる
 3. 外部contributorへCoreだけのissue / PR境界が必要になる
 4. Ruby version matrixを定義して継続CIできる
-5. licenseと公開先を確定できる
+5. 独立packageの公開先と保守方針を確定できる
 
 単なるコード量増加や「gemだから」という理由だけではrepositoryを分けない。
 
