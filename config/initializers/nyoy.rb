@@ -4,18 +4,18 @@ Rails.application.config.x.nyoy = ActiveSupport::OrderedOptions.new
 Rails.application.config.x.nyoy.tap do |config|
   # Legacy llama endpoint variables bootstrap ServiceConnection records only.
   # Runtime requests resolve model endpoints from the database.
-  config.llama_cpp_url = ENV.fetch("LLAMA_CPP_URL", "http://balvenie:10010")
+  config.llama_cpp_url = ENV.fetch("LLAMA_CPP_URL", "http://localhost:10010")
   config.llama_model = ENV.fetch("LLAMA_MODEL", "gemma-4-e4b-it-qat-ud-q4-k-xl")
   config.gpt_oss_llama_cpp_url = ENV["GPT_OSS_LLAMA_CPP_URL"]
   config.gpt_oss_model = ENV.fetch("GPT_OSS_MODEL", "gpt-oss")
-  config.llama_switchd_url = ENV.fetch("LLAMA_SWITCHD_URL", "http://balvenie:11335")
+  config.llama_switchd_url = ENV.fetch("LLAMA_SWITCHD_URL", "http://localhost:11335")
   config.llama_switchd_token = ENV["LLAMA_SWITCHD_TOKEN"]
-  config.vision_llama_cpp_url = ENV.fetch("VISION_LLAMA_CPP_URL", "http://balvenie:10021")
+  config.vision_llama_cpp_url = ENV.fetch("VISION_LLAMA_CPP_URL", "http://localhost:10021")
   config.vision_llama_model = ENV.fetch("VISION_LLAMA_MODEL", "qwen3vl-4b-instruct-q4-k-m")
-  config.sd_cpp_url = ENV.fetch("SDCPP_SERVER_URL", "http://balvenie:11234")
-  config.sd_cpp_switchd_url = ENV.fetch("SDCPP_SWITCHD_URL", "http://balvenie:11334")
+  config.sd_cpp_url = ENV.fetch("SDCPP_SERVER_URL", "http://localhost:11234")
+  config.sd_cpp_switchd_url = ENV.fetch("SDCPP_SWITCHD_URL", "http://localhost:11334")
   config.sd_cpp_switchd_token = ENV["SDCPP_SWITCHD_TOKEN"]
-  config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://balvenie:10020")
+  config.embeddings_url = ENV.fetch("EMBEDDINGS_URL", "http://localhost:10020")
   config.embeddings_model = ENV.fetch("EMBEDDINGS_MODEL", "lfm2.5-embedding-350m-q4-k-m")
   config.embedding_dimensions = ENV.fetch("EMBEDDING_DIMENSIONS", 1024).to_i
   # 512-token embedding models need headroom for Japanese text and chunk titles.
@@ -35,15 +35,15 @@ Rails.application.config.x.nyoy.tap do |config|
     "SDCPP_DEFAULT_MODELS",
     "flat2d,anythingv5,dreamshaper8,pony-v6,illustrious_pencil-XL,krea2"
   ).split(",").map(&:strip).reject(&:empty?)
-  config.kbmemo_url = ENV.fetch("KBMEMO_URL", "https://kbmemo.net")
+  config.kbmemo_url = ENV.fetch("KBMEMO_URL", "http://localhost:3000")
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
   config.tsuzura_url = ENV.fetch("TSUZURA_URL", "http://localhost:3008")
   config.tsuzura_api_token = ENV["TSUZURA_API_TOKEN"]
   config.searfront_url = ENV.fetch("SEARFRONT_URL") do
-    ENV.fetch("SEARXNG_URL", "http://bowmore:13000")
+    ENV.fetch("SEARXNG_URL", "http://localhost:13000")
   end
   config.searfront_api_token = ENV["SEARFRONT_TOKEN"].presence || ENV["SEARXNG_API_TOKEN"]
-  config.readability_url = ENV.fetch("READABILITY_URL", "http://bowmore:8030")
+  config.readability_url = ENV.fetch("READABILITY_URL", "http://localhost:8030")
   config.chat_context_turns = ENV.fetch("CHAT_CONTEXT_TURNS", 10).to_i
   config.memo_rag_enabled = ENV.fetch("MEMO_RAG_ENABLED", "true") == "true"
   # RAG の使い方: "tool" = モデルが recall_memos ツールを必要時に呼ぶ（毎ターンの前処理なし）、

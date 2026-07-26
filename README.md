@@ -38,7 +38,7 @@ License: [MIT](LICENSE)
 
 - Ruby 4.0.3（`.ruby-version` 参照）
 - Node.js（Vite 用）
-- PostgreSQL 16 + pgvector（`bowmore.artif.org:5432`）
+- PostgreSQL 16 + pgvector（既定 `localhost:5432`、`DB_HOST`で変更可能）
 - 外部サービス（任意）
   - **llama.cpp** — style 計画・Chat（`LLAMA_CPP_URL` / `GPT_OSS_*`）
   - **sd.cpp server** — 画像生成（`SDCPP_SERVER_URL`）
@@ -50,7 +50,8 @@ License: [MIT](LICENSE)
 
 ## セットアップ
 
-PostgreSQL は `bowmore.artif.org:5432` を使用します。接続ユーザー名・パスワードは credentials に登録してください。
+PostgreSQL は既定で `localhost:5432` を使用します。接続先は`DB_HOST` /
+`DB_PORT`、ユーザー名とパスワードは環境変数またはcredentialsで設定してください。
 
 ```bash
 bin/rails credentials:edit
@@ -93,8 +94,8 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 
 | 変数 | 説明 | デフォルト |
 |------|------|-----------|
-| `LLAMA_CPP_URL` | llama.cpp の URL | `http://balvenie:10010` |
-| `LLAMA_SWITCHD_URL` | llama-switchd 管理 API | `http://balvenie:11335` |
+| `LLAMA_CPP_URL` | llama.cpp の URL | `http://localhost:10010` |
+| `LLAMA_SWITCHD_URL` | llama-switchd 管理 API | `http://localhost:11335` |
 | `LLAMA_SWITCHD_TOKEN` | llama-switchd 認証トークン | （未設定） |
 | `LLAMA_SERVER_AVAILABILITY_MAX_AGE` | Chat候補のready判定に使う整合snapshotの有効秒数 | `7200` |
 | `LLAMA_SERVER_OPERATION_RETENTION_DAYS` | 完了operation履歴の保持日数 | `30` |
@@ -109,14 +110,14 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `LLAMA_AUX_SLOT_COUNT` | 複数 slot 時に AgentGraph 等へ予約する末尾 slot 数 | `1` |
 | `LLAMA_CACHE_PROMPT` | `cache_prompt: true` を送り KV cache を再利用 | `true` |
 | `OPENAI_CHAT_API_KEY` | 実OpenAI接続専用のAPIキー。`OPENAI_API_KEY=local`とは分離 | （未設定） |
-| `VISION_LLAMA_CPP_URL` | 画像理解用 llama.cpp | `http://balvenie:10021` |
+| `VISION_LLAMA_CPP_URL` | 画像理解用 llama.cpp | `http://localhost:10021` |
 | `VISION_LLAMA_MODEL` | 画像理解モデル | `qwen3vl-4b-instruct-q4-k-m` |
-| `EMBEDDINGS_URL` | LFM2.5 Embedding API | `http://balvenie:10020` |
+| `EMBEDDINGS_URL` | LFM2.5 Embedding API | `http://localhost:10020` |
 | `EMBEDDINGS_MODEL` | 埋め込みモデル名 | `lfm2.5-embedding-350m-q4-k-m` |
 | `EMBEDDINGS_DIMENSIONS` | ベクトル次元数 | `1024` |
 | `EMBEDDING_MAX_CHARS` | embedding API へ送る最大文字数（512 token モデル向けの余白を含む） | `400` |
-| `SDCPP_SERVER_URL` | sd.cpp サーバーの URL | `http://balvenie:11234` |
-| `SDCPP_SWITCHD_URL` | モデル切り替え API | `http://balvenie:11334` |
+| `SDCPP_SERVER_URL` | sd.cpp サーバーの URL | `http://localhost:11234` |
+| `SDCPP_SWITCHD_URL` | モデル切り替え API | `http://localhost:11334` |
 | `SDCPP_SWITCHD_TOKEN` | switchd 認証トークン | （未設定） |
 | `SDCPP_DEFAULT_MODELS` | UI に表示する SD モデル | カンマ区切り一覧 |
 
@@ -128,10 +129,10 @@ PostgreSQL のホスト・認証情報は `config/database.yml` と Rails creden
 | `KBMEMO_API_TOKEN` | clip API トークン（`kbmemo_...`） | （未設定） |
 | `TSUZURA_URL` | 葛籠 API ベース URL | `http://localhost:3008` |
 | `TSUZURA_API_TOKEN` | 葛籠 API トークン（`tsuzura_...`） | （未設定） |
-| `SEARFRONT_URL` | searfront ベース URL（接続キー `searfront`） | `http://bowmore:13000` |
+| `SEARFRONT_URL` | searfront ベース URL（接続キー `searfront`） | `http://localhost:13000` |
 | `SEARFRONT_TOKEN` | searfront Bearer トークン（必須） | （未設定） |
 | `SEARXNG_URL` / `SEARXNG_API_TOKEN` | 上記の互換エイリアス | （未設定） |
-| `READABILITY_URL` | readability-js-server | `http://bowmore:8030` |
+| `READABILITY_URL` | readability-js-server | `http://localhost:8030` |
 
 Web 検索は searfront（`/v1/search`）経由です。接続画面で URL・トークン・件数上限などを変更できます。エンジン選択・CAPTCHA フォールバックは searfront 側が担います。PDF は取得対象外です。
 

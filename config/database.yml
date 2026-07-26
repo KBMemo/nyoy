@@ -3,8 +3,8 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("DB_HOST", "bowmore.artif.org") %>
-  port: <%= ENV.fetch("DB_PORT", 5432) %>
+  host: <%= ENV.fetch("DB_HOST") { db_credentials&.host || "localhost" } %>
+  port: <%= ENV.fetch("DB_PORT") { db_credentials&.port || 5432 } %>
   username: <%= ENV.fetch("DB_USERNAME") { db_credentials&.username } %>
   password: <%= ENV.fetch("DB_PASSWORD") { db_credentials&.password } %>
 

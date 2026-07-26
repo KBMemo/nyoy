@@ -206,7 +206,8 @@ class SearfrontClient
       payload = body.present? ? JSON.parse(body) : {}
     rescue JSON::ParserError
       raise Error.new(
-        "searfront の応答が JSON ではありません（HTTP #{code}, #{path}）。"         "接続 URL が searfront（例: http://bowmore:13000）か確認してください（現在: #{@base_url}）。",
+        "searfront の応答が JSON ではありません（HTTP #{code}, #{path}）。" \
+        "接続 URL が searfront（例: http://localhost:13000）か確認してください（現在: #{@base_url}）。",
         status: code
       )
     end
