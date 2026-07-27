@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-echo "bin/deploy-bowmore is deprecated; use bin/deploy-remote" >&2
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/deploy-remote" "$@"
