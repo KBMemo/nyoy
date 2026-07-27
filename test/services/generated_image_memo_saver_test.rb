@@ -55,11 +55,11 @@ class GeneratedImageMemoSaverTest < ActiveSupport::TestCase
     fake_tsurezure.define_singleton_method(:configured?) { true }
     fake_tsurezure.define_singleton_method(:create_memo) do |**|
       calls << :create
-      { "uid" => "01JMEMO", "updated_at" => "2026-07-03T10:00:00Z", "url" => "https://kbmemo.net/memos/01JMEMO" }
+      { "uid" => "01JMEMO", "updated_at" => "2026-07-03T10:00:00Z", "url" => "https://kbmemo.example.com/memos/01JMEMO" }
     end
     fake_tsurezure.define_singleton_method(:update_memo) do |memo_ref, **kwargs|
       calls << [:update, memo_ref, kwargs]
-      { "uid" => memo_ref, "url" => "https://kbmemo.net/memos/01JMEMO" }
+      { "uid" => memo_ref, "url" => "https://kbmemo.example.com/memos/01JMEMO" }
     end
 
     result = GeneratedImageMemoSaver.call(

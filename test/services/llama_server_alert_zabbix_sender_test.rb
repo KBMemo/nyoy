@@ -9,14 +9,14 @@ class LlamaServerAlertZabbixSenderTest < ActiveSupport::TestCase
     factory = Object.new
     test = self
     factory.define_singleton_method(:tcp) do |server, port, connect_timeout:|
-      test.assert_equal "bowmore", server
+      test.assert_equal "zabbix.example.test", server
       test.assert_equal 10_051, port
       test.assert_equal 5, connect_timeout
       socket
     end
 
     sender = LlamaServerAlertZabbixSender.new(
-      server: "bowmore", host: "nyoy-production", key_prefix: "nyoy.llama", socket_factory: factory
+      server: "zabbix.example.test", host: "nyoy-production", key_prefix: "nyoy.llama", socket_factory: factory
     )
     sender.deliver(reconciliation)
 
@@ -32,7 +32,7 @@ class LlamaServerAlertZabbixSenderTest < ActiveSupport::TestCase
   test "raises when Zabbix rejects an item" do
     response = zabbix_frame(response: "success", info: "processed: 1; failed: 1; total: 2")
     sender = LlamaServerAlertZabbixSender.new(
-      server: "bowmore", host: "nyoy-production", socket_factory: fake_factory(FakeSocket.new(response))
+      server: "zabbix.example.test", host: "nyoy-production", socket_factory: fake_factory(FakeSocket.new(response))
     )
 
     error = assert_raises(LlamaServerAlertZabbixSender::Error) do

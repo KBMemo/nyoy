@@ -28,20 +28,20 @@ class GenerationMemoSavesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create saves attachment to kbmemo memo" do
-    result = { "url" => "https://kbmemo.net/memos/01JMEMO", "uid" => "01JMEMO" }
+    result = { "url" => "https://kbmemo.example.com/memos/01JMEMO", "uid" => "01JMEMO" }
     original = GeneratedImageMemoSaver.method(:call)
     GeneratedImageMemoSaver.define_singleton_method(:call) { |**| result }
 
     post generation_memo_saves_path, params: { attachment_id: @attachment.id }
 
-    assert_redirected_to "https://kbmemo.net/memos/01JMEMO"
+    assert_redirected_to "https://kbmemo.example.com/memos/01JMEMO"
     assert_equal "徒然に保存しました", flash[:notice]
   ensure
     GeneratedImageMemoSaver.define_singleton_method(:call, original) if defined?(original)
   end
 
   test "create returns json for fetch save" do
-    result = { "url" => "https://kbmemo.net/memos/01JMEMO", "uid" => "01JMEMO", "id" => 42 }
+    result = { "url" => "https://kbmemo.example.com/memos/01JMEMO", "uid" => "01JMEMO", "id" => 42 }
     original = GeneratedImageMemoSaver.method(:call)
     GeneratedImageMemoSaver.define_singleton_method(:call) { |**| result }
 
@@ -52,7 +52,7 @@ class GenerationMemoSavesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = response.parsed_body
     assert body["ok"]
-    assert_equal "https://kbmemo.net/memos/01JMEMO", body["url"]
+    assert_equal "https://kbmemo.example.com/memos/01JMEMO", body["url"]
     assert_equal "徒然に保存しました", body["notice"]
   ensure
     GeneratedImageMemoSaver.define_singleton_method(:call, original) if defined?(original)

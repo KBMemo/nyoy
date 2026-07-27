@@ -8,13 +8,13 @@ class ReadabilityClientTest < ActiveSupport::TestCase
   end
 
   test "configured when url is present and connection enabled" do
-    client = ReadabilityClient.new(base_url: "http://bowmore:8030")
+    client = ReadabilityClient.new(base_url: "http://readability.example.test:8030")
 
     assert client.configured?
   end
 
   test "extract posts url and content format" do
-    client = ReadabilityClient.new(base_url: "http://bowmore:8030")
+    client = ReadabilityClient.new(base_url: "http://readability.example.test:8030")
     captured = {}
     client.define_singleton_method(:post_json) do |path, payload|
       captured[:path] = path
@@ -35,7 +35,7 @@ class ReadabilityClientTest < ActiveSupport::TestCase
   end
 
   test "raises error on api failure" do
-    client = ReadabilityClient.new(base_url: "http://bowmore:8030")
+    client = ReadabilityClient.new(base_url: "http://readability.example.test:8030")
     client.define_singleton_method(:post_json) do |*, **|
       raise ReadabilityClient::Error.new("Fetch request timed out", status: 500, code: "FETCH_TIMEOUT")
     end

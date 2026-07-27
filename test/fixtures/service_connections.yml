@@ -3,7 +3,7 @@ llama_cpp:
   adapter: llama_cpp
   key: llama_cpp
   name: Gemma 4 E4B
-  base_url: http://balvenie:10010
+  base_url: http://llm-server.test:10010
   server_model: gemma-4-e4b-it-qat-ud-q4-k-xl
   enabled: true
   sort_order: 0
@@ -13,7 +13,7 @@ gpt_oss:
   adapter: llama_cpp
   key: gpt_oss
   name: GPT-OSS
-  base_url: http://balvenie:10010
+  base_url: http://llm-server.test:10010
   server_model: gpt-oss
   enabled: true
   sort_order: 1
@@ -35,7 +35,7 @@ vision_llama:
   adapter: llama_cpp
   key: vision_llama
   name: Qwen3VL 4B
-  base_url: http://balvenie:10021
+  base_url: http://llm-server.test:10021
   server_model: qwen3vl-4b-instruct-q4-k-m
   enabled: true
   sort_order: 2
@@ -45,7 +45,7 @@ llama_switchd:
   adapter: llama_switchd
   key: llama_switchd
   name: llama-switchd
-  base_url: http://balvenie:11335
+  base_url: http://llm-server.test:11335
   api_token: switchd_test_token
   enabled: true
   sort_order: 3
@@ -55,7 +55,7 @@ embeddings:
   adapter: llama_cpp
   key: embeddings
   name: LFM2.5 Embedding 350M
-  base_url: http://balvenie:10020
+  base_url: http://llm-server.test:10020
   server_model: lfm2.5-embedding-350m-q4-k-m
   enabled: true
   sort_order: 3
@@ -64,7 +64,7 @@ sd_cpp:
   seed_key: sd_cpp
   key: sd_cpp
   name: sd.cpp
-  base_url: http://balvenie:11234
+  base_url: http://llm-server.test:11234
   enabled: true
   sort_order: 4
 
@@ -72,7 +72,7 @@ sd_switchd:
   seed_key: sd_switchd
   key: sd_switchd
   name: sd.cpp switchd
-  base_url: http://balvenie:11334
+  base_url: http://llm-server.test:11334
   enabled: true
   sort_order: 5
 
@@ -80,7 +80,7 @@ kbmemo:
   seed_key: kbmemo
   key: kbmemo
   name: 徒然（KBMemo）
-  base_url: https://kbmemo.net
+  base_url: https://kbmemo.example.com
   api_token: kbmemo_test_token
   enabled: true
   sort_order: 6
@@ -98,7 +98,7 @@ searfront:
   seed_key: searfront
   key: searfront
   name: searfront
-  base_url: http://bowmore:13000
+  base_url: http://search.example.test:13000
   api_token: test_searfront_token
   enabled: true
   sort_order: 8
@@ -114,6 +114,6 @@ readability:
   seed_key: readability
   key: readability
   name: readability-js-server
-  base_url: http://bowmore:8030
+  base_url: http://readability.example.test:8030
   enabled: true
   sort_order: 9

@@ -4,7 +4,7 @@ require "test_helper"
 
 class LlamaServerReconcilerTest < ActiveSupport::TestCase
   test "records healthy snapshot for matching ready binding" do
-    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://balvenie:10010", model: "main-alias")
+    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://llm-server.test:10010", model: "main-alias")
     ServiceConnection.where.not(id: [ connection.id, service_connections(:llama_switchd).id ]).update_all(enabled: false)
     server = {
       "id" => "main", "port" => 10010, "alias" => "main-alias", "state" => "ready",
@@ -20,7 +20,7 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
   end
 
   test "records drift readiness and restart findings with usage" do
-    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://balvenie:10010", model: "old-alias")
+    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://llm-server.test:10010", model: "old-alias")
     LlmUsageAssignmentSeeds.seed!
     server = {
       "id" => "main", "port" => 10011, "alias" => "new-alias", "state" => "stopped",
@@ -60,7 +60,7 @@ class LlamaServerReconcilerTest < ActiveSupport::TestCase
   end
 
   test "warns when runtime alias differs from switchd definition" do
-    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://balvenie:10010", model: "main-alias")
+    connection = bind_connection(:llama_cpp, server_id: "main", url: "http://llm-server.test:10010", model: "main-alias")
     ServiceConnection.where.not(id: [ connection.id, service_connections(:llama_switchd).id ]).update_all(enabled: false)
     server = {
       "id" => "main", "port" => 10010, "alias" => "main-alias", "state" => "ready",

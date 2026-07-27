@@ -194,7 +194,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     patch service_connection_path(connection), params: {
       service_connection: {
         name: "Vision updated",
-        base_url: "http://balvenie:10022",
+        base_url: "http://llm-server.test:10022",
         server_model: "qwen2.5-vl-3b",
         enabled: true,
         sort_order: connection.sort_order
@@ -203,8 +203,8 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to service_connection_path(connection)
     connection.reload
-    assert_equal "http://balvenie:10022", connection.base_url
-    assert_equal "http://balvenie:10022", NyoyConnectionStore.url(:vision_llama)
+    assert_equal "http://llm-server.test:10022", connection.base_url
+    assert_equal "http://llm-server.test:10022", NyoyConnectionStore.url(:vision_llama)
   end
 
   test "update prompt conversion settings for chat backend" do
@@ -478,7 +478,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
         service_connection: {
           key: "llm_test_server",
           name: "Test Server",
-          base_url: "http://balvenie:10012",
+          base_url: "http://llm-server.test:10012",
           server_model: "test-model",
           enabled: true,
           sort_order: 99
@@ -490,7 +490,7 @@ class ServiceConnectionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "llama_server_test_model", connection.key
     assert_nil connection.seed_key
     assert_redirected_to service_connection_path(connection)
-    assert_equal "http://balvenie:10012", NyoyConnectionStore.url(connection.key)
+    assert_equal "http://llm-server.test:10012", NyoyConnectionStore.url(connection.key)
     assert_nil NyoyConnectionStore.url(:llm_test_server)
   end
 

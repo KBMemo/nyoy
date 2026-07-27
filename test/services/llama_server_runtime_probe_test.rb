@@ -13,14 +13,14 @@ class LlamaServerRuntimeProbeTest < ActiveSupport::TestCase
         end
       end
     end
-    probe = LlamaServerRuntimeProbe.new(control_url: "http://balvenie:11335", client_factory: factory)
+    probe = LlamaServerRuntimeProbe.new(control_url: "http://llm-server.test:11335", client_factory: factory)
 
     result = probe.call([
       { "id" => "main", "port" => 10010, "ready" => true },
       { "id" => "stopped", "port" => 10011, "ready" => false }
     ])
 
-    assert_equal [ "http://balvenie:10010" ], urls
+    assert_equal [ "http://llm-server.test:10010" ], urls
     assert_equal "main", result["main"].model_alias
     assert_equal 2, result["main"].total_slots
     assert_not result.key?("stopped")
@@ -32,7 +32,7 @@ class LlamaServerRuntimeProbeTest < ActiveSupport::TestCase
         client.define_singleton_method(:props) { raise LlamaCppClient::Error, "down" }
       end
     end
-    probe = LlamaServerRuntimeProbe.new(control_url: "http://balvenie:11335", client_factory: factory)
+    probe = LlamaServerRuntimeProbe.new(control_url: "http://llm-server.test:11335", client_factory: factory)
 
     result = probe.call([ { "id" => "main", "port" => 10010, "ready" => true } ])
 

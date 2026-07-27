@@ -32,7 +32,7 @@ class ChatModelCatalogTest < ActiveSupport::TestCase
 
     context = ChatModelCatalog.context_for(model)
 
-    assert_equal "http://balvenie:10010/v1", context.config.openai_api_base
+    assert_equal "http://llm-server.test:10010/v1", context.config.openai_api_base
     assert_equal "local", context.config.openai_api_key
   end
 

@@ -8,7 +8,7 @@ class NyoyConnectionStoreTest < ActiveSupport::TestCase
   end
 
   test "reads url and model from service connection" do
-    assert_equal "http://balvenie:10010", NyoyConnectionStore.url(:llama_cpp)
+    assert_equal "http://llm-server.test:10010", NyoyConnectionStore.url(:llama_cpp)
     assert_equal "gemma-4-e4b-it-qat-ud-q4-k-xl", NyoyConnectionStore.server_model(:llama_cpp)
   end
 

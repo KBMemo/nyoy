@@ -36,7 +36,7 @@ class MemoKnowledgeRetrieverTest < ActiveSupport::TestCase
   end
 
   test "merges keyword hits from tsurezure client" do
-    client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
+    client = TsurezureClient.new(base_url: "https://kbmemo.example.com", api_token: "kbmemo_test")
     client.define_singleton_method(:configured?) { true }
     client.define_singleton_method(:list_memos) do |**|
       { "memos" => [{ "uid" => @uid, "title" => "京都旅行" }] }

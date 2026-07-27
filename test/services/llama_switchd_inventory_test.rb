@@ -5,7 +5,7 @@ require "test_helper"
 class LlamaSwitchdInventoryTest < ActiveSupport::TestCase
   test "compares connection port and alias without updating it" do
     connection = service_connections(:llama_cpp)
-    connection.update!(base_url: "http://balvenie:10010", server_model: "old-alias")
+    connection.update!(base_url: "http://llm-server.test:10010", server_model: "old-alias")
     client = fake_client(
       servers: [
         { "id" => "main", "port" => 10010, "alias" => "new-alias" },

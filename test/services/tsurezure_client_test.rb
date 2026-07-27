@@ -9,7 +9,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "configured when url and token are present" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
 
@@ -18,7 +18,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "list_memos builds query and authorization" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
     requested = []
@@ -38,7 +38,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "get_memo encodes memo ref" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net/api/v1",
+      base_url: "https://kbmemo.example.com/api/v1",
       api_token: "kbmemo_test"
     )
     requested = []
@@ -49,12 +49,12 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
     client.get_memo("01J8X2K3M4N5P6Q7R8S9T0UVWX")
 
-    assert_equal "https://kbmemo.net/api/v1/memos/01J8X2K3M4N5P6Q7R8S9T0UVWX", requested.first
+    assert_equal "https://kbmemo.example.com/api/v1/memos/01J8X2K3M4N5P6Q7R8S9T0UVWX", requested.first
   end
 
   test "create_memo posts json body" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
     captured = {}
@@ -75,7 +75,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "export_memos builds export query" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
     requested = []
@@ -95,7 +95,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "export_memo_deletions builds deletions query" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
     requested = []
@@ -115,7 +115,7 @@ class TsurezureClientTest < ActiveSupport::TestCase
 
   test "raises error on api failure" do
     client = TsurezureClient.new(
-      base_url: "https://kbmemo.net",
+      base_url: "https://kbmemo.example.com",
       api_token: "kbmemo_test"
     )
     client.define_singleton_method(:perform_request) do |*, **|

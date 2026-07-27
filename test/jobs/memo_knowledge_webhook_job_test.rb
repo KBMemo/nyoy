@@ -59,7 +59,7 @@ class MemoKnowledgeWebhookJobTest < ActiveJob::TestCase
     uid = "01J8X2K3M4N5P6Q7R8S9T0UVWE"
     create_memo_chunk!(uid: uid)
     event = create_event!(event_type: "memo.updated", memo_uid: uid)
-    fake_client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
+    fake_client = TsurezureClient.new(base_url: "https://kbmemo.example.com", api_token: "kbmemo_test")
     fake_client.define_singleton_method(:get_memo) do |_memo_ref, **|
       raise TsurezureClient::Error.new("not found", status: 404)
     end
@@ -124,7 +124,7 @@ class MemoKnowledgeWebhookJobTest < ActiveJob::TestCase
   end
 
   def fake_client_for(memos)
-    client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
+    client = TsurezureClient.new(base_url: "https://kbmemo.example.com", api_token: "kbmemo_test")
     client.define_singleton_method(:get_memo) do |memo_ref, **|
       memos.fetch(memo_ref)
     end

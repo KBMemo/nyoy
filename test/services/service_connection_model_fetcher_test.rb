@@ -51,7 +51,7 @@ class ServiceConnectionModelFetcherTest < ActiveSupport::TestCase
     result = fetcher.call
 
     assert result.ok
-    assert_equal ["http://balvenie:10010/v1/models"], requested
+    assert_equal ["http://llm-server.test:10010/v1/models"], requested
     assert_equal %w[gpt-oss-20b gpt-oss-120b], result.models
     assert_match(/モデル 2 件/, result.message)
   end
@@ -70,7 +70,7 @@ class ServiceConnectionModelFetcherTest < ActiveSupport::TestCase
     connection = ServiceConnection.create!(
       key: "llm_fetch_test",
       name: "Fetch Test",
-      base_url: "http://balvenie:10012",
+      base_url: "http://llm-server.test:10012",
       server_model: "test-model"
     )
     fetcher = ServiceConnectionModelFetcher.new(connection)

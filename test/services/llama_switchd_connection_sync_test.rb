@@ -21,7 +21,7 @@ class LlamaSwitchdConnectionSyncTest < ActiveSupport::TestCase
     LlamaSwitchdConnectionSync.new(connection).call
 
     connection.reload
-    assert_equal "http://balvenie:10110", connection.base_url
+    assert_equal "http://llm-server.test:10110", connection.base_url
     assert_equal "main-alias", connection.server_model
   ensure
     LlamaSwitchdClient.define_singleton_method(:new, original) if defined?(original)

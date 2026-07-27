@@ -52,7 +52,7 @@ class ChatErrorBroadcasterTest < ActiveSupport::TestCase
   end
 
   test "surfaces unreachable model server errors clearly" do
-    error = Faraday::ConnectionFailed.new("Failed to open TCP connection to balvenie:10113 (Connection refused)")
+    error = Faraday::ConnectionFailed.new("Failed to open TCP connection to llm-server.test:10113 (Connection refused)")
 
     message = ChatErrorBroadcaster.fail!(@chat, error)
 

@@ -16,7 +16,7 @@ class MemoKnowledgeIngestJobTest < ActiveJob::TestCase
     stale_chunk.skip_auto_embed = true
     stale_chunk.save!
 
-    fake_client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
+    fake_client = TsurezureClient.new(base_url: "https://kbmemo.example.com", api_token: "kbmemo_test")
     fake_client.define_singleton_method(:export_memos) do |**|
       {
         "memos" => [
@@ -59,7 +59,7 @@ class MemoKnowledgeIngestJobTest < ActiveJob::TestCase
     chunk.skip_auto_embed = true
     chunk.save!
 
-    fake_client = TsurezureClient.new(base_url: "https://kbmemo.net", api_token: "kbmemo_test")
+    fake_client = TsurezureClient.new(base_url: "https://kbmemo.example.com", api_token: "kbmemo_test")
     export_calls = []
     fake_client.define_singleton_method(:export_memos) do |updated_since: nil, **|
       export_calls << updated_since

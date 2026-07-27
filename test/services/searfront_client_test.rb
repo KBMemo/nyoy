@@ -8,14 +8,14 @@ class SearfrontClientTest < ActiveSupport::TestCase
   end
 
   test "configured only when url and token are present" do
-    assert_not SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "").configured?
-    assert SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "tok").configured?
+    assert_not SearfrontClient.new(base_url: "http://search.example.test:13000", api_token: "").configured?
+    assert SearfrontClient.new(base_url: "http://search.example.test:13000", api_token: "tok").configured?
   end
 
   test "search hits /v1/search and maps snippet to content" do
     settings = SearfrontSettings.from(result_count: 2, concurrent_searches: 1, retry_count: 0)
     client = SearfrontClient.new(
-      base_url: "http://bowmore:13000",
+      base_url: "http://search.example.test:13000",
       api_token: "searfront_test",
       settings: settings,
       wait_seconds: 8
@@ -77,7 +77,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
   test "polls search_requests when search returns 202" do
     settings = SearfrontSettings.from(result_count: 1, retry_count: 0)
     client = SearfrontClient.new(
-      base_url: "http://bowmore:13000",
+      base_url: "http://search.example.test:13000",
       api_token: "tok",
       settings: settings,
       wait_seconds: 0
@@ -118,7 +118,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
 
   test "retries 5xx up to configured retry count" do
     settings = SearfrontSettings.from(result_count: 1, retry_count: 1)
-    client = SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "tok", settings: settings)
+    client = SearfrontClient.new(base_url: "http://search.example.test:13000", api_token: "tok", settings: settings)
     attempts = 0
     client.define_singleton_method(:backoff_sleep) { |*| }
     client.define_singleton_method(:perform_request) do |*, **|
@@ -143,7 +143,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
 
   test "does not retry 4xx" do
     settings = SearfrontSettings.from(retry_count: 2)
-    client = SearfrontClient.new(base_url: "http://bowmore:13000", api_token: "tok", settings: settings)
+    client = SearfrontClient.new(base_url: "http://search.example.test:13000", api_token: "tok", settings: settings)
     attempts = 0
     client.define_singleton_method(:backoff_sleep) { |*| }
     client.define_singleton_method(:perform_request) do |*, **|
@@ -160,7 +160,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
 
 
   test "non-json response includes base url hint" do
-    client = SearfrontClient.new(base_url: "http://bowmore.artif.org:8080", api_token: "tok", settings: SearfrontSettings.from(retry_count: 0))
+    client = SearfrontClient.new(base_url: "http://search.example.test:8080", api_token: "tok", settings: SearfrontSettings.from(retry_count: 0))
     client.define_singleton_method(:perform_request) do |*, **|
       SearfrontClientTest.fake_http_response(404, "<html>SearXNG</html>")
     end
@@ -169,7 +169,7 @@ class SearfrontClientTest < ActiveSupport::TestCase
 
     assert_equal 404, error.status
     assert_includes error.message, "JSON ではありません"
-    assert_includes error.message, "http://bowmore.artif.org:8080"
+    assert_includes error.message, "http://search.example.test:8080"
   end
 
   def self.fake_http_response(code, body)
