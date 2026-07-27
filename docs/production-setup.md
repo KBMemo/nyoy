@@ -334,23 +334,35 @@ bin/prod kbmemo:rag:ingest
 
 ## 6. 2 回目以降のデプロイ
 
-通常は開発端末から実行する。bowmoreにGiteaのdeploy keyを配置せず、push済みのHEADをgit bundleで転送する。転送先ではfast-forwardだけを許可し、成功後に`origin/<branch>`も転送revisionへ更新する。既存の`bin/deploy --skip-pull`が依存更新、DB準備、assets生成、systemd再起動、health checkを担当する。
+通常は開発端末から実行する。remote hostにGitHubのdeploy keyを配置せず、
+push済みのHEADをgit bundleで転送する。転送先ではfast-forwardだけを許可し、
+成功後に`origin/<branch>`も転送revisionへ更新する。既存の
+`bin/deploy --skip-pull`が依存更新、DB準備、assets生成、systemd再起動、
+health checkを担当する。
 
 ```bash
+export NYOY_DEPLOY_HOST=app.example.com
+export NYOY_DEPLOY_PATH=/srv/kbmemo/nyoy
 git push origin main
-bin/deploy-bowmore
+bin/deploy-remote
 ```
 
 確認とseed実行:
 
 ```bash
-bin/deploy-bowmore --check
-bin/deploy-bowmore --seed
+bin/deploy-remote --check
+bin/deploy-remote --seed
 ```
 
-接続先は`NYOY_DEPLOY_HOST`、配置先は`NYOY_DEPLOY_PATH`、branchは`NYOY_DEPLOY_BRANCH`で変更できる。コマンドはローカルの追跡ファイルがcleanで、HEADと`origin/<branch>`が一致する場合だけ転送する。bowmoreでは本番固有の`.kamal/secrets`と`config/credentials.yml.enc`を退避・復元し、それ以外の追跡ファイルに変更があれば停止する。両ファイルはgit管理外であり、サーバーごとに配置する。
+接続先は`NYOY_DEPLOY_HOST`、配置先は`NYOY_DEPLOY_PATH`、branchは
+`NYOY_DEPLOY_BRANCH`で変更できる。コマンドはローカルの追跡ファイルがcleanで、
+HEADと`origin/<branch>`が一致する場合だけ転送する。remote hostでは本番固有の
+`.kamal/secrets`と`config/credentials.yml.enc`を退避・復元し、それ以外の
+追跡ファイルに変更があれば停止する。両ファイルはgit管理外であり、
+サーバーごとに配置する。
 
-bowmore上で直接更新できるdeploy keyを別途設定した環境では、従来のコマンドも利用できる。
+remote host上で直接更新できるdeploy keyを別途設定した環境では、
+従来のコマンドも利用できる。
 
 ```bash
 cd ~/sites/nyoy
