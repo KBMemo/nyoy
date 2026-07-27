@@ -3,7 +3,7 @@
 如意（Nyoy）から徒然（kbmemo.net）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
 
 **ステータス:** Phase 4b + 如意 Chat 拡張完了 — 徒然 API v1 本番、如意 Client / メモツール / Web 検索 / URL 取得 / メモ RAG 接続確認済み  
-**前提:** 徒然側の実装は [kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル: `~/work/kbmemo/site`）を正とする。
+**前提:** 徒然側の実装は [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)を正とする。
 
 ---
 
@@ -477,7 +477,7 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 
 ## 9. 徒然現状調査（kbmemo_site）
 
-リポジトリ: [Artif.org/kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)  
+リポジトリ: [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)
 ローカル: `~/work/kbmemo/site`（モノレポ内の徒然アプリ。葛籠は `kbmemo-media/`）
 
 ### 9.1 スタック・概要

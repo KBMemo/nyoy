@@ -3,7 +3,7 @@
 如意（Nyoy）の MCP サーバー公開（Phase 6）を受け、3 アプリ（徒然・葛籠・如意）と外部クライアント（Cursor 等）の
 **責務分界と連携経路**を再定義する。
 
-* 徒然リポジトリ: link:https://gitea.artif.org/Artif.org/kbmemo_site[kbmemo_site]（`~/work/kbmemo/site`）
+* 徒然リポジトリ: link:https://github.com/KBMemo/kbmemo[KBMemo/kbmemo]
 * 如意リポジトリ: 本リポジトリ（`~/work/localai/nyoy`）
 * MCP 運用詳細: link:../mcp-server.md[docs/mcp-server.md]
 * 徒然 Chat エージェント: `site/docs/architecture/chat-agent-roadmap.adoc`

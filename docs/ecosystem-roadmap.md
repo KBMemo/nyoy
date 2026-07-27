@@ -12,7 +12,7 @@
 | **葛籠** | media.kbmemo.net（現行） | tsuzura | ファイル・画像の保管庫。バイナリの正本 |
 | **如意** | nyoy.kbmemo.net | nyoy | AI 機能の集約、各機能の試験 UI、将来は MCP サーバー |
 
-- 徒然リポジトリ: [gitea.artif.org/Artif.org/kbmemo_site](https://gitea.artif.org/Artif.org/kbmemo_site)（ローカル `~/work/kbmemo/site`）
+- 徒然リポジトリ: [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)
 - 葛籠は同一モノレポ内の `kbmemo-media/`。本番は現状 `media.kbmemo.net`
 - **別 Workspace 開発:** 徒然は `site`、如意は `nyoy`。連携は **HTTP API 契約**（`docs/openapi/kbmemo-v1.yaml`）が正本。マルチルート Workspace に両方を追加すると Agent が横断参照しやすい
 
@@ -312,7 +312,7 @@ UPDATED_SINCE=2026-07-01T00:00:00Z bin/rails kbmemo:rag:ingest
 
 - [徒然（tsuredure）API 要件](./tsuredure-api-requirements.md)
 - [徒然 API OpenAPI 草案](./openapi/kbmemo-v1.yaml)
-- [徒然リポジトリ](https://gitea.artif.org/Artif.org/kbmemo_site)
+- [徒然リポジトリ](https://github.com/KBMemo/kbmemo)
 - [プロンプト設計 再構築案](./prompt-architecture-redesign.md)
 - [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 - [Nyoy MCP アーキテクチャ](./architecture/nyoy-mcp.adoc)

@@ -48,7 +48,8 @@ image::media:01JH…[]
 
 ## API パス（葛籠側）
 
-如意は `{TSUZURA_URL}/v1/...` を呼ぶ。詳細は kbmemo-media の [README](https://gitea.artif.org/Artif.org/kbmemo_site/src/branch/main/kbmemo-media/README.md) を参照。
+如意は `{TSUZURA_URL}/v1/...` を呼ぶ。詳細は葛籠の
+[README](https://github.com/KBMemo/tsuzura/blob/main/README.md)を参照。
 
 ## 実装済み（Phase 5b）
 
