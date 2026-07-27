@@ -1,6 +1,7 @@
 # llama-switchd integration
 
-**実装状況:** Phase 1〜5のコード実装完了（2026-07-21）。残る本番運用確認は [9.2](#92-残課題) を参照。
+**実装状況:** Phase 1〜5のコード実装完了。残る運用確認は
+[9.2](#92-残課題) を参照。
 
 ## 1. 目的
 
@@ -37,9 +38,10 @@ Upstream:
 
 この形では、server definition の PORT / ALIAS を変更しても Nyoy へ反映されない。また、接続名、用途、実モデル、alias が混在している。
 
-2026-07-21 の development DB では `llama_cpp` と `gpt_oss` がともに `http://balvenie:10011` を指している一方、10011 の実体は Gemma 4 だった。`llama_cpp.server_model`、`gpt_oss.server_model`、実 `/props.model_alias` も一致していない。したがって、既存レコードをポートだけで自動 binding してはならない。
-
-同日のinventory確認後、development・productionの`gpt_oss`を`gpt-oss-20b`へbindingし、port `10014`、Alias `gpt-oss-20b`へ同期した。旧`llm_gemma4_e4b_mtp`接続は無効化し、参照がなくなったLFM2.5 serverも停止・自動起動無効化した。
+既存DBでは、複数接続が同じportを参照しながら`server_model`と実際の
+`/props.model_alias`が一致しない状態があり得る。したがって、既存レコードを
+portだけで自動bindingしてはならない。用途、switchd alias、Runtime Aliasを
+確認して個別にbindingする。
 
 ## 3. 責務境界
 
@@ -49,7 +51,7 @@ Upstream:
 
 | field | 内容 |
 | --- | --- |
-| `base_url` | switchd API。例: `http://balvenie:11335` |
+| `base_url` | switchd API。例: `http://llm-control.example.com:11335` |
 | `api_token` | `LLAMA_SWITCHD_TOKEN` |
 | `enabled` | Nyoy から管理 API を使うか |
 

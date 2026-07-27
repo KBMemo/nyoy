@@ -163,7 +163,10 @@ llama.cpp model endpointの実行時接続情報はServiceConnectionだけを正
 
 ## 9. Legacy key撤去
 
-development・production DBの生成履歴に旧key参照が0件であることと、Nyoy以外のローカルworkspaceに旧keyを直接指定する外部scriptがないことを2026-07-22に確認した。組み込みseedの識別は`seed_key`へ分離し、通常実行はcanonical key専用、移行CLIはcanonical keyまたは`seed_key`を受け付ける。
+legacy key撤去前に、各環境DBの生成履歴に旧key参照がないことと、外部scriptが
+旧keyを直接指定していないことを確認する。組み込みseedの識別は`seed_key`へ
+分離し、通常実行はcanonical key専用、移行CLIはcanonical keyまたは
+`seed_key`を受け付ける。
 
 `legacy_key`列と監査taskは安全弁付きmigrationで撤去した。migrationは画像生成3テーブルのstyle plan接続に旧keyが残っていれば停止する。READMEに残っていた`DEFAULT_CHAT_CONNECTION_KEY`と`STYLE_PLAN_CONNECTION_KEY`の説明も削除済みである。
 
@@ -183,4 +186,7 @@ STRICT=1 bin/rails llm_usages:audit
 
 Kamal deploy後は`.kamal/hooks/post-deploy`が不足用途だけをseedしてからstrict監査を実行する。監査失敗時は新コンテナの起動完了後にdeployコマンドを失敗終了させるため、出力を確認して設定を修復する。
 
-2026-07-22にbowmore productionへmigrationとseedを適用し、14用途すべて`healthy`を確認した。旧`gpt-oss` Modelが無効接続を参照していた6用途はcanonical `gpt-oss-20b` Modelへ移行した。binding同期時に発見したspecialized Model能力の上書きも修正し、vision・embedding用途を再監査済みである。
+migrationとseedの適用後は、全用途が`healthy`になるまでdeployを完了扱いに
+しない。旧Modelが無効接続を参照する場合はcanonical Modelへ移行し、
+specialized Modelの能力とvision・embedding用途も再監査する。環境ごとの監査
+結果は公開repositoryではなくアクセス制限された運用記録へ保存する。
