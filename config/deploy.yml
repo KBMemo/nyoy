@@ -96,7 +96,7 @@ builder:
 #   user: app
 
 # Use accessory services (secrets come from .kamal/secrets).
-# PostgreSQL は bowmore.artif.org を使用（接続情報は Rails credentials）。
+# PostgreSQL connection details are configured through Rails credentials or environment variables.
 # accessories:
 #   redis:
 #     image: valkey/valkey:8

@@ -3,7 +3,7 @@ info:
   title: Tsuredure (KBMemo) API
   version: 1.0.0-draft
   description: |
-    徒然（tsuredure / kbmemo.net）のメモ API 草案。
+    徒然（tsuredure / KBMemo）のメモ API 草案。
 
     如意（Nyoy）の Chat ツール・RAG 取込・メモ書き支援向け。
     本文は AsciiDoc。安定識別子は ULID `uid` を推奨する。
@@ -12,14 +12,14 @@ info:
 
     関連: [API 要件](../tsuredure-api-requirements.md)
   contact:
-    name: Artif.org
+    name: KBMemo
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://kbmemo.net/api/v1
-    description: Production
+  - url: https://kbmemo.example.com/api/v1
+    description: Production example
   - url: http://localhost:3000/api/v1
     description: Local development (徒然 `site/`)
 

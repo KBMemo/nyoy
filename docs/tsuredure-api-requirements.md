@@ -1,6 +1,6 @@
 # 徒然（tsuredure）API 要件 — 如意連携
 
-如意（Nyoy）から徒然（kbmemo.net）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
+如意（Nyoy）から徒然（KBMemo）のメモを読み書きし、Chat ツール・RAG 取込・書き支援に使うための API 要件を整理する。
 
 **ステータス:** Phase 4b + 如意 Chat 拡張完了 — 徒然 API v1 本番、如意 Client / メモツール / Web 検索 / URL 取得 / メモ RAG 接続確認済み  
 **前提:** 徒然側の実装は [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)を正とする。
@@ -13,7 +13,7 @@
 |------|------|
 | 日本語名 | 徒然 |
 | 読み | **tsuredure**（つれづれ） |
-| ドメイン | kbmemo.net |
+| ドメイン | kbmemo.example.com |
 | 英語名（任意） | Tsuredure |
 
 ### ローマ字表記の使い分け（案）
@@ -23,7 +23,7 @@
 | 用途 | 推奨表記 | 理由 |
 |------|----------|------|
 | ドキュメント・対話 | **tsuredure** | 正式な読み。日本語名と併記 |
-| URL・API パス | **kbmemo** | 既存ドメインと一致。`https://kbmemo.net/api/v1` |
+| URL・API パス | **kbmemo** | 製品名と一致。`https://kbmemo.example.com/api/v1` |
 | コード（モジュール名） | **Tsurezure** | 促音を省略した一般的ローマ字。`TsurezureClient` 等 |
 | 外部 ID プレフィックス | **kbmemo** | `kbmemo:memo:{id}:chunk:{n}` — ドメインと揃える |
 | 設定キー（如意） | **kbmemo** | `ServiceConnection` の `key: "kbmemo"` |
@@ -169,8 +169,8 @@
 | 項目 | 案 |
 |------|-----|
 | 形式 | REST JSON |
-| ベース URL | `https://kbmemo.net/api/v1`（仮） |
-| 認証 | Bearer トークン（API キン） |
+| ベース URL | `https://kbmemo.example.com/api/v1`（例） |
+| 認証 | Bearer トークン（API トークン） |
 | エラー形式 | `{ "error": { "code": "...", "message": "..." } }` |
 | 日時 | ISO 8601 UTC |
 | 本文（保存） | **AsciiDoc**（`memos.body` 正本） |
@@ -283,7 +283,7 @@ Authorization: Bearer <api_token>
   "created_at": "2026-03-15T10:00:00Z",
   "updated_at": "2026-06-20T14:30:00Z",
   "file_committed_at": "2026-06-20T14:30:00Z",
-  "url": "https://kbmemo.net/memos/42",
+  "url": "https://kbmemo.example.com/memos/42",
   "draft": false
 }
 ```
@@ -320,7 +320,7 @@ API では公開しない。作成・更新時の格納先は徒然側の既定�
 **添付・メディア:**
 
 - Git 内アセット: Active Storage → `{slug}.assets/`（API では URL 参照のみ）
-- 葛籠: 本文中の `album::` / `image::media:` マクロ + `properties.media_album_id`。バイナリは [葛籠 API](https://media.kbmemo.net) 経由
+- 葛籠: 本文中の `album::` / `image::media:` マクロ + `properties.media_album_id`。バイナリは葛籠 API（例: `https://media.kbmemo.example.com`）経由
 
 ### 4.2 一覧レスポンス
 
@@ -490,7 +490,7 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 | DB | PostgreSQL |
 | 本文 | **AsciiDoc**（Asciidoctor でレンダリング） |
 | Git 連携 | コミット済みメモは `.adoc` + YAML front-matter として Git 作業ツリーに書き出し |
-| 本番 URL | https://kbmemo.net |
+| 本番 URL | `https://kbmemo.example.com`（例） |
 
 ### 9.2 データモデル（確認済み）
 

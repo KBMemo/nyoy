@@ -129,6 +129,7 @@ $EDITOR .env.production
 PORT=3009
 RAILS_ENV=production
 RAILS_LOG_LEVEL=info
+NYOY_APP_HOST=nyoy.example.com
 SOLID_QUEUE_IN_PUMA=true
 RAILS_MASTER_KEY=<config/master.key と同じ値>
 

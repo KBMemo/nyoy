@@ -4,7 +4,7 @@
 **責務分界と連携経路**を再定義する。
 
 * 徒然リポジトリ: link:https://github.com/KBMemo/kbmemo[KBMemo/kbmemo]
-* 如意リポジトリ: 本リポジトリ（`~/work/localai/nyoy`）
+* 如意リポジトリ: link:https://github.com/KBMemo/nyoy[KBMemo/nyoy]
 * MCP 運用詳細: link:../mcp-server.md[docs/mcp-server.md]
 * 徒然 Chat エージェント: `site/docs/architecture/chat-agent-roadmap.adoc`
 
@@ -36,7 +36,7 @@ Web / URL / Vision / 画像生成は徒然内に同等ツールを実装せず�
 |徒然 DB 上の pgroonga + pgvector RAG は **アカウントスコープ・低遅延**のため徒然 `Chat::Agent` に残す。Nyoy の `recall_memos`（export 取込 RAG）とはデータ経路が異なる。
 
 |外部エージェントは Nyoy MCP
-|Cursor 等は **徒然にツールを複製せず**、Nyoy MCP（本番 `https://nyoy.kbmemo.net/mcp`）へ接続する。
+|Cursor 等は **徒然にツールを複製せず**、Nyoy MCP（例: `https://nyoy.example.com/mcp`）へ接続する。
 
 |API 契約で疎結合
 |徒然 ↔ 如意は OpenAPI（`docs/openapi/kbmemo-v1.yaml`）と MCP。徒然の検索エンジン差し替えは HTTP 形状を維持すれば如意側は不変。
@@ -259,7 +259,7 @@ intent ルーティングは通さない（`MemoAiChat`）。執筆支援に特�
 |項目 |方針
 
 |Nyoy MCP
-|`MCP_API_TOKEN`（Bearer）。本番は `nyoy.kbmemo.net` の `.env.production`。`config/deploy.yml` `env.secret` 登録済み。
+|`MCP_API_TOKEN`（Bearer）。本番環境では Nyoy の secret / environment で管理する。`config/deploy.yml` `env.secret` 登録済み。
 
 |徒然 API（ツール内）
 |既存 `KBMEMO_API_TOKEN` / `clip_api_token` 流用（Nyoy `ServiceConnection` `kbmemo`）

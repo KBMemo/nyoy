@@ -8,12 +8,12 @@
 
 | アプリ | URL（想定） | 読み / コード名 | 役割 |
 |--------|-------------|----------------|------|
-| **徒然** | kbmemo.net | tsuredure / `Tsurezure` | メモの正本。作成・編集・閲覧・検索 |
-| **葛籠** | media.kbmemo.net（現行） | tsuzura | ファイル・画像の保管庫。バイナリの正本 |
-| **如意** | nyoy.kbmemo.net | nyoy | AI 機能の集約、各機能の試験 UI、将来は MCP サーバー |
+| **徒然** | kbmemo.example.com | tsuredure / `Tsurezure` | メモの正本。作成・編集・閲覧・検索 |
+| **葛籠** | media.kbmemo.example.com | tsuzura | ファイル・画像の保管庫。バイナリの正本 |
+| **如意** | nyoy.example.com | nyoy | AI 機能の集約、各機能の試験 UI、将来は MCP サーバー |
 
 - 徒然リポジトリ: [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)
-- 葛籠は同一モノレポ内の `kbmemo-media/`。本番は現状 `media.kbmemo.net`
+- 葛籠は [KBMemo/tsuzura](https://github.com/KBMemo/tsuzura)。本番URLは各環境の設定で決める
 - **別 Workspace 開発:** 徒然は `site`、如意は `nyoy`。連携は **HTTP API 契約**（`docs/openapi/kbmemo-v1.yaml`）が正本。マルチルート Workspace に両方を追加すると Agent が横断参照しやすい
 
 ローマ字表記の詳細は [徒然 API 要件 §0](./tsuredure-api-requirements.md#0-名称ローマ字表記) を参照。
@@ -145,10 +145,10 @@ Chat バックエンド保存時に `ChatModelCatalog.seed!` で `Model` レコ�
 | 連携先 | 状態 |
 |--------|------|
 | llama.cpp / sd.cpp / embeddings | HTTP（ServiceConnection 経由） |
-| **徒然（kbmemo.net）** | **`/api/v1` 接続済み** |
+| **徒然（KBMemo）** | **`/api/v1` 接続済み** |
 | **SearXNG** | **接続済み**（`web_search`） |
 | **readability-js-server** | **接続済み**（`fetch_url`） |
-| 葛籠（media.kbmemo.net） | `TsuzuraClient` + Chat ツール + 生成メモ保存 | **Phase 5 完了** |
+| 葛籠（Tsuzura） | `TsuzuraClient` + Chat ツール + 生成メモ保存 | **Phase 5 完了** |
 | MCP | **HTTP + stdio**（`ChatTools::*` 再公開、[mcp-server.md](./mcp-server.md)） |
 
 ---

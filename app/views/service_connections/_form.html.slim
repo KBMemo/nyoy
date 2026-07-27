@@ -19,7 +19,7 @@
       p.nyoy-monospace.text-sm.kb-text-secondary = service_connection.key
       p.mt-1.text-sm.kb-text-muted key は変更できません。
     - elsif custom_llm
-      = form.text_field :key, required: true, class: kb_field_input_classes, placeholder: "llm_balvenie_10012"
+      = form.text_field :key, required: true, class: kb_field_input_classes, placeholder: "llm_server_10010"
       p.mt-1.text-sm.kb-text-muted
         | llama-server 互換 API 用。必ず
         code llm_
@@ -38,7 +38,7 @@
 
   div
     = form.label :base_url, "URL", class: "#{kb_label} mb-1"
-    = form.url_field :base_url, required: true, class: kb_field_input_classes, placeholder: "http://balvenie:10010"
+    = form.url_field :base_url, required: true, class: kb_field_input_classes, placeholder: "http://llm-server.example.com:10010"
 
   div
     = form.label :server_model, custom_llm ? "モデル名" : "モデル名（任意）", class: "#{kb_label} mb-1"

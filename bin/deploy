@@ -17,7 +17,7 @@ usage() {
 Usage: bin/deploy [options]
 
 Pull the latest code, install dependencies, prepare databases, precompile assets,
-and restart the nyoy user systemd service (run on bowmore).
+and restart the nyoy user systemd service (run on application server).
 
 Options:
   -b, --branch BRANCH   git fetch/pull this branch (default: current branch)
@@ -31,14 +31,14 @@ Options:
 
 Environment:
   NYOY_SYSTEMD_UNIT     user systemd unit name (default: nyoy)
-  NYOY_HEALTH_URL       health check URL (default: https://nyoy.kbmemo.net/up)
-  NYOY_HEALTH_HOST      Host header for localhost checks (default: nyoy.kbmemo.net)
+  NYOY_HEALTH_URL       health check URL (default: http://127.0.0.1:$PORT/up)
+  NYOY_HEALTH_HOST      optional Host header for health checks
   NYOY_HEALTH_CHECK_DELAY
                         seconds to wait before first health check (default: 5)
   NYOY_GIT_REMOTE       git remote (default: origin)
 
 Example:
-  cd ~/sites/nyoy && bin/deploy
+  cd /srv/kbmemo/nyoy && bin/deploy
   bin/deploy --branch main
 EOF
 }
@@ -60,10 +60,6 @@ step() {
 health_check() {
   local url="$1"
   local host_header="${NYOY_HEALTH_HOST:-}"
-
-  if [[ -z "${host_header}" && "${url}" =~ ^https?://(127\.0\.0\.1|localhost)([:/]|$) ]]; then
-    host_header="nyoy.kbmemo.net"
-  fi
 
   if [[ -n "${host_header}" ]]; then
     curl -fsS -H "Host: ${host_header}" "${url}"
@@ -142,7 +138,7 @@ if [[ ! -f "${APP_ROOT}/config/master.key" ]]; then
   exit 1
 fi
 
-HEALTH_URL="${NYOY_HEALTH_URL:-https://nyoy.kbmemo.net/up}"
+HEALTH_URL="${NYOY_HEALTH_URL:-http://127.0.0.1:${PORT}/up}"
 HEALTH_CHECK_DELAY="${NYOY_HEALTH_CHECK_DELAY:-5}"
 
 if [[ ! "${HEALTH_CHECK_DELAY}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then

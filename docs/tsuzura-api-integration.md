@@ -1,6 +1,6 @@
 # 葛籠（Tsuzura）API 連携 — Phase 5
 
-如意（nyoy）から [葛籠（kbmemo-media）](https://media.kbmemo.net) の REST API を使うための実装メモ。
+如意（nyoy）から [葛籠（Tsuzura）](https://github.com/KBMemo/tsuzura) の REST API を使うための実装メモ。
 
 ## 役割分担
 
