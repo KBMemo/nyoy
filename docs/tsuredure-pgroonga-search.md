@@ -1,7 +1,8 @@
 # 徒然 — PGroonga 全文検索（実装方針）
 
 徒然（kbmemo_site）のメモ検索を `LIKE` から **PGroonga**（PostgreSQL 拡張）へ移行する。  
-**2026-07 決定:** スタンドアロン Groonga サーバーは採用せず、徒然 DB（`bowmore`）への PGroonga インストール **OK**。
+スタンドアロン Groonga サーバーは採用せず、徒然のproduction PostgreSQLへ
+PGroongaを導入する。
 
 ---
 
@@ -35,7 +36,7 @@
 
 ---
 
-## 3. インフラ（bowmore）
+## 3. インフラ
 
 **対象 DB:** 徒然 site 用 PostgreSQL のみ（nyoy 用 DB には入れない）。
 
@@ -154,14 +155,17 @@ end
 
 ---
 
-## 8. 実装チェックリスト（site Workspace）
+## 8. 導入チェックリスト
 
-- [x] bowmore 徒然 DB に `CREATE EXTENSION pgroonga`（本番 2026-07-03）
-- [x] マイグレーション `20260703101000_enable_pgroonga_on_memos.rb`
-- [x] `Memo.search_text` 差し替え + LIKE フォールバック
-- [x] 本番: API `?q=` 確認（旅行/香取/静岡、如意 `TsurezureClient`）
-- [x] 本番: `kill -USR2` で Puma 再起動（2026-07-03）
-- [ ] 本番: `git pull` で origin/main と同期（`19425c3`。gitea SSH 鍵要）
+- [ ] production PostgreSQLで`CREATE EXTENSION pgroonga`が成功する
+- [ ] PGroonga migrationを適用する
+- [ ] `Memo.search_text`とLIKE fallbackのtestが通る
+- [ ] production APIの`?q=`を日本語、英字、部分語で確認する
+- [ ] 如意の`TsurezureClient`経由でも同じ検索結果を確認する
+- [ ] PostgreSQL異常終了後の`REINDEX`手順を運用runbookへ反映する
+
+実施日時、検索語、revisionなどの結果は、公開repositoryではなくアクセス制限
+された運用記録へ保存する。
 
 ---
 

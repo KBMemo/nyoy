@@ -478,7 +478,7 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 ## 9. 徒然現状調査（kbmemo_site）
 
 リポジトリ: [KBMemo/kbmemo](https://github.com/KBMemo/kbmemo)
-ローカル: `~/work/kbmemo/site`（モノレポ内の徒然アプリ。葛籠は `kbmemo-media/`）
+実装は上記repositoryを参照する。ローカルcloneの配置先には依存しない。
 
 ### 9.1 スタック・概要
 
@@ -525,7 +525,8 @@ MemoRagQueryAnalyzer → MemoKnowledgeRetriever (pgvector + 徒然 list_memos RR
 
 **現状:** PostgreSQL の `LIKE` のみ（`Memo.search_text`）。
 
-**決定（2026-07）:** 徒然 DB（bowmore）へ **PGroonga** を導入。スタンドアロン Groonga サーバーは不採用。インストール **OK**。
+**決定:** 徒然のproduction PostgreSQLへ **PGroonga** を導入する。
+スタンドアロン Groonga サーバーは採用しない。
 
 実装手順: [徒然 PGroonga 検索](./tsuredure-pgroonga-search.md)
 
