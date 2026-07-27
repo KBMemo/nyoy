@@ -96,23 +96,6 @@ RUBY
 
 ## 6. 実機確認記録
 
-### 2026-07-20 保留
-
-`gpt_oss` 接続 `http://balvenie:10011` の `/health` は成功したが、`/props` の `model_path` は `gemma-4-E4B-it-qat` を示していたため測定しなかった。
-
-### 2026-07-21 GPT-OSS
-
-`gpt_oss`を`http://balvenie:10014`の`gpt-oss-20b`へbindingした後、switchd定義を`SLOTS=2`へ変更・再起動した。Runtimeは`model_alias=gpt-oss-20b`、`total_slots=2`で、Nyoyの割当は通常Chat=`slot 0 / chat`、AgentGraph補助LLM=`slot 1 / auxiliary`となった。
-
-UIの表示処理を含まないモデル単体比較として、同一質問をOpenAI互換streaming APIへA1/A2/B1/B2順で送信した。
-
-| run | effort | 最初の生成chunk | 経過 | 品質メモ |
-| --- | --- | ---: | ---: | --- |
-| A1 | unset | 1,999 ms | 17,099 ms | 3点を回答、cold影響あり |
-| A2 | low | 701 ms | 15,800 ms | A1と同内容 |
-| B1 | low | 664 ms | 14,919 ms | 3点を回答 |
-| B2 | unset | 729 ms | 15,975 ms | B1と同等 |
-
-全runは`finish_reason=stop`で完了した。coldなA1を除くと最初の生成chunkは664–729 ms、総時間は14.9–16.0秒であり、`low`と未指定に再現性のある差は確認できなかった。回答はいずれも冪等性、backoff・試行上限、監視を挙げたが、Rails API名として厳密でない表現も含まれた。速度差が小さく品質改善も確認できないため、既定`reasoning_effort`は変更しない。
-
-この値はモデル単体の基準値である。Nyoy UI全経路の`context_build_ms`、`first_chunk_ms`、`thinking_ms`、`response_ms`は、体感遅延を再調査するときに第2–3節の手順で追加計測する。
+endpoint、model path、Chat ID、測定値を含む実機結果は、公開repositoryではなく
+アクセス制限された運用記録へ保存する。既定値を変更した場合は、採用した
+判定基準と設定値だけをmodel profile runbookへ反映する。

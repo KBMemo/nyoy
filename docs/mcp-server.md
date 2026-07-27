@@ -55,7 +55,7 @@ export MCP_API_TOKEN="your-secret-token"
 {
   "mcpServers": {
     "nyoy": {
-      "command": "/home/kensei/work/localai/nyoy/bin/mcp-stdio",
+      "command": "/path/to/nyoy/bin/mcp-stdio",
       "env": {
         "MCP_API_TOKEN": "your-secret-token",
         "RAILS_ENV": "development"
@@ -85,7 +85,8 @@ Nyoy を起動したうえで:
 }
 ```
 
-本番（`nyoy.kbmemo.net`）では HTTPS URL に差し替える。雛形は [examples/cursor-mcp-http.json](./examples/cursor-mcp-http.json)。
+本番では `https://nyoy.example.com/mcp` のような HTTPS URL に差し替える。
+雛形は [examples/cursor-mcp-http.json](./examples/cursor-mcp-http.json)。
 
 ---
 
