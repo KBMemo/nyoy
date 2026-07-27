@@ -2,14 +2,24 @@
 
 ## 目的
 
-徒然（kbmemo.net）のメモ作成・更新・削除を Nyoy へ webhook 通知し、`PromptKnowledgeChunk(source=memo)` を低遅延で更新する。
+徒然のメモ作成・更新・削除を Nyoy へ webhook 通知し、
+`PromptKnowledgeChunk(source=memo)` を低遅延で更新する。
 
 Webhook は即時化の経路であり、既存の `MemoKnowledgeIngestJob` checkpoint 同期は修復・監査用として残す。
+
+このrunbookでは次の例示値を使う。実環境のURLと配置先に読み替える。
+
+| 項目 | 例示値 |
+|------|--------|
+| Nyoy URL | `https://nyoy.example.com` |
+| 徒然 URL | `https://kbmemo.example.com` |
+| Nyoy 配置先 | `/srv/kbmemo/nyoy` |
+| 徒然 配置先 | `/srv/kbmemo/kbmemo` |
 
 ## 前提
 
 - Nyoy と徒然の本番に、memo RAG webhook 受信・送信実装が deploy 済み。
-- Nyoy の `kbmemo` ServiceConnection が `https://kbmemo.net/api/v1` を読める。
+- Nyoy の `kbmemo` ServiceConnection が徒然の `/api/v1` を読める。
 - Nyoy は `SOLID_QUEUE_IN_PUMA=true` などで `MemoKnowledgeWebhookJob` を実行できる。
 - 徒然は `NyoyMemoWebhookJob` を実行できる。
 - 共有 secret は Nyoy MCP token とは別に生成する。
@@ -24,7 +34,7 @@ openssl rand -hex 32
 
 ### Nyoy
 
-`~/sites/nyoy/.env.production` に追加する。
+`/srv/kbmemo/nyoy/.env.production` に追加する。
 
 ```bash
 MEMO_RAG_WEBHOOK_ENABLED=true
@@ -35,11 +45,11 @@ Kamal 運用の場合、`config/deploy.yml` の `env.secret` に `MEMO_RAG_WEBHO
 
 ### 徒然
 
-`/home/kensei/sites/kbmemo/.env.production` に追加する。
+`/srv/kbmemo/kbmemo/.env.production` に追加する。
 
 ```bash
 NYOY_MEMO_WEBHOOK_ENABLED=true
-NYOY_MEMO_WEBHOOK_URL=https://nyoy.kbmemo.net/webhooks/kbmemo/memos
+NYOY_MEMO_WEBHOOK_URL=https://nyoy.example.com/webhooks/kbmemo/memos
 NYOY_MEMO_WEBHOOK_SECRET=<shared-secret>
 ```
 
@@ -50,20 +60,20 @@ Kamal 運用の場合、`config/deploy.yml` の `env.secret` に `NYOY_MEMO_WEBH
 1. Nyoy と徒然の deploy 済み revision を確認する。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 git rev-parse --short HEAD
 
-cd /home/kensei/sites/kbmemo
+cd /srv/kbmemo/kbmemo
 git rev-parse --short HEAD
 ```
 
 2. Nyoy 側を先に有効化し、再起動または deploy する。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 $EDITOR .env.production
 bin/deploy
-curl -fsS https://nyoy.kbmemo.net/up
+curl -fsS https://nyoy.example.com/up
 ```
 
 3. Nyoy の queue が動いていることを確認する。
@@ -75,10 +85,10 @@ journalctl --user -u nyoy -n 100 --no-pager
 4. 徒然側を有効化し、再起動または deploy する。
 
 ```bash
-cd /home/kensei/sites/kbmemo
+cd /srv/kbmemo/kbmemo
 $EDITOR .env.production
 bin/deploy
-curl -fsS https://kbmemo.net/up
+curl -fsS https://kbmemo.example.com/up
 ```
 
 5. 徒然ログで webhook 設定エラーが出ていないことを確認する。
@@ -94,7 +104,7 @@ journalctl --user -u kbmemo -n 100 --no-pager
 1. Nyoy console で徒然 API 接続が有効か確認する。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/prod console
 ```
 
@@ -141,7 +151,7 @@ PromptKnowledgeChunk.from_memo.where("metadata->>'memo_uid' = ?", event.memo_uid
 Nyoy の webhook 状態:
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/prod kbmemo:rag:webhook_status
 ```
 
@@ -171,7 +181,7 @@ journalctl --user -u kbmemo -f
 定期同期は継続する。webhook 有効化後も、必要に応じて checkpoint 同期で収束を確認する。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/prod kbmemo:rag:ingest
 ```
 
@@ -180,7 +190,7 @@ bin/prod kbmemo:rag:ingest
 送信側の徒然から止める。
 
 ```bash
-cd /home/kensei/sites/kbmemo
+cd /srv/kbmemo/kbmemo
 $EDITOR .env.production
 # NYOY_MEMO_WEBHOOK_ENABLED=false
 bin/deploy
@@ -189,7 +199,7 @@ bin/deploy
 必要なら Nyoy 受信側も止める。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 $EDITOR .env.production
 # MEMO_RAG_WEBHOOK_ENABLED=false
 bin/deploy
@@ -198,7 +208,7 @@ bin/deploy
 切り戻し後は checkpoint 同期を実行し、webhook 停止中の差分を収束させる。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/prod kbmemo:rag:ingest
 ```
 

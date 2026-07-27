@@ -22,7 +22,7 @@ bin/dev
 
 ```bash
 export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
-export MCP_API_TOKEN="your-token"
+: "${MCP_API_TOKEN:?Set MCP_API_TOKEN in the environment}"
 ```
 
 MCP ツール確認:
@@ -214,7 +214,9 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 
 ## 確認後の記録
 
-実機確認後、最低限次を記録する。
+実機確認後、最低限次を記録する。endpoint、media ID、AgentRun ID などの
+実環境情報を含む結果は、この公開runbookではなくアクセス制限された運用記録に
+保存する。
 
 - 確認日時
 - 環境（development / production）
@@ -254,60 +256,6 @@ bin/mcp-call-tool retry_image_understanding_graph "{\"agent_run_id\":$AGENT_RUN_
 - 復旧内容:
 - 次回確認事項:
 ```
-
-## 確認ログ
-
-### 2026-07-17 development: 独立 UI / Chat 添付経路
-
-- 確認日時: 2026-07-17 15:52 JST
-- 環境: development
-- Nyoy URL: `http://127.0.0.1:3109`
-- vision model / endpoint: `qwen3vl-4b-instruct-q4-k-m` / `http://balvenie:10021`
-- `vision_llama` ServiceConnection: enabled / `http://balvenie:10021`
-- `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
-- 使用画像: `public/icon.png`（PNG、512x512、黒背景に赤い円）
-- `tsuzura_media_id`: `01KXQDH66PSK6AF23A74S9WCZF`（Chat 添付経路で葛籠へアーカイブされた media）
-
-| 経路 | AgentRun | 結果 | 確認内容 |
-|------|----------|------|----------|
-| 独立 UI | `67` | 成功 | `/image_understandings` へ multipart POST。`agent_run_path=/chats/150/agent_runs/67`、`image_source.kind=chat_attachment`、node 履歴は `plan_image_understanding` → `resolve_image_source` → `analyze_image` → `finalize_image_answer` で全て completed。 |
-| Chat 添付 | `68` | 成功 | `/chats` へ画像添付付き multipart POST。Router が `image_understanding` を選択し、assistant message が Chat に投稿された。`image_source.kind=chat_attachment`、`state.final_answer` と assistant message が一致。 |
-| HTTP MCP `tsuzura_media_id` | `69` | 成功 | `env.development` の `MCP_API_TOKEN` を読み込み、`bin/mcp-call-tool run_image_understanding_graph` / `get_image_understanding_graph` を実行。`agent_run_path=/chats/152/agent_runs/69`、`image_source.kind=tsuzura_media`、`final_answer` あり。 |
-
-補足:
-
-- Chat: `#151`
-- Chat user message: `#2208`
-- Chat assistant message: `#2209`
-- Chat 添付: Active Storage attachment `#538`
-- HTTP MCP Chat: `#152`
-- HTTP MCP assistant message: `#2211`
-
-### 2026-07-17 development: vision 障害 retry
-
-- 環境: development
-- Nyoy URL: `http://127.0.0.1:3109`
-- vision model / endpoint: `qwen3vl-4b-instruct-q4-k-m` / `http://balvenie:10021`
-- `vision_llama` ServiceConnection: 確認中のみ `enabled=true`、障害注入時のみ `base_url=http://127.0.0.1:9`。確認後は `enabled=false` / `base_url=http://balvenie:10021` に復旧
-- `tsuzura` ServiceConnection: enabled / `http://localhost:3008`
-- 使用画像: 葛籠 media
-- `tsuzura_media_id`: `01KXGK8VENEJ7CXJYNZCHYGKVZ`
-- 実行経路: Rails runner から `AgentGraph::ImageUnderstandingGraphRunner.call_for_mcp` / `AgentGraph::RunRetryLauncher.call` を直接実行。HTTP MCP はローカル server の `MCP_API_TOKEN` が不明で 401 のため未使用
-
-| 経路 | AgentRun | 結果 | 確認内容 |
-|------|----------|------|----------|
-| vision 障害 retry | 元: `65` / retry: `66` | 成功 | 元 run は `analyze_image` failed / `retry_from_node=resolve_image_source` / retry run completed |
-
-補足:
-
-- 失敗 node: `analyze_image`
-- `error_message`: `llama.cpp に接続できませんでした（Failed to open TCP connection to 127.0.0.1:9 ...）`
-- 元 run: `status=failed`、`state.errors[0].code=VISION_ANALYSIS_FAILED`、`image_source.kind=tsuzura_media`
-- 元 run node 履歴: `plan_image_understanding=completed`、`resolve_image_source=completed`、`analyze_image=failed`
-- checkpoint: `resolve_image_source` checkpoint `#434`
-- retry run: `status=completed`、`retry_of_agent_run_id=65`、`retry_from_checkpoint_id=434`、`analysis` / `final_answer` あり
-- 復旧内容: `vision_llama.base_url` を `http://balvenie:10021` に戻して retry 実行。確認後、`vision_llama.enabled` も元の `false` に復旧
-- 次回確認事項: HTTP MCP 経路で同じ retry を確認するには、起動中 server の `MCP_API_TOKEN` を shell に設定して実行する
 
 ## トラブルシュート
 
