@@ -21,6 +21,8 @@ ChatModelSeeds.seed!
 LlmSamplingPresetSeeds.seed!
 LlmUsageAssignmentSeeds.seed!
 
+skip_prompt_knowledge_embedding = ENV["SKIP_PROMPT_KNOWLEDGE_EMBEDDING"].present?
+
 [
   {
     title: "鳥獣戯画の線画と余白",
@@ -88,9 +90,11 @@ LlmUsageAssignmentSeeds.seed!
   }
 ].each do |attrs|
   chunk = PromptKnowledgeChunk.find_or_create_by!(title: attrs[:title]) do |record|
+    record.skip_auto_embed = skip_prompt_knowledge_embedding
     record.kind = attrs[:kind]
     record.body = attrs[:body]
     record.style_ref = attrs[:style_ref]
   end
+  chunk.skip_auto_embed = skip_prompt_knowledge_embedding
   chunk.update!(kind: attrs[:kind], body: attrs[:body], style_ref: attrs[:style_ref])
 end

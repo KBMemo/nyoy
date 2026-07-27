@@ -138,6 +138,7 @@ jobs:
       - name: Verify seeds from an empty database
         env:
           RAILS_ENV: test
+          SKIP_PROMPT_KNOWLEDGE_EMBEDDING: "1"
           DB_HOST: localhost
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
