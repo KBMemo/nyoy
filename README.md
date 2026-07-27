@@ -259,3 +259,8 @@ bin/rails test
 - 徒然 API 要件: `docs/tsuredure-api-requirements.md`
 - 徒然 PGroonga 検索: `docs/tsuredure-pgroonga-search.md`
 - seed 再適用: `bin/rails db:seed`
+
+## Contributing and security
+
+Contribution guidelines are in [CONTRIBUTING.md](CONTRIBUTING.md). Do not report security
+issues publicly; use the private reporting procedure in [SECURITY.md](SECURITY.md).
