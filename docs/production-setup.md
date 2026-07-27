@@ -1,37 +1,40 @@
-# 本番環境セットアップ（bowmore:sites/nyoy）
+# 本番環境セットアップ
 
-Nyoy を `bowmore` サーバーの `~/sites/nyoy` に配置し、systemd + nginx で運用する手順です。
+Nyoy を application server の `/srv/kbmemo/nyoy` に配置し、systemd + nginx で運用する手順です。
 
-PostgreSQL・SearXNG・readability は既に bowmore 上で動作している前提です（README のデフォルト接続先と同じ）。
+以下では application server を `app.example.com`、PostgreSQL server を
+`db.example.com`、deploy user を `deploy` とします。実環境の構成に合わせて
+読み替えてください。SearFront、readability、LLM などの外部サービスは、
+application server から接続できる状態を前提とします。
 
 ## 構成概要
 
 ```
 [ブラウザ]
     ↓ HTTPS
-[nginx on bowmore]  →  proxy_pass → 127.0.0.1:3009
+[nginx on app.example.com]  →  proxy_pass → 127.0.0.1:3009
                                         ↓
                               [Puma + Solid Queue in Puma]
                                         ↓
-                    PostgreSQL (bowmore.artif.org:5432)
+                    PostgreSQL (db.example.com:5432)
                     nyoy_production / _cache / _queue / _cable
 ```
 
 | 項目 | 値 |
 |------|-----|
-| デプロイ先 | `bowmore:~/sites/nyoy` |
-| デプロイユーザー | `kensei` |
+| デプロイ先 | `app.example.com:/srv/kbmemo/nyoy` |
+| デプロイユーザー | `deploy` |
 | 待受ポート | `3009`（`.env.production` の `PORT`） |
 | systemd ユニット | `~/.config/systemd/user/nyoy.service`（`systemctl --user`） |
-| 公開 URL | `https://nyoy.kbmemo.net` |
+| 公開 URL | `https://app.example.com` |
 
-## 1. bowmore 側の事前準備
+## 1. application server 側の事前準備
 
 ### 1.1 パッケージ
 
 ```bash
-# bowmore に SSH
-ssh bowmore
+# application server に SSH
+ssh deploy@app.example.com
 
 # Ruby ビルド用（rbenv 利用時）
 sudo apt-get update
@@ -51,17 +54,17 @@ nvm alias default 22
 
 ```bash
 rbenv install 4.0.3   # 未インストールの場合
-rbenv global 4.0.3    # または local で sites/nyoy 配下のみ
+rbenv global 4.0.3    # または /srv/kbmemo/nyoy で rbenv local を使用
 ruby -v               # => 4.0.3
 gem install bundler
 ```
 
 ### 1.3 PostgreSQL データベース
 
-bowmore の PostgreSQL に接続し、本番用 DB とユーザーを作成します。
+PostgreSQL server に接続し、本番用 DB とユーザーを作成します。
 
 ```sql
--- psql -h bowmore.artif.org -U postgres など管理者で接続
+-- psql -h db.example.com -U postgres など管理者で接続
 
 CREATE USER nyoy WITH PASSWORD '***';
 CREATE DATABASE nyoy_production OWNER nyoy;
@@ -81,11 +84,11 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ### 2.1 リポジトリのクローン
 
 ```bash
-ssh bowmore
-mkdir -p ~/sites
-cd ~/sites
-git clone <リポジトリURL> nyoy
-cd nyoy
+ssh deploy@app.example.com
+sudo mkdir -p /srv/kbmemo
+sudo chown deploy:deploy /srv/kbmemo
+git clone <リポジトリURL> /srv/kbmemo/nyoy
+cd /srv/kbmemo/nyoy
 git checkout main   # デプロイブランチ
 ```
 
@@ -103,19 +106,19 @@ database:
   password: "***"
 ```
 
-**bowmore** に `config/master.key` を配置します（git 管理外のため手動コピー）。
+application server に `config/master.key` を配置します（git 管理外のため手動コピー）。
 
 ```bash
 # 開発マシンから
-scp config/master.key kensei@bowmore:~/sites/nyoy/config/master.key
+scp config/master.key deploy@app.example.com:/srv/kbmemo/nyoy/config/master.key
 ```
 
 ### 2.3 本番環境変数
 
-bowmore 上で `.env.production` を作成します（git 管理外）。
+application server 上で `.env.production` を作成します（git 管理外）。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 cp .env.example .env.production
 $EDITOR .env.production
 ```
@@ -130,7 +133,7 @@ SOLID_QUEUE_IN_PUMA=true
 RAILS_MASTER_KEY=<config/master.key と同じ値>
 
 # PostgreSQL（本番では DB_* を明示推奨）
-DB_HOST=127.0.0.1
+DB_HOST=db.example.com
 DB_USERNAME=nyoy
 DB_PASSWORD=***
 DB_NAME=nyoy_production
@@ -138,11 +141,11 @@ DB_CACHE_NAME=nyoy_production_cache
 DB_QUEUE_NAME=nyoy_production_queue
 DB_CABLE_NAME=nyoy_production_cable
 
-# 外部 AI サービス（balvenie 等、ネットワーク到達可能な URL に変更）
+# 外部 AI サービス（ネットワーク到達可能な URL に変更）
 # llama endpoint変数は初回db:seedでServiceConnectionを作るためにだけ使用する。
 # 運用開始後の接続先・有効状態は「設定 > 接続」で管理する。
-LLAMA_CPP_URL=http://balvenie:10010
-LLAMA_SWITCHD_URL=http://balvenie:11335
+LLAMA_CPP_URL=http://ai.example.com:10010
+LLAMA_SWITCHD_URL=http://ai.example.com:11335
 LLAMA_SWITCHD_TOKEN=...
 LLAMA_SERVER_ADMIN_TOKEN=...
 # LLAMA_SERVER_ALERT_WEBHOOK_URL=https://alerts.example.com/hooks/nyoy
@@ -152,21 +155,21 @@ LLAMA_SERVER_ADMIN_TOKEN=...
 # LLAMA_SERVER_ALERT_ZABBIX_PORT=10051
 # LLAMA_SERVER_ALERT_ZABBIX_HOST=nyoy-production
 # LLAMA_SERVER_ALERT_ZABBIX_KEY_PREFIX=nyoy.llama_server.reconciliation
-GPT_OSS_LLAMA_CPP_URL=http://balvenie:10014
-VISION_LLAMA_CPP_URL=http://balvenie:10021
-EMBEDDINGS_URL=http://balvenie:10020
-SDCPP_SERVER_URL=http://balvenie:11234
-SDCPP_SWITCHD_URL=http://balvenie:11334
+GPT_OSS_LLAMA_CPP_URL=http://ai.example.com:10014
+VISION_LLAMA_CPP_URL=http://ai.example.com:10021
+EMBEDDINGS_URL=http://ai.example.com:10020
+SDCPP_SERVER_URL=http://ai.example.com:11234
+SDCPP_SWITCHD_URL=http://ai.example.com:11334
 # SDCPP_SWITCHD_TOKEN=...
 
-# bowmore 上の既存サービス
-SEARFRONT_URL=http://bowmore:13000
+# application server 上で動かす場合の例
+SEARFRONT_URL=http://localhost:13000
 SEARFRONT_TOKEN=...
 # 互換（非推奨）: SEARXNG_URL / SEARXNG_API_TOKEN
-READABILITY_URL=http://bowmore:8030
+READABILITY_URL=http://localhost:8030
 
 # 徒然・葛籠（本番トークンを設定）
-KBMEMO_URL=https://kbmemo.net
+KBMEMO_URL=https://kbmemo.example.com
 # KBMEMO_API_TOKEN=kbmemo_...
 # TSUZURA_URL=...
 # TSUZURA_API_TOKEN=tsuzura_...
@@ -174,7 +177,9 @@ KBMEMO_URL=https://kbmemo.net
 
 `RAILS_MASTER_KEY` は `config/master.key` の内容と同じ値です（`.env.production` に書くか、手動実行時は `bin/prod` を使います）。
 
-bowmore 上で `bin/rails` を直接叩く場合は、徒然（kbmemo）と同様に `scripts/production_env.sh` を読み込んでください。`.env.production` だけでは変数が子プロセスに export されず、rbenv も有効になりません。
+application server 上で `bin/rails` を直接叩く場合は、
+`scripts/production_env.sh` を読み込んでください。`.env.production` だけでは
+変数が子プロセスに export されず、rbenv も有効になりません。
 
 ```bash
 # 推奨
@@ -189,15 +194,17 @@ bin/rails dbconsole
 
 ### LLM用途設定のdeploy後確認
 
-bowmoreの`nyoy.service`は`start.sh`で`db:prepare`、不足用途assignmentの補完、次のstrict監査を順に実行してからPumaを起動する。Kamal deployを使う構成では`.kamal/hooks/post-deploy`がseedと同じ監査を実行する。
+`nyoy.service`は`start.sh`で`db:prepare`、不足用途assignmentの補完、次の
+strict監査を順に実行してからPumaを起動する。Kamal deployを使う構成では
+`.kamal/hooks/post-deploy`がseedと同じ監査を実行する。
 
 ```bash
 STRICT=1 bin/rails llm_usages:audit
 ```
 
-2026-07-22時点の本番はKamalではなく、bowmoreのsystemd user unit `nyoy.service`（`/home/kensei/sites/nyoy`、port 3009）で稼働している。更新時は「最新app取得 → bundle更新 → service restart」の順で実施し、`start.sh`に組み込んだmigration・seed・strict監査がすべて成功したことをjournalで確認する。旧app稼働中にDB migrationだけを先行適用しない。
-
-同日の初回適用では、migration、14用途のstrict監査、legacy key DB監査、llama-switchd reconciliation、公開Host付き`/up`（HTTP 200）まで確認した。
+更新時は「最新app取得 → bundle更新 → service restart」の順で実施し、
+`start.sh`に組み込んだmigration・seed・strict監査がすべて成功したことを
+journalで確認する。旧app稼働中にDB migrationだけを先行適用しない。
 
 `.env.production` の `DB_PASSWORD` など `!` を含む値は、クォート推奨です。
 
@@ -208,7 +215,7 @@ DB_PASSWORD='Hoge3Gou!33'
 ### 2.4 初回ビルド
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 
 bundle config set --local deployment 'true'
 bundle config set --local without 'development:test'
@@ -236,13 +243,14 @@ chmod 755 storage
 
 ## 3. systemd ユーザーユニット
 
-システム全体（`/etc/systemd/system/`）ではなく、**ユーザー `kensei` の systemd**（`~/.config/systemd/user/`）に登録します。`sudo` は不要です。
+システム全体（`/etc/systemd/system/`）ではなく、deploy user の systemd
+（`~/.config/systemd/user/`）に登録します。`sudo` は不要です。
 
 リポジトリの `config/systemd/user/nyoy.service` をコピーします。
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp ~/sites/nyoy/config/systemd/user/nyoy.service ~/.config/systemd/user/nyoy.service
+cp /srv/kbmemo/nyoy/config/systemd/user/nyoy.service ~/.config/systemd/user/nyoy.service
 ```
 
 ユニットの例（`%h` はホームディレクトリ）:
@@ -255,8 +263,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/sites/nyoy
-ExecStart=%h/sites/nyoy/start.sh
+WorkingDirectory=/srv/kbmemo/nyoy
+ExecStart=/srv/kbmemo/nyoy/start.sh
 ExecReload=/bin/kill -USR1 $MAINPID
 Restart=on-failure
 RestartSec=5
@@ -295,7 +303,7 @@ journalctl --user -u nyoy -f
 ```nginx
 server {
     listen 80;
-    server_name nyoy.kbmemo.net;
+    server_name app.example.com;
 
     client_max_body_size 50M;
 
@@ -317,7 +325,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-HTTPS は certbot 等で `nyoy.kbmemo.net` に証明書を設定してください。証明書導入後は `config/environments/production.rb` の `config.assume_ssl` / `config.force_ssl` のコメントを外すことを検討してください。
+HTTPS は certbot 等で `app.example.com` に証明書を設定してください。証明書導入後は `config/environments/production.rb` の `config.assume_ssl` / `config.force_ssl` のコメントを外すことを検討してください。
 
 ## 5. 動作確認
 
@@ -326,11 +334,11 @@ HTTPS は certbot 等で `nyoy.kbmemo.net` に証明書を設定してくださ�
 curl -s http://127.0.0.1:3009/up
 
 # メモ RAG 初回取込（任意）
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/prod kbmemo:rag:ingest
 ```
 
-ブラウザで `https://nyoy.kbmemo.net` を開き、メモ挿絵・Chat・画像生成が動くことを確認します。
+ブラウザで `https://app.example.com` を開き、メモ挿絵・Chat・画像生成が動くことを確認します。
 
 ## 6. 2 回目以降のデプロイ
 
@@ -365,7 +373,7 @@ remote host上で直接更新できるdeploy keyを別途設定した環境で�
 従来のコマンドも利用できる。
 
 ```bash
-cd ~/sites/nyoy
+cd /srv/kbmemo/nyoy
 bin/deploy
 ```
 
@@ -383,7 +391,7 @@ bin/deploy --skip-restart   # git pull〜assets まで。再起動は手動
 
 ```bash
 NYOY_SYSTEMD_UNIT=nyoy \
-NYOY_HEALTH_URL=https://nyoy.kbmemo.net/up \
+NYOY_HEALTH_URL=https://app.example.com/up \
 NYOY_HEALTH_CHECK_DELAY=5 \
 bin/deploy
 ```
@@ -396,19 +404,17 @@ LLMサーバー管理認証を変更した場合は、デプロイ後に非破�
 set -a
 source .env.production
 set +a
-NYOY_URL=https://nyoy.kbmemo.net bin/verify-llama-server-admin
+NYOY_URL=https://app.example.com bin/verify-llama-server-admin
 ```
 
 詳細は [llama-switchd 運用 Runbook](./llama-switchd-runbook.md) を参照してください。
-
-2026-07-21、NVM default `v22.14.0` を `scripts/production_env.sh` が自動解決する状態で、PATHの手動補完なしにrevision `00fde05` のdeploy、npm ci、assets precompile、systemd再起動、health checkが完走した。
 
 ## 7. トラブルシュート
 
 | 症状 | 確認 |
 |------|------|
-| `no password supplied` | `.env.production` に `DB_USERNAME` / `DB_PASSWORD` があるか。bowmore の credentials が `database:` ではなく `db:` 形式だと `config/database.yml` から読めない |
-| `127.0.1.1` に接続している | `bowmore.artif.org` が `/etc/hosts` で 127.0.1.1 に解決されている（正常）。`DB_HOST=127.0.0.1` で明示可 |
+| `no password supplied` | `.env.production` に `DB_USERNAME` / `DB_PASSWORD` があるか。credentials は `config/database.yml` が読む `database:` 形式か |
+| 想定外の DB host に接続している | `DB_HOST` と名前解決結果を確認する。同一host上のDBなら `DB_HOST=127.0.0.1` で明示可 |
 | `key must be 16 bytes` | `.env.production` の `RAILS_MASTER_KEY` が `config/master.key` と一致しているか（改行・欠損なし） |
 | 502 Bad Gateway | `systemctl --user status nyoy`、ポート `PORT` と nginx の `proxy_pass` が一致しているか |
 | DB 接続エラー | credentials の `database.username/password`、`pg_hba.conf`、DB 存在 |
@@ -422,8 +428,8 @@ NYOY_URL=https://nyoy.kbmemo.net bin/verify-llama-server-admin
 
 リポジトリには Kamal 設定（`config/deploy.yml`）も含まれています。コンテナ運用に切り替える場合:
 
-1. `config/deploy.yml` の `servers.web` を bowmore の IP/ホストに変更
+1. `config/deploy.yml` の `servers.web` を application server の IP/host に変更
 2. `.kamal/secrets` に `RAILS_MASTER_KEY` を設定
 3. `bin/kamal setup && bin/kamal deploy`
 
-従来型（`sites/nyoy`）と Kamal は併用しないでください。
+systemd 配置と Kamal は併用しないでください。
