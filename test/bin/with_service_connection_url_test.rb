@@ -37,7 +37,16 @@ class WithServiceConnectionUrlTest < ActiveSupport::TestCase
   private
 
   def run_script(*command)
-    env = { "RAILS_ENV" => "test" }
+    database = ActiveRecord::Base.connection_db_config.configuration_hash
+    env = {
+      "RAILS_ENV" => "test",
+      "DB_HOST" => database[:host],
+      "DB_PORT" => database[:port],
+      "DB_NAME" => database[:database],
+      "DB_USERNAME" => database[:username],
+      "DB_PASSWORD" => database[:password]
+    }.compact.transform_values(&:to_s)
+
     Open3.capture3(
       env,
       Rails.root.join("bin/with-service-connection-url").to_s,
