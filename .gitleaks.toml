@@ -1,0 +1,11 @@
+title = "Nyoy gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented non-secret MCP token placeholder retained in history"
+regexTarget = "match"
+regexes = [
+  '''Authorization: Bearer your-token'''
+]
