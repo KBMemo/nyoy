@@ -147,6 +147,7 @@ class ChatToolsTest < ActiveSupport::TestCase
       calls << { url: url, kwargs: kwargs }
       { url: url, status: 200, title: "Example", text: "Hello", full_text: "Hello world" }
     end
+    original_url_fetcher = ChatTools::Registry.method(:url_fetcher)
     ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
 
     result = JSON.parse(ChatTools::FetchUrl.new.execute(url: "https://example.com"))
@@ -158,7 +159,7 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert result["page_id"].present?
     assert_equal true, result["ok"]
   ensure
-    ChatTools::Registry.reset_client!
+    ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
   end
 
   test "fetch_url rejects pdf and limits calls per turn" do
@@ -168,6 +169,7 @@ class ChatToolsTest < ActiveSupport::TestCase
       calls << url
       { url: url, status: 200, text: "ok", full_text: "ok" }
     end
+    original_url_fetcher = ChatTools::Registry.method(:url_fetcher)
     ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
 
     budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 2)
@@ -188,7 +190,7 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_match(/最大 2 回/, third)
     assert_equal 2, calls.size
   ensure
-    ChatTools::Registry.reset_client!
+    ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
   end
 
   test "fetch_url rejects duplicate url without calling fetcher again" do
@@ -198,6 +200,7 @@ class ChatToolsTest < ActiveSupport::TestCase
       calls << url
       { url: url, status: 200, text: "ok", full_text: "ok" }
     end
+    original_url_fetcher = ChatTools::Registry.method(:url_fetcher)
     ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
 
     budget = ChatTools::WebToolBudget.new(max_searches: 2, max_fetches: 3)
@@ -211,7 +214,7 @@ class ChatToolsTest < ActiveSupport::TestCase
     assert_match(/URL_ALREADY_FETCHED/, duplicate)
     assert_equal 1, calls.size
   ensure
-    ChatTools::Registry.reset_client!
+    ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
   end
 
   test "search_fetched_page returns matching excerpts from cache" do
