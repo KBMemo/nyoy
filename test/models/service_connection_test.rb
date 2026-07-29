@@ -10,6 +10,14 @@ class ServiceConnectionTest < ActiveSupport::TestCase
     assert_includes connection.errors[:base], "組み込み接続は削除できません。無効化してください。"
   end
 
+  test "lfm audio is a generic non-model endpoint" do
+    connection = service_connections(:lfm_audio)
+
+    assert connection.builtin?
+    assert_not connection.model_endpoint?
+    assert_not connection.generative_model_endpoint?
+  end
+
   test "canonical connection remains builtin through its seed key" do
     connection = service_connections(:llama_cpp)
     connection.update_columns(

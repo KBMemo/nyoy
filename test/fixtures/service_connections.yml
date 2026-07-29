@@ -94,6 +94,16 @@ tsuzura:
   enabled: true
   sort_order: 7
 
+lfm_audio:
+  seed_key: lfm_audio
+  key: lfm_audio
+  name: LFM2.5 Audio
+  base_url: http://audio.example.test:10120
+  server_model: LiquidAI/LFM2.5-Audio-1.5B-JP
+  api_token: lfm_audio_test_token
+  enabled: true
+  sort_order: 8
+
 searfront:
   seed_key: searfront
   key: searfront
@@ -101,7 +111,7 @@ searfront:
   base_url: http://search.example.test:13000
   api_token: test_searfront_token
   enabled: true
-  sort_order: 8
+  sort_order: 9
   settings:
     result_count: 5
     concurrent_searches: 1
@@ -116,4 +126,4 @@ readability:
   name: readability-js-server
   base_url: http://readability.example.test:8030
   enabled: true
-  sort_order: 9
+  sort_order: 10

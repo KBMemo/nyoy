@@ -39,6 +39,9 @@ Rails.application.config.x.nyoy.tap do |config|
   config.kbmemo_api_token = ENV["KBMEMO_API_TOKEN"]
   config.tsuzura_url = ENV.fetch("TSUZURA_URL", "http://localhost:3008")
   config.tsuzura_api_token = ENV["TSUZURA_API_TOKEN"]
+  config.lfm_audio_url = ENV.fetch("LFM_AUDIO_URL", "http://localhost:10120")
+  config.lfm_audio_token = ENV["LFM_AUDIO_TOKEN"]
+  config.lfm_audio_model = ENV.fetch("LFM_AUDIO_MODEL", "LiquidAI/LFM2.5-Audio-1.5B-JP")
   config.searfront_url = ENV.fetch("SEARFRONT_URL") do
     ENV.fetch("SEARXNG_URL", "http://localhost:13000")
   end

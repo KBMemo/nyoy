@@ -93,4 +93,18 @@ class ServiceConnectionSeedsTest < ActiveSupport::TestCase
   ensure
     Rails.application.config.x.nyoy.gpt_oss_llama_cpp_url = original
   end
+
+  test "lfm audio is enabled only with a service token" do
+    original = Rails.application.config.x.nyoy.lfm_audio_token
+    Rails.application.config.x.nyoy.lfm_audio_token = nil
+
+    definition = ServiceConnectionSeeds.definitions.find { |item| item[:key] == "lfm_audio" }
+    assert_equal false, definition[:enabled]
+
+    Rails.application.config.x.nyoy.lfm_audio_token = "audio_token"
+    definition = ServiceConnectionSeeds.definitions.find { |item| item[:key] == "lfm_audio" }
+    assert_equal true, definition[:enabled]
+  ensure
+    Rails.application.config.x.nyoy.lfm_audio_token = original
+  end
 end

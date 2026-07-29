@@ -13,6 +13,7 @@ module NyoyConnectionStore
     openai: { url: :openai_url, model: :openai_chat_model, token: :openai_api_key },
     kbmemo: { url: :kbmemo_url, token: :kbmemo_api_token },
     tsuzura: { url: :tsuzura_url, token: :tsuzura_api_token },
+    lfm_audio: { url: :lfm_audio_url, model: :lfm_audio_model, token: :lfm_audio_token },
     searfront: { url: :searfront_url, token: :searfront_api_token },
     readability: { url: :readability_url }
   }.freeze

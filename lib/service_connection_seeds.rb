@@ -163,6 +163,15 @@ module ServiceConnectionSeeds
         notes: "Chat 画像アーカイブ・メディア参照（tsuzura API トークン）"
       },
       {
+        key: "lfm_audio",
+        name: "LFM2.5 Audio",
+        base_url: config.lfm_audio_url,
+        server_model: config.lfm_audio_model,
+        api_token: config.lfm_audio_token,
+        enabled: config.lfm_audio_token.present?,
+        notes: "音声文字起こし・音声合成 API（LFM2.5-Audio-JP）"
+      },
+      {
         key: "searfront",
         name: "searfront",
         base_url: config.searfront_url,

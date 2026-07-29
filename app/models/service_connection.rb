@@ -23,6 +23,7 @@ class ServiceConnection < ApplicationRecord
     llama_switchd
     kbmemo
     tsuzura
+    lfm_audio
     searfront
     readability
   ].freeze
@@ -41,6 +42,7 @@ class ServiceConnection < ApplicationRecord
     "llama_switchd" => "llama-switchd",
     "kbmemo" => "徒然（KBMemo API）",
     "tsuzura" => "葛籠（KBMemo Media API）",
+    "lfm_audio" => "LFM2.5 Audio",
     "searfront" => "searfront（Web 検索）",
     "readability" => "readability-js-server（本文抽出）"
   }.freeze
