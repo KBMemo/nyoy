@@ -40,6 +40,8 @@ class LfmAudioClient
   end
 
   def health
+    raise Error, "LFM Audio API が未設定です" unless configured?
+
     uri = URI("#{@base_url}/health")
     response = perform_request(uri, Net::HTTP::Get.new(uri))
     parse_json_response(response)

@@ -83,6 +83,12 @@ Rails.application.routes.draw do
 
   match "mcp", to: "mcp#entry", via: %i[get post delete], as: :mcp
 
+  namespace :api do
+    get "audio/health", to: "audio#health"
+    post "audio/transcriptions", to: "audio#transcribe"
+    post "audio/speech", to: "audio#speech"
+  end
+
   namespace :webhooks do
     namespace :kbmemo do
       post "memos", to: "memos#create", as: :memos
