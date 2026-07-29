@@ -132,6 +132,8 @@ RAILS_LOG_LEVEL=info
 NYOY_APP_HOST=nyoy.example.com
 SOLID_QUEUE_IN_PUMA=true
 RAILS_MASTER_KEY=<config/master.key と同じ値>
+# Active Storage の untrusted libvips loader を無効化（libvips >= 8.13 必須）
+VIPS_BLOCK_UNTRUSTED=1
 
 # PostgreSQL（本番では DB_* を明示推奨）
 DB_HOST=db.example.com
