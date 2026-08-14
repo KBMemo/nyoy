@@ -162,6 +162,48 @@ class ChatToolsTest < ActiveSupport::TestCase
     ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
   end
 
+  test "fetch_url repairs llm-inserted spaces before fetching" do
+    calls = []
+    fake_fetcher = Object.new
+    fake_fetcher.define_singleton_method(:fetch) do |url, **|
+      calls << url
+      { url: url, status: 200, text: "ok", full_text: "ok" }
+    end
+    original_url_fetcher = ChatTools::Registry.method(:url_fetcher)
+    ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
+
+    original = "https://store.toto-dream.com/dcs/subos/screen/pi01/spin000/PGSPIN00001DisptotoLotInfo.form?holdCntId=1645"
+    spaced = "https://store.toto-dream.com/dcs subos/screen/pi01/spin 000/PG SPIN00001 Disptoto LotInfo.form? holdCntId=1645"
+    result = JSON.parse(ChatTools::FetchUrl.new.execute(url: spaced))
+
+    assert_equal [ original ], calls
+    assert_equal original, result["url"]
+  ensure
+    ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
+  end
+
+  test "fetch_url prefers the explicit user url when the tool argument is corrupted" do
+    calls = []
+    fake_fetcher = Object.new
+    fake_fetcher.define_singleton_method(:fetch) do |url, **|
+      calls << url
+      { url: url, status: 200, text: "ok", full_text: "ok" }
+    end
+    original_url_fetcher = ChatTools::Registry.method(:url_fetcher)
+    ChatTools::Registry.define_singleton_method(:url_fetcher) { fake_fetcher }
+
+    original = "https://store.toto-dream.com/dcs/subos/screen/pi01/spin000/PGSPIN00001DisptotoLotInfo.form?holdCntId=1645"
+    chat = Chat.create!(model: Model.find_by!(provider: "openai", model_id: "gpt-oss"))
+    chat.messages.create!(role: :user, content: original)
+    spaced = "https://store.toto-dream.com/dcs subos/screen/pi01/spin 000/PG SPIN00001 Disptoto LotInfo.form? holdCntId=1645"
+
+    ChatTools::FetchUrl.new(chat: chat).execute(url: spaced)
+
+    assert_equal [ original ], calls
+  ensure
+    ChatTools::Registry.define_singleton_method(:url_fetcher, original_url_fetcher) if defined?(original_url_fetcher)
+  end
+
   test "fetch_url rejects pdf and limits calls per turn" do
     calls = []
     fake_fetcher = Object.new

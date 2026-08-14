@@ -11,17 +11,20 @@ module ChatTools
       長いページの続きは search_fetched_page(page_id, query) を使う。
     DESC
 
-    def initialize(budget: nil)
+    def initialize(budget: nil, chat: nil)
       @budget = budget || WebToolBudget.from_settings
+      @chat = chat
     end
 
     def name
       "fetch_url"
     end
 
-    param :url, desc: "取得する http/https URL（PDF 不可）", required: true
+    param :url, desc: "取得する http/https URL（PDF 不可。空白を入れず、ユーザーが書いた文字列をそのまま渡す）", required: true
 
     def execute(url:)
+      url = resolve_url(url)
+
       if PdfUrl.blocked?(url)
         return ToolResponse.error(
           tool: "fetch_url",
@@ -79,6 +82,17 @@ module ChatTools
     end
 
     private
+
+    def resolve_url(raw)
+      recovered = HttpUrl.recover_from_explicit(raw, explicit_urls_from_chat)
+      HttpUrl.normalize(recovered || raw)
+    end
+
+    def explicit_urls_from_chat
+      return [] unless @chat.respond_to?(:messages)
+
+      HttpUrl.extract_all(@chat.messages.where(role: "user").order(:created_at).last&.content)
+    end
 
     def truncated_next_action(truncated)
       if truncated

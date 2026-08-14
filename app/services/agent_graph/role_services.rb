@@ -410,7 +410,6 @@ module AgentGraph
     end
 
     class DeterministicResearchPlanner
-      URL_PATTERN = %r{https?://[^\s<>\]]+}i
       SENSITIVE_PATTERN = Regexp.union(
         /保存/,
         /メモに/,
@@ -444,7 +443,7 @@ module AgentGraph
       private
 
       def extract_urls(question)
-        question.scan(URL_PATTERN).map { |url| url.sub(/[),.]+$/, "") }.uniq
+        HttpUrl.extract_all(question)
       end
 
       def web_likely?(question)

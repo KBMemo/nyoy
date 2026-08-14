@@ -40,6 +40,7 @@ module ChatTools
       web_search の content は URL 選定用の短いスニペットです。content_truncated: true の結果で詳細が必要な場合だけ fetch_url を使ってください。
       fetch_url は content_preview のみ返し、truncated: true のときは search_fetched_page(page_id, query) で続きを探します。
       fetch_url は一度に1件の URL だけ指定します（複数 URL を同時に並べない）。結果を受け取ってから、必要なら次の URL を fetch_url で取得できます。
+      url 引数には空白を入れず、ユーザーや検索結果の URL をそのまま渡してください。
       ツール結果に [TOOL_LIMIT_REACHED] または [TOOL_ERROR] が含まれる場合は失敗として扱い、RETRYABLE: false のときは同じツールを繰り返し呼び出さないでください。
       CODE: URL_ALREADY_FETCHED / FETCH_LIMIT_EXCEEDED / SEARCH_LIMIT_EXCEEDED は再試行禁止です。
       CODE: QUERY_ALREADY_SEARCHED も再試行禁止です。同じ検索結果を使って回答してください。
@@ -50,6 +51,7 @@ module ChatTools
 
     FETCH_URL_INSTRUCTIONS = <<~TEXT.squish
       fetch_url で公開 Web ページの短いプレビューを取得できます。http/https の HTML/テキストのみ。PDF は不可。
+      url 引数には空白を入れず、ユーザーや検索結果の URL をそのまま渡してください。
       truncated: true のときは fetch_url を再実行せず search_fetched_page を使ってください。
       fetch_url は一度に1件の URL だけ指定します。結果を受け取ってから、必要なら次の URL を取得できます（同時に複数を並べない）。HTML ページは readability-js-server で本文抽出します。
       [TOOL_LIMIT_REACHED] / [TOOL_ERROR] が返り CODE に URL_ALREADY_FETCHED や FETCH_LIMIT_EXCEEDED がある場合は fetch_url を再試行せず、既得の情報で回答してください。
@@ -172,7 +174,9 @@ module ChatTools
       web_budget = WebToolBudget.from_settings
 
       tool_classes.map do |tool_class|
-        if CHAT_SCOPED_TOOL_CLASSES.include?(tool_class)
+        if tool_class == FetchUrl
+          tool_class.new(budget: web_budget, chat: chat)
+        elsif CHAT_SCOPED_TOOL_CLASSES.include?(tool_class)
           tool_class.new(chat: chat)
         elsif WEB_BUDGET_TOOL_CLASSES.include?(tool_class)
           tool_class.new(budget: web_budget)

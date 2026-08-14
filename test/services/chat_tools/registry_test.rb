@@ -143,6 +143,7 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     budget = web_search.instance_variable_get(:@budget)
 
     assert_same budget, fetch_url.instance_variable_get(:@budget)
+    assert_equal chat, fetch_url.instance_variable_get(:@chat)
     assert_equal 2, budget.max_searches
     assert_equal 3, budget.max_fetches
   end
