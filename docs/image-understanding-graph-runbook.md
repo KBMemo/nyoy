@@ -21,7 +21,7 @@ bin/dev
 ローカル開発の MCP 接続先と token:
 
 ```bash
-export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3009/mcp}"
 : "${MCP_API_TOKEN:?Set MCP_API_TOKEN in the environment}"
 ```
 

@@ -18,6 +18,7 @@ end
 
 load_env_file(File.join(APP_ROOT, "env.development"))
 # turedure (3000) / tsuzura (3008) と被らない既定ポート。env.development で上書き可。
+# Procfile.dev は web を先頭にする（Foreman は 2 番目以降に PORT+100 を付ける）。
 ENV["PORT"] ||= "3009"
 ENV["VITE_RUBY_PORT"] ||= "3040"
 

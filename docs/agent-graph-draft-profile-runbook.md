@@ -6,7 +6,7 @@
 
 ## 前提
 
-- Nyoy が `http://127.0.0.1:3109` で起動している
+- Nyoy が `http://127.0.0.1:3009` で起動している
 - Research Graphで使うLLM、検索、ページ取得の接続が有効
 - `env.development` に `MCP_API_TOKEN` が設定されている
 - migrationが適用済み
@@ -17,7 +17,7 @@ shellへ開発環境設定を読み込む。
 set -a
 source env.development
 set +a
-export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3009/mcp}"
 ```
 
 接続と公開toolを確認する。

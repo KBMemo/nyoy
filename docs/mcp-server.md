@@ -125,7 +125,7 @@ MCP_API_TOKEN=your-token bin/mcp-list-tools
 HTTP `/mcp` の tool call は `NYOY_MCP_URL` と `MCP_API_TOKEN` を設定して確認できる。
 
 ```bash
-export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3009/mcp}"
 export MCP_API_TOKEN="your-token"
 
 bin/mcp-call-tool run_image_understanding_graph \
@@ -148,7 +148,7 @@ printf '%s\n%s\n' \
 HTTP は Nyoy を起動したうえで、Bearer 認証付きで `initialize` / `tools/list` を確認する。
 
 ```bash
-export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3109/mcp}"
+export NYOY_MCP_URL="${NYOY_MCP_URL:-http://127.0.0.1:3009/mcp}"
 export MCP_API_TOKEN="your-token"
 
 curl -sS -X POST "$NYOY_MCP_URL" \

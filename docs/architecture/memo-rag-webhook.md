@@ -195,7 +195,7 @@ site 側実装:
 
 前提:
 
-- Nyoy は `http://localhost:3109` で起動する
+- Nyoy は `http://localhost:3009` で起動する
 - site は通常の development 環境で起動する
 - Nyoy の `kbmemo` ServiceConnection は site API を読める token を持つ
 - `MEMO_RAG_WEBHOOK_SECRET` と `NYOY_MEMO_WEBHOOK_SECRET` は同じ値にする
@@ -205,14 +205,14 @@ Nyoy 側:
 ```bash
 MEMO_RAG_WEBHOOK_ENABLED=true \
 MEMO_RAG_WEBHOOK_SECRET=dev-webhook-secret \
-bin/rails server -p 3109
+bin/rails server -p 3009
 ```
 
 site 側:
 
 ```bash
 NYOY_MEMO_WEBHOOK_ENABLED=true \
-NYOY_MEMO_WEBHOOK_URL=http://localhost:3109/webhooks/kbmemo/memos \
+NYOY_MEMO_WEBHOOK_URL=http://localhost:3009/webhooks/kbmemo/memos \
 NYOY_MEMO_WEBHOOK_SECRET=dev-webhook-secret \
 bin/rails server
 ```

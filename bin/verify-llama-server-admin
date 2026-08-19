@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base_url="${NYOY_URL:-http://127.0.0.1:3109}"
+base_url="${NYOY_URL:-http://127.0.0.1:3009}"
 admin_token="${LLAMA_SERVER_ADMIN_TOKEN:-${MCP_API_TOKEN:-}}"
 
 if [[ -z "$admin_token" ]]; then
