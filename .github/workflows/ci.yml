@@ -84,6 +84,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     services:
       postgres:
@@ -100,11 +101,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips
-
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install packages
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          for attempt in 1 2 3; do
+            sudo apt-get update -qq \
+              && sudo apt-get install -y --no-install-recommends libvips \
+              && exit 0
+            echo "apt attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
+          done
+          exit 1
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
