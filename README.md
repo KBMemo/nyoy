@@ -37,7 +37,7 @@ License: [MIT](LICENSE)
 ## 前提条件
 
 - Ruby 4.0.3（`.ruby-version` 参照）
-- Node.js（Vite 用）
+- Node.js 22（`.node-version` 参照、Vite 用）
 - PostgreSQL 16 + pgvector（既定 `localhost:5432`、`DB_HOST`で変更可能）
 - 外部サービス（任意）
   - **llama.cpp** — style 計画・Chat（`LLAMA_CPP_URL` / `GPT_OSS_*`）
