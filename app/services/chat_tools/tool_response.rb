@@ -17,6 +17,17 @@ module ChatTools
 
     # Tool payloads often include HTTP-sourced strings tagged as ASCII-8BIT.
     # JSON.generate raises on incomplete UTF-8 labeled as BINARY.
+    def safe_string(value)
+      value.to_s.dup.force_encoding(Encoding::UTF_8).scrub("")
+    end
+
+    def truncate_chars(value, max_chars)
+      text = safe_string(value)
+      return text if text.length <= max_chars
+
+      text[0, max_chars]
+    end
+
     def utf8_deep(value)
       case value
       when Hash
@@ -24,7 +35,7 @@ module ChatTools
       when Array
         value.map { |v| utf8_deep(v) }
       when String
-        value.dup.force_encoding(Encoding::UTF_8).scrub("")
+        safe_string(value)
       else
         value
       end

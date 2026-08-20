@@ -71,6 +71,8 @@ module AgentGraph
         end
       when Array
         value.map { |item| deep_stringify(item) }
+      when String
+        ChatTools::ToolResponse.safe_string(value)
       else
         value
       end

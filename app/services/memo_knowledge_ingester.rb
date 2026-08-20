@@ -17,7 +17,7 @@ class MemoKnowledgeIngester
     uid = memo["uid"].to_s.strip
     raise Error, "memo uid required" if uid.blank?
 
-    body = memo["body"].to_s
+    body = ChatTools::ToolResponse.safe_string(memo["body"])
     title = memo["title"].to_s.presence || "（無題）"
     updated_at = memo["updated_at"].to_s
     memo_id = memo["id"]

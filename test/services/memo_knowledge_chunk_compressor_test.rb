@@ -17,4 +17,19 @@ class MemoKnowledgeChunkCompressorTest < ActiveSupport::TestCase
     assert_includes compressed.body, "Rails"
     assert_not_includes compressed.body, "無関係"
   end
+
+  test "truncate_chars does not split multibyte utf-8 characters" do
+    chunk = PromptKnowledgeChunk.new(
+      title: "toto",
+      body: "第1647回 toto 岡山 vs FC東京 " + ("ア" * 400),
+      metadata: { memo_uid: "01J8X2K3M4N5P6Q7R8S9T0UVWX" }
+    )
+
+    compressed = MemoKnowledgeChunkCompressor.new(max_chars: 20, llm_enabled: false)
+                                              .compress([chunk], query: "toto").first
+
+    assert compressed.body.valid_encoding?
+    assert_equal Encoding::UTF_8, compressed.body.encoding
+    assert_operator compressed.body.length, :<=, 20
+  end
 end

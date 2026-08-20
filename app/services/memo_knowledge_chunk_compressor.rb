@@ -22,7 +22,7 @@ class MemoKnowledgeChunkCompressor
 
       CompressedChunk.new(
         title: chunk.title,
-        body: body.byteslice(0, @max_chars),
+        body: ChatTools::ToolResponse.truncate_chars(body, @max_chars),
         metadata: chunk.metadata
       )
     end

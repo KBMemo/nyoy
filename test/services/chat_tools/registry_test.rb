@@ -218,6 +218,19 @@ class ChatToolsRegistryTest < ActiveSupport::TestCase
     ChatMemoRagInjector.define_singleton_method(:context_for, original) if defined?(original)
   end
 
+  test "recall_memos scrubs invalid utf-8 in context" do
+    original = ChatMemoRagInjector.method(:context_for)
+    broken = "toto ".b + "岡山".b.byteslice(0, 2)
+    ChatMemoRagInjector.define_singleton_method(:context_for) { |**| broken }
+
+    result = ChatTools::RecallMemos.new.execute(query: "toto")
+
+    assert result[:context].valid_encoding?
+    assert_not_includes result, :error
+  ensure
+    ChatMemoRagInjector.define_singleton_method(:context_for, original) if defined?(original)
+  end
+
   test "recall_memos reports when nothing relevant is found" do
     original = ChatMemoRagInjector.method(:context_for)
     ChatMemoRagInjector.define_singleton_method(:context_for) { |**| nil }

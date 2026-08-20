@@ -29,6 +29,24 @@ class ChatTools::ToolResponseTest < ActiveSupport::TestCase
     assert_equal "凛", parsed["title"]
   end
 
+  test "truncate_chars keeps valid utf-8 when limiting length" do
+    text = "第1647回 toto 岡山 vs FC東京"
+
+    truncated = ChatTools::ToolResponse.truncate_chars(text, 10)
+
+    assert truncated.valid_encoding?
+    assert_equal 10, truncated.length
+  end
+
+  test "preview serializes recall_memos context with broken utf-8" do
+    broken = "toto ".b + "岡山".b.byteslice(0, 2)
+
+    payload = ChatTools::ToolResponse.preview(context: broken)
+
+    parsed = JSON.parse(payload)
+    assert parsed["context"].valid_encoding?
+  end
+
   test "limit_reached returns structured plain text" do
     message = ChatTools::ToolResponse.limit_reached(
       tool: "fetch_url",

@@ -21,7 +21,7 @@ module ChatTools
       context = ChatMemoRagInjector.context_for(query: query, chat: @chat)
       return { context: nil, note: "関連するメモは見つかりませんでした。" } if context.blank?
 
-      { context: context }
+      { context: ChatTools::ToolResponse.safe_string(context) }
     rescue StandardError => e
       { error: e.message }
     end
