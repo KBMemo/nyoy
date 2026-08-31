@@ -354,7 +354,7 @@ GEM
     ruby_llm-schema (0.4.0)
     rubyzip (3.5.0)
     securerandom (0.4.1)
-    selenium-webdriver (4.47.0)
+    selenium-webdriver (4.48.0)
       base64 (~> 0.2)
       logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
@@ -611,7 +611,7 @@ CHECKSUMS
   ruby_llm-schema (0.4.0) sha256=e930f5a5316f9301bff3fb7fe572e44727d05bb8e50621001bbb49a47d63b8da
   rubyzip (3.5.0) sha256=f77c49d737a849b662f6ca4de473f31b4ecd8288f1c9f901a5c820641f0f8d7c
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
-  selenium-webdriver (4.47.0) sha256=67f915b8223d2133bbaa13e92fd98854175394f086e2036a9eff4f5561fd69e4
+  selenium-webdriver (4.48.0) sha256=0c8376ebc8a0a4879343fe6fe6eccdcea76748611cd25de370b33eded2077a94
   simpleidn (0.2.3) sha256=08ce96f03fa1605286be22651ba0fc9c0b2d6272c9b27a260bc88be05b0d2c29
   slim (5.2.1) sha256=72351dff7e2ff20e2d5c393cfc385bb9142cef5db059141628fd7163ac3c13e7
   slim-rails (4.0.0) sha256=2cfee5c4ba00d4d935676db1e74a05dbaf9dd6f789903a1006e3bb687bbe36e2
